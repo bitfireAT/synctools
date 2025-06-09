@@ -1,10 +1,3 @@
-import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.kotlin.dsl.android
-import org.gradle.kotlin.dsl.java
-import org.gradle.kotlin.dsl.kotlin
-import org.gradle.kotlin.dsl.libs
-import org.gradle.kotlin.dsl.`maven-publish`
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -96,7 +89,7 @@ publishing {
     // Configure publishing data
     publications {
         register("release", MavenPublication::class.java) {
-            groupId = "com.github.bitfireAT"
+            groupId = "com.github.bitfireat"
             artifactId = "synctools"
             version = System.getenv("GIT_COMMIT")
 
