@@ -89,7 +89,7 @@ publishing {
     // Configure publishing data
     publications {
         register("release", MavenPublication::class.java) {
-            groupId = "com.github.bitfireAT"
+            groupId = "com.github.bitfireat"
             artifactId = "synctools"
             version = System.getenv("GIT_COMMIT")
 
