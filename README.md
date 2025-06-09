@@ -12,7 +12,7 @@ This library for Android provides:
 
 It is mainly used by [DAVx⁵](https://www.davx5.com).
 
-Generated KDoc: https://bitfireat.github.io/ical4android/
+Generated KDoc: https://bitfireat.github.io/synctools/
 
 For questions, suggestions etc. use [Github discussions](https://github.com/bitfireAT/synctools/discussions).
 We're happy about contributions! In case of bigger changes, please let us know in the discussions before.
