@@ -12,6 +12,7 @@ concurrency:
 jobs:
   compile:
     name: Compile and cache
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +32,7 @@ jobs:
 
   test:
     needs: compile
+    if: ${{ !cancelled() }}     # even if compile didn't run (because not on main branch)
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +51,7 @@ jobs:
 
   test_on_emulator:
     needs: compile
+    if: ${{ !cancelled() }}     # even if compile didn't run (because not on main branch)
     name: Instrumented tests
     runs-on: ubuntu-latest
     steps:
