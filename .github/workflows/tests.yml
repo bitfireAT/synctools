@@ -25,7 +25,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4            # creates build cache when on main branch
         with:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
-          gradle-home-cache-cleanup: true               # clean up unused files
           dependency-graph: generate-and-submit         # submit Github Dependency Graph info
 
       - run: ./gradlew --build-cache --configuration-cache compileDebugSources
@@ -46,8 +45,10 @@ jobs:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
           cache-read-only: true
 
-      - name: Run lint and unit tests
-        run: ./gradlew --build-cache --configuration-cache lintDebug testDebugUnitTest
+      - name: Run lint
+        run: ./gradlew --build-cache --configuration-cache lintDebug
+      - name: Run unit tests
+        run: ./gradlew --build-cache --configuration-cache testDebugUnitTest
 
   test_on_emulator:
     needs: compile
