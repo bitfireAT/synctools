@@ -1,6 +1,9 @@
-/***************************************************************************************************
- * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
- **************************************************************************************************/
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.kotlin.dsl.android
+import org.gradle.kotlin.dsl.java
+import org.gradle.kotlin.dsl.kotlin
+import org.gradle.kotlin.dsl.libs
+import org.gradle.kotlin.dsl.`maven-publish`
 
 plugins {
     alias(libs.plugins.android.library)
@@ -12,7 +15,7 @@ plugins {
 android {
     compileSdk = 35
 
-    namespace = "at.bitfire.ical4android"
+    namespace = "at.bitfire.synctools"
 
     defaultConfig {
         minSdk = 23        // Android 6
@@ -24,9 +27,6 @@ android {
         aarMetadata {
             minCompileSdk = 29
         }
-
-        // These ProGuard/R8 rules will be included in the final APK.
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     compileOptions {
@@ -51,6 +51,7 @@ android {
     packaging {
         resources {
             excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE", "META-INF/*.md")
+            excludes += listOf("LICENSE", "META-INF/LICENSE.txt", "META-INF/NOTICE.txt")
         }
     }
 
@@ -60,11 +61,27 @@ android {
             // https://developer.android.com/studio/projects/android-library#Considerations
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+
+            // These ProGuard/R8 rules will be included in the final APK.
+            consumerProguardFiles("consumer-rules.pro")
         }
     }
 
     lint {
         disable += listOf("AllowBackup", "InvalidPackage")
+    }
+
+    @Suppress("UnstableApiUsage")
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("virtual") {
+                    device = "Pixel 3"
+                    apiLevel = 33
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
     }
 
     publishing {
@@ -80,7 +97,7 @@ publishing {
     publications {
         register("release", MavenPublication::class.java) {
             groupId = "com.github.bitfireAT"
-            artifactId = "ical4android"
+            artifactId = "synctools"
             version = System.getenv("GIT_COMMIT")
 
             afterEvaluate {
@@ -92,14 +109,28 @@ publishing {
 
 dependencies {
     implementation(libs.kotlin.stdlib)
-    coreLibraryDesugaring(libs.android.desugaring)
+    coreLibraryDesugaring(libs.android.desugar)
 
+    implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
+    implementation(libs.guava)
+
+    // ical4j/ez-vcard
     api(libs.ical4j)
     implementation(libs.slf4j.jdk)       // ical4j uses slf4j, this module uses java.util.Logger
+    api(libs.ezvcard) {    // requires Java 8
+        // hCard functionality not needed
+        exclude(group = "org.jsoup")
+        exclude(group = "org.freemarker")
+    }
 
+    // instrumented tests
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
+
+    // unit tests
     testImplementation(libs.junit)
 }
