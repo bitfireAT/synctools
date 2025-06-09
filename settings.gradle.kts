@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "root"
 include(":lib")
-project(":lib").name = "vcard4android"
+project(":lib").name = "synctools"
