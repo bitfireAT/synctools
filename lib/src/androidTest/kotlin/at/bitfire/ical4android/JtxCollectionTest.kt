@@ -10,9 +10,9 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import junit.framework.TestCase.assertEquals
@@ -20,41 +20,18 @@ import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Assume
-import org.junit.BeforeClass
-import org.junit.ClassRule
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 class JtxCollectionTest {
 
-    companion object {
+    @get:Rule
+    val permissionRule = GrantPermissionOrSkipRule(TaskProvider.PERMISSIONS_JTX.toSet())
 
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val contentResolver = context.contentResolver
-
-        private lateinit var client: ContentProviderClient
-
-        @JvmField
-        @ClassRule
-        val permissionRule = GrantPermissionRule.grant(*TaskProvider.PERMISSIONS_JTX)
-
-        @BeforeClass
-        @JvmStatic
-        fun openProvider() {
-            val clientOrNull = contentResolver.acquireContentProviderClient(JtxContract.AUTHORITY)
-            Assume.assumeNotNull(clientOrNull)
-
-            client = clientOrNull!!
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun closeProvider() {
-            client.closeCompat()
-        }
-
-    }
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private lateinit var client: ContentProviderClient
 
     private val testAccount = Account("TEST", JtxContract.JtxCollection.TEST_ACCOUNT_TYPE)
 
@@ -70,8 +47,17 @@ class JtxCollectionTest {
         put(JtxContract.JtxCollection.SYNC_VERSION, syncversion)
     }
 
+    @Before
+    fun setUp() {
+        val clientOrNull = context.contentResolver.acquireContentProviderClient(JtxContract.AUTHORITY)
+        Assume.assumeNotNull(clientOrNull)
+        client = clientOrNull!!
+    }
+
     @After
     fun tearDown() {
+        client.closeCompat()
+
         var collections = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)
         collections.forEach { collection ->
             collection.delete()

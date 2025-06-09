@@ -8,56 +8,40 @@ package at.bitfire.ical4android
 
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentResolver
 import android.content.ContentValues
-import android.content.Context
 import android.database.DatabaseUtils
 import android.os.ParcelFileDescriptor
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject
 import at.techbee.jtx.JtxContract.JtxICalObject.Component
 import at.techbee.jtx.JtxContract.asSyncAdapter
-import junit.framework.TestCase.*
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
+import junit.framework.TestCase.assertTrue
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
-import org.junit.*
+import org.junit.After
+import org.junit.Assert
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 
 class JtxICalObjectTest {
 
-    companion object {
+    @get:Rule
+    val permissionRule = GrantPermissionOrSkipRule(TaskProvider.PERMISSIONS_JTX.toSet())
 
-        private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
-        private val contentResolver: ContentResolver = context.contentResolver
-
-        private lateinit var client: ContentProviderClient
-
-        @JvmField
-        @ClassRule
-        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(*TaskProvider.PERMISSIONS_JTX)
-
-        @BeforeClass
-        @JvmStatic
-        fun openProvider() {
-            val clientOrNull = contentResolver.acquireContentProviderClient(JtxContract.AUTHORITY)
-            Assume.assumeNotNull(clientOrNull)
-
-            client = clientOrNull!!
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun closeProvider() {
-            client.closeCompat()
-        }
-
-    }
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private lateinit var client: ContentProviderClient
 
     private val testAccount = Account("TEST", JtxContract.JtxCollection.TEST_ACCOUNT_TYPE)
     private var collection: JtxCollection<at.bitfire.ical4android.JtxICalObject>? = null
@@ -77,6 +61,10 @@ class JtxICalObjectTest {
 
     @Before
     fun setUp() {
+        val clientOrNull = context.contentResolver.acquireContentProviderClient(JtxContract.AUTHORITY)
+        Assume.assumeNotNull(clientOrNull)
+        client = clientOrNull!!
+
         val collectionUri = JtxCollection.create(testAccount, client, cvCollection)
         assertNotNull(collectionUri)
         collection = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)[0]
@@ -128,6 +116,7 @@ class JtxICalObjectTest {
 
     @After
     fun tearDown() {
+        client.closeCompat()
         collection?.delete()
         val collections = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)
         assertEquals(0, collections.size)
