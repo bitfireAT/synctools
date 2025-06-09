@@ -9,11 +9,15 @@ package at.bitfire.ical4android
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import org.junit.After
+import org.junit.Assert.assertNotNull
 import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
+import org.junit.rules.TestRule
+import org.junit.runner.Description
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import org.junit.runners.model.Statement
 import java.util.logging.Logger
 
 @RunWith(Parameterized::class)
@@ -28,9 +32,22 @@ abstract class DmfsStyleProvidersTaskTest(
         fun taskProviders() = listOf(TaskProvider.ProviderName.OpenTasks,TaskProvider.ProviderName.TasksOrg)
     }
 
-    @JvmField
-    @Rule
-    val permissionRule = GrantPermissionRule.grant(*providerName.permissions)
+    @get:Rule
+    val permissionRule: TestRule = object : TestRule {
+        val rule = GrantPermissionRule.grant(*providerName.permissions)
+
+        override fun apply(base: Statement, description: Description) =
+            object: Statement() {
+                override fun evaluate() {
+                    val innerStatement = rule.apply(base, description)
+                    try {
+                        innerStatement.evaluate()
+                    } catch (e: SecurityException) {
+                        Assume.assumeNoException(e)
+                    }
+                }
+            }
+    }
 
     var providerOrNull: TaskProvider? = null
     lateinit var provider: TaskProvider
@@ -38,7 +55,7 @@ abstract class DmfsStyleProvidersTaskTest(
     @Before
     open fun prepare() {
         providerOrNull = TaskProvider.acquire(InstrumentationRegistry.getInstrumentation().context, providerName)
-        Assume.assumeNotNull(providerOrNull)      // will halt here if providerOrNull is null
+        assertNotNull("$providerName is not installed", providerOrNull != null)
 
         provider = providerOrNull!!
         Logger.getLogger(javaClass.name).fine("Using task provider: $provider")
