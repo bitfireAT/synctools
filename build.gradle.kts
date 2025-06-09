@@ -1,6 +1,4 @@
-/***************************************************************************************************
- * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
- **************************************************************************************************/
+import org.gradle.kotlin.dsl.libs
 
 plugins {
     alias(libs.plugins.android.library) apply false

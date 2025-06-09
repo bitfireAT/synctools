@@ -6,6 +6,8 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.synctools.BuildConfig
+
 /**
  * The used version of ical4j.
  */
