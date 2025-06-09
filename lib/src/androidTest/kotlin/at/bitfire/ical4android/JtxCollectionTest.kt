@@ -10,9 +10,9 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import junit.framework.TestCase.assertEquals
@@ -37,7 +37,7 @@ class JtxCollectionTest {
 
         @JvmField
         @ClassRule
-        val permissionRule = GrantPermissionRule.grant(*TaskProvider.PERMISSIONS_JTX)
+        val permissionRule = GrantPermissionOrSkipRule(TaskProvider.PERMISSIONS_JTX.toSet())
 
         @BeforeClass
         @JvmStatic

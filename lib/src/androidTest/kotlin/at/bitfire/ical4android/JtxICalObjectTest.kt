@@ -15,17 +15,27 @@ import android.database.DatabaseUtils
 import android.os.ParcelFileDescriptor
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject
 import at.techbee.jtx.JtxContract.JtxICalObject.Component
 import at.techbee.jtx.JtxContract.asSyncAdapter
-import junit.framework.TestCase.*
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
+import junit.framework.TestCase.assertTrue
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
-import org.junit.*
+import org.junit.After
+import org.junit.AfterClass
+import org.junit.Assert
+import org.junit.Assume
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 
@@ -40,7 +50,7 @@ class JtxICalObjectTest {
 
         @JvmField
         @ClassRule
-        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(*TaskProvider.PERMISSIONS_JTX)
+        val permissionRule = GrantPermissionOrSkipRule(TaskProvider.PERMISSIONS_JTX.toSet())
 
         @BeforeClass
         @JvmStatic
