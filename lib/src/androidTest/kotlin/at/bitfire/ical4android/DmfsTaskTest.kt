@@ -14,6 +14,7 @@ import android.net.Uri
 import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -694,7 +695,7 @@ class DmfsTaskTest(
         }
     }
 
-    @Test(expected = CalendarStorageException::class)
+    @Test(expected = LocalStorageException::class)
     fun testAddTaskWithInvalidDue() {
         val task = Task()
         task.uid = "invalidDUE@ical4android.tests"

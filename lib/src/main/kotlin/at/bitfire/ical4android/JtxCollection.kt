@@ -13,6 +13,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.LocalStorageException
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
@@ -36,7 +37,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
         fun create(account: Account, client: ContentProviderClient, values: ContentValues): Uri {
             logger.log(Level.FINE, "Creating jtx Board collection", values)
             return client.insert(JtxContract.JtxCollection.CONTENT_URI.asSyncAdapter(account), values)
-                ?: throw CalendarStorageException("Couldn't create JTX Collection")
+                ?: throw LocalStorageException("Couldn't create JTX Collection")
         }
 
         fun<T: JtxCollection<JtxICalObject>> find(account: Account, client: ContentProviderClient, context: Context, factory: JtxCollectionFactory<T>, where: String?, whereArgs: Array<String>?): List<T> {

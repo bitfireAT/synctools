@@ -14,6 +14,7 @@ import android.net.Uri
 import androidx.annotation.CallSuper
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.LocalStorageException
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.TaskLists
@@ -48,7 +49,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
             val url = TaskLists.getContentUri(providerName.authority).asSyncAdapter(account)
             logger.log(Level.FINE, "Creating ${providerName.authority} task list", info)
             return provider.insert(url, info)
-                ?: throw CalendarStorageException("Couldn't create task list (empty result from provider)")
+                ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
         }
 
         fun <T : DmfsTaskList<DmfsTask>> findByID(
