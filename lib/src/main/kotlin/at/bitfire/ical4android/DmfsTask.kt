@@ -11,10 +11,11 @@ import android.content.ContentValues
 import android.net.Uri
 import android.os.RemoteException
 import androidx.annotation.CallSuper
-import at.bitfire.ical4android.BatchOperation.CpoBuilder
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.BatchOperation
+import at.bitfire.synctools.BatchOperation.CpoBuilder
 import at.bitfire.synctools.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
