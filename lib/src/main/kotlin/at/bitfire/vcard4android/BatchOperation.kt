@@ -14,6 +14,7 @@ import android.content.OperationApplicationException
 import android.net.Uri
 import android.os.RemoteException
 import android.os.TransactionTooLargeException
+import at.bitfire.synctools.LocalStorageException
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -57,7 +58,7 @@ class BatchOperation(
      * @throws RemoteException on calendar provider errors. In case of [android.os.DeadObjectException],
      * the provider has probably been killed/crashed or the calling process is cached and thus IPC is frozen (Android 14+).
      *
-     * @throws ContactsStorageException if
+     * @throws LocalStorageException if
      *
      * - the transaction is too large and can't be split (wrapped [TransactionTooLargeException])
      * - the batch can't be processed (wrapped [OperationApplicationException])
@@ -100,7 +101,7 @@ class BatchOperation(
      * @throws RemoteException on calendar provider errors. In case of [android.os.DeadObjectException],
      * the provider has probably been killed/crashed or the calling process is cached and thus IPC is frozen (Android 14+).
      *
-     * @throws ContactsStorageException if
+     * @throws LocalStorageException if
      *
      * - the transaction is too large and can't be split (wrapped [TransactionTooLargeException])
      * - the batch can't be processed (wrapped [OperationApplicationException])
@@ -122,15 +123,15 @@ class BatchOperation(
             System.arraycopy(partResults, 0, results, start, partResults.size)
 
         } catch (e: OperationApplicationException) {
-            throw ContactsStorageException("Couldn't apply batch operation", e)
+            throw LocalStorageException("Couldn't apply batch operation", e)
 
         } catch (e: RuntimeException) {
-            throw ContactsStorageException("Content provider threw a runtime exception", e)
+            throw LocalStorageException("Content provider threw a runtime exception", e)
 
         } catch(e: TransactionTooLargeException) {
             if (end <= start + 1)
                 // only one operation, can't be split
-                throw ContactsStorageException("Can't transfer data to content provider (too large data row can't be split)", e)
+                throw LocalStorageException("Can't transfer data to content provider (too large data row can't be split)", e)
 
             logger.warning("Transaction too large, splitting (losing atomicity)")
             val mid = start + (end - start)/2
@@ -154,7 +155,8 @@ class BatchOperation(
                 val originalIdx = backref.originalIndex
                 if (originalIdx < start) {
                     // back reference is outside of the current batch, get result from previous execution ...
-                    val resultUri = results[originalIdx]?.uri ?: throw ContactsStorageException("Referenced operation didn't produce a valid result")
+                    val resultUri = results[originalIdx]?.uri
+                        ?: throw LocalStorageException("Referenced operation didn't produce a valid result")
                     val resultId = ContentUris.parseId(resultUri)
                     // ... and use result directly instead of using a back reference
                     cpoBuilder  .removeValueBackReference(backrefKey)

@@ -15,6 +15,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import at.bitfire.synctools.LocalStorageException
 import at.bitfire.vcard4android.impl.TestAddressBook
 import at.bitfire.vcard4android.property.XAbDate
 import ezvcard.VCardVersion
@@ -169,7 +170,7 @@ class AndroidContactTest {
         }
     }
 
-    @Test(expected = ContactsStorageException::class)
+    @Test(expected = LocalStorageException::class)
     fun testLargeTransactionSingleRow() {
         val vcard = Contact()
         vcard.displayName = "Large Transaction (one row which is too large)"
