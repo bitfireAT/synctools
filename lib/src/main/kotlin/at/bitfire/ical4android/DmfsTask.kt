@@ -15,6 +15,7 @@ import at.bitfire.ical4android.BatchOperation.CpoBuilder
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -343,7 +344,8 @@ abstract class DmfsTask(
 
         batch.commit()
 
-        val resultUri = batch.getResult(0)?.uri ?: throw CalendarStorageException("Empty result from provider when adding a task")
+        val resultUri = batch.getResult(0)?.uri
+            ?: throw LocalStorageException("Empty result from provider when adding a task")
         id = ContentUris.parseId(resultUri)
         return resultUri
     }

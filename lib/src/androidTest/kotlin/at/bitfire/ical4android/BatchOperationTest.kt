@@ -18,6 +18,7 @@ import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.impl.TestEvent
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.LocalStorageException
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
@@ -117,7 +118,7 @@ class BatchOperationTest {
         }
     }
 
-    @Test(expected = CalendarStorageException::class)
+    @Test(expected = LocalStorageException::class)
     fun testLargeTransactionSingleRow() {
         val event = Event()
         event.uid = "sample1@testLargeTransaction"

@@ -34,6 +34,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -221,7 +222,8 @@ abstract class AndroidEvent(
         }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-        val tsStart = row.getAsLong(Events.DTSTART) ?: throw CalendarStorageException("Found event without DTSTART")
+        val tsStart = row.getAsLong(Events.DTSTART)
+            ?: throw LocalStorageException("Found event without DTSTART")
 
         var tsEnd = row.getAsLong(Events.DTEND)
         var duration =   // only use DURATION of DTEND is not defined
@@ -566,7 +568,7 @@ abstract class AndroidEvent(
      *
      * @return content URI of the created event
      *
-     * @throws CalendarStorageException when the calendar provider doesn't return a result row
+     * @throws LocalStorageException when the calendar provider doesn't return a result row
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
@@ -575,7 +577,7 @@ abstract class AndroidEvent(
         batch.commit()
 
         val resultUri = batch.getResult(idxEvent)?.uri
-                ?: throw CalendarStorageException("Empty result from content provider when adding event")
+            ?: throw LocalStorageException("Empty result from content provider when adding event")
         id = ContentUris.parseId(resultUri)
         return resultUri
     }
@@ -691,7 +693,7 @@ abstract class AndroidEvent(
     /**
      * Updates an already existing event in the calendar storage with the values
      * from the instance.
-     * @throws CalendarStorageException when the calendar provider doesn't return a result row
+     * @throws LocalStorageException when the calendar provider doesn't return a result row
      * @throws RemoteException on calendar provider errors
      */
     fun update(event: Event): Uri {

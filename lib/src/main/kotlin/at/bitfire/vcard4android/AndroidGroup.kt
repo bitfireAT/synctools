@@ -16,6 +16,7 @@ import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
+import at.bitfire.synctools.LocalStorageException
 import java.io.FileNotFoundException
 import java.util.logging.Logger
 
@@ -128,7 +129,7 @@ open class AndroidGroup(
      * Creates a group with data taken from the constructor.
      * @return number of affected rows
      * @throws RemoteException on contact provider errors
-     * @throws ContactsStorageException when the group can't be added
+     * @throws LocalStorageException when the group can't be added
      */
     fun add(): Uri {
         val values = contentValues()
@@ -138,7 +139,7 @@ open class AndroidGroup(
         if (addressBook.readOnly)
             values.put(Groups.GROUP_IS_READ_ONLY, 1)
         val uri = addressBook.provider!!.insert(addressBook.syncAdapterURI(Groups.CONTENT_URI), values)
-                ?: throw ContactsStorageException("Empty result from content provider when adding group")
+                ?: throw LocalStorageException("Empty result from content provider when adding group")
         id = ContentUris.parseId(uri)
         return uri
 	}

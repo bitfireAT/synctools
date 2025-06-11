@@ -16,6 +16,7 @@ import android.provider.ContactsContract
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
+import at.bitfire.synctools.LocalStorageException
 import at.bitfire.vcard4android.contactrow.ContactProcessor
 import at.bitfire.vcard4android.contactrow.PhotoBuilder
 import java.io.FileNotFoundException
@@ -124,7 +125,8 @@ open class AndroidContact(
         insertDataRows(batch)
 
         batch.commit()
-        val resultUri = batch.getResult(0)?.uri ?: throw ContactsStorageException("Empty result from content provider when adding contact")
+        val resultUri = batch.getResult(0)?.uri
+            ?: throw LocalStorageException("Empty result from content provider when adding contact")
         id = ContentUris.parseId(resultUri)
 
         getContact().photo?.let { photo ->
