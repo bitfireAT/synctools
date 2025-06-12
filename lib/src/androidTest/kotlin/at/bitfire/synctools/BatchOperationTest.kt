@@ -33,7 +33,6 @@ import org.junit.ClassRule
 import org.junit.Test
 import java.net.URI
 import java.util.Arrays
-import java.util.Calendar
 
 class BatchOperationTest {
 
@@ -105,13 +104,13 @@ class BatchOperationTest {
         builder.commit()
     }
 
-    @Test(expected = LocalStorageException::class)
-    fun testCalendarProvider_OperationsPerYieldPoint_500() {
+    @Test
+    fun testCalendarProvider_OperationsPerYieldPoint_9999() {
         val builder = BatchOperation(calendarProvider)
 
-        // 500 operations should throw LocalStorageException exception
+        // 9999 operations still don't throw an exception
         builder.queue.clear()
-        repeat(500) { number ->
+        repeat(9999) { number ->
             builder.enqueue(BatchOperation.CpoBuilder.newInsert(CalendarContract.Events.CONTENT_URI)
                 .withValue(CalendarContract.Events.TITLE, "Event $number"))
         }
