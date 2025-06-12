@@ -11,8 +11,8 @@ import android.content.ContentValues
 import android.net.Uri
 import android.provider.ContactsContract.RawContacts
 import at.bitfire.vcard4android.AndroidContact
-import at.bitfire.vcard4android.BatchOperation
 import at.bitfire.vcard4android.Contact
+import at.bitfire.synctools.BatchOperation
 import java.util.logging.Level
 import java.util.logging.Logger
 

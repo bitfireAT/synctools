@@ -8,7 +8,7 @@ package at.bitfire.vcard4android.contactrow
 
 import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.Note
-import at.bitfire.vcard4android.BatchOperation
+import at.bitfire.synctools.BatchOperation
 import at.bitfire.vcard4android.Contact
 
 class NoteBuilder(dataRowUri: Uri, rawContactId: Long?, contact: Contact, readOnly: Boolean)

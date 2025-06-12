@@ -12,8 +12,10 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
 import androidx.annotation.CallSuper
+import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.BatchOperation
 import at.bitfire.synctools.LocalStorageException
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation

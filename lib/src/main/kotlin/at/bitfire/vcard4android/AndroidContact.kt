@@ -16,6 +16,7 @@ import android.provider.ContactsContract
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
+import at.bitfire.synctools.BatchOperation
 import at.bitfire.synctools.LocalStorageException
 import at.bitfire.vcard4android.contactrow.ContactProcessor
 import at.bitfire.vcard4android.contactrow.PhotoBuilder
@@ -116,7 +117,7 @@ open class AndroidContact(
 
     fun add(): Uri {
         val provider = addressBook.provider!!
-        val batch = BatchOperation(provider)
+        val batch = BatchOperation(provider, BatchOperation.CONTACTS_OPERATIONS_PER_YIELD_POINT)
 
         val builder = BatchOperation.CpoBuilder.newInsert(addressBook.syncAdapterURI(RawContacts.CONTENT_URI))
         buildContact(builder, false)
@@ -140,7 +141,7 @@ open class AndroidContact(
         setContact(data)
 
         val provider = addressBook.provider!!
-        val batch = BatchOperation(provider)
+        val batch = BatchOperation(provider, BatchOperation.CONTACTS_OPERATIONS_PER_YIELD_POINT)
         val uri = rawContactSyncURI()
         val builder = BatchOperation.CpoBuilder.newUpdate(uri)
         buildContact(builder, true)

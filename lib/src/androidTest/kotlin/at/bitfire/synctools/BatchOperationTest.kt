@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools
 
 import android.Manifest
 import android.accounts.Account
@@ -12,20 +12,21 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.net.Uri
 import android.provider.CalendarContract
+import android.provider.ContactsContract
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.impl.TestEvent
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.LocalStorageException
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertNotNull
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.After
 import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
@@ -41,21 +42,27 @@ class BatchOperationTest {
         @ClassRule
         val permissionRule = GrantPermissionRule.grant(
             Manifest.permission.READ_CALENDAR,
-            Manifest.permission.WRITE_CALENDAR
+            Manifest.permission.WRITE_CALENDAR,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.WRITE_CONTACTS
         )
 
-        lateinit var provider: ContentProviderClient
+        lateinit var calendarProvider: ContentProviderClient
+        lateinit var contactsProvider: ContentProviderClient
 
         @BeforeClass
         @JvmStatic
         fun connectProvider() {
-            provider = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            val contentResolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
+            calendarProvider = contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            contactsProvider = contentResolver.acquireContentProviderClient(ContactsContract.AUTHORITY)!!
         }
 
         @AfterClass
         @JvmStatic
         fun closeProvider() {
-            provider.closeCompat()
+            calendarProvider.closeCompat()
+            contactsProvider.closeCompat()
         }
 
     }
@@ -68,7 +75,9 @@ class BatchOperationTest {
     @Before
     fun prepare() {
         System.gc()
-        calendar = TestCalendar.findOrCreate(testAccount, provider)
+
+        // prepare calendar provider tests
+        calendar = TestCalendar.findOrCreate(testAccount, calendarProvider)
         assertNotNull(calendar)
         calendarUri = ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, calendar.id)
     }
@@ -79,8 +88,37 @@ class BatchOperationTest {
         System.gc()
     }
 
+
+    // calendar provider tests
+
     @Test
-    fun testTransactionSplitting() {
+    fun testCalendarProvider_OperationsPerYieldPoint_499() {
+        val builder = BatchOperation(calendarProvider)
+
+        // 499 operations should throw LocalStorageException exception
+        builder.queue.clear()
+        repeat(499) { number ->
+            builder.enqueue(BatchOperation.CpoBuilder.newInsert(CalendarContract.Events.CONTENT_URI)
+                .withValue(CalendarContract.Events.TITLE, "Event $number"))
+        }
+        builder.commit()
+    }
+
+    @Test
+    fun testCalendarProvider_OperationsPerYieldPoint_9999() {
+        val builder = BatchOperation(calendarProvider)
+
+        // 9999 operations still don't throw an exception
+        builder.queue.clear()
+        repeat(9999) { number ->
+            builder.enqueue(BatchOperation.CpoBuilder.newInsert(CalendarContract.Events.CONTENT_URI)
+                .withValue(CalendarContract.Events.TITLE, "Event $number"))
+        }
+        builder.commit()
+    }
+
+    @Test
+    fun testCalendarProvider_TransactionSplitting() {
         val event = Event()
         event.uid = "sample1@testLargeTransaction"
         event.summary = "Large event"
@@ -99,7 +137,7 @@ class BatchOperationTest {
 
     @FlakyTest
     @Test
-    fun testLargeTransactionSplitting() {
+    fun testCalendarProvider_LargeTransactionSplitting() {
         // with 4000 attendees, this test has been observed to fail on the CI server docker emulator.
         // Too many Binders are sent to SYSTEM (see issue #42). Asking for GC in @Before/@After might help.
         val event = Event()
@@ -119,7 +157,7 @@ class BatchOperationTest {
     }
 
     @Test(expected = LocalStorageException::class)
-    fun testLargeTransactionSingleRow() {
+    fun testCalendarProvider_LargeTransactionSingleRow() {
         val event = Event()
         event.uid = "sample1@testLargeTransaction"
         event.dtStart = DtStart("20150502T120000Z")
@@ -132,4 +170,38 @@ class BatchOperationTest {
 
         TestEvent(calendar, event).add()
     }
+
+
+    // contacts provider tests
+
+    @Test
+    fun testContactsProvider_OperationsPerYieldPoint_499() {
+        val builder = BatchOperation(contactsProvider)
+
+        // 499 operations should succeed
+        builder.queue.clear()
+        repeat(499) {
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, "com.example")
+                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "test")
+            )
+        }
+        builder.commit()
+    }
+
+    @Test(expected = LocalStorageException::class)
+    fun testContactsProvider_OperationsPerYieldPoint_500() {
+        val builder = BatchOperation(contactsProvider)
+
+        // 500 operations should throw LocalStorageException exception
+        builder.queue.clear()
+        repeat(500) {
+            builder.enqueue(BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, "com.example")
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "test"))
+        }
+        builder.commit()
+    }
+
 }
