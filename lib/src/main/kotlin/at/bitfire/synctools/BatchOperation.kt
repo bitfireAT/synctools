@@ -14,6 +14,7 @@ import android.content.OperationApplicationException
 import android.net.Uri
 import android.os.RemoteException
 import android.os.TransactionTooLargeException
+import androidx.annotation.VisibleForTesting
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -43,7 +44,9 @@ class BatchOperation(
 
     private val logger = Logger.getLogger(javaClass.name)
 
-    private val queue = LinkedList<CpoBuilder>()
+    @VisibleForTesting
+    internal val queue = LinkedList<CpoBuilder>()
+
     private var results = arrayOfNulls<ContentProviderResult?>(0)
 
 
