@@ -35,10 +35,8 @@ class BatchOperation(
          * Maximum number of operations per yield point in contacts provider.
          *
          * See https://android.googlesource.com/platform/packages/providers/ContactsProvider.git/+/refs/heads/android11-release/src/com/android/providers/contacts/AbstractContactsProvider.java#70
-         *
-         * Some operations may count more than one operation, so use a safe value of 450 instead of 500.
          */
-        const val CONTACTS_OPERATIONS_PER_YIELD_POINT = 450
+        const val CONTACTS_OPERATIONS_PER_YIELD_POINT = 499
 
     }
 
