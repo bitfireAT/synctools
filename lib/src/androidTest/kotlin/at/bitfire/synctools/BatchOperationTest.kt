@@ -15,7 +15,6 @@ import android.provider.CalendarContract
 import android.provider.ContactsContract
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.impl.TestCalendar
@@ -30,65 +29,34 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.dmfs.tasks.contract.TaskContract
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import java.net.URI
 import java.util.Arrays
 
 class BatchOperationTest {
 
-    companion object {
-
-        @JvmField
-        @ClassRule
-        val permissionRule = GrantPermissionRule.grant(
+    @get:Rule
+    val permissionRule = GrantPermissionOrSkipRule(
+        setOf(
             Manifest.permission.READ_CALENDAR,
             Manifest.permission.WRITE_CALENDAR,
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.WRITE_CONTACTS,
-            TaskProvider.PERMISSION_JTX_READ,
-            TaskProvider.PERMISSION_JTX_WRITE,
-            TaskProvider.PERMISSION_TASKS_ORG_READ,
-            TaskProvider.PERMISSION_TASKS_ORG_WRITE,
-            TaskProvider.PERMISSION_OPENTASKS_READ,
-            TaskProvider.PERMISSION_OPENTASKS_WRITE
-        )
+        ) +
+        TaskProvider.PERMISSIONS_JTX.toSet() +
+        TaskProvider.PERMISSIONS_TASKS_ORG.toSet() +
+        TaskProvider.PERMISSIONS_OPENTASKS.toSet()
+    )
 
-        lateinit var calendarProvider: ContentProviderClient
-        lateinit var contactsProvider: ContentProviderClient
-        lateinit var jtxProvider: TaskProvider
-        lateinit var tasksOrgProvider: TaskProvider
-        lateinit var openTasksProvider: TaskProvider
-
-        @BeforeClass
-        @JvmStatic
-        fun connectProvider() {
-            val contentResolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
-            val context = InstrumentationRegistry.getInstrumentation().context
-            calendarProvider = contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
-            contactsProvider = contentResolver.acquireContentProviderClient(ContactsContract.AUTHORITY)!!
-            jtxProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.JtxBoard)!!
-            tasksOrgProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.TasksOrg)!!
-            openTasksProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.OpenTasks)!!
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun closeProvider() {
-            calendarProvider.closeCompat()
-            contactsProvider.closeCompat()
-            jtxProvider.close()
-            tasksOrgProvider.close()
-            openTasksProvider.close()
-        }
-
-    }
+    lateinit var calendarProvider: ContentProviderClient
+    lateinit var contactsProvider: ContentProviderClient
+    lateinit var jtxProvider: TaskProvider
+    lateinit var tasksOrgProvider: TaskProvider
+    lateinit var openTasksProvider: TaskProvider
 
     private val testAccount = Account("ical4android@example.com", "com.example")
-//    private val testAccount = Account("ical4android@example.com", "com.example")
 
     private lateinit var calendarUri: Uri
     private lateinit var calendar: TestCalendar
@@ -96,6 +64,14 @@ class BatchOperationTest {
     @Before
     fun prepare() {
         System.gc()
+
+        val contentResolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
+        calendarProvider = contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+        contactsProvider = contentResolver.acquireContentProviderClient(ContactsContract.AUTHORITY)!!
+        val context = InstrumentationRegistry.getInstrumentation().context
+        jtxProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.JtxBoard)!!
+        tasksOrgProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.TasksOrg)!!
+        openTasksProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.OpenTasks)!!
 
         // prepare calendar provider tests
         calendar = TestCalendar.findOrCreate(testAccount, calendarProvider)
@@ -106,6 +82,13 @@ class BatchOperationTest {
     @After
     fun shutdown() {
         calendar.delete()
+
+        calendarProvider.closeCompat()
+        contactsProvider.closeCompat()
+        jtxProvider.close()
+        tasksOrgProvider.close()
+        openTasksProvider.close()
+
         System.gc()
     }
 
