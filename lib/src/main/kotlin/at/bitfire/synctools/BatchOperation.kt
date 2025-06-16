@@ -27,7 +27,8 @@ class BatchOperation(
     companion object {
 
         /**
-         * Maximum number of operations per yield point in task providers that are based on SQLiteContentProvider.
+         * Maximum number of operations per yield point in opentasks and tasks.org task providers.
+         * Does not apply for jtxBoard.
          */
         const val TASKS_OPERATIONS_PER_YIELD_POINT = 499
 
