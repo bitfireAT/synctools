@@ -220,7 +220,7 @@ class BatchOperationTest {
             .build()
         val builder = BatchOperation(jtxProvider.client)
 
-        // 9999 operations should _not_ throw an exception for jtxBoard
+        // 9999+ operations will not throw an exception for jtxBoard
         builder.queue.clear()
         repeat(9999) { number ->
             builder.enqueue(
@@ -232,7 +232,7 @@ class BatchOperationTest {
     }
 
     @Test
-    fun testTasksOrgProvider_OperationsPerYieldPoint_9999() {
+    fun testTasksOrgProvider_OperationsPerYieldPoint_499() {
         val taskList = TestTaskList.create(testAccount, tasksOrgProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.TasksOrg.authority)
         val builder = BatchOperation(tasksOrgProvider.client)
@@ -250,8 +250,27 @@ class BatchOperationTest {
         taskList.delete()
     }
 
+    @Test(expected = LocalStorageException::class)
+    fun testTasksOrgProvider_OperationsPerYieldPoint_500() {
+        val taskList = TestTaskList.create(testAccount, tasksOrgProvider)
+        val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.TasksOrg.authority)
+        val builder = BatchOperation(tasksOrgProvider.client)
+
+        // 499 operations are max for Tasks.org
+        builder.queue.clear()
+        repeat(500) { number ->
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(contentUri)
+                    .withValue(TaskContract.Tasks.LIST_ID, taskList.id)
+                    .withValue(TaskContract.Tasks.TITLE, "Task $number")
+            )
+        }
+        builder.commit()
+        taskList.delete()
+    }
+
     @Test
-    fun testOpenTasksProvider_OperationsPerYieldPoint_9999() {
+    fun testOpenTasksProvider_OperationsPerYieldPoint_499() {
         val taskList = TestTaskList.create(testAccount, openTasksProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.OpenTasks.authority)
         val builder = BatchOperation(openTasksProvider.client)
@@ -259,6 +278,25 @@ class BatchOperationTest {
         // 499 operations are max for OpenTasks
         builder.queue.clear()
         repeat(499) { number ->
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(contentUri)
+                    .withValue(TaskContract.Tasks.LIST_ID, taskList.id)
+                    .withValue(TaskContract.Tasks.TITLE, "Task $number")
+            )
+        }
+        builder.commit()
+        taskList.delete()
+    }
+
+    @Test(expected = LocalStorageException::class)
+    fun testOpenTasksProvider_OperationsPerYieldPoint_500() {
+        val taskList = TestTaskList.create(testAccount, openTasksProvider)
+        val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.OpenTasks.authority)
+        val builder = BatchOperation(openTasksProvider.client)
+
+        // 499 operations are max for OpenTasks
+        builder.queue.clear()
+        repeat(500) { number ->
             builder.enqueue(
                 BatchOperation.CpoBuilder.newInsert(contentUri)
                     .withValue(TaskContract.Tasks.LIST_ID, taskList.id)
