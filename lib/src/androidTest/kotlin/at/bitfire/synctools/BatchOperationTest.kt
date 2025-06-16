@@ -17,14 +17,18 @@ import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.impl.TestEvent
+import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.techbee.jtx.JtxContract
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertNotNull
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
+import org.dmfs.tasks.contract.TaskContract
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
@@ -44,18 +48,31 @@ class BatchOperationTest {
             Manifest.permission.READ_CALENDAR,
             Manifest.permission.WRITE_CALENDAR,
             Manifest.permission.READ_CONTACTS,
-            Manifest.permission.WRITE_CONTACTS
+            Manifest.permission.WRITE_CONTACTS,
+            TaskProvider.PERMISSION_JTX_READ,
+            TaskProvider.PERMISSION_JTX_WRITE,
+            TaskProvider.PERMISSION_TASKS_ORG_READ,
+            TaskProvider.PERMISSION_TASKS_ORG_WRITE,
+            TaskProvider.PERMISSION_OPENTASKS_READ,
+            TaskProvider.PERMISSION_OPENTASKS_WRITE
         )
 
         lateinit var calendarProvider: ContentProviderClient
         lateinit var contactsProvider: ContentProviderClient
+        lateinit var jtxProvider: TaskProvider
+        lateinit var tasksOrgProvider: TaskProvider
+        lateinit var openTasksProvider: TaskProvider
 
         @BeforeClass
         @JvmStatic
         fun connectProvider() {
             val contentResolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
+            val context = InstrumentationRegistry.getInstrumentation().context
             calendarProvider = contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
             contactsProvider = contentResolver.acquireContentProviderClient(ContactsContract.AUTHORITY)!!
+            jtxProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.JtxBoard)!!
+            tasksOrgProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.TasksOrg)!!
+            openTasksProvider = TaskProvider.acquire(context, TaskProvider.ProviderName.OpenTasks)!!
         }
 
         @AfterClass
@@ -63,11 +80,15 @@ class BatchOperationTest {
         fun closeProvider() {
             calendarProvider.closeCompat()
             contactsProvider.closeCompat()
+            jtxProvider.close()
+            tasksOrgProvider.close()
+            openTasksProvider.close()
         }
 
     }
 
-    private val testAccount = Account("ical4android@example.com", CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account("ical4android@example.com", "com.example")
+//    private val testAccount = Account("ical4android@example.com", "com.example")
 
     private lateinit var calendarUri: Uri
     private lateinit var calendar: TestCalendar
@@ -202,6 +223,67 @@ class BatchOperationTest {
                 .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "test"))
         }
         builder.commit()
+    }
+
+
+    // tasks provider tests
+
+    @Test
+    fun testJtxTaskProvider_OperationsPerYieldPoint_9999() {
+        val syncAdapterUri = JtxContract.JtxCollection.CONTENT_URI.buildUpon()
+            .appendQueryParameter("caller_is_syncadapter", "true")
+            .appendQueryParameter("account_name", testAccount.name)
+            .appendQueryParameter("account_type", testAccount.type)
+            .build()
+        val builder = BatchOperation(jtxProvider.client)
+
+        // 9999 operations should _not_ throw an exception for jtxBoard
+        builder.queue.clear()
+        repeat(9999) { number ->
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(syncAdapterUri)
+                    .withValue(JtxContract.JtxCollection.DESCRIPTION, "Task $number")
+            )
+        }
+        builder.commit()
+    }
+
+    @Test
+    fun testTasksOrgProvider_OperationsPerYieldPoint_9999() {
+        val taskList = TestTaskList.create(testAccount, tasksOrgProvider)
+        val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.TasksOrg.authority)
+        val builder = BatchOperation(tasksOrgProvider.client)
+
+        // 499 operations are max for Tasks.org
+        builder.queue.clear()
+        repeat(499) { number ->
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(contentUri)
+                    .withValue(TaskContract.Tasks.LIST_ID, taskList.id)
+                    .withValue(TaskContract.Tasks.TITLE, "Task $number")
+            )
+        }
+        builder.commit()
+        taskList.delete()
+    }
+
+    @Test
+    fun testOpenTasksProvider_OperationsPerYieldPoint_9999() {
+        val taskList = TestTaskList.create(testAccount, openTasksProvider)
+        val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.OpenTasks.authority)
+        val builder = BatchOperation(openTasksProvider.client)
+
+        // 499 operations are max for OpenTasks
+        builder.queue.clear()
+        repeat(499) { number ->
+            builder.enqueue(
+                BatchOperation.CpoBuilder.newInsert(contentUri)
+                    .withValue(TaskContract.Tasks.LIST_ID, taskList.id)
+                    .withValue(TaskContract.Tasks.TITLE, "Task $number")
+            )
+        }
+        builder.commit()
+        taskList.delete()
     }
 
 }
