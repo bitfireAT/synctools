@@ -13,7 +13,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import at.bitfire.ical4android.util.MiscUtils.toValues
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.LocalStorageException
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar

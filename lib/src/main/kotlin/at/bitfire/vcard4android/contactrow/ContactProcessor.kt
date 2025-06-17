@@ -12,7 +12,7 @@ import android.net.Uri
 import android.provider.ContactsContract.RawContacts
 import at.bitfire.vcard4android.AndroidContact
 import at.bitfire.vcard4android.Contact
-import at.bitfire.synctools.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation
 import java.util.logging.Level
 import java.util.logging.Logger
 

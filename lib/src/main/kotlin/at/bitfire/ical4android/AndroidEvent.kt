@@ -34,9 +34,10 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.BatchOperation
-import at.bitfire.synctools.BatchOperation.CpoBuilder
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
+import at.bitfire.synctools.storage.CalendarBatchOperation
+import at.bitfire.synctools.storage.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -574,7 +575,7 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
-        val batch = BatchOperation(calendar.provider, null)
+        val batch = CalendarBatchOperation(calendar.provider)
         val idxEvent = addOrUpdateRows(batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -720,7 +721,7 @@ abstract class AndroidEvent(
 
         } else {        // update event
             // remove associated rows which are added later again
-            val batch = BatchOperation(calendar.provider, null)
+            val batch = CalendarBatchOperation(calendar.provider)
             deleteExceptions(batch)
             batch   .enqueue(CpoBuilder
                             .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
@@ -756,7 +757,7 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun delete(): Int {
-        val batch = BatchOperation(calendar.provider, null)
+        val batch = CalendarBatchOperation(calendar.provider)
 
         // remove exceptions of event, too (CalendarProvider doesn't do this)
         deleteExceptions(batch)

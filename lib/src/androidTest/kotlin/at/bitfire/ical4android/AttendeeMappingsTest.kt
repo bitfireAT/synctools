@@ -9,7 +9,7 @@ package at.bitfire.ical4android
 import android.content.ContentValues
 import android.net.Uri
 import android.provider.CalendarContract.Attendees
-import at.bitfire.synctools.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Role

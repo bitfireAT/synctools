@@ -8,7 +8,7 @@ package at.bitfire.vcard4android.contactrow
 
 import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.SipAddress
-import at.bitfire.synctools.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.vcard4android.Contact
 import ezvcard.parameter.ImppType
 import java.util.LinkedList

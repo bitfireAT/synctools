@@ -15,8 +15,9 @@ import androidx.annotation.CallSuper
 import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
-import at.bitfire.synctools.BatchOperation
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.TasksBatchOperation
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.TaskLists
@@ -168,7 +169,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
      */
     fun touchRelations(): Int {
         logger.fine("Touching relations to set parent_id")
-        val batchOperation = BatchOperation(provider, BatchOperation.TASKS_OPERATIONS_PER_YIELD_POINT)
+        val batchOperation = TasksBatchOperation(provider)
         provider.query(
             tasksSyncUri(true), null,
             "${Tasks.LIST_ID}=? AND ${Tasks.PARENT_ID} IS NULL AND ${Relation.MIMETYPE}=? AND ${Relation.RELATED_ID} IS NOT NULL",

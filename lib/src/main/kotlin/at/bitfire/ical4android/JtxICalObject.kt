@@ -13,7 +13,8 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import at.bitfire.ical4android.util.MiscUtils.toValues
-import at.bitfire.synctools.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.JtxBatchOperation
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
@@ -1228,7 +1229,7 @@ duration?.let(props::add)
 
         // delete the categories, attendees, ... and insert them again after. Only relevant for Update, for an insert there will be no entries
         if (isUpdate) {
-            val deleteBatch = BatchOperation(collection.client, null)
+            val deleteBatch = JtxBatchOperation(collection.client)
 
             deleteBatch.enqueue(
                 BatchOperation.CpoBuilder
@@ -1287,7 +1288,7 @@ duration?.let(props::add)
             deleteBatch.commit()
         }
 
-        val insertBatch = BatchOperation(collection.client, null)
+        val insertBatch = JtxBatchOperation(collection.client)
 
         this.categories.forEach { category ->
             insertBatch.enqueue(

@@ -14,7 +14,7 @@ import android.net.Uri
 import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
