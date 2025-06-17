@@ -1228,7 +1228,7 @@ duration?.let(props::add)
 
         // delete the categories, attendees, ... and insert them again after. Only relevant for Update, for an insert there will be no entries
         if (isUpdate) {
-            val deleteBatch = BatchOperation(collection.client)
+            val deleteBatch = BatchOperation(collection.client, null)
 
             deleteBatch.enqueue(
                 BatchOperation.CpoBuilder
@@ -1287,7 +1287,7 @@ duration?.let(props::add)
             deleteBatch.commit()
         }
 
-        val insertBatch = BatchOperation(collection.client)
+        val insertBatch = BatchOperation(collection.client, null)
 
         this.categories.forEach { category ->
             insertBatch.enqueue(

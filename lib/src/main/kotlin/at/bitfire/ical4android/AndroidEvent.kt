@@ -20,6 +20,7 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
 import androidx.annotation.CallSuper
+import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -573,7 +574,7 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
-        val batch = BatchOperation(calendar.provider)
+        val batch = BatchOperation(calendar.provider, null)
         val idxEvent = addOrUpdateRows(batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -719,7 +720,7 @@ abstract class AndroidEvent(
 
         } else {        // update event
             // remove associated rows which are added later again
-            val batch = BatchOperation(calendar.provider)
+            val batch = BatchOperation(calendar.provider, null)
             deleteExceptions(batch)
             batch   .enqueue(CpoBuilder
                             .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
@@ -755,7 +756,7 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun delete(): Int {
-        val batch = BatchOperation(calendar.provider)
+        val batch = BatchOperation(calendar.provider, null)
 
         // remove exceptions of event, too (CalendarProvider doesn't do this)
         deleteExceptions(batch)

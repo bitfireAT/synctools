@@ -13,7 +13,6 @@ import android.content.ContentUris
 import android.net.Uri
 import android.provider.CalendarContract
 import android.provider.ContactsContract
-import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.TaskProvider
@@ -38,17 +37,15 @@ import java.util.Arrays
 class BatchOperationTest {
 
     @get:Rule
-    val permissionRule = GrantPermissionOrSkipRule(
-        setOf(
-            Manifest.permission.READ_CALENDAR,
-            Manifest.permission.WRITE_CALENDAR,
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.WRITE_CONTACTS,
-        ) +
-        TaskProvider.PERMISSIONS_JTX.toSet() +
-        TaskProvider.PERMISSIONS_TASKS_ORG.toSet() +
-        TaskProvider.PERMISSIONS_OPENTASKS.toSet()
-    )
+    val permissionRule = GrantPermissionOrSkipRule(setOf(
+        Manifest.permission.READ_CALENDAR,
+        Manifest.permission.WRITE_CALENDAR,
+        Manifest.permission.READ_CONTACTS,
+        Manifest.permission.WRITE_CONTACTS,
+        *TaskProvider.PERMISSIONS_JTX,
+        *TaskProvider.PERMISSIONS_TASKS_ORG,
+        *TaskProvider.PERMISSIONS_OPENTASKS
+    ))
 
     lateinit var calendarProvider: ContentProviderClient
     lateinit var contactsProvider: ContentProviderClient
@@ -63,8 +60,6 @@ class BatchOperationTest {
 
     @Before
     fun prepare() {
-        System.gc()
-
         val contentResolver = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver
         calendarProvider = contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
         contactsProvider = contentResolver.acquireContentProviderClient(ContactsContract.AUTHORITY)!!
@@ -88,29 +83,14 @@ class BatchOperationTest {
         jtxProvider.close()
         tasksOrgProvider.close()
         openTasksProvider.close()
-
-        System.gc()
     }
 
 
     // calendar provider tests
 
     @Test
-    fun testCalendarProvider_OperationsPerYieldPoint_499() {
-        val builder = BatchOperation(calendarProvider)
-
-        // 499 operations should throw LocalStorageException exception
-        builder.queue.clear()
-        repeat(499) { number ->
-            builder.enqueue(BatchOperation.CpoBuilder.newInsert(CalendarContract.Events.CONTENT_URI)
-                .withValue(CalendarContract.Events.TITLE, "Event $number"))
-        }
-        builder.commit()
-    }
-
-    @Test
     fun testCalendarProvider_OperationsPerYieldPoint_9999() {
-        val builder = BatchOperation(calendarProvider)
+        val builder = BatchOperation(calendarProvider, null)
 
         // 9999 operations still don't throw an exception
         builder.queue.clear()
@@ -139,11 +119,8 @@ class BatchOperationTest {
         }
     }
 
-    @FlakyTest
     @Test
     fun testCalendarProvider_LargeTransactionSplitting() {
-        // with 4000 attendees, this test has been observed to fail on the CI server docker emulator.
-        // Too many Binders are sent to SYSTEM (see issue #42). Asking for GC in @Before/@After might help.
         val event = Event()
         event.uid = "sample1@testLargeTransaction"
         event.summary = "Large event"
@@ -180,7 +157,7 @@ class BatchOperationTest {
 
     @Test
     fun testContactsProvider_OperationsPerYieldPoint_499() {
-        val builder = BatchOperation(contactsProvider)
+        val builder = BatchOperation(contactsProvider, null)
 
         // 499 operations should succeed
         builder.queue.clear()
@@ -196,7 +173,7 @@ class BatchOperationTest {
 
     @Test(expected = LocalStorageException::class)
     fun testContactsProvider_OperationsPerYieldPoint_500() {
-        val builder = BatchOperation(contactsProvider)
+        val builder = BatchOperation(contactsProvider, null)
 
         // 500 operations should throw LocalStorageException exception
         builder.queue.clear()
@@ -218,7 +195,7 @@ class BatchOperationTest {
             .appendQueryParameter("account_name", testAccount.name)
             .appendQueryParameter("account_type", testAccount.type)
             .build()
-        val builder = BatchOperation(jtxProvider.client)
+        val builder = BatchOperation(jtxProvider.client, null)
 
         // 9999+ operations will not throw an exception for jtxBoard
         builder.queue.clear()
@@ -235,7 +212,7 @@ class BatchOperationTest {
     fun testTasksOrgProvider_OperationsPerYieldPoint_499() {
         val taskList = TestTaskList.create(testAccount, tasksOrgProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.TasksOrg.authority)
-        val builder = BatchOperation(tasksOrgProvider.client)
+        val builder = BatchOperation(tasksOrgProvider.client, null)
 
         // 499 operations are max for Tasks.org
         builder.queue.clear()
@@ -254,7 +231,7 @@ class BatchOperationTest {
     fun testTasksOrgProvider_OperationsPerYieldPoint_500() {
         val taskList = TestTaskList.create(testAccount, tasksOrgProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.TasksOrg.authority)
-        val builder = BatchOperation(tasksOrgProvider.client)
+        val builder = BatchOperation(tasksOrgProvider.client, null)
 
         // 499 operations are max for Tasks.org
         builder.queue.clear()
@@ -273,7 +250,7 @@ class BatchOperationTest {
     fun testOpenTasksProvider_OperationsPerYieldPoint_499() {
         val taskList = TestTaskList.create(testAccount, openTasksProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.OpenTasks.authority)
-        val builder = BatchOperation(openTasksProvider.client)
+        val builder = BatchOperation(openTasksProvider.client, null)
 
         // 499 operations are max for OpenTasks
         builder.queue.clear()
@@ -292,7 +269,7 @@ class BatchOperationTest {
     fun testOpenTasksProvider_OperationsPerYieldPoint_500() {
         val taskList = TestTaskList.create(testAccount, openTasksProvider)
         val contentUri = TaskContract.Tasks.getContentUri(TaskProvider.ProviderName.OpenTasks.authority)
-        val builder = BatchOperation(openTasksProvider.client)
+        val builder = BatchOperation(openTasksProvider.client, null)
 
         // 499 operations are max for OpenTasks
         builder.queue.clear()

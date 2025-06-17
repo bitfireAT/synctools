@@ -15,22 +15,28 @@ import android.net.Uri
 import android.os.RemoteException
 import android.os.TransactionTooLargeException
 import androidx.annotation.VisibleForTesting
+import at.bitfire.synctools.BatchOperation.Companion.CONTACTS_OPERATIONS_PER_YIELD_POINT
+import at.bitfire.synctools.BatchOperation.Companion.TASKS_OPERATIONS_PER_YIELD_POINT
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
 
+/**
+ * A batch of content provider operations that is run as a single transaction.
+ *
+ * @param providerClient                the [ContentProviderClient] to use
+ * @param maxOperationsPerYieldPoint    maximum number of operations per yield point (`null` for none). Use:
+ *
+ * - [CONTACTS_OPERATIONS_PER_YIELD_POINT] for the contacts provider
+ * - [TASKS_OPERATIONS_PER_YIELD_POINT] for tasks.org and OpenTasks
+ * - `null` for the calendar provider and jtx Board
+ */
 class BatchOperation(
     private val providerClient: ContentProviderClient,
-    private val maxOperationsPerYieldPoint: Int? = null
+    private val maxOperationsPerYieldPoint: Int?
 ) {
 
     companion object {
-
-        /**
-         * Maximum number of operations per yield point in opentasks and tasks.org task providers.
-         * Does not apply for jtxBoard.
-         */
-        const val TASKS_OPERATIONS_PER_YIELD_POINT = 499
 
         /**
          * Maximum number of operations per yield point in contacts provider.
@@ -38,6 +44,12 @@ class BatchOperation(
          * See https://android.googlesource.com/platform/packages/providers/ContactsProvider.git/+/refs/heads/android11-release/src/com/android/providers/contacts/AbstractContactsProvider.java#70
          */
         const val CONTACTS_OPERATIONS_PER_YIELD_POINT = 499
+
+        /**
+         * Maximum number of operations per yield point in opentasks and tasks.org task providers.
+         * (Does not apply for jtxBoard.)
+         */
+        const val TASKS_OPERATIONS_PER_YIELD_POINT = 499
 
     }
 
