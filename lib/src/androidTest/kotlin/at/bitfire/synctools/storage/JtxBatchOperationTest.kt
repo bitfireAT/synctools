@@ -47,7 +47,7 @@ class JtxBatchOperationTest {
 
     @Test
     fun testJtxBoard_OperationsPerYieldPoint_501() {
-        val builder = JtxBatchOperation(provider)
+        val batch = JtxBatchOperation(provider)
         val uri = JtxCollection.create(testAccount, provider, ContentValues().apply {
             put(JtxContract.JtxCollection.ACCOUNT_NAME, testAccount.name)
             put(JtxContract.JtxCollection.ACCOUNT_TYPE, testAccount.type)
@@ -58,13 +58,11 @@ class JtxBatchOperationTest {
         try {
             // 501 operations should succeed with JtxBatchOperation
             repeat(501) { idx ->
-                builder.enqueue(
-                    BatchOperation.CpoBuilder.newInsert(JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount))
-                        .withValue(JtxContract.JtxICalObject.ICALOBJECT_COLLECTIONID, collectionId)
-                        .withValue(JtxContract.JtxICalObject.SUMMARY, "Entry $idx")
-                )
+                batch += BatchOperation.CpoBuilder.newInsert(JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount))
+                    .withValue(JtxContract.JtxICalObject.ICALOBJECT_COLLECTIONID, collectionId)
+                    .withValue(JtxContract.JtxICalObject.SUMMARY, "Entry $idx")
             }
-            builder.commit()
+            batch.commit()
         } finally {
             val collection = JtxCollection<JtxICalObject>(testAccount, provider, mockk(), collectionId)
             collection.delete()

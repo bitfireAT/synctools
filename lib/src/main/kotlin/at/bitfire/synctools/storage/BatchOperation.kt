@@ -43,14 +43,30 @@ open class BatchOperation internal constructor(
 
     fun nextBackrefIdx() = queue.size
 
+    /**
+     * Enqueues an operation to the current batch.
+     *
+     * @param operation     operation to add
+     * @return this batch (for chaining)
+     */
     fun enqueue(operation: CpoBuilder): BatchOperation {
         queue.add(operation)
         return this
     }
 
-    fun enqueueAll(operations: Iterable<CpoBuilder>) {
+    /**
+     * Shortcut for [enqueue].
+     */
+    operator fun plusAssign(operation: CpoBuilder) {
+        enqueue(operation)
+    }
+
+    /**
+     * Shortcut for [enqueue] of multiple operations.
+     */
+    operator fun plusAssign(operations: Iterable<CpoBuilder>) {
         for (operation in operations)
-            enqueue(operation)
+            this += operation
     }
 
     /**

@@ -23,11 +23,11 @@ class BatchOperationTest {
         val maxSize = 100
         every { provider.applyBatch(match { it.size > maxSize }) } throws TransactionTooLargeException()
 
-        val op = BatchOperation(provider, null)
+        val batch = BatchOperation(provider, null)
         repeat(4*maxSize) {
-            op.enqueue(BatchOperation.CpoBuilder.newInsert("test://".toUri()))
+            batch += BatchOperation.CpoBuilder.newInsert("test://".toUri())
         }
-        op.commit()
+        batch.commit()
 
         // one too large batch (with 400 operations) +
         // then two still too large batches with 200 operations each +
@@ -41,9 +41,9 @@ class BatchOperationTest {
 
         every { provider.applyBatch(any()) } throws TransactionTooLargeException()
 
-        val op = BatchOperation(provider, null)
-        op.enqueue(BatchOperation.CpoBuilder.newInsert("test://".toUri()))
-        op.commit()
+        val batch = BatchOperation(provider, null)
+        batch += BatchOperation.CpoBuilder.newInsert("test://".toUri())
+        batch.commit()
     }
 
 }

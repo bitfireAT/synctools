@@ -50,32 +50,28 @@ class ContactsBatchOperationTest {
 
     @Test(expected = LocalStorageException::class)
     fun testContactsProvider_OperationsPerYieldPoint_500_WithoutMax() {
-        val builder = BatchOperation(provider, maxOperationsPerYieldPoint = null)
+        val batch = BatchOperation(provider, maxOperationsPerYieldPoint = null)
 
         // 500 operations should fail with BatchOperation(maxOperationsPerYieldPoint = null) (max. 499)
         repeat(500) { idx ->
-            builder.enqueue(
-                BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, testAccount.type)
-                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, testAccount.name)
-            )
+            batch += BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, testAccount.type)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, testAccount.name)
         }
-        builder.commit()
+        batch.commit()
     }
 
     @Test
     fun testContactsProvider_OperationsPerYieldPoint_501() {
-        val builder = ContactsBatchOperation(provider)
+        val batch = ContactsBatchOperation(provider)
 
         // 501 operations should succeed with ContactsBatchOperation
         repeat(501) { idx ->
-            builder.enqueue(
-                BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-                    .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, testAccount.type)
-                    .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, testAccount.name)
-            )
+            batch += BatchOperation.CpoBuilder.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, testAccount.type)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, testAccount.name)
         }
-        builder.commit()
+        batch.commit()
     }
 
 }

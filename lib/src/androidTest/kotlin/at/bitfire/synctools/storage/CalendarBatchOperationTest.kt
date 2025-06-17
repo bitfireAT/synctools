@@ -52,15 +52,14 @@ class CalendarBatchOperationTest {
 
     @Test
     fun testCalendarProvider_OperationsPerYieldPoint_501() {
-        val builder = CalendarBatchOperation(provider)
+        val batch = CalendarBatchOperation(provider)
 
         // 501 operations should succeed with CalendarBatchOperation
         repeat(501) { idx ->
-            builder.enqueue(
-                BatchOperation.CpoBuilder.newInsert(Events.CONTENT_URI.asSyncAdapter(testAccount))
-                    .withValue(Events.TITLE, "Event $idx"))
+            batch += BatchOperation.CpoBuilder.newInsert(Events.CONTENT_URI.asSyncAdapter(testAccount))
+                .withValue(Events.TITLE, "Event $idx")
         }
-        builder.commit()
+        batch.commit()
     }
 
 }
