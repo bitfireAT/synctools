@@ -47,22 +47,13 @@ open class BatchOperation internal constructor(
      * Enqueues an operation to the current batch.
      *
      * @param operation     operation to add
-     * @return this batch (for chaining)
-     */
-    fun enqueue(operation: CpoBuilder): BatchOperation {
-        queue.add(operation)
-        return this
-    }
-
-    /**
-     * Shortcut for [enqueue].
      */
     operator fun plusAssign(operation: CpoBuilder) {
-        enqueue(operation)
+        queue.add(operation)
     }
 
     /**
-     * Shortcut for [enqueue] of multiple operations.
+     * Shortcut for [plusAssign] of multiple operations.
      */
     operator fun plusAssign(operations: Iterable<CpoBuilder>) {
         for (operation in operations)

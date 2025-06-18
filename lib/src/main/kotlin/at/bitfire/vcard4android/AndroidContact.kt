@@ -122,7 +122,7 @@ open class AndroidContact(
 
         val builder = BatchOperation.CpoBuilder.newInsert(addressBook.syncAdapterURI(RawContacts.CONTENT_URI))
         buildContact(builder, false)
-        batch.enqueue(builder)
+        batch += builder
 
         insertDataRows(batch)
 
@@ -146,7 +146,7 @@ open class AndroidContact(
         val uri = rawContactSyncURI()
         val builder = BatchOperation.CpoBuilder.newUpdate(uri)
         buildContact(builder, true)
-        batch.enqueue(builder)
+        batch += builder
 
         // Delete known data rows before adding the new ones.
         // - We don't delete group memberships because they're managed separately.
@@ -156,9 +156,9 @@ open class AndroidContact(
         val sqlTypesToRemove = typesToRemove.joinToString(",") { mimeType ->
             DatabaseUtils.sqlEscapeString(mimeType)
         }
-        batch.enqueue(BatchOperation.CpoBuilder
+        batch += BatchOperation.CpoBuilder
                 .newDelete(dataSyncURI())
-                .withSelection(Data.RAW_CONTACT_ID + "=? AND ${Data.MIMETYPE} IN ($sqlTypesToRemove)", arrayOf(id!!.toString())))
+                .withSelection(Data.RAW_CONTACT_ID + "=? AND ${Data.MIMETYPE} IN ($sqlTypesToRemove)", arrayOf(id!!.toString()))
 
         insertDataRows(batch)
         batch.commit()
@@ -204,7 +204,7 @@ open class AndroidContact(
      *
      * @throws RemoteException on contact provider errors
      */
-    protected fun insertDataRows(batch: BatchOperation) {
+    protected fun insertDataRows(batch: ContactsBatchOperation) {
         val contact = getContact()
         processor.insertDataRows(dataSyncURI(), id, contact, batch, addressBook.readOnly)
     }

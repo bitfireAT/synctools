@@ -169,7 +169,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
      */
     fun touchRelations(): Int {
         logger.fine("Touching relations to set parent_id")
-        val batchOperation = TasksBatchOperation(provider)
+        val batch = TasksBatchOperation(provider)
         provider.query(
             tasksSyncUri(true), null,
             "${Tasks.LIST_ID}=? AND ${Tasks.PARENT_ID} IS NULL AND ${Relation.MIMETYPE}=? AND ${Relation.RELATED_ID} IS NOT NULL",
@@ -180,14 +180,12 @@ abstract class DmfsTaskList<out T : DmfsTask>(
                 val values = cursor.toValues()
                 val id = values.getAsLong(Relation.PROPERTY_ID)
                 val propertyContentUri = ContentUris.withAppendedId(tasksPropertiesSyncUri(), id)
-                batchOperation.enqueue(
-                    BatchOperation.CpoBuilder
-                        .newUpdate(propertyContentUri)
-                        .withValue(Relation.RELATED_ID, values.getAsLong(Relation.RELATED_ID))
-                )
+                batch += BatchOperation.CpoBuilder
+                    .newUpdate(propertyContentUri)
+                    .withValue(Relation.RELATED_ID, values.getAsLong(Relation.RELATED_ID))
             }
         }
-        return batchOperation.commit()
+        return batch.commit()
     }
 
 

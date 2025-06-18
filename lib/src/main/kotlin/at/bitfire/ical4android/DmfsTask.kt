@@ -14,7 +14,6 @@ import androidx.annotation.CallSuper
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.toValues
-import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
@@ -173,7 +172,7 @@ abstract class DmfsTask(
             try {
                 task.geoPosition = Geo(lat.toBigDecimal(), lng.toBigDecimal())
             } catch (e: NumberFormatException) {
-                logger.warning("Invalid GEO value: $geo")
+                logger.log(Level.WARNING, "Invalid GEO value: $geo", e)
             }
         }
 
@@ -340,7 +339,7 @@ abstract class DmfsTask(
         val builder = CpoBuilder.newInsert(taskList.tasksSyncUri())
         buildTask(builder, false)
         val idxTask = batch.nextBackrefIdx()
-        batch.enqueue(builder)
+        batch += builder
 
         insertProperties(batch, idxTask)
 
@@ -359,15 +358,15 @@ abstract class DmfsTask(
         val batch = TasksBatchOperation(taskList.provider)
 
         // remove associated rows which are added later again
-        batch.enqueue(CpoBuilder
+        batch += CpoBuilder
                 .newDelete(taskList.tasksPropertiesSyncUri())
-                .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString())))
+                .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
 
         // update task
         val uri = taskSyncURI()
         val builder = CpoBuilder.newUpdate(uri)
         buildTask(builder, true)
-        batch.enqueue(builder)
+        batch += builder
 
         // insert task properties again
         insertProperties(batch, null)
@@ -376,7 +375,7 @@ abstract class DmfsTask(
         return ContentUris.withAppendedId(Tasks.getContentUri(taskList.providerName.authority), existingId)
     }
 
-    protected open fun insertProperties(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
         insertAlarms(batch, idxTask)
         insertCategories(batch, idxTask)
         insertComment(batch, idxTask)
@@ -384,7 +383,7 @@ abstract class DmfsTask(
         insertUnknownProperties(batch, idxTask)
     }
 
-    protected open fun insertAlarms(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
         val task = requireNotNull(task)
         for (alarm in task.alarms) {
             val (alarmRef, minutes) = ICalendar.vAlarmToMin(alarm, task, true) ?: continue
@@ -416,32 +415,32 @@ abstract class DmfsTask(
                     .withValue(Alarm.ALARM_TYPE, alarmType)
 
             logger.log(Level.FINE, "Inserting alarm", builder.build())
-            batch.enqueue(builder)
+            batch += builder
         }
     }
 
-    protected open fun insertCategories(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
         for (category in requireNotNull(task).categories) {
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
                     .withTaskId(Category.TASK_ID, idxTask)
                     .withValue(Category.MIMETYPE, Category.CONTENT_ITEM_TYPE)
                     .withValue(Category.CATEGORY_NAME, category)
             logger.log(Level.FINE, "Inserting category", builder.build())
-            batch.enqueue(builder)
+            batch += builder
         }
     }
 
-    protected open fun insertComment(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
         val comment = requireNotNull(task).comment ?: return
         val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
             .withTaskId(Comment.TASK_ID, idxTask)
             .withValue(Comment.MIMETYPE, Comment.CONTENT_ITEM_TYPE)
             .withValue(Comment.COMMENT, comment)
         logger.log(Level.FINE, "Inserting comment", builder.build())
-        batch.enqueue(builder)
+        batch += builder
     }
 
-    protected open fun insertRelatedTo(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
         for (relatedTo in requireNotNull(task).relatedTo) {
             val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
                 RelType.CHILD ->
@@ -457,11 +456,11 @@ abstract class DmfsTask(
                     .withValue(Relation.RELATED_UID, relatedTo.value)
                     .withValue(Relation.RELATED_TYPE, relType)
             logger.log(Level.FINE, "Inserting relation", builder.build())
-            batch.enqueue(builder)
+            batch += builder
         }
     }
 
-    protected open fun insertUnknownProperties(batch: BatchOperation, idxTask: Int?) {
+    protected open fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
         for (property in requireNotNull(task).unknownProperties) {
             if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
                 logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
@@ -473,7 +472,7 @@ abstract class DmfsTask(
                     .withValue(Properties.MIMETYPE, UnknownProperty.CONTENT_ITEM_TYPE)
                     .withValue(UNKNOWN_PROPERTY_DATA, UnknownProperty.toJsonString(property))
             logger.log(Level.FINE, "Inserting unknown property", builder.build())
-            batch.enqueue(builder)
+            batch += builder
         }
     }
 

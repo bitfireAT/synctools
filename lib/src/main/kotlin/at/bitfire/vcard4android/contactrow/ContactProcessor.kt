@@ -10,7 +10,7 @@ import android.content.ContentProviderClient
 import android.content.ContentValues
 import android.net.Uri
 import android.provider.ContactsContract.RawContacts
-import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.ContactsBatchOperation
 import at.bitfire.vcard4android.AndroidContact
 import at.bitfire.vcard4android.Contact
 import java.util.logging.Level
@@ -94,7 +94,7 @@ class ContactProcessor(
     }
 
 
-    fun insertDataRows(dataRowUri: Uri, rawContactId: Long?, contact: Contact, batch: BatchOperation, readOnly: Boolean) {
+    fun insertDataRows(dataRowUri: Uri, rawContactId: Long?, contact: Contact, batch: ContactsBatchOperation, readOnly: Boolean) {
         for (factory in dataRowBuilderFactories) {
             val builder = factory.newInstance(dataRowUri, rawContactId, contact, readOnly)
             batch += builder.build()
