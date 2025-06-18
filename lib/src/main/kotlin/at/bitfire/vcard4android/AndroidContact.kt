@@ -16,7 +16,9 @@ import android.provider.ContactsContract
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.ContactsBatchOperation
+import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.vcard4android.contactrow.ContactProcessor
 import at.bitfire.vcard4android.contactrow.PhotoBuilder
 import java.io.FileNotFoundException
@@ -116,11 +118,11 @@ open class AndroidContact(
 
     fun add(): Uri {
         val provider = addressBook.provider!!
-        val batch = BatchOperation(provider)
+        val batch = ContactsBatchOperation(provider)
 
         val builder = BatchOperation.CpoBuilder.newInsert(addressBook.syncAdapterURI(RawContacts.CONTENT_URI))
         buildContact(builder, false)
-        batch.enqueue(builder)
+        batch += builder
 
         insertDataRows(batch)
 
@@ -140,11 +142,11 @@ open class AndroidContact(
         setContact(data)
 
         val provider = addressBook.provider!!
-        val batch = BatchOperation(provider)
+        val batch = ContactsBatchOperation(provider)
         val uri = rawContactSyncURI()
         val builder = BatchOperation.CpoBuilder.newUpdate(uri)
         buildContact(builder, true)
-        batch.enqueue(builder)
+        batch += builder
 
         // Delete known data rows before adding the new ones.
         // - We don't delete group memberships because they're managed separately.
@@ -154,9 +156,9 @@ open class AndroidContact(
         val sqlTypesToRemove = typesToRemove.joinToString(",") { mimeType ->
             DatabaseUtils.sqlEscapeString(mimeType)
         }
-        batch.enqueue(BatchOperation.CpoBuilder
+        batch += BatchOperation.CpoBuilder
                 .newDelete(dataSyncURI())
-                .withSelection(Data.RAW_CONTACT_ID + "=? AND ${Data.MIMETYPE} IN ($sqlTypesToRemove)", arrayOf(id!!.toString())))
+                .withSelection(Data.RAW_CONTACT_ID + "=? AND ${Data.MIMETYPE} IN ($sqlTypesToRemove)", arrayOf(id!!.toString()))
 
         insertDataRows(batch)
         batch.commit()
@@ -202,7 +204,7 @@ open class AndroidContact(
      *
      * @throws RemoteException on contact provider errors
      */
-    protected fun insertDataRows(batch: BatchOperation) {
+    protected fun insertDataRows(batch: ContactsBatchOperation) {
         val contact = getContact()
         processor.insertDataRows(dataSyncURI(), id, contact, batch, addressBook.readOnly)
     }

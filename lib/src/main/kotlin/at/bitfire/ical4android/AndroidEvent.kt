@@ -20,7 +20,7 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
 import androidx.annotation.CallSuper
-import at.bitfire.ical4android.BatchOperation.CpoBuilder
+import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -34,7 +34,9 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
+import at.bitfire.synctools.storage.CalendarBatchOperation
+import at.bitfire.synctools.storage.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -572,7 +574,7 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
-        val batch = BatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.provider)
         val idxEvent = addOrUpdateRows(batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -589,7 +591,7 @@ abstract class AndroidEvent(
      *
      * @return [Events._ID] of the created/updated row; *null* if now ID is available
      */
-    fun addOrUpdateRows(batch: BatchOperation): Int? {
+    fun addOrUpdateRows(batch: CalendarBatchOperation): Int? {
         val event = requireNotNull(event)
         val builder =
                 if (id == null)
@@ -599,7 +601,7 @@ abstract class AndroidEvent(
 
         val idxEvent = if (id == null) batch.nextBackrefIdx() else null
         buildEvent(null, builder)
-        batch.enqueue(builder)
+        batch += builder
 
         // add reminders
         event.alarms.forEach { insertReminder(batch, idxEvent, it) }
@@ -678,7 +680,7 @@ abstract class AndroidEvent(
                         .withValue(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
 
             val idxException = batch.nextBackrefIdx()
-            batch.enqueue(exBuilder)
+            batch += exBuilder
 
             // add exception reminders
             exception.alarms.forEach { insertReminder(batch, idxException, it) }
@@ -718,26 +720,26 @@ abstract class AndroidEvent(
 
         } else {        // update event
             // remove associated rows which are added later again
-            val batch = BatchOperation(calendar.provider)
+            val batch = CalendarBatchOperation(calendar.provider)
             deleteExceptions(batch)
-            batch   .enqueue(CpoBuilder
-                            .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
-                            .withSelection("${Reminders.EVENT_ID}=?", arrayOf(existingId.toString())))
-                    .enqueue(CpoBuilder
-                            .newDelete(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
-                            .withSelection("${Attendees.EVENT_ID}=?", arrayOf(existingId.toString())))
-                    .enqueue(CpoBuilder
-                            .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
-                            .withSelection(
-                                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
-                                    arrayOf(
-                                        existingId.toString(),
-                                        EXTNAME_CATEGORIES,
-                                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                                        EXTNAME_URL,
-                                        UnknownProperty.CONTENT_ITEM_TYPE
-                                    )
-                            ))
+            batch += CpoBuilder
+                .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
+                .withSelection("${Reminders.EVENT_ID}=?", arrayOf(existingId.toString()))
+            batch += CpoBuilder
+                .newDelete(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
+                .withSelection("${Attendees.EVENT_ID}=?", arrayOf(existingId.toString()))
+            batch += CpoBuilder
+                .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
+                .withSelection(
+                        "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
+                        arrayOf(
+                            existingId.toString(),
+                            EXTNAME_CATEGORIES,
+                            EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                            EXTNAME_URL,
+                            UnknownProperty.CONTENT_ITEM_TYPE
+                        )
+                )
 
             addOrUpdateRows(batch)
             batch.commit()
@@ -754,23 +756,23 @@ abstract class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun delete(): Int {
-        val batch = BatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.provider)
 
         // remove exceptions of event, too (CalendarProvider doesn't do this)
         deleteExceptions(batch)
 
         // remove event and unset known id
-        batch.enqueue(CpoBuilder.newDelete(eventSyncURI()))
+        batch += CpoBuilder.newDelete(eventSyncURI())
         id = null
 
         return batch.commit()
     }
 
-    protected fun deleteExceptions(batch: BatchOperation) {
+    protected fun deleteExceptions(batch: CalendarBatchOperation) {
         val existingId = requireNotNull(id)
-        batch.enqueue(CpoBuilder
+        batch += CpoBuilder
                 .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString())))
+                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
     }
 
 
@@ -996,7 +998,7 @@ abstract class AndroidEvent(
                 })
     }
 
-    protected open fun insertReminder(batch: BatchOperation, idxEvent: Int?, alarm: VAlarm) {
+    protected open fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
         val builder = CpoBuilder
                 .newInsert(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withEventId(Reminders.EVENT_ID, idxEvent)
@@ -1015,10 +1017,10 @@ abstract class AndroidEvent(
 
         builder .withValue(Reminders.METHOD, method)
                 .withValue(Reminders.MINUTES, minutes)
-        batch.enqueue(builder)
+        batch += builder
     }
 
-    protected open fun insertAttendee(batch: BatchOperation, idxEvent: Int?, attendee: Attendee, organizer: String) {
+    protected open fun insertAttendee(batch: CalendarBatchOperation, idxEvent: Int?, attendee: Attendee, organizer: String) {
         val builder = CpoBuilder
                 .newInsert(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withEventId(Attendees.EVENT_ID, idxEvent)
@@ -1052,19 +1054,19 @@ abstract class AndroidEvent(
             else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
         }
         builder.withValue(Attendees.ATTENDEE_STATUS, status)
-        batch.enqueue(builder)
+        batch += builder
     }
 
-    protected open fun insertExtendedProperty(batch: BatchOperation, idxEvent: Int?, name: String, value: String) {
+    protected open fun insertExtendedProperty(batch: CalendarBatchOperation, idxEvent: Int?, name: String, value: String) {
         val builder = CpoBuilder
             .newInsert(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
             .withEventId(ExtendedProperties.EVENT_ID, idxEvent)
             .withValue(ExtendedProperties.NAME, name)
             .withValue(ExtendedProperties.VALUE, value)
-        batch.enqueue(builder)
+        batch += builder
     }
 
-    protected open fun insertCategories(batch: BatchOperation, idxEvent: Int?) {
+    protected open fun insertCategories(batch: CalendarBatchOperation, idxEvent: Int?) {
         val rawCategories = event!!.categories      // concatenate, separate by backslash
                 .joinToString(CATEGORIES_SEPARATOR.toString()) { category ->
                     // drop occurrences of CATEGORIES_SEPARATOR in category names
@@ -1073,7 +1075,7 @@ abstract class AndroidEvent(
         insertExtendedProperty(batch, idxEvent, EXTNAME_CATEGORIES, rawCategories)
     }
 
-    protected open fun insertUnknownProperty(batch: BatchOperation, idxEvent: Int?, property: Property) {
+    protected open fun insertUnknownProperty(batch: CalendarBatchOperation, idxEvent: Int?, property: Property) {
         if (property.value == null) {
             logger.warning("Ignoring unknown property with null value")
             return

@@ -11,8 +11,8 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.AndroidCalendar
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.AndroidEventFactory
-import at.bitfire.ical4android.BatchOperation
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.storage.BatchOperation
 import java.util.UUID
 
 class TestEvent: AndroidEvent {

@@ -16,7 +16,7 @@ import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.LocalStorageException
 import java.io.FileNotFoundException
 import java.util.logging.Logger
 

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools
+package at.bitfire.synctools.storage
 
 /**
  * Indicates a problem with a local storage operation, such as failing to insert or update a row

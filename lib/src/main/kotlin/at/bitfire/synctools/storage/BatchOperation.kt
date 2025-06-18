@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android
+package at.bitfire.synctools.storage
 
 import android.content.ContentProviderClient
 import android.content.ContentProviderOperation
@@ -14,41 +14,51 @@ import android.content.OperationApplicationException
 import android.net.Uri
 import android.os.RemoteException
 import android.os.TransactionTooLargeException
-import at.bitfire.synctools.LocalStorageException
+import androidx.annotation.VisibleForTesting
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class BatchOperation(
-    private val providerClient: ContentProviderClient
+/**
+ * A batch of content provider operations that is run as a single transaction.
+ *
+ * Should not be used directly. Instead, use a subclass that defines [maxOperationsPerYieldPoint]
+ * for the respective provider.
+ *
+ * @param providerClient                the [ContentProviderClient] to use
+ * @param maxOperationsPerYieldPoint    maximum number of operations per yield point (`null` for none)
+ */
+open class BatchOperation internal constructor(
+    private val providerClient: ContentProviderClient,
+    private val maxOperationsPerYieldPoint: Int?
 ) {
-
-    companion object {
-
-        /**
-         * See https://android.googlesource.com/platform/packages/providers/ContactsProvider.git/+/refs/heads/android11-release/src/com/android/providers/contacts/AbstractContactsProvider.java#70
-         *
-         * Some operations may count more than one operation, so use a safe value of 450 instead of 500.
-         */
-        const val MAX_OPERATIONS_PER_YIELD_POINT = 450
-
-    }
 
     private val logger = Logger.getLogger(javaClass.name)
 
-    private val queue = LinkedList<CpoBuilder>()
+    @VisibleForTesting
+    internal val queue = LinkedList<CpoBuilder>()
+
     private var results = arrayOfNulls<ContentProviderResult?>(0)
 
 
     fun nextBackrefIdx() = queue.size
 
-    fun enqueue(operation: CpoBuilder) = queue.add(operation)
-
-    fun enqueueAll(operations: Iterable<CpoBuilder>) {
-        for (operation in operations)
-            enqueue(operation)
+    /**
+     * Enqueues an operation to the current batch.
+     *
+     * @param operation     operation to add
+     */
+    operator fun plusAssign(operation: CpoBuilder) {
+        queue.add(operation)
     }
 
+    /**
+     * Shortcut for [plusAssign] of multiple operations.
+     */
+    operator fun plusAssign(operations: Iterable<CpoBuilder>) {
+        for (operation in operations)
+            this += operation
+    }
 
     /**
      * Commits all operations from [queue] and then empties the queue.
@@ -93,7 +103,7 @@ class BatchOperation(
 
     /**
      * Runs a subset of the operations in [queue] using [providerClient] in a transaction.
-     * Catches [TransactionTooLargeException] and splits the operations accordingly.
+     * Catches [TransactionTooLargeException] and splits the operations accordingly (if possible).
      *
      * @param start index of first operation which will be run (inclusive)
      * @param end   index of last operation which will be run (exclusive!)
@@ -150,13 +160,13 @@ class BatchOperation(
          * 2. If a back reference points to a row outside of start/end,
          *    replace it by the actual result, which has already been calculated. */
 
-        for ((i, cpoBuilder) in queue.subList(start, end).withIndex()) {
+        var currentIdx = 0
+        for (cpoBuilder in queue.subList(start, end)) {
             for ((backrefKey, backref) in cpoBuilder.valueBackrefs) {
                 val originalIdx = backref.originalIndex
                 if (originalIdx < start) {
                     // back reference is outside of the current batch, get result from previous execution ...
-                    val resultUri = results[originalIdx]?.uri
-                        ?: throw LocalStorageException("Referenced operation didn't produce a valid result")
+                    val resultUri = results[originalIdx]?.uri ?: throw LocalStorageException("Referenced operation didn't produce a valid result")
                     val resultId = ContentUris.parseId(resultUri)
                     // ... and use result directly instead of using a back reference
                     cpoBuilder  .removeValueBackReference(backrefKey)
@@ -166,8 +176,10 @@ class BatchOperation(
                     backref.setIndex(originalIdx - start)
             }
 
-            if (i % MAX_OPERATIONS_PER_YIELD_POINT == MAX_OPERATIONS_PER_YIELD_POINT - 1)
-                cpoBuilder.yieldAllowed = true
+            // Set a possible yield point every maxOperationsPerYieldPoint operations for SQLiteContentProvider
+            currentIdx += 1
+            if (maxOperationsPerYieldPoint != null && currentIdx.mod(maxOperationsPerYieldPoint) == 0)
+                cpoBuilder.withYieldAllowed()
 
             cpo += cpoBuilder.build()
         }
@@ -175,11 +187,11 @@ class BatchOperation(
     }
 
 
-    data class BackReference(
-            /** index of the referenced row in the original, nonsplitted transaction */
-            val originalIndex: Int
+    class BackReference(
+        /** index of the referenced row in the original, non-splitted transaction */
+        val originalIndex: Int
     ) {
-        /** overriden index, i.e. index within the splitted transaction */
+        /** overridden index, i.e. index within the splitted transaction */
         private var index: Int? = null
 
         /**
@@ -203,8 +215,8 @@ class BatchOperation(
      * value back references.
      */
     class CpoBuilder private constructor(
-            val uri: Uri,
-            val type: Type
+        val uri: Uri,
+        val type: Type
     ) {
 
         enum class Type { INSERT, UPDATE, DELETE }
@@ -218,13 +230,14 @@ class BatchOperation(
         }
 
 
-        var selection: String? = null
-        var selectionArguments: Array<String>? = null
+        private var selection: String? = null
+        private var selectionArguments: Array<String>? = null
 
-        val values = mutableMapOf<String, Any?>()
-        val valueBackrefs = mutableMapOf<String, BackReference>()
+        internal val values = mutableMapOf<String, Any?>()
+        internal val valueBackrefs = mutableMapOf<String, BackReference>()
 
-        var yieldAllowed = false
+        @VisibleForTesting
+        internal var yieldAllowed = false
 
 
         fun withSelection(select: String, args: Array<String>): CpoBuilder {
@@ -247,6 +260,10 @@ class BatchOperation(
         fun withValue(key: String, value: Any?): CpoBuilder {
             values[key] = value
             return this
+        }
+
+        fun withYieldAllowed() {
+            yieldAllowed = true
         }
 
 

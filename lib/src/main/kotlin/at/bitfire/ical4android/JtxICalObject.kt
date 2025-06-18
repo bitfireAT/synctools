@@ -13,6 +13,8 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.JtxBatchOperation
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
@@ -1227,118 +1229,91 @@ duration?.let(props::add)
 
         // delete the categories, attendees, ... and insert them again after. Only relevant for Update, for an insert there will be no entries
         if (isUpdate) {
-            val deleteBatch = BatchOperation(collection.client)
+            val deleteBatch = JtxBatchOperation(collection.client)
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxCategory.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxCategory.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxCategory.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxCategory.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxComment.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxComment.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxComment.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxComment.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxResource.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxResource.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxResource.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxResource.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxRelatedto.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxRelatedto.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxRelatedto.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxRelatedto.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxAttendee.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxAttendee.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxAttendee.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxAttendee.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxOrganizer.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxOrganizer.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxOrganizer.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxOrganizer.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxAttachment.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxAttachment.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxAttachment.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxAttachment.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxAlarm.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxAlarm.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxAlarm.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxAlarm.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
-            deleteBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newDelete(JtxContract.JtxUnknown.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withSelection("${JtxContract.JtxUnknown.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
-            )
+            deleteBatch += BatchOperation.CpoBuilder
+                .newDelete(JtxContract.JtxUnknown.CONTENT_URI.asSyncAdapter(collection.account))
+                .withSelection("${JtxContract.JtxUnknown.ICALOBJECT_ID} = ?", arrayOf(this.id.toString()))
 
             deleteBatch.commit()
         }
 
-        val insertBatch = BatchOperation(collection.client)
+        val insertBatch = JtxBatchOperation(collection.client)
 
         this.categories.forEach { category ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxCategory.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxCategory.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxCategory.TEXT, category.text)
-                    .withValue(JtxContract.JtxCategory.ID, category.categoryId)
-                    .withValue(JtxContract.JtxCategory.LANGUAGE, category.language)
-                    .withValue(JtxContract.JtxCategory.OTHER, category.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxCategory.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxCategory.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxCategory.TEXT, category.text)
+                .withValue(JtxContract.JtxCategory.ID, category.categoryId)
+                .withValue(JtxContract.JtxCategory.LANGUAGE, category.language)
+                .withValue(JtxContract.JtxCategory.OTHER, category.other)
         }
 
         this.comments.forEach { comment ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxComment.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxComment.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxComment.ID, comment.commentId)
-                    .withValue(JtxContract.JtxComment.TEXT, comment.text)
-                    .withValue(JtxContract.JtxComment.LANGUAGE, comment.language)
-                    .withValue(JtxContract.JtxComment.OTHER, comment.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxComment.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxComment.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxComment.ID, comment.commentId)
+                .withValue(JtxContract.JtxComment.TEXT, comment.text)
+                .withValue(JtxContract.JtxComment.LANGUAGE, comment.language)
+                .withValue(JtxContract.JtxComment.OTHER, comment.other)
         }
 
 
         this.resources.forEach { resource ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxResource.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxResource.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxResource.ID, resource.resourceId)
-                    .withValue(JtxContract.JtxResource.TEXT, resource.text)
-                    .withValue(JtxContract.JtxResource.LANGUAGE, resource.language)
-                    .withValue(JtxContract.JtxResource.OTHER, resource.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxResource.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxResource.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxResource.ID, resource.resourceId)
+                .withValue(JtxContract.JtxResource.TEXT, resource.text)
+                .withValue(JtxContract.JtxResource.LANGUAGE, resource.language)
+                .withValue(JtxContract.JtxResource.OTHER, resource.other)
         }
 
         this.relatedTo.forEach { related ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxRelatedto.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxRelatedto.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxRelatedto.TEXT, related.text)
-                    .withValue(JtxContract.JtxRelatedto.RELTYPE, related.reltype)
-                    .withValue(JtxContract.JtxRelatedto.OTHER, related.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxRelatedto.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxRelatedto.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxRelatedto.TEXT, related.text)
+                .withValue(JtxContract.JtxRelatedto.RELTYPE, related.reltype)
+                .withValue(JtxContract.JtxRelatedto.OTHER, related.other)
         }
 
         this.attendees.forEach { attendee ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
+            insertBatch += BatchOperation.CpoBuilder
                 .newInsert(JtxContract.JtxAttendee.CONTENT_URI.asSyncAdapter(collection.account))
                 .withValue(JtxContract.JtxAttendee.ICALOBJECT_ID, id)
                 .withValue(JtxContract.JtxAttendee.CALADDRESS, attendee.caladdress)
@@ -1354,21 +1329,18 @@ duration?.let(props::add)
                 .withValue(JtxContract.JtxAttendee.RSVP, attendee.rsvp)
                 .withValue(JtxContract.JtxAttendee.SENTBY, attendee.sentby)
                 .withValue(JtxContract.JtxAttendee.OTHER, attendee.other)
-            )
         }
 
         this.organizer?.let { organizer ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxOrganizer.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxOrganizer.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxOrganizer.CALADDRESS, organizer.caladdress)
-                    .withValue(JtxContract.JtxOrganizer.CN, organizer.cn)
-                    .withValue(JtxContract.JtxOrganizer.DIR, organizer.dir)
-                    .withValue(JtxContract.JtxOrganizer.LANGUAGE, organizer.language)
-                    .withValue(JtxContract.JtxOrganizer.SENTBY, organizer.sentby)
-                    .withValue(JtxContract.JtxOrganizer.OTHER, organizer.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxOrganizer.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxOrganizer.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxOrganizer.CALADDRESS, organizer.caladdress)
+                .withValue(JtxContract.JtxOrganizer.CN, organizer.cn)
+                .withValue(JtxContract.JtxOrganizer.DIR, organizer.dir)
+                .withValue(JtxContract.JtxOrganizer.LANGUAGE, organizer.language)
+                .withValue(JtxContract.JtxOrganizer.SENTBY, organizer.sentby)
+                .withValue(JtxContract.JtxOrganizer.OTHER, organizer.other)
         }
 
         this.attachments.forEach { attachment ->
@@ -1387,32 +1359,28 @@ duration?.let(props::add)
         }
 
         this.alarms.forEach { alarm ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxAlarm.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxAlarm.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxAlarm.ACTION, alarm.action)
-                    .withValue(JtxContract.JtxAlarm.ATTACH, alarm.attach)
-                    //.withValue(JtxContract.JtxAlarm.ATTENDEE, alarm.attendee)
-                    .withValue(JtxContract.JtxAlarm.DESCRIPTION, alarm.description)
-                    .withValue(JtxContract.JtxAlarm.DURATION, alarm.duration)
-                    .withValue(JtxContract.JtxAlarm.REPEAT, alarm.repeat)
-                    .withValue(JtxContract.JtxAlarm.SUMMARY, alarm.summary)
-                    .withValue(JtxContract.JtxAlarm.TRIGGER_RELATIVE_TO, alarm.triggerRelativeTo)
-                    .withValue(JtxContract.JtxAlarm.TRIGGER_RELATIVE_DURATION, alarm.triggerRelativeDuration)
-                    .withValue(JtxContract.JtxAlarm.TRIGGER_TIME, alarm.triggerTime)
-                    .withValue(JtxContract.JtxAlarm.TRIGGER_TIMEZONE, alarm.triggerTimezone)
-                    .withValue(JtxContract.JtxAlarm.OTHER, alarm.other)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxAlarm.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxAlarm.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxAlarm.ACTION, alarm.action)
+                .withValue(JtxContract.JtxAlarm.ATTACH, alarm.attach)
+                //.withValue(JtxContract.JtxAlarm.ATTENDEE, alarm.attendee)
+                .withValue(JtxContract.JtxAlarm.DESCRIPTION, alarm.description)
+                .withValue(JtxContract.JtxAlarm.DURATION, alarm.duration)
+                .withValue(JtxContract.JtxAlarm.REPEAT, alarm.repeat)
+                .withValue(JtxContract.JtxAlarm.SUMMARY, alarm.summary)
+                .withValue(JtxContract.JtxAlarm.TRIGGER_RELATIVE_TO, alarm.triggerRelativeTo)
+                .withValue(JtxContract.JtxAlarm.TRIGGER_RELATIVE_DURATION, alarm.triggerRelativeDuration)
+                .withValue(JtxContract.JtxAlarm.TRIGGER_TIME, alarm.triggerTime)
+                .withValue(JtxContract.JtxAlarm.TRIGGER_TIMEZONE, alarm.triggerTimezone)
+                .withValue(JtxContract.JtxAlarm.OTHER, alarm.other)
         }
 
         this.unknown.forEach { unknown ->
-            insertBatch.enqueue(
-                BatchOperation.CpoBuilder
-                    .newInsert(JtxContract.JtxUnknown.CONTENT_URI.asSyncAdapter(collection.account))
-                    .withValue(JtxContract.JtxUnknown.ICALOBJECT_ID, id)
-                    .withValue(JtxContract.JtxUnknown.UNKNOWN_VALUE, unknown.value)
-            )
+            insertBatch += BatchOperation.CpoBuilder
+                .newInsert(JtxContract.JtxUnknown.CONTENT_URI.asSyncAdapter(collection.account))
+                .withValue(JtxContract.JtxUnknown.ICALOBJECT_ID, id)
+                .withValue(JtxContract.JtxUnknown.UNKNOWN_VALUE, unknown.value)
         }
 
         insertBatch.commit()

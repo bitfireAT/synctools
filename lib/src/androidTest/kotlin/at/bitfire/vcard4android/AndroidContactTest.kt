@@ -15,7 +15,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.synctools.LocalStorageException
+import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.vcard4android.impl.TestAddressBook
 import at.bitfire.vcard4android.property.XAbDate
 import ezvcard.VCardVersion

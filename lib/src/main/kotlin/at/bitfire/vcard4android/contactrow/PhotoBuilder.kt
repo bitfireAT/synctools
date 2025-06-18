@@ -14,7 +14,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.Photo
 import android.provider.ContactsContract.RawContacts
-import at.bitfire.vcard4android.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.vcard4android.Contact
 import at.bitfire.vcard4android.Utils.asSyncAdapter
 import java.io.IOException
