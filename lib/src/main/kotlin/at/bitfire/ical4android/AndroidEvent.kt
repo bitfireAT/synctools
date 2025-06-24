@@ -96,13 +96,8 @@ open class AndroidEvent(
     open var syncId: String? = null
 
     var eTag: String? = null
-        private set
-
     var scheduleTag: String? = null
-        private set
-
-    var flags: Int? = null
-        private set
+    var flags: Int = 0
 
     /**
      * Creates a new object from an event which already exists in the calendar storage.
@@ -114,7 +109,7 @@ open class AndroidEvent(
         this.syncId = values.getAsString(Events._SYNC_ID)
         this.eTag = values.getAsString(COLUMN_ETAG)
         this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
-        this.flags = values.getAsInteger(COLUMN_FLAGS)
+        this.flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
     }
 
     /**
@@ -728,6 +723,10 @@ open class AndroidEvent(
 
             return ContentUris.withAppendedId(Events.CONTENT_URI, existingId)
         }
+    }
+
+    fun update(values: ContentValues) {
+        calendar.provider.update(eventSyncURI(), values, null, null)
     }
 
     /**
