@@ -18,6 +18,7 @@ import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
 import androidx.annotation.CallSuper
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidCalendar.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
@@ -41,7 +42,9 @@ class AndroidCalendar<out T : AndroidEvent>(
 ) {
 
     companion object {
-        
+
+        private const val COLUMN_SYNC_STATE = Calendars.CAL_SYNC1
+
         private val logger
             get() = Logger.getLogger(AndroidCalendar::class.java.name)
         
@@ -235,6 +238,20 @@ class AndroidCalendar<out T : AndroidEvent>(
 
     fun findById(id: Long) = queryEvents("${Events._ID}=?", arrayOf(id.toString())).firstOrNull()
             ?: throw FileNotFoundException()
+
+
+    fun getSyncState(): String? =
+        provider.query(calendarSyncURI(), arrayOf(COLUMN_SYNC_STATE), null, null, null)?.use { cursor ->
+            if (cursor.moveToNext())
+                return cursor.getString(0)
+            else
+                null
+        }
+
+    fun setSyncState(state: String?) {
+        val values = contentValuesOf(COLUMN_SYNC_STATE to state.toString())
+        provider.update(calendarSyncURI(), values, null, null)
+    }
 
 
     fun calendarSyncURI() = ContentUris.withAppendedId(Calendars.CONTENT_URI, id).asSyncAdapter(account)
