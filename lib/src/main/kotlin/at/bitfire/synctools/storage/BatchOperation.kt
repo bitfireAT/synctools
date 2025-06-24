@@ -233,11 +233,13 @@ open class BatchOperation internal constructor(
         private var selection: String? = null
         private var selectionArguments: Array<String>? = null
 
-        internal val values = mutableMapOf<String, Any?>()
+        private val _values = mutableMapOf<String, Any?>()
+        val values
+            get() = _values.toMap()
+
         internal val valueBackrefs = mutableMapOf<String, BackReference>()
 
-        @VisibleForTesting
-        internal var yieldAllowed = false
+        private var yieldAllowed = false
 
 
         fun withSelection(select: String, args: Array<String>): CpoBuilder {
@@ -258,7 +260,7 @@ open class BatchOperation internal constructor(
         }
 
         fun withValue(key: String, value: Any?): CpoBuilder {
-            values[key] = value
+            _values[key] = value
             return this
         }
 
