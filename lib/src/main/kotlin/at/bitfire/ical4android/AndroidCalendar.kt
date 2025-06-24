@@ -18,6 +18,7 @@ import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
 import androidx.annotation.CallSuper
+import at.bitfire.ical4android.AndroidCalendar.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
 import java.io.FileNotFoundException
@@ -30,7 +31,7 @@ import java.util.logging.Logger
  * Communicates with the Android Contacts Provider which uses an SQLite
  * database to store the events.
  */
-abstract class AndroidCalendar<out T: AndroidEvent>(
+class AndroidCalendar<out T : AndroidEvent>(
     val account: Account,
     val provider: ContentProviderClient,
     val eventFactory: AndroidEventFactory<T>,
@@ -161,6 +162,7 @@ abstract class AndroidCalendar<out T: AndroidEvent>(
 
     var name: String? = null
     var displayName: String? = null
+    var accessLevel: Int? = null
     var color: Int? = null
     var isSynced = true
     var isVisible = true
@@ -180,9 +182,10 @@ abstract class AndroidCalendar<out T: AndroidEvent>(
      * @param info  values from Calendar Provider
      */
     @CallSuper
-    protected open fun populate(info: ContentValues) {
+    private fun populate(info: ContentValues) {
         name = info.getAsString(Calendars.NAME)
         displayName = info.getAsString(Calendars.CALENDAR_DISPLAY_NAME)
+        accessLevel = info.getAsInteger(Calendars.CALENDAR_ACCESS_LEVEL)
 
         color = info.getAsInteger(Calendars.CALENDAR_COLOR)
 
