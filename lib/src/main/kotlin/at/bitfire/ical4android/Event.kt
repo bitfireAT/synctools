@@ -56,6 +56,7 @@ import java.util.logging.Logger
 data class Event(
     override var uid: String? = null,
     override var sequence: Int? = null,
+    var isOrganizer: Boolean? = null,
 
     /** list of Calendar User Agents which have edited the event since last sync */
     override var userAgents: LinkedList<String> = LinkedList(),

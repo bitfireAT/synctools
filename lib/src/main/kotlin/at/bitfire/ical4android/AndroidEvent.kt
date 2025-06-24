@@ -88,51 +88,34 @@ abstract class AndroidEvent(
     val calendar: AndroidCalendar<AndroidEvent>
 ) {
 
-    companion object {
-
-        const val MUTATORS_SEPARATOR = ','
-
-        /**
-         * VEVENT CATEGORIES are stored as an extended property with this [ExtendedProperties.NAME].
-         *
-         * The [ExtendedProperties.VALUE] format is the same as used by the AOSP Exchange ActiveSync adapter:
-         * the category values are stored as list, separated by [CATEGORIES_SEPARATOR]. (If a category
-         * value contains [CATEGORIES_SEPARATOR], [CATEGORIES_SEPARATOR] will be dropped.)
-         *
-         * Example: `Cat1\Cat2`
-         */
-        const val EXTNAME_CATEGORIES = "categories"
-        const val CATEGORIES_SEPARATOR = '\\'
-
-        /**
-         * Google Calendar uses an extended property called `iCalUid` for storing the event's UID, instead of the
-         * standard [Events.UID_2445].
-         *
-         * @see <a href="https://github.com/bitfireAT/ical4android/issues/125">GitHub Issue</a>
-         */
-        const val EXTNAME_ICAL_UID = "iCalUid"
-
-        /**
-         * VEVENT URL is stored as an extended property with this [ExtendedProperties.NAME].
-         * The URL is directly put into [ExtendedProperties.VALUE].
-         */
-        const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
-
-    }
-
     protected val logger: Logger by lazy { Logger.getLogger(AndroidEvent::class.java.name) }
 
     var id: Long? = null
         protected set
 
+    var syncId: String? = null
+        private set
+
+    var eTag: String? = null
+        private set
+
+    var scheduleTag: String? = null
+        private set
+
+    var flags: Int? = null
+        private set
 
     /**
      * Creates a new object from an event which already exists in the calendar storage.
+     *
      * @param values database row with all columns, as returned by the calendar provider
      */
     constructor(calendar: AndroidCalendar<AndroidEvent>, values: ContentValues) : this(calendar) {
         this.id = values.getAsLong(Events._ID)
-        // derived classes process SYNC1 etc.
+        this.syncId = values.getAsString(Events._SYNC_ID)
+        this.eTag = values.getAsString(COLUMN_ETAG)
+        this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
+        this.flags = values.getAsInteger(COLUMN_FLAGS)
     }
 
     /**
@@ -212,9 +195,7 @@ abstract class AndroidEvent(
      *
      * @param row values of an [Events] row, as returned by the calendar provider
      */
-    @Suppress("UNUSED_VALUE")
-    @CallSuper
-    protected open fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
+    protected fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
         val event = requireNotNull(event)
 
@@ -224,8 +205,7 @@ abstract class AndroidEvent(
         }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-        val tsStart = row.getAsLong(Events.DTSTART)
-            ?: throw LocalStorageException("Found event without DTSTART")
+        val tsStart = row.getAsLong(Events.DTSTART) ?: throw LocalStorageException("Found event without DTSTART")
 
         var tsEnd = row.getAsLong(Events.DTEND)
         var duration =   // only use DURATION of DTEND is not defined
@@ -338,6 +318,9 @@ abstract class AndroidEvent(
         }
 
         event.uid = row.getAsString(Events.UID_2445)
+        event.sequence = row.getAsInteger(COLUMN_SEQUENCE)
+        event.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
+
         event.summary = row.getAsString(Events.TITLE)
         event.location = row.getAsString(Events.EVENT_LOCATION)
         event.description = row.getAsString(Events.DESCRIPTION)
@@ -731,14 +714,14 @@ abstract class AndroidEvent(
             batch += CpoBuilder
                 .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withSelection(
-                        "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
-                        arrayOf(
-                            existingId.toString(),
-                            EXTNAME_CATEGORIES,
-                            EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                            EXTNAME_URL,
-                            UnknownProperty.CONTENT_ITEM_TYPE
-                        )
+                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
+                    arrayOf(
+                        existingId.toString(),
+                        EXTNAME_CATEGORIES,
+                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                        EXTNAME_URL,
+                        UnknownProperty.CONTENT_ITEM_TYPE
+                    )
                 )
 
             addOrUpdateRows(batch)
@@ -771,8 +754,8 @@ abstract class AndroidEvent(
     protected fun deleteExceptions(batch: CalendarBatchOperation) {
         val existingId = requireNotNull(id)
         batch += CpoBuilder
-                .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
+            .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
+            .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
     }
 
 
@@ -782,8 +765,7 @@ abstract class AndroidEvent(
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
      * @param builder      data row builder to be used
      */
-    @CallSuper
-    protected open fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
+    protected fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
         val event = recurrence ?: requireNotNull(event)
 
         val dtStart = event.dtStart ?: throw InvalidCalendarException("Events must have DTSTART")
@@ -802,12 +784,26 @@ abstract class AndroidEvent(
            - rrule or rdate if the event is recurring
            - eventTimezone
            - a calendar_id */
-
         builder .withValue(Events.CALENDAR_ID, calendar.id)
                 .withValue(Events.DTSTART, dtStart.date.time)
                 .withValue(Events.ALL_DAY, if (allDay) 1 else 0)
                 .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
+        // further custom fields
+        builder.withValue(Events.UID_2445, event.uid)
+            .withValue(COLUMN_SEQUENCE, event.sequence)
+            .withValue(Events.DIRTY, 0)     // newly created event rows shall not be marked as dirty
+            .withValue(Events.DELETED, 0)   // or deleted
+            .withValue(COLUMN_FLAGS, flags)
+
+        if (recurrence == null)
+            builder.withValue(Events._SYNC_ID, syncId)
+                .withValue(COLUMN_ETAG, eTag)
+                .withValue(COLUMN_SCHEDULE_TAG, scheduleTag)
+        else
+            builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
+
+        // time fields
         var dtEnd = event.dtEnd
         AndroidTimeUtils.androidifyTimeZone(dtEnd)
 
@@ -938,11 +934,12 @@ abstract class AndroidEvent(
                     .withValue(Events.EXDATE, null)
         }
 
-        builder.withValue(Events.UID_2445, event.uid)
+        // text fields
         builder.withValue(Events.TITLE, event.summary)
-        builder.withValue(Events.EVENT_LOCATION, event.location)
-        builder.withValue(Events.DESCRIPTION, event.description)
+            .withValue(Events.EVENT_LOCATION, event.location)
+            .withValue(Events.DESCRIPTION, event.description)
 
+        // color
         val color = event.color
         if (color != null) {
             // set event color (if it's available for this account)
@@ -1123,5 +1120,58 @@ abstract class AndroidEvent(
 
     @CallSuper
     override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$_event)"
+
+
+    companion object {
+
+        const val MUTATORS_SEPARATOR = ','
+
+        /**
+         * Custom sync column to store the last known ETag of an event.
+         */
+        const val COLUMN_ETAG = Events.SYNC_DATA1
+
+        /**
+         * Custom sync column to store sync flags of an event.
+         */
+        const val COLUMN_FLAGS = Events.SYNC_DATA2
+
+        /**
+         * Custom sync column to store the SEQUENCE of an event.
+         */
+        const val COLUMN_SEQUENCE = Events.SYNC_DATA3
+
+        /**
+         * Custom sync column to store the Schedule-Tag of an event.
+         */
+        const val COLUMN_SCHEDULE_TAG = Events.SYNC_DATA4
+
+        /**
+         * VEVENT CATEGORIES are stored as an extended property with this [ExtendedProperties.NAME].
+         *
+         * The [ExtendedProperties.VALUE] format is the same as used by the AOSP Exchange ActiveSync adapter:
+         * the category values are stored as list, separated by [CATEGORIES_SEPARATOR]. (If a category
+         * value contains [CATEGORIES_SEPARATOR], [CATEGORIES_SEPARATOR] will be dropped.)
+         *
+         * Example: `Cat1\Cat2`
+         */
+        const val EXTNAME_CATEGORIES = "categories"
+        const val CATEGORIES_SEPARATOR = '\\'
+
+        /**
+         * Google Calendar uses an extended property called `iCalUid` for storing the event's UID, instead of the
+         * standard [Events.UID_2445].
+         *
+         * @see <a href="https://github.com/bitfireAT/ical4android/issues/125">GitHub Issue</a>
+         */
+        const val EXTNAME_ICAL_UID = "iCalUid"
+
+        /**
+         * VEVENT URL is stored as an extended property with this [ExtendedProperties.NAME].
+         * The URL is directly put into [ExtendedProperties.VALUE].
+         */
+        const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
+
+    }
 
 }
