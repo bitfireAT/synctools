@@ -77,7 +77,7 @@ abstract class AndroidCalendar<out T: AndroidEvent>(
 
         fun insertColors(provider: ContentProviderClient, account: Account) {
             provider.query(Colors.CONTENT_URI.asSyncAdapter(account), arrayOf(Colors.COLOR_KEY), null, null, null)?.use { cursor ->
-                if (cursor.count == Css3Color.values().size)
+                if (cursor.count == Css3Color.entries.size)
                     // colors already inserted and up to date
                     return
             }
@@ -87,7 +87,7 @@ abstract class AndroidCalendar<out T: AndroidEvent>(
             values.put(Colors.ACCOUNT_NAME, account.name)
             values.put(Colors.ACCOUNT_TYPE, account.type)
             values.put(Colors.COLOR_TYPE, Colors.TYPE_EVENT)
-            for (color in Css3Color.values()) {
+            for (color in Css3Color.entries) {
                 values.put(Colors.COLOR_KEY, color.name)
                 values.put(Colors.COLOR, color.argb)
                 try {
