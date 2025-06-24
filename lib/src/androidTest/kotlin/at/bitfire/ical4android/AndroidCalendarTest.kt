@@ -91,14 +91,14 @@ class AndroidCalendarTest {
     @Test
     fun testInsertColors() {
         AndroidCalendar.insertColors(provider, testAccount)
-        assertEquals(Css3Color.values().size, countColors(testAccount))
+        assertEquals(Css3Color.entries.size, countColors(testAccount))
     }
 
     @Test
     fun testInsertColors_AlreadyThere() {
         AndroidCalendar.insertColors(provider, testAccount)
         AndroidCalendar.insertColors(provider, testAccount)
-        assertEquals(Css3Color.values().size, countColors(testAccount))
+        assertEquals(Css3Color.entries.size, countColors(testAccount))
     }
 
     @Test

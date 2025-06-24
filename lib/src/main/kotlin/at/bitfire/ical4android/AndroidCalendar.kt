@@ -32,7 +32,7 @@ import java.util.logging.Logger
  * Communicates with the Android Contacts Provider which uses an SQLite
  * database to store the events.
  */
-class AndroidCalendar<out T : AndroidEvent>(
+open class AndroidCalendar<out T : AndroidEvent>(
     val account: Account,
     val provider: ContentProviderClient,
     val eventFactory: AndroidEventFactory<T>,

@@ -63,14 +63,6 @@ import java.net.URI
 import java.time.Duration
 import java.time.Period
 import java.util.logging.Logger
-import kotlin.collections.Map
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.emptyMap
-import kotlin.collections.first
-import kotlin.collections.firstOrNull
-import kotlin.collections.iterator
-import kotlin.collections.mapOf
 import kotlin.collections.plusAssign
 
 class AndroidEventTest {
@@ -123,6 +115,25 @@ class AndroidEventTest {
     @After
     fun shutdown() {
         calendar.delete()
+    }
+
+
+    @Test
+    fun testConstructor_ContentValues() {
+        val e = AndroidEvent(
+            calendar, contentValuesOf(
+                Events._ID to 123,
+                Events._SYNC_ID to "some-ical.ics",
+                AndroidEvent.COLUMN_ETAG to "some-etag",
+                AndroidEvent.COLUMN_SCHEDULE_TAG to "some-schedule-tag",
+                AndroidEvent.COLUMN_FLAGS to 45
+            )
+        )
+        assertEquals(123L, e.id)
+        assertEquals("some-ical.ics", e.syncId)
+        assertEquals("some-etag", e.eTag)
+        assertEquals("some-schedule-tag", e.scheduleTag)
+        assertEquals(45, e.flags)
     }
 
 
@@ -1523,6 +1534,87 @@ class AndroidEventTest {
     }
 
     @Test
+    fun testPopulateEvent_Uid_iCalUid() {
+        populateEvent(
+            true,
+            extendedProperties = mapOf(
+                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+            )
+        ).let { result ->
+            assertEquals("event1@example.com", result.uid)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_Uid_UID_2445() {
+        populateEvent(true) {
+            put(Events.UID_2445, "event1@example.com")
+        }.let { result ->
+            assertEquals("event1@example.com", result.uid)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_Uid_UID_2445_and_iCalUid() {
+        populateEvent(
+            true,
+            extendedProperties = mapOf(
+                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+            )
+        ) {
+            put(Events.UID_2445, "event2@example.com")
+        }.let { result ->
+            assertEquals("event2@example.com", result.uid)
+        }
+    }
+
+
+    @Test
+    fun testPopulateEvent_Sequence_Int() {
+        populateEvent(true, asSyncAdapter = true) {
+            put(AndroidEvent.COLUMN_SEQUENCE, 5)
+        }.let { result ->
+            assertEquals(5, result.sequence)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_Sequence_Null() {
+        populateEvent(true, asSyncAdapter = true) {
+            putNull(AndroidEvent.COLUMN_SEQUENCE)
+        }.let { result ->
+            assertNull(result.sequence)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_IsOrganizer_False() {
+        populateEvent(true, asSyncAdapter = true) {
+            put(Events.IS_ORGANIZER, "0")
+        }.let { result ->
+            assertFalse(result.isOrganizer!!)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_IsOrganizer_Null() {
+        populateEvent(true, asSyncAdapter = true) {
+            putNull(Events.IS_ORGANIZER)
+        }.let { result ->
+            assertNull(result.isOrganizer)
+        }
+    }
+
+    @Test
+    fun testPopulateEvent_IsOrganizer_True() {
+        populateEvent(true, asSyncAdapter = true) {
+            put(Events.IS_ORGANIZER, "1")
+        }.let { result ->
+            assertTrue(result.isOrganizer!!)
+        }
+    }
+
+    @Test
     fun testPopulateEvent_NonAllDay_NonRecurring() {
         populateEvent(false) {
             put(Events.DTSTART, 1592733600000L)  // 21/06/2020 12:00 +0200
@@ -1883,39 +1975,6 @@ class AndroidEventTest {
         populateEvent(true) {
         }.let { result ->
             assertNull(result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_iCalUid() {
-        populateEvent(
-            true,
-            extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
-            )
-        ).let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445() {
-        populateEvent(true) {
-            put(Events.UID_2445, "event1@example.com")
-        }.let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445_and_iCalUid() {
-        populateEvent(true,
-            extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
-            )) {
-            put(Events.UID_2445, "event2@example.com")
-        }.let { result ->
-            assertEquals("event2@example.com", result.uid)
         }
     }
 
@@ -2338,7 +2397,6 @@ class AndroidEventTest {
             assertTrue(event.exceptions.isEmpty())
         }
     }
-
 
 
     @Test

@@ -7,12 +7,10 @@
 package at.bitfire.ical4android.impl
 
 import android.content.ContentValues
-import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.AndroidCalendar
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.AndroidEventFactory
 import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.BatchOperation
 import java.util.UUID
 
 class TestEvent: AndroidEvent {
@@ -23,17 +21,7 @@ class TestEvent: AndroidEvent {
     constructor(calendar: TestCalendar, event: Event)
         : super(calendar, event)
 
-    val syncId by lazy { UUID.randomUUID().toString() }
-
-
-    override fun buildEvent(recurrence: Event?, builder: BatchOperation.CpoBuilder) {
-        if (recurrence != null)
-            builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
-        else
-            builder.withValue(Events._SYNC_ID, syncId)
-
-        super.buildEvent(recurrence, builder)
-    }
+    override var syncId: String? = UUID.randomUUID().toString()
 
 
     object Factory: AndroidEventFactory<TestEvent> {

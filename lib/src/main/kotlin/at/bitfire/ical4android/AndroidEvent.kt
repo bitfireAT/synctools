@@ -84,7 +84,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-abstract class AndroidEvent(
+open class AndroidEvent(
     val calendar: AndroidCalendar<AndroidEvent>
 ) {
 
@@ -93,8 +93,7 @@ abstract class AndroidEvent(
     var id: Long? = null
         protected set
 
-    var syncId: String? = null
-        private set
+    open var syncId: String? = null
 
     var eTag: String? = null
         private set
