@@ -17,7 +17,6 @@ import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
-import androidx.annotation.CallSuper
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidCalendar.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -184,7 +183,6 @@ open class AndroidCalendar<out T : AndroidEvent>(
      *
      * @param info  values from Calendar Provider
      */
-    @CallSuper
     private fun populate(info: ContentValues) {
         name = info.getAsString(Calendars.NAME)
         displayName = info.getAsString(Calendars.CALENDAR_DISPLAY_NAME)

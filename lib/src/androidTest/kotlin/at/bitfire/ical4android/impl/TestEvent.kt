@@ -19,9 +19,7 @@ class TestEvent: AndroidEvent {
         : super(calendar, values)
 
     constructor(calendar: TestCalendar, event: Event)
-        : super(calendar, event)
-
-    override var syncId: String? = UUID.randomUUID().toString()
+            : super(calendar, event, UUID.randomUUID().toString(), null, null, 0)
 
 
     object Factory: AndroidEventFactory<TestEvent> {

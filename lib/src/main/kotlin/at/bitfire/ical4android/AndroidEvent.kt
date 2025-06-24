@@ -104,7 +104,7 @@ open class AndroidEvent(
      *
      * @param values database row with all columns, as returned by the calendar provider
      */
-    constructor(calendar: AndroidCalendar<AndroidEvent>, values: ContentValues) : this(calendar) {
+    constructor(calendar: AndroidCalendar<*>, values: ContentValues) : this(calendar) {
         this.id = values.getAsLong(Events._ID)
         this.syncId = values.getAsString(Events._SYNC_ID)
         this.eTag = values.getAsString(COLUMN_ETAG)
@@ -116,8 +116,14 @@ open class AndroidEvent(
      * Creates a new object from an event which doesn't exist in the calendar storage yet.
      * @param event event that can be saved into the calendar storage
      */
-    constructor(calendar: AndroidCalendar<AndroidEvent>, event: Event) : this(calendar) {
+    constructor(calendar: AndroidCalendar<*>, event: Event, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int) : this(
+        calendar
+    ) {
         this.event = event
+        this.syncId = syncId
+        this.eTag = eTag
+        this.scheduleTag = scheduleTag
+        this.flags = flags
     }
 
     private var _event: Event? = null
