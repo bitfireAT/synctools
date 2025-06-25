@@ -238,7 +238,7 @@ open class AndroidCalendar<out T : AndroidEvent>(
             ?: throw FileNotFoundException()
 
 
-    fun getSyncState(): String? =
+    fun readSyncState(): String? =
         provider.query(calendarSyncURI(), arrayOf(COLUMN_SYNC_STATE), null, null, null)?.use { cursor ->
             if (cursor.moveToNext())
                 return cursor.getString(0)
@@ -246,9 +246,8 @@ open class AndroidCalendar<out T : AndroidEvent>(
                 null
         }
 
-    fun setSyncState(state: String?) {
-        val values = contentValuesOf(COLUMN_SYNC_STATE to state.toString())
-        provider.update(calendarSyncURI(), values, null, null)
+    fun writeSyncState(state: String?) {
+        update(contentValuesOf(COLUMN_SYNC_STATE to state))
     }
 
 
