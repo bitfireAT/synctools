@@ -15,9 +15,9 @@ import at.bitfire.ical4android.AndroidCalendar
 import at.bitfire.ical4android.AndroidCalendarFactory
 
 class TestCalendar(
-        account: Account,
-        providerClient: ContentProviderClient,
-        id: Long
+    account: Account,
+    providerClient: ContentProviderClient,
+    id: Long
 ): AndroidCalendar<TestEvent>(account, providerClient, TestEvent.Factory, id) {
 
     companion object {
