@@ -116,9 +116,7 @@ open class AndroidEvent(
      * Creates a new object from an event which doesn't exist in the calendar storage yet.
      * @param event event that can be saved into the calendar storage
      */
-    constructor(calendar: AndroidCalendar<*>, event: Event, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int) : this(
-        calendar
-    ) {
+    constructor(calendar: AndroidCalendar<*>, event: Event, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int) : this(calendar) {
         this.event = event
         this.syncId = syncId
         this.eTag = eTag
@@ -764,7 +762,10 @@ open class AndroidEvent(
 
 
     /**
-     * Builds an Android [Events] row for a given ical4android [Event].
+     * Builds an Android [Events] row for a given event. Takes information from
+     *
+     * - this [AndroidEvent] object: fields like calendar ID, sync ID, eTag etc,
+     * - the [event]: all other fields.
      *
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
      * @param builder      data row builder to be used
@@ -788,17 +789,12 @@ open class AndroidEvent(
            - rrule or rdate if the event is recurring
            - eventTimezone
            - a calendar_id */
-        builder .withValue(Events.CALENDAR_ID, calendar.id)
-                .withValue(Events.DTSTART, dtStart.date.time)
-                .withValue(Events.ALL_DAY, if (allDay) 1 else 0)
-                .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
-        // further custom fields
-        builder.withValue(Events.UID_2445, event.uid)
-            .withValue(COLUMN_SEQUENCE, event.sequence)
-            .withValue(Events.DIRTY, 0)     // newly created event rows shall not be marked as dirty
-            .withValue(Events.DELETED, 0)   // or deleted
-            .withValue(COLUMN_FLAGS, flags)
+        // object-level (AndroidEvent) fields
+        builder .withValue(Events.CALENDAR_ID, calendar.id)
+                .withValue(Events.DIRTY, 0)     // newly created event rows shall not be marked as dirty
+                .withValue(Events.DELETED, 0)   // or deleted
+                .withValue(COLUMN_FLAGS, flags)
 
         if (recurrence == null)
             builder.withValue(Events._SYNC_ID, syncId)
@@ -807,7 +803,15 @@ open class AndroidEvent(
         else
             builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
 
+        // UID, sequence
+        builder .withValue(Events.UID_2445, event.uid)
+                .withValue(COLUMN_SEQUENCE, event.sequence)
+
         // time fields
+        builder .withValue(Events.DTSTART, dtStart.date.time)
+                .withValue(Events.ALL_DAY, if (allDay) 1 else 0)
+                .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
+
         var dtEnd = event.dtEnd
         AndroidTimeUtils.androidifyTimeZone(dtEnd)
 
