@@ -22,4 +22,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "synctools"
 include(":lib")
-project(":lib").name = "synctools-lib"
