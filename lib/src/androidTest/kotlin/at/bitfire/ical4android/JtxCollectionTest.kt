@@ -11,6 +11,7 @@ import android.content.ContentProviderClient
 import android.content.ContentValues
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
+import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
@@ -148,9 +149,10 @@ class JtxCollectionTest {
         client.insert(JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv1)
         client.insert(JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv2)
 
-        val ics = collections[0].getICSForCollection()
+        val ics = collections[0].getICSForCollection(testProdId)
         assertTrue(ics.contains(Regex("BEGIN:VCALENDAR(\\n*|\\r*|\\t*|.*)*END:VCALENDAR")))
-        assertTrue(ics.contains("PRODID:+//IDN bitfire.at//ical4android"))
+        System.err.println(ics)
+        assertTrue(ics.contains("PRODID:${testProdId.value}"))
         assertTrue(ics.contains("SUMMARY:summary"))
         assertTrue(ics.contains("SUMMARY:entry2"))
         assertTrue(ics.contains(Regex("BEGIN:VJOURNAL(\\n*|\\r*|\\t*|.*)*END:VJOURNAL")))

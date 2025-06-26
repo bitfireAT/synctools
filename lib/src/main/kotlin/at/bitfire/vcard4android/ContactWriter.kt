@@ -31,6 +31,7 @@ import ezvcard.property.DateOrTimeProperty
 import ezvcard.property.Kind
 import ezvcard.property.Member
 import ezvcard.property.Photo
+import ezvcard.property.ProductId
 import ezvcard.property.Related
 import ezvcard.property.Revision
 import ezvcard.property.StructuredName
@@ -47,15 +48,16 @@ import java.util.logging.Logger
  * to the vCard that is actually sent to the server.
  *
  * Properties which are not supported by the target vCard version have to be converted appropriately.
+ *
+ * @param contact       contact data to be converted into a vCard
+ * @param version       vCard version to generate
+ * @param productId     product ID that identifies your app (will be used as PRODID; ez-vcard version will be appended)
  */
-class ContactWriter private constructor(val contact: Contact, val version: VCardVersion) {
-
-    companion object {
-
-        fun fromContact(contact: Contact, version: VCardVersion) =
-            ContactWriter(contact, version)
-
-    }
+class ContactWriter(
+    val contact: Contact,
+    val version: VCardVersion,
+    val productId: String
+) {
 
     private val unknownProperties = LinkedList<VCardProperty>()
     val vCard = VCard()
@@ -73,8 +75,8 @@ class ContactWriter private constructor(val contact: Contact, val version: VCard
     }
 
     private fun addProperties() {
+        vCard.productId = ProductId("$productId (ez-vcard/${Ezvcard.VERSION})")
         contact.uid?.let { vCard.uid = Uid(it) }
-        Contact.productID?.let { vCard.setProductId(it) }
 
         addKindAndMembers()
         addFormattedName()
@@ -355,7 +357,7 @@ class ContactWriter private constructor(val contact: Contact, val version: VCard
         val writer =
             if (jCard)
                 JCardWriter(stream).apply {
-                    isAddProdId = Contact.productID == null
+                    isAddProdId = false     // we handle PRODID ourselves
                     registerCustomScribes()
 
                     // allow properties that are not defined in this vCard version
@@ -363,7 +365,7 @@ class ContactWriter private constructor(val contact: Contact, val version: VCard
                 }
             else
                 VCardWriter(stream, version).apply {
-                    isAddProdId = Contact.productID == null
+                    isAddProdId = false     // we handle PRODID ourselves
                     registerCustomScribes()
 
                     /* include trailing semicolons for maximum compatibility

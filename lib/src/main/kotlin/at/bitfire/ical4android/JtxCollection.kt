@@ -19,6 +19,7 @@ import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.component.VJournal
 import net.fortuna.ical4j.model.component.VToDo
+import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.Version
 import java.util.LinkedList
 import java.util.logging.Level
@@ -243,9 +244,11 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
 
 
     /**
+     * @param prodId    `PRODID` that identifies the app
+     *
      * @return a string with all JtxICalObjects within the collection as iCalendar
      */
-    fun getICSForCollection(): String {
+    fun getICSForCollection(prodId: ProdId): String {
         client.query(
             JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(account),
             null,
@@ -257,12 +260,12 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
 
             val ical = Calendar()
             ical.properties += Version.VERSION_2_0
-            ical.properties += ICalendar.prodId
+            ical.properties += prodId
 
             while (cursor?.moveToNext() == true) {
                 val jtxIcalObject = JtxICalObject(this)
                 jtxIcalObject.populateFromContentValues(cursor.toValues())
-                val singleICS = jtxIcalObject.getICalendarFormat()
+                val singleICS = jtxIcalObject.getICalendarFormat(prodId)
                 singleICS?.components?.forEach { component ->
                     if(component is VToDo || component is VJournal)
                         ical.components += component

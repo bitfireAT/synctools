@@ -14,6 +14,7 @@ import android.os.ParcelFileDescriptor
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
+import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
@@ -881,7 +882,7 @@ class JtxICalObjectTest {
 
         val os = ByteArrayOutputStream()
 
-        iCalObject[0].write(os)
+        iCalObject[0].write(os, testProdId)
 
         val iCalOut = ICalendar.fromReader(os.toByteArray().inputStream().reader())
 

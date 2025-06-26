@@ -17,14 +17,20 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.vcard4android.impl.TestAddressBook
+import at.bitfire.vcard4android.impl.testProductId
 import at.bitfire.vcard4android.property.XAbDate
 import ezvcard.VCardVersion
 import ezvcard.property.Address
 import ezvcard.property.Birthday
 import ezvcard.property.Email
 import ezvcard.util.PartialDate
-import org.junit.*
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.StringReader
 import java.time.LocalDate
@@ -206,7 +212,7 @@ class AndroidContactTest {
          * So, ADR value components may contain DQUOTE (0x22) and don't have to be encoded as defined in RFC 6868 */
 
         val os = ByteArrayOutputStream()
-        contact.writeVCard(VCardVersion.V4_0, os)
+        contact.writeVCard(VCardVersion.V4_0, os, testProductId)
         assertTrue(os.toString().contains("ADR;LABEL=My ^'Label^'\\nLine 2:;;Street \"Address\";;;;"))
     }
 

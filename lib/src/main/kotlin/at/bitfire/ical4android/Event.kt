@@ -97,10 +97,16 @@ data class Event(
     val unknownProperties: LinkedList<Property> = LinkedList()
 ) : ICalendar() {
 
-    fun write(os: OutputStream) {
+    /**
+     * Generates an iCalendar from the Event.
+     *
+     * @param os        stream that the iCalendar is written to
+     * @param prodId    `PRODID` that identifies the app
+     */
+    fun write(os: OutputStream, prodId: ProdId) {
         val ical = Calendar()
         ical.properties += Version.VERSION_2_0
-        ical.properties += prodId()
+        ical.properties += prodId.withUserAgents(userAgents)
 
         val dtStart = dtStart ?: throw InvalidCalendarException("Won't generate event without start time")
 
@@ -374,4 +380,5 @@ data class Event(
             return e
         }
     }
+
 }

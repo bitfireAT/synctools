@@ -56,20 +56,29 @@ open class ICalendar {
             get() = Logger.getLogger(ICalendar::class.java.name)
 
         // known iCalendar properties
+
         const val CALENDAR_NAME = "X-WR-CALNAME"
         const val CALENDAR_COLOR = "X-APPLE-CALENDAR-COLOR"
 
-        /**
-         * Default PRODID used when generating iCalendars. If you want another value, set it
-         * statically before writing the first iCalendar.
-         */
-        var prodId = ProdId("+//IDN bitfire.at//ical4android")
 
-        fun prodId(userAgents: List<String>): ProdId =
+        // PRODID generation
+
+        /**
+         * Extends the given `PRODID` with the user agents (typically calendar app name and version).
+         * This way the `PRODID` does not only identify the app that actually produces the iCalendar,
+         * but also the used front-end app, which may be helpful when debugging the iCalendar.
+         *
+         * @param userAgents    list of involved user agents
+         *                      (preferably in `package name/version` format, for instance `com.example.mycalendar/1.0`)
+         *
+         * @return original `PRODID` with user agents in parentheses
+         */
+        fun ProdId.withUserAgents(userAgents: List<String>) =
             if (userAgents.isEmpty())
-                prodId
+                this
             else
-                ProdId(prodId.value + " (" + userAgents.joinToString(",") + ")")
+                ProdId(value + " (${userAgents.joinToString(", ")})")
+
 
         // parser
 
@@ -372,7 +381,5 @@ open class ICalendar {
     protected fun generateUID() {
         uid = UUID.randomUUID().toString()
     }
-
-    fun prodId(): ProdId = prodId(userAgents)
 
 }

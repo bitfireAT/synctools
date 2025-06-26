@@ -6,24 +6,44 @@
 
 package at.bitfire.vcard4android
 
-import at.bitfire.vcard4android.property.*
+import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.vcard4android.property.XAbDate
+import at.bitfire.vcard4android.property.XAbLabel
+import at.bitfire.vcard4android.property.XAbRelatedNames
+import at.bitfire.vcard4android.property.XAddressBookServerKind
+import at.bitfire.vcard4android.property.XAddressBookServerMember
+import at.bitfire.vcard4android.property.XPhoneticFirstName
+import at.bitfire.vcard4android.property.XPhoneticLastName
+import at.bitfire.vcard4android.property.XPhoneticMiddleName
+import ezvcard.Ezvcard
 import ezvcard.VCard
 import ezvcard.VCardVersion
 import ezvcard.parameter.ImageType
 import ezvcard.parameter.RelatedType
-import ezvcard.property.*
+import ezvcard.property.Address
+import ezvcard.property.Anniversary
+import ezvcard.property.Birthday
+import ezvcard.property.Email
+import ezvcard.property.Impp
+import ezvcard.property.Kind
+import ezvcard.property.Nickname
+import ezvcard.property.Organization
+import ezvcard.property.Photo
+import ezvcard.property.Related
+import ezvcard.property.Revision
+import ezvcard.property.StructuredName
+import ezvcard.property.Telephone
+import ezvcard.property.Url
 import ezvcard.util.PartialDate
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.net.URI
-import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
-import java.util.*
 
 class ContactWriterTest {
 
@@ -451,7 +471,7 @@ class ContactWriterTest {
                 values.add("nick1")
             })
         }
-        assertEquals(3 /* NICK + REV + FN */, vCard.properties.size)
+        assertEquals(4 /* PRODID + NICK + REV + FN */, vCard.properties.size)
         assertEquals("nick1", vCard.nickname.values.first())
     }
 
@@ -462,7 +482,7 @@ class ContactWriterTest {
                 values.add("nick1")
             }, "label1")
         }
-        assertEquals(4 /* NICK + X-ABLABEL + FN + REV */, vCard.properties.size)
+        assertEquals(5 /* PRODID + NICK + X-ABLABEL + FN + REV */, vCard.properties.size)
         vCard.nickname.apply {
             assertEquals("nick1", values.first())
             assertEquals("item1", group)
@@ -483,7 +503,7 @@ class ContactWriterTest {
                 values.add("nick1")
             }, "label1")
         }
-        assertEquals(5 /* X-TEST + NICK + X-ABLABEL + FN + REV */, vCard.properties.size)
+        assertEquals(6 /* PRODID + X-TEST + NICK + X-ABLABEL + FN + REV */, vCard.properties.size)
         vCard.nickname.apply {
             assertEquals("nick1", values.first())
             assertEquals("item2", group)
@@ -497,7 +517,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard3_Date() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V3_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V3_0, testProductId)
         val date = Birthday(LocalDate.of(121, 6, 30))
         generator.rewritePartialDate(date)
         assertEquals(LocalDate.of(121, 6, 30), date.date)
@@ -506,7 +526,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard4_Date() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V4_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         val date = Birthday(LocalDate.of(121, 6, 30))
         generator.rewritePartialDate(date)
         assertEquals(LocalDate.of(121, 6, 30), date.date)
@@ -516,7 +536,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard3_PartialDateWithYear() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V3_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V3_0, testProductId)
         val date = Birthday(PartialDate.parse("20210730"))
         generator.rewritePartialDate(date)
         assertEquals(LocalDate.of(2021, 7, 30), date.date)
@@ -526,7 +546,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard4_PartialDateWithYear() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V4_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         val date = Birthday(PartialDate.parse("20210730"))
         generator.rewritePartialDate(date)
         assertNull(date.date)
@@ -536,7 +556,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard3_PartialDateWithoutYear() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V3_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V3_0, testProductId)
         val date = Birthday(PartialDate.parse("--0730"))
         generator.rewritePartialDate(date)
         assertEquals(LocalDate.of(1604, 7, 30), date.date)
@@ -547,7 +567,7 @@ class ContactWriterTest {
 
     @Test
     fun testRewritePartialDate_vCard4_PartialDateWithoutYear() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V4_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         val date = Birthday(PartialDate.parse("--0730"))
         generator.rewritePartialDate(date)
         assertNull(date.date)
@@ -558,27 +578,30 @@ class ContactWriterTest {
 
     @Test
     fun testWriteJCard() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V4_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         generator.vCard.revision = Revision(
             ZonedDateTime.of(2021, 7, 30, 1, 2, 3, 0, ZoneOffset.UTC)
         )
 
         val stream = ByteArrayOutputStream()
         generator.writeCard(stream, true)
-        assertEquals("[\"vcard\",[[\"version\",{},\"text\",\"4.0\"],[\"prodid\",{},\"text\",\"ez-vcard 0.12.1\"],[\"fn\",{},\"text\",\"\"],[\"rev\",{},\"timestamp\",\"2021-07-30T01:02:03+00:00\"]]]", stream.toString())
+        assertEquals(
+            "[\"vcard\",[[\"version\",{},\"text\",\"4.0\"],[\"prodid\",{},\"text\",\"$testProductId (ez-vcard/${Ezvcard.VERSION})\"],[\"fn\",{},\"text\",\"\"],[\"rev\",{},\"timestamp\",\"2021-07-30T01:02:03+00:00\"]]]",
+            stream.toString()
+        )
     }
 
 
     @Test
     fun testWriteVCard() {
-        val generator = ContactWriter.fromContact(Contact(), VCardVersion.V4_0)
+        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         generator.vCard.revision = Revision(ZonedDateTime.of(2021, 7, 30, 1, 2, 3, 0, ZoneOffset.UTC))
 
         val stream = ByteArrayOutputStream()
         generator.writeCard(stream, false)
         assertEquals("BEGIN:VCARD\r\n" +
                 "VERSION:4.0\r\n" +
-                "PRODID:ez-vcard 0.12.1\r\n" +
+                "PRODID:$testProductId (ez-vcard/${Ezvcard.VERSION})\r\n" +
                 "FN:\r\n" +
                 "REV:20210730T010203+0000\r\n" +
                 "END:VCARD\r\n", stream.toString())
@@ -594,9 +617,8 @@ class ContactWriterTest {
                 country = "Line2"
             })
         }
-        ContactWriter
-                .fromContact(contact, VCardVersion.V4_0)
-                .writeCard(stream, false)
+        ContactWriter(contact, VCardVersion.V4_0, testProductId)
+            .writeCard(stream, false)
         assertTrue(stream.toString().contains("ADR;LABEL=\"Li^^ne 1,1 - ^' -\":;;Line1;;;;Line2"))
     }
 
@@ -606,7 +628,7 @@ class ContactWriterTest {
     private fun generate(version: VCardVersion = VCardVersion.V4_0, prepare: Contact.() -> Unit): VCard {
         val contact = Contact()
         contact.run(prepare)
-        return ContactWriter.fromContact(contact, version).vCard
+        return ContactWriter(contact, version, testProductId).vCard
     }
 
 }
