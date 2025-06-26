@@ -13,11 +13,20 @@ import com.google.common.base.MoreObjects
 import ezvcard.VCardVersion
 import ezvcard.io.json.JCardReader
 import ezvcard.io.text.VCardReader
-import ezvcard.property.*
+import ezvcard.property.Address
+import ezvcard.property.Anniversary
+import ezvcard.property.Birthday
+import ezvcard.property.Email
+import ezvcard.property.Impp
+import ezvcard.property.Nickname
+import ezvcard.property.Organization
+import ezvcard.property.Related
+import ezvcard.property.Telephone
+import ezvcard.property.Url
 import java.io.IOException
 import java.io.OutputStream
 import java.io.Reader
-import java.util.*
+import java.util.LinkedList
 
 /**
  * Data class for a contact; between vCards and the Android contacts provider.
@@ -77,10 +86,6 @@ data class Contact(
 ) {
 
     companion object {
-        // productID (if set) will be used to generate a PRODID property.
-        // You may set this statically from the calling application.
-        var productID: String? = null
-
         const val DATE_PARAMETER_OMIT_YEAR = "X-APPLE-OMIT-YEAR"
         const val DATE_PARAMETER_OMIT_YEAR_DEFAULT = 1604
 
@@ -120,14 +125,14 @@ data class Contact(
 
 
     @Throws(IOException::class)
-    fun writeJCard(os: OutputStream) {
-        val generator = ContactWriter.fromContact(this, VCardVersion.V4_0)
+    fun writeJCard(os: OutputStream, productId: String) {
+        val generator = ContactWriter(this, VCardVersion.V4_0, productId)
         generator.writeCard(os, true)
     }
 
     @Throws(IOException::class)
-    fun writeVCard(vCardVersion: VCardVersion, os: OutputStream) {
-        val generator = ContactWriter.fromContact(this, vCardVersion)
+    fun writeVCard(vCardVersion: VCardVersion, os: OutputStream, productId: String) {
+        val generator = ContactWriter(this, vCardVersion, productId)
         generator.writeCard(os, false)
     }
 

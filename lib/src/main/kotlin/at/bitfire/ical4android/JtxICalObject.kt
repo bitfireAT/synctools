@@ -12,6 +12,7 @@ import android.net.ParseException
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
+import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
@@ -629,12 +630,15 @@ open class JtxICalObject(
 
     /**
      * Takes the current JtxICalObject and transforms it to a Calendar (ical4j)
+     *
+     * @param prodId    `PRODID` that identifies the app
+     *
      * @return The current JtxICalObject transformed into a ical4j Calendar
      */
-    fun getICalendarFormat(): Calendar? {
+    fun getICalendarFormat(prodId: ProdId): Calendar? {
         val ical = Calendar()
         ical.properties += Version.VERSION_2_0
-        ical.properties += ICalendar.prodId(listOf(TaskProvider.ProviderName.JtxBoard.packageName))
+        ical.properties += prodId.withUserAgents(listOf(TaskProvider.ProviderName.JtxBoard.packageName))
 
         val calComponent = when (component) {
             JtxContract.JtxICalObject.Component.VTODO.name -> VToDo(true /* generates DTSTAMP */)
@@ -731,10 +735,12 @@ open class JtxICalObject(
 
     /**
      * Takes the current JtxICalObject, transforms it to an iCalendar and writes it in an OutputStream
+     *
      * @param [os] OutputStream where iCalendar should be written to
+     * @param prodId    `PRODID` that identifies the app
      */
-    fun write(os: OutputStream) {
-        CalendarOutputter(false).output(this.getICalendarFormat(), os)
+    fun write(os: OutputStream, prodId: ProdId) {
+        CalendarOutputter(false).output(this.getICalendarFormat(prodId), os)
     }
 
     /**
