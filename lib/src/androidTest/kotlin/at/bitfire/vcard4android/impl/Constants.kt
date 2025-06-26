@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.impl
+package at.bitfire.vcard4android.impl
 
-import net.fortuna.ical4j.model.property.ProdId
-
-val testProdId = ProdId("bitfireAT/synctools test")
+val testProductId = "bitfireAT/synctools test"
