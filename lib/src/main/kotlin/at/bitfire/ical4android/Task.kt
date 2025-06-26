@@ -194,10 +194,16 @@ data class Task(
     }
 
 
-    fun write(os: OutputStream) {
+    /**
+     * Generates an iCalendar from the Task.
+     *
+     * @param os        stream that the iCalendar is written to
+     * @param prodId    `PRODID` that identifies the app
+     */
+    fun write(os: OutputStream, prodId: ProdId) {
         val ical = Calendar()
         ical.properties += Version.VERSION_2_0
-        ical.properties += prodId()
+        ical.properties += prodId.withUserAgents(userAgents)
 
         val vTodo = VToDo(true /* generates DTSTAMP */)
         ical.components += vTodo

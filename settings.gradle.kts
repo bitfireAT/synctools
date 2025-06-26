@@ -1,3 +1,9 @@
+/*
+ * This file is part of bitfireAT/synctools which is released under GPLv3.
+ * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 pluginManagement {
     repositories {
         google()
@@ -14,6 +20,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "root"
+rootProject.name = "synctools"
 include(":lib")
-project(":lib").name = "synctools"
+project(":lib").name = "synctools-lib"

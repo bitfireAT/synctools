@@ -6,13 +6,13 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Value
@@ -207,10 +207,10 @@ class TaskTest {
         t.alarms += alarm
 
         val os = ByteArrayOutputStream()
-        t.write(os)
+        t.write(os, testProdId)
         val raw = os.toString(Charsets.UTF_8.name())
 
-        assertTrue(raw.contains("PRODID:${t.prodId().value}"))
+        assertTrue(raw.contains("PRODID:${testProdId.value}"))
         assertTrue(raw.contains("UID:SAMPLEUID"))
         assertTrue(raw.contains("DTSTAMP:"))
         assertTrue(raw.contains("DTSTART;TZID=Europe/Berlin:20190101T100000"))
@@ -267,7 +267,7 @@ class TaskTest {
 
     private fun regenerate(t: Task): Task {
         val os = ByteArrayOutputStream()
-        t.write(os)
+        t.write(os, testProdId)
         return Task.tasksFromReader(InputStreamReader(ByteArrayInputStream(os.toByteArray()), Charsets.UTF_8)).first()
     }
     

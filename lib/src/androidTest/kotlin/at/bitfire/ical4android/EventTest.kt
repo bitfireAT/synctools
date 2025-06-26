@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
@@ -76,7 +77,7 @@ class EventTest {
         e.alarms += VAlarm(Duration.ofMinutes(-30))
         e.attendees += Attendee("mailto:test@example.com")
         val baos = ByteArrayOutputStream()
-        e.write(baos)
+        e.write(baos, testProdId)
         val ical = baos.toString()
 
         assertTrue("BEGIN:VTIMEZONE.+BEGIN:STANDARD.+END:STANDARD.+END:VTIMEZONE".toRegex(RegexOption.DOT_MATCHES_ALL).containsMatchIn(ical))
@@ -141,7 +142,7 @@ class EventTest {
             )
         }
         val baos = ByteArrayOutputStream()
-        event.write(baos)
+        event.write(baos, testProdId)
         val iCal = baos.toString()
         assertTrue(iCal.contains("UID:test1\r\n"))
         assertTrue(iCal.contains("DTSTART;TZID=Europe/Berlin:20190117T083000\r\n"))
@@ -250,10 +251,10 @@ class EventTest {
         e.alarms += VAlarm(Duration.ofHours(-1))
 
         val os = ByteArrayOutputStream()
-        e.write(os)
+        e.write(os, testProdId)
         val raw = os.toString(Charsets.UTF_8.name())
 
-        assertTrue(raw.contains("PRODID:${ICalendar.prodId.value}"))
+        assertTrue(raw.contains("PRODID:${testProdId.value}"))
         assertTrue(raw.contains("UID:SAMPLEUID"))
         assertTrue(raw.contains("DTSTART;TZID=Europe/Berlin:20190101T100000"))
         assertTrue(raw.contains("DTSTAMP:"))
