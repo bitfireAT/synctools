@@ -181,7 +181,7 @@ class AndroidEventTest {
         }
     }
 
-    private fun firstExtendedProperty(values: ContentValues, mimeType: String): String? {
+    private fun firstExtendedProperty(values: ContentValues): String? {
         val id = values.getAsInteger(Events._ID)
         provider.query(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), arrayOf(ExtendedProperties.VALUE),
                 "${ExtendedProperties.EVENT_ID}=?", arrayOf(id.toString()), null)?.use {
@@ -192,7 +192,7 @@ class AndroidEventTest {
     }
 
     private fun firstUnknownProperty(values: ContentValues): Property? {
-        val rawValue = firstExtendedProperty(values, UnknownProperty.CONTENT_ITEM_TYPE)
+        val rawValue = firstExtendedProperty(values)
         return if (rawValue != null)
             UnknownProperty.fromJsonString(rawValue)
         else
@@ -589,7 +589,7 @@ class AndroidEventTest {
         buildEvent(true) {
             url = URI("https://example.com")
         }.let { result ->
-            assertEquals("https://example.com", firstExtendedProperty(result, AndroidEvent.EXTNAME_URL))
+            assertEquals("https://example.com", firstExtendedProperty(result))
         }
     }
 
@@ -869,9 +869,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Period.ofDays(-1))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(1440, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(1440, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -880,9 +878,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Duration.ofSeconds(-10))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(0, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(0, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -892,9 +888,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Duration.ofMinutes(10))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(-10, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(-10, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -907,9 +901,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(1320, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(1320, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -922,9 +914,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(0, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(0, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -938,9 +928,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(-130, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(-130, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -950,9 +938,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime("20200621T120000", tzVienna))
             alarms += VAlarm(DateTime("20200621T110000", tzVienna))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(60, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(60, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -962,9 +948,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime("20200621T120000", tzVienna))
             alarms += VAlarm(DateTime("20200621T110000", tzShanghai))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(420, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(420, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -987,9 +971,7 @@ class AndroidEventTest {
         buildEvent(true) {
             attendees += Attendee("mailto:attendee1@example.com")
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals("attendee1@example.com", attendee.getAsString(Attendees.ATTENDEE_EMAIL))
-            }
+            assertEquals("attendee1@example.com", firstAttendee(result)!!.getAsString(Attendees.ATTENDEE_EMAIL))
         }
     }
 
@@ -1027,9 +1009,7 @@ class AndroidEventTest {
                 parameters.add(Cn("Sample Attendee"))
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals("Sample Attendee", attendee.getAsString(Attendees.ATTENDEE_NAME))
-            }
+            assertEquals("Sample Attendee", firstAttendee(result)!!.getAsString(Attendees.ATTENDEE_NAME))
         }
     }
 
@@ -1232,25 +1212,22 @@ class AndroidEventTest {
 
     @Test
     fun testBuildAttendee_Organizer() {
-        for (cuType in arrayOf(null, CuType.INDIVIDUAL, CuType.UNKNOWN, CuType.GROUP, CuType("x-custom-cutype")))
-            buildEvent(true) {
-                attendees += Attendee(URI("mailto", testAccount.name, null))
-            }.let { result ->
-                firstAttendee(result)!!.let { attendee ->
-                    assertEquals(testAccount.name, attendee.getAsString(Attendees.ATTENDEE_EMAIL))
-                    assertEquals(Attendees.TYPE_REQUIRED, attendee.getAsInteger(Attendees.ATTENDEE_TYPE))
-                    assertEquals(Attendees.RELATIONSHIP_ORGANIZER, attendee.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
-                }
+        buildEvent(true) {
+            attendees += Attendee(URI("mailto", testAccount.name, null))
+        }.let { result ->
+            firstAttendee(result)!!.let { attendee ->
+                assertEquals(testAccount.name, attendee.getAsString(Attendees.ATTENDEE_EMAIL))
+                assertEquals(Attendees.TYPE_REQUIRED, attendee.getAsInteger(Attendees.ATTENDEE_TYPE))
+                assertEquals(Attendees.RELATIONSHIP_ORGANIZER, attendee.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
             }
+        }
     }
     @Test
     fun testBuildAttendee_PartStat_None() {
         buildEvent(true) {
             attendees += Attendee("mailto:attendee@example.com")
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1261,9 +1238,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.NEEDS_ACTION)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1274,9 +1249,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.ACCEPTED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_ACCEPTED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_ACCEPTED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1287,9 +1260,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.DECLINED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_DECLINED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_DECLINED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1300,9 +1271,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.TENTATIVE)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_TENTATIVE, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_TENTATIVE, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1313,9 +1282,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.DELEGATED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_NONE, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_NONE, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1326,9 +1293,7 @@ class AndroidEventTest {
                 parameters.add(PartStat("X-WILL-ASK"))
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
