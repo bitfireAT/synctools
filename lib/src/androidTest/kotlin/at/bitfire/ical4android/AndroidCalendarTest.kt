@@ -79,7 +79,7 @@ class AndroidCalendarTest {
         assertNotNull(uri)
 
         // query calendar
-        val calendar = AndroidCalendar.findByID(testAccount, provider, TestCalendar.Factory, ContentUris.parseId(uri))
+        val calendar = AndroidCalendar.findByID(testAccount, provider, ContentUris.parseId(uri))
         assertNotNull(calendar)
 
         // delete calendar

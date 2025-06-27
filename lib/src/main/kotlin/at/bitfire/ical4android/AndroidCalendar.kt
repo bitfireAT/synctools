@@ -31,7 +31,7 @@ import java.util.logging.Logger
  * Communicates with the Android Contacts Provider which uses an SQLite
  * database to store the events.
  */
-open class AndroidCalendar(
+class AndroidCalendar(
     val account: Account,
     val provider: ContentProviderClient,
 
@@ -215,19 +215,18 @@ open class AndroidCalendar(
             provider.delete(Colors.CONTENT_URI.asSyncAdapter(account), null, null)
         }
 
-        fun <T : AndroidCalendar> findByID(
+        fun findByID(
             account: Account,
             provider: ContentProviderClient,
-            factory: AndroidCalendarFactory<T>,
             id: Long
-        ): T {
+        ): AndroidCalendar {
             val iterCalendars = CalendarEntity.newEntityIterator(
                 provider.query(ContentUris.withAppendedId(CalendarEntity.CONTENT_URI, id).asSyncAdapter(account), null, null, null, null)
             )
             try {
                 if (iterCalendars.hasNext()) {
                     val values = iterCalendars.next().entityValues
-                    val calendar = factory.newInstance(account, provider, id)
+                    val calendar = AndroidCalendar(account, provider, id)
                     calendar.populate(values)
                     return calendar
                 }
@@ -237,21 +236,20 @@ open class AndroidCalendar(
             throw FileNotFoundException()
         }
 
-        fun <T : AndroidCalendar> find(
+        fun find(
             account: Account,
             provider: ContentProviderClient,
-            factory: AndroidCalendarFactory<T>,
             where: String?,
             whereArgs: Array<String>?
-        ): List<T> {
+        ): List<AndroidCalendar> {
             val iterCalendars = CalendarEntity.newEntityIterator(
                 provider.query(CalendarEntity.CONTENT_URI.asSyncAdapter(account), null, where, whereArgs, null)
             )
             try {
-                val calendars = LinkedList<T>()
+                val calendars = LinkedList<AndroidCalendar>()
                 while (iterCalendars.hasNext()) {
                     val values = iterCalendars.next().entityValues
-                    val calendar = factory.newInstance(account, provider, values.getAsLong(Calendars._ID))
+                    val calendar = AndroidCalendar(account, provider, values.getAsLong(Calendars._ID))
                     calendar.populate(values)
                     calendars += calendar
                 }
@@ -261,13 +259,6 @@ open class AndroidCalendar(
             }
         }
 
-    }
-
-
-    // default factory (will be removed as soon as AndroidCalendar is not open anymore)
-    object Factory : AndroidCalendarFactory<AndroidCalendar> {
-        override fun newInstance(account: Account, provider: ContentProviderClient, id: Long) =
-            AndroidCalendar(account, provider, id)
     }
 
 }

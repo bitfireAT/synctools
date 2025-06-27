@@ -101,7 +101,7 @@ class AndroidEventTest {
     private val tzDefault = DateUtils.ical4jTimeZone(tzIdDefault)
 
     private lateinit var calendarUri: Uri
-    private lateinit var calendar: TestCalendar
+    private lateinit var calendar: AndroidCalendar
 
     @Before
     fun prepare() {
@@ -1439,7 +1439,7 @@ class AndroidEventTest {
 
     private fun populateAndroidEvent(
         automaticDates: Boolean,
-        destinationCalendar: TestCalendar = calendar,
+        destinationCalendar: AndroidCalendar = calendar,
         asSyncAdapter: Boolean = false,
         insertCallback: (id: Long) -> Unit = {},
         extendedProperties: Map<String, String> = emptyMap(),
@@ -1481,7 +1481,7 @@ class AndroidEventTest {
 
     private fun populateEvent(
         automaticDates: Boolean,
-        destinationCalendar: TestCalendar = calendar,
+        destinationCalendar: AndroidCalendar = calendar,
         asSyncAdapter: Boolean = false,
         insertCallback: (id: Long) -> Unit = {},
         extendedProperties: Map<String, String> = emptyMap(),
@@ -1943,7 +1943,7 @@ class AndroidEventTest {
     }
 
 
-    private fun populateReminder(destinationCalendar: TestCalendar = calendar, builder: ContentValues.() -> Unit): VAlarm? {
+    private fun populateReminder(destinationCalendar: AndroidCalendar = calendar, builder: ContentValues.() -> Unit): VAlarm? {
         populateEvent(true, destinationCalendar = destinationCalendar, insertCallback = { id ->
             val reminderValues = ContentValues()
             reminderValues.put(Reminders.EVENT_ID, id)
