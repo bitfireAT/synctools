@@ -110,7 +110,6 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             AndroidCalendar.Companion.findByID(
                 account,
                 provider,
-                AndroidCalendar.Factory,
                 ContentUris.parseId(uri)
             )
         } catch (e: Exception) {

@@ -173,7 +173,6 @@ class AndroidEvent(
 
                     // calculate some scheduling properties
                     val groupScheduled = e.subValues.any { it.uri == Attendees.CONTENT_URI }
-                    val isOrganizer = (e.entityValues.getAsInteger(Events.IS_ORGANIZER) ?: 0) != 0
 
                     populateEvent(e.entityValues.removeBlankStrings(), groupScheduled)
 
