@@ -12,6 +12,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.net.Uri
+import android.os.Build
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
@@ -2502,6 +2503,242 @@ class AndroidEventTest {
         } finally {
             testEvent.delete()
         }
+    }
+
+
+    // companion object
+
+    @Test
+    fun testMarkEventAsDeleted() {
+        // Create event
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "A fine event"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        // Delete event
+        AndroidEvent.markAsDeleted(provider, testAccount, localEvent.id!!)
+
+        // Get the status of whether the event is deleted
+        provider.query(
+            ContentUris.withAppendedId(Events.CONTENT_URI, localEvent.id!!).asSyncAdapter(testAccount),
+            arrayOf(Events.DELETED),
+            null,
+            null, null
+        )!!.use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
+    }
+
+
+    @Test
+    fun testNumDirectInstances_SingleInstance() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 1 instance"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(1, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(5, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring_Endless() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event without end"
+            rRules.add(RRule("FREQ=DAILY"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    // flaky, needs InitCalendarProviderRule
+    fun testNumDirectInstances_Recurring_LateEnd() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 53 years"
+            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 is not supported by Android <11 Calendar Storage
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            assertEquals(52, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        else
+            assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring_ManyInstances() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 2 years"
+            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+        val number = AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!)
+
+        // Some android versions (i.e. <=Q and S) return 365*2 instances (wrong, 365*2+1 => correct),
+        // but we are satisfied with either result for now
+        assertTrue(number == 365 * 2 || number == 365 * 2 + 1)
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExdate() {
+        val event = Event().apply {
+            dtStart = DtStart(Date("20220120T010203Z"))
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+            exDates.add(ExDate(DateList("20220121T010203Z", Value.DATE_TIME)))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(4, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExceptions() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220122T010203Z")
+                dtStart = DtStart("20220122T130203Z")
+                summary = "Exception on 3rd day"
+            })
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220124T010203Z")
+                dtStart = DtStart("20220122T160203Z")
+                summary = "Exception on 5th day"
+            })
+        }
+        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
+        localEvent.add()
+
+        assertEquals(5 - 2, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+
+    @Test
+    fun testNumInstances_SingleInstance() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 1 instance"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(1, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(5, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_Endless() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with infinite instances"
+            rRules.add(RRule("FREQ=YEARLY"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_LateEnd() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event over 22 years"
+            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            assertEquals(52, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        else
+            assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_ManyInstances() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event over two years"
+            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
+                365 * 2       // Android <10: does not include UNTIL (incorrect!)
+            else
+                365 * 2 + 1,  // Android ≥10: includes UNTIL (correct)
+            AndroidEvent.numInstances(provider, testAccount, localEvent.id!!)
+        )
+    }
+
+    @Test
+    fun testNumInstances_RecurringWithExceptions() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 6 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=6"))
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220122T010203Z")
+                dtStart = DtStart("20220122T130203Z")
+                summary = "Exception on 3rd day"
+            })
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220124T010203Z")
+                dtStart = DtStart("20220122T160203Z")
+                summary = "Exception on 5th day"
+            })
+        }
+        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
+        localEvent.add()
+
+        calendar.findById(localEvent.id!!)
+
+        assertEquals(6, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
     }
 
 }
