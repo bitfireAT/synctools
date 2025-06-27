@@ -18,7 +18,7 @@ class TestCalendar(
     account: Account,
     providerClient: ContentProviderClient,
     id: Long
-): AndroidCalendar<TestEvent>(account, providerClient, TestEvent.Factory, id) {
+) : AndroidCalendar(account, providerClient, id) {
 
     companion object {
         fun findOrCreate(account: Account, provider: ContentProviderClient): TestCalendar {

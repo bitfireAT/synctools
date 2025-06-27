@@ -31,10 +31,9 @@ import java.util.logging.Logger
  * Communicates with the Android Contacts Provider which uses an SQLite
  * database to store the events.
  */
-open class AndroidCalendar<out T : AndroidEvent>(
+open class AndroidCalendar(
     val account: Account,
     val provider: ContentProviderClient,
-    val eventFactory: AndroidEventFactory<T>,
 
     /** the calendar ID ([Calendars._ID]) **/
     val id: Long
@@ -100,14 +99,14 @@ open class AndroidCalendar<out T : AndroidEvent>(
      * @param _whereArgs arguments for selection
      * @return events from this calendar which match the selection
      */
-    fun queryEvents(_where: String? = null, _whereArgs: Array<String>? = null): List<T> {
+    fun queryEvents(_where: String? = null, _whereArgs: Array<String>? = null): List<AndroidEvent> {
         val where = "(${_where ?: "1"}) AND " + Events.CALENDAR_ID + "=?"
         val whereArgs = (_whereArgs ?: arrayOf()) + id.toString()
 
-        val events = LinkedList<T>()
+        val events = LinkedList<AndroidEvent>()
         provider.query(Events.CONTENT_URI.asSyncAdapter(account), null, where, whereArgs, null)?.use { cursor ->
             while (cursor.moveToNext())
-                events += eventFactory.fromProvider(this, cursor.toValues())
+                events += AndroidEvent(this, cursor.toValues())
         }
         return events
     }
@@ -216,7 +215,12 @@ open class AndroidCalendar<out T : AndroidEvent>(
             provider.delete(Colors.CONTENT_URI.asSyncAdapter(account), null, null)
         }
 
-        fun<T: AndroidCalendar<AndroidEvent>> findByID(account: Account, provider: ContentProviderClient, factory: AndroidCalendarFactory<T>, id: Long): T {
+        fun <T : AndroidCalendar> findByID(
+            account: Account,
+            provider: ContentProviderClient,
+            factory: AndroidCalendarFactory<T>,
+            id: Long
+        ): T {
             val iterCalendars = CalendarEntity.newEntityIterator(
                 provider.query(ContentUris.withAppendedId(CalendarEntity.CONTENT_URI, id).asSyncAdapter(account), null, null, null, null)
             )
@@ -233,7 +237,13 @@ open class AndroidCalendar<out T : AndroidEvent>(
             throw FileNotFoundException()
         }
 
-        fun<T: AndroidCalendar<AndroidEvent>> find(account: Account, provider: ContentProviderClient, factory: AndroidCalendarFactory<T>, where: String?, whereArgs: Array<String>?): List<T> {
+        fun <T : AndroidCalendar> find(
+            account: Account,
+            provider: ContentProviderClient,
+            factory: AndroidCalendarFactory<T>,
+            where: String?,
+            whereArgs: Array<String>?
+        ): List<T> {
             val iterCalendars = CalendarEntity.newEntityIterator(
                 provider.query(CalendarEntity.CONTENT_URI.asSyncAdapter(account), null, where, whereArgs, null)
             )

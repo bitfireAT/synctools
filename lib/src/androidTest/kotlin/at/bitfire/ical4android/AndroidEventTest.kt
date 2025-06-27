@@ -23,7 +23,6 @@ import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.impl.TestEvent
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -62,6 +61,7 @@ import org.junit.Test
 import java.net.URI
 import java.time.Duration
 import java.time.Period
+import java.util.UUID
 import java.util.logging.Logger
 import kotlin.collections.plusAssign
 
@@ -171,7 +171,8 @@ class AndroidEventTest {
                 dtStart = DtStart(DateTime())
             eventBuilder()
         }
-        val uri = TestEvent(calendar, event).add()
+        // write event with random file name/sync_id
+        val uri = AndroidEvent(calendar, event, syncId = UUID.randomUUID().toString()).add()
         provider.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
             val values = ContentValues(cursor.columnCount)
@@ -2408,7 +2409,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.organizer = Organizer(URI("mailto:organizer@example.com"))
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-event").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2442,7 +2443,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime())
             color = Css3Color.silver
         }
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "reset-color").add()
         val id = ContentUris.parseId(uri)
 
         // verify that it has color
@@ -2465,7 +2466,7 @@ class AndroidEventTest {
         event.summary = "Sample event with STATUS"
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-status-from-null").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2495,7 +2496,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.status = Status.VEVENT_CONFIRMED
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-status-to-null").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2528,7 +2529,7 @@ class AndroidEventTest {
         event.dtEnd = DtEnd("20150502T130000Z")
         for (i in 0 until 20)
             event.attendees += Attendee(URI("mailto:att$i@example.com"))
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "transaction").add()
 
         val testEvent = calendar.findById(ContentUris.parseId(uri))
         try {

@@ -9,7 +9,7 @@ package at.bitfire.ical4android
 import android.accounts.Account
 import android.content.ContentProviderClient
 
-interface AndroidCalendarFactory<out T: AndroidCalendar<AndroidEvent>> {
+interface AndroidCalendarFactory<out T : AndroidCalendar> {
 
     fun newInstance(account: Account, provider: ContentProviderClient, id: Long): T
 
