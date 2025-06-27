@@ -17,7 +17,6 @@ import android.provider.CalendarContract.Colors
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.impl.TestEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import net.fortuna.ical4j.model.property.DtEnd
@@ -109,12 +108,12 @@ class AndroidCalendarTest {
         val cal = TestCalendar.findOrCreate(testAccount, provider)
         try {
             // add event with color
-            TestEvent(cal, Event().apply {
+            AndroidEvent(cal, Event().apply {
                 dtStart = DtStart("20210314T204200Z")
                 dtEnd = DtEnd("20210314T204230Z")
                 color = Css3Color.limegreen
                 summary = "Test event with color"
-            }).add()
+            }, "remove-colors").add()
 
             AndroidCalendar.removeColors(provider, testAccount)
             assertEquals(0, countColors(testAccount))

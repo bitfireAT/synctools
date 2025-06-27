@@ -16,7 +16,7 @@ import at.bitfire.ical4android.JtxICalObject
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.GrantPermissionOrSkipRule
+import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import io.mockk.mockk
 import org.junit.After
