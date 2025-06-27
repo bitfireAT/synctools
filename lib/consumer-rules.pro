@@ -20,3 +20,7 @@
 
 # ez-vcard: don't warn about jsoup
 -dontwarn org.jsoup.**
+
+# synctools provides test rules which are only needed for testing
+-dontwarn androidx.test.**
+-dontwarn org.junit.**
