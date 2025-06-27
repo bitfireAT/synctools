@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools
+package at.bitfire.synctools.test
 
 import androidx.test.rule.GrantPermissionRule
 import org.junit.Assume

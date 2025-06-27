@@ -5,13 +5,13 @@
  */
 package at.bitfire.ical4android
 
-import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.net.Uri
+import android.os.Build
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
@@ -21,13 +21,12 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.impl.TestEvent
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -59,9 +58,11 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
+import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 import java.time.Period
+import java.util.UUID
 import java.util.logging.Logger
 import kotlin.collections.plusAssign
 
@@ -71,10 +72,7 @@ class AndroidEventTest {
 
         @JvmField
         @ClassRule
-        val permissionRule = GrantPermissionRule.grant(
-            Manifest.permission.READ_CALENDAR,
-            Manifest.permission.WRITE_CALENDAR
-        )
+        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.getInstance()
 
         lateinit var provider: ContentProviderClient
 
@@ -171,7 +169,8 @@ class AndroidEventTest {
                 dtStart = DtStart(DateTime())
             eventBuilder()
         }
-        val uri = TestEvent(calendar, event).add()
+        // write event with random file name/sync_id
+        val uri = AndroidEvent(calendar, event, syncId = UUID.randomUUID().toString()).add()
         provider.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
             val values = ContentValues(cursor.columnCount)
@@ -180,7 +179,7 @@ class AndroidEventTest {
         }
     }
 
-    private fun firstExtendedProperty(values: ContentValues, mimeType: String): String? {
+    private fun firstExtendedProperty(values: ContentValues): String? {
         val id = values.getAsInteger(Events._ID)
         provider.query(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), arrayOf(ExtendedProperties.VALUE),
                 "${ExtendedProperties.EVENT_ID}=?", arrayOf(id.toString()), null)?.use {
@@ -191,7 +190,7 @@ class AndroidEventTest {
     }
 
     private fun firstUnknownProperty(values: ContentValues): Property? {
-        val rawValue = firstExtendedProperty(values, UnknownProperty.CONTENT_ITEM_TYPE)
+        val rawValue = firstExtendedProperty(values)
         return if (rawValue != null)
             UnknownProperty.fromJsonString(rawValue)
         else
@@ -588,7 +587,7 @@ class AndroidEventTest {
         buildEvent(true) {
             url = URI("https://example.com")
         }.let { result ->
-            assertEquals("https://example.com", firstExtendedProperty(result, AndroidEvent.EXTNAME_URL))
+            assertEquals("https://example.com", firstExtendedProperty(result))
         }
     }
 
@@ -868,9 +867,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Period.ofDays(-1))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(1440, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(1440, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -879,9 +876,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Duration.ofSeconds(-10))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(0, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(0, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -891,9 +886,7 @@ class AndroidEventTest {
         buildEvent(true) {
             alarms += VAlarm(Duration.ofMinutes(10))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(-10, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(-10, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -906,9 +899,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(1320, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(1320, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -921,9 +912,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(0, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(0, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -937,9 +926,7 @@ class AndroidEventTest {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(-130, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(-130, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -949,9 +936,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime("20200621T120000", tzVienna))
             alarms += VAlarm(DateTime("20200621T110000", tzVienna))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(60, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(60, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -961,9 +946,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime("20200621T120000", tzVienna))
             alarms += VAlarm(DateTime("20200621T110000", tzShanghai))
         }.let { result ->
-            firstReminder(result)!!.let { reminder ->
-                assertEquals(420, reminder.getAsInteger(Reminders.MINUTES))
-            }
+            assertEquals(420, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
     }
 
@@ -986,9 +969,7 @@ class AndroidEventTest {
         buildEvent(true) {
             attendees += Attendee("mailto:attendee1@example.com")
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals("attendee1@example.com", attendee.getAsString(Attendees.ATTENDEE_EMAIL))
-            }
+            assertEquals("attendee1@example.com", firstAttendee(result)!!.getAsString(Attendees.ATTENDEE_EMAIL))
         }
     }
 
@@ -1026,9 +1007,7 @@ class AndroidEventTest {
                 parameters.add(Cn("Sample Attendee"))
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals("Sample Attendee", attendee.getAsString(Attendees.ATTENDEE_NAME))
-            }
+            assertEquals("Sample Attendee", firstAttendee(result)!!.getAsString(Attendees.ATTENDEE_NAME))
         }
     }
 
@@ -1231,25 +1210,22 @@ class AndroidEventTest {
 
     @Test
     fun testBuildAttendee_Organizer() {
-        for (cuType in arrayOf(null, CuType.INDIVIDUAL, CuType.UNKNOWN, CuType.GROUP, CuType("x-custom-cutype")))
-            buildEvent(true) {
-                attendees += Attendee(URI("mailto", testAccount.name, null))
-            }.let { result ->
-                firstAttendee(result)!!.let { attendee ->
-                    assertEquals(testAccount.name, attendee.getAsString(Attendees.ATTENDEE_EMAIL))
-                    assertEquals(Attendees.TYPE_REQUIRED, attendee.getAsInteger(Attendees.ATTENDEE_TYPE))
-                    assertEquals(Attendees.RELATIONSHIP_ORGANIZER, attendee.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
-                }
+        buildEvent(true) {
+            attendees += Attendee(URI("mailto", testAccount.name, null))
+        }.let { result ->
+            firstAttendee(result)!!.let { attendee ->
+                assertEquals(testAccount.name, attendee.getAsString(Attendees.ATTENDEE_EMAIL))
+                assertEquals(Attendees.TYPE_REQUIRED, attendee.getAsInteger(Attendees.ATTENDEE_TYPE))
+                assertEquals(Attendees.RELATIONSHIP_ORGANIZER, attendee.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
             }
+        }
     }
     @Test
     fun testBuildAttendee_PartStat_None() {
         buildEvent(true) {
             attendees += Attendee("mailto:attendee@example.com")
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1260,9 +1236,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.NEEDS_ACTION)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1273,9 +1247,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.ACCEPTED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_ACCEPTED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_ACCEPTED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1286,9 +1258,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.DECLINED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_DECLINED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_DECLINED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1299,9 +1269,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.TENTATIVE)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_TENTATIVE, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_TENTATIVE, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1312,9 +1280,7 @@ class AndroidEventTest {
                 parameters.add(PartStat.DELEGATED)
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_NONE, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_NONE, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -1325,9 +1291,7 @@ class AndroidEventTest {
                 parameters.add(PartStat("X-WILL-ASK"))
             }
         }.let { result ->
-            firstAttendee(result)!!.let { attendee ->
-                assertEquals(Attendees.ATTENDEE_STATUS_INVITED, attendee.getAsInteger(Attendees.ATTENDEE_STATUS))
-            }
+            assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
     }
 
@@ -2408,7 +2372,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.organizer = Organizer(URI("mailto:organizer@example.com"))
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-event").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2442,7 +2406,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime())
             color = Css3Color.silver
         }
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "reset-color").add()
         val id = ContentUris.parseId(uri)
 
         // verify that it has color
@@ -2465,7 +2429,7 @@ class AndroidEventTest {
         event.summary = "Sample event with STATUS"
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-status-from-null").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2495,7 +2459,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.status = Status.VEVENT_CONFIRMED
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "update-status-to-null").add()
 
         // update test event in calendar
         val testEvent = calendar.findById(ContentUris.parseId(uri))
@@ -2528,7 +2492,7 @@ class AndroidEventTest {
         event.dtEnd = DtEnd("20150502T130000Z")
         for (i in 0 until 20)
             event.attendees += Attendee(URI("mailto:att$i@example.com"))
-        val uri = TestEvent(calendar, event).add()
+        val uri = AndroidEvent(calendar, event, "transaction").add()
 
         val testEvent = calendar.findById(ContentUris.parseId(uri))
         try {
@@ -2536,6 +2500,242 @@ class AndroidEventTest {
         } finally {
             testEvent.delete()
         }
+    }
+
+
+    // companion object
+
+    @Test
+    fun testMarkEventAsDeleted() {
+        // Create event
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "A fine event"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        // Delete event
+        AndroidEvent.markAsDeleted(provider, testAccount, localEvent.id!!)
+
+        // Get the status of whether the event is deleted
+        provider.query(
+            ContentUris.withAppendedId(Events.CONTENT_URI, localEvent.id!!).asSyncAdapter(testAccount),
+            arrayOf(Events.DELETED),
+            null,
+            null, null
+        )!!.use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(1, cursor.getInt(0))
+        }
+    }
+
+
+    @Test
+    fun testNumDirectInstances_SingleInstance() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 1 instance"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(1, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(5, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring_Endless() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event without end"
+            rRules.add(RRule("FREQ=DAILY"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    // flaky, needs InitCalendarProviderRule
+    fun testNumDirectInstances_Recurring_LateEnd() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 53 years"
+            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 is not supported by Android <11 Calendar Storage
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            assertEquals(52, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        else
+            assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_Recurring_ManyInstances() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 2 years"
+            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+        val number = AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!)
+
+        // Some android versions (i.e. <=Q and S) return 365*2 instances (wrong, 365*2+1 => correct),
+        // but we are satisfied with either result for now
+        assertTrue(number == 365 * 2 || number == 365 * 2 + 1)
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExdate() {
+        val event = Event().apply {
+            dtStart = DtStart(Date("20220120T010203Z"))
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+            exDates.add(ExDate(DateList("20220121T010203Z", Value.DATE_TIME)))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(4, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExceptions() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220122T010203Z")
+                dtStart = DtStart("20220122T130203Z")
+                summary = "Exception on 3rd day"
+            })
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220124T010203Z")
+                dtStart = DtStart("20220122T160203Z")
+                summary = "Exception on 5th day"
+            })
+        }
+        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
+        localEvent.add()
+
+        assertEquals(5 - 2, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+    }
+
+
+    @Test
+    fun testNumInstances_SingleInstance() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 1 instance"
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(1, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 5 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(5, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_Endless() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with infinite instances"
+            rRules.add(RRule("FREQ=YEARLY"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_LateEnd() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event over 22 years"
+            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            assertEquals(52, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        else
+            assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_ManyInstances() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event over two years"
+            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
+        }
+        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
+        localEvent.add()
+
+        assertEquals(
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
+                365 * 2       // Android <10: does not include UNTIL (incorrect!)
+            else
+                365 * 2 + 1,  // Android ≥10: includes UNTIL (correct)
+            AndroidEvent.numInstances(provider, testAccount, localEvent.id!!)
+        )
+    }
+
+    @Test
+    fun testNumInstances_RecurringWithExceptions() {
+        val event = Event().apply {
+            dtStart = DtStart("20220120T010203Z")
+            summary = "Event with 6 instances"
+            rRules.add(RRule("FREQ=DAILY;COUNT=6"))
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220122T010203Z")
+                dtStart = DtStart("20220122T130203Z")
+                summary = "Exception on 3rd day"
+            })
+            exceptions.add(Event().apply {
+                recurrenceId = RecurrenceId("20220124T010203Z")
+                dtStart = DtStart("20220122T160203Z")
+                summary = "Exception on 5th day"
+            })
+        }
+        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
+        localEvent.add()
+
+        calendar.findById(localEvent.id!!)
+
+        assertEquals(6, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
     }
 
 }

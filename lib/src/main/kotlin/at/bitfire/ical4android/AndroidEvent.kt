@@ -6,12 +6,15 @@
 
 package at.bitfire.ical4android
 
+import android.accounts.Account
+import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.EntityIterator
 import android.net.Uri
 import android.os.RemoteException
+import android.provider.CalendarContract
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
@@ -19,8 +22,9 @@ import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
-import androidx.annotation.CallSuper
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
+import at.bitfire.ical4android.AndroidEvent.Companion.numInstances
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -85,16 +89,17 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-open class AndroidEvent(
-    val calendar: AndroidCalendar<AndroidEvent>
+class AndroidEvent(
+    val calendar: AndroidCalendar
 ) {
 
-    protected val logger: Logger by lazy { Logger.getLogger(AndroidEvent::class.java.name) }
+    private val logger: Logger
+        get() = Logger.getLogger(javaClass.name)
 
     var id: Long? = null
-        protected set
+        private set
 
-    open var syncId: String? = null
+    var syncId: String? = null
 
     var eTag: String? = null
     var scheduleTag: String? = null
@@ -106,7 +111,7 @@ open class AndroidEvent(
      *
      * @param values database row with all columns, as returned by the calendar provider
      */
-    constructor(calendar: AndroidCalendar<*>, values: ContentValues) : this(calendar) {
+    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
         this.id = values.getAsLong(Events._ID)
         this.syncId = values.getAsString(Events._SYNC_ID)
         this.eTag = values.getAsString(COLUMN_ETAG)
@@ -117,9 +122,17 @@ open class AndroidEvent(
 
     /**
      * Creates a new object from an event which doesn't exist in the calendar storage yet.
+     *
      * @param event event that can be saved into the calendar storage
      */
-    constructor(calendar: AndroidCalendar<*>, event: Event, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int) : this(calendar) {
+    constructor(
+        calendar: AndroidCalendar,
+        event: Event,
+        syncId: String?,
+        eTag: String? = null,
+        scheduleTag: String? = null,
+        flags: Int = 0
+    ) : this(calendar) {
         this.event = event
         this.syncId = syncId
         this.eTag = eTag
@@ -171,7 +184,7 @@ open class AndroidEvent(
                     for (subValue in e.subValues) {
                         val subValues = subValue.values.removeBlankStrings()
                         when (subValue.uri) {
-                            Attendees.CONTENT_URI -> populateAttendee(subValues, isOrganizer)
+                            Attendees.CONTENT_URI -> populateAttendee(subValues)
                             Reminders.CONTENT_URI -> populateReminder(subValues)
                             ExtendedProperties.CONTENT_URI -> populateExtended(subValues)
                         }
@@ -197,7 +210,7 @@ open class AndroidEvent(
      *
      * @param row values of an [Events] row, as returned by the calendar provider
      */
-    protected fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
+    private fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
         val event = requireNotNull(event)
 
@@ -392,7 +405,7 @@ open class AndroidEvent(
         }
     }
 
-    protected open fun populateAttendee(row: ContentValues, isOrganizer: Boolean) {
+    private fun populateAttendee(row: ContentValues) {
         logger.log(Level.FINE, "Read event attendee from calender provider", row)
 
         try {
@@ -433,7 +446,7 @@ open class AndroidEvent(
         }
     }
 
-    protected open fun populateReminder(row: ContentValues) {
+    private fun populateReminder(row: ContentValues) {
         logger.log(Level.FINE, "Read event reminder from calender provider", row)
         val event = requireNotNull(event)
 
@@ -467,7 +480,7 @@ open class AndroidEvent(
         event.alarms += alarm
     }
 
-    protected open fun populateExtended(row: ContentValues) {
+    private fun populateExtended(row: ContentValues) {
         val name = row.getAsString(ExtendedProperties.NAME)
         val rawValue = row.getAsString(ExtendedProperties.VALUE)
         logger.log(Level.FINE, "Read extended property from calender provider", arrayOf(name, rawValue))
@@ -498,7 +511,7 @@ open class AndroidEvent(
         }
     }
 
-    protected open fun populateExceptions() {
+    private fun populateExceptions() {
         requireNotNull(id)
         val event = requireNotNull(event)
 
@@ -508,7 +521,7 @@ open class AndroidEvent(
             while (c.moveToNext()) {
                 val values = c.toValues(true)
                 try {
-                    val exception = calendar.eventFactory.fromProvider(calendar, values)
+                    val exception = AndroidEvent(calendar, values)
                     val exceptionEvent = exception.event!!
                     val recurrenceId = exceptionEvent.recurrenceId!!
 
@@ -760,7 +773,7 @@ open class AndroidEvent(
         return batch.commit()
     }
 
-    protected fun deleteExceptions(batch: CalendarBatchOperation) {
+    private fun deleteExceptions(batch: CalendarBatchOperation) {
         val existingId = requireNotNull(id)
         batch += CpoBuilder
             .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
@@ -777,7 +790,7 @@ open class AndroidEvent(
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
      * @param builder      data row builder to be used
      */
-    protected fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
+    private fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
         val event = recurrence ?: requireNotNull(event)
 
         val dtStart = event.dtStart ?: throw InvalidCalendarException("Events must have DTSTART")
@@ -1011,7 +1024,7 @@ open class AndroidEvent(
                 })
     }
 
-    protected open fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
+    private fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
         val builder = CpoBuilder
                 .newInsert(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withEventId(Reminders.EVENT_ID, idxEvent)
@@ -1033,7 +1046,7 @@ open class AndroidEvent(
         batch += builder
     }
 
-    protected open fun insertAttendee(batch: CalendarBatchOperation, idxEvent: Int?, attendee: Attendee, organizer: String) {
+    private fun insertAttendee(batch: CalendarBatchOperation, idxEvent: Int?, attendee: Attendee, organizer: String) {
         val builder = CpoBuilder
                 .newInsert(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withEventId(Attendees.EVENT_ID, idxEvent)
@@ -1070,7 +1083,7 @@ open class AndroidEvent(
         batch += builder
     }
 
-    protected open fun insertExtendedProperty(batch: CalendarBatchOperation, idxEvent: Int?, name: String, value: String) {
+    private fun insertExtendedProperty(batch: CalendarBatchOperation, idxEvent: Int?, name: String, value: String) {
         val builder = CpoBuilder
             .newInsert(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
             .withEventId(ExtendedProperties.EVENT_ID, idxEvent)
@@ -1079,7 +1092,7 @@ open class AndroidEvent(
         batch += builder
     }
 
-    protected open fun insertCategories(batch: CalendarBatchOperation, idxEvent: Int?) {
+    private fun insertCategories(batch: CalendarBatchOperation, idxEvent: Int?) {
         val rawCategories = event!!.categories      // concatenate, separate by backslash
                 .joinToString(CATEGORIES_SEPARATOR.toString()) { category ->
                     // drop occurrences of CATEGORIES_SEPARATOR in category names
@@ -1088,7 +1101,7 @@ open class AndroidEvent(
         insertExtendedProperty(batch, idxEvent, EXTNAME_CATEGORIES, rawCategories)
     }
 
-    protected open fun insertUnknownProperty(batch: CalendarBatchOperation, idxEvent: Int?, property: Property) {
+    private fun insertUnknownProperty(batch: CalendarBatchOperation, idxEvent: Int?, property: Property) {
         if (property.value == null) {
             logger.warning("Ignoring unknown property with null value")
             return
@@ -1120,7 +1133,7 @@ open class AndroidEvent(
     }
 
 
-    protected fun CpoBuilder.withEventId(column: String, idxEvent: Int?): CpoBuilder {
+    private fun CpoBuilder.withEventId(column: String, idxEvent: Int?): CpoBuilder {
         if (idxEvent != null)
             withValueBackReference(column, idxEvent)
         else
@@ -1129,12 +1142,11 @@ open class AndroidEvent(
     }
 
 
-    protected fun eventSyncURI(): Uri {
+    private fun eventSyncURI(): Uri {
         val id = requireNotNull(id)
         return ContentUris.withAppendedId(Events.CONTENT_URI, id).asSyncAdapter(calendar.account)
     }
 
-    @CallSuper
     override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$_event)"
 
 
@@ -1192,6 +1204,107 @@ open class AndroidEvent(
          * The URL is directly put into [ExtendedProperties.VALUE].
          */
         const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
+
+
+        // helpers
+
+        /**
+         * Marks the event as deleted
+         * @param eventID
+         */
+        fun markAsDeleted(provider: ContentProviderClient, account: Account, eventID: Long) {
+            provider.update(
+                ContentUris.withAppendedId(
+                    Events.CONTENT_URI,
+                    eventID
+                ).asSyncAdapter(account),
+                contentValuesOf(Events.DELETED to 1),
+                null, null
+            )
+        }
+
+        /**
+         * Finds the amount of direct instances this event has (without exceptions); used by [numInstances]
+         * to find the number of instances of exceptions.
+         *
+         * The number of returned instances may vary with the Android version.
+         *
+         * @return number of direct event instances (not counting instances of exceptions); *null* if
+         * the number can't be determined or if the event has no last date (recurring event without last instance)
+         */
+        fun numDirectInstances(provider: ContentProviderClient, account: Account, eventID: Long): Int? {
+            // query event to get first and last instance
+            var first: Long? = null
+            var last: Long? = null
+            provider.query(
+                ContentUris.withAppendedId(
+                    Events.CONTENT_URI,
+                    eventID
+                ),
+                arrayOf(Events.DTSTART, Events.LAST_DATE), null, null, null
+            )?.use { cursor ->
+                cursor.moveToNext()
+                if (!cursor.isNull(0))
+                    first = cursor.getLong(0)
+                if (!cursor.isNull(1))
+                    last = cursor.getLong(1)
+            }
+            // if this event doesn't have a last occurence, it's endless and always has instances
+            if (first == null || last == null)
+                return null
+
+            /* We can't use Long.MIN_VALUE and Long.MAX_VALUE because Android generates the instances
+             on the fly and it doesn't accept those values. So we use the first/last actual occurence
+             of the event (calculated by Android). */
+            val instancesUri = CalendarContract.Instances.CONTENT_URI.asSyncAdapter(account)
+                .buildUpon()
+                .appendPath(first.toString())       // begin timestamp
+                .appendPath(last.toString())        // end timestamp
+                .build()
+
+            var numInstances = 0
+            provider.query(
+                instancesUri, null,
+                "${CalendarContract.Instances.EVENT_ID}=?", arrayOf(eventID.toString()),
+                null
+            )?.use { cursor ->
+                numInstances += cursor.count
+            }
+            return numInstances
+        }
+
+        /**
+         * Finds the total number of instances this event has (including instances of exceptions)
+         *
+         * The number of returned instances may vary with the Android version.
+         *
+         * @return number of direct event instances (not counting instances of exceptions); *null* if
+         * the number can't be determined or if the event has no last date (recurring event without last instance)
+         */
+        fun numInstances(provider: ContentProviderClient, account: Account, eventID: Long): Int? {
+            // num instances of the main event
+            var numInstances = numDirectInstances(provider, account, eventID) ?: return null
+
+            // add the number of instances of every main event's exception
+            provider.query(
+                Events.CONTENT_URI,
+                arrayOf(Events._ID),
+                "${Events.ORIGINAL_ID}=?", // get exception events of the main event
+                arrayOf("$eventID"), null
+            )?.use { exceptionsEventCursor ->
+                while (exceptionsEventCursor.moveToNext()) {
+                    val exceptionEventID = exceptionsEventCursor.getLong(0)
+                    val exceptionInstances = numDirectInstances(provider, account, exceptionEventID)
+
+                    if (exceptionInstances == null)
+                    // number of instances of exception can't be determined; so the total number of instances is also unclear
+                        return null
+
+                    numInstances += exceptionInstances
+                }
+            }
+            return numInstances
+        }
 
     }
 

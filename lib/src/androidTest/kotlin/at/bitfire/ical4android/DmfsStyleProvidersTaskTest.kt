@@ -7,7 +7,7 @@
 package at.bitfire.ical4android
 
 import androidx.test.platform.app.InstrumentationRegistry
-import at.bitfire.synctools.GrantPermissionOrSkipRule
+import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Before
