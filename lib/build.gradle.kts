@@ -1,3 +1,9 @@
+/*
+ * This file is part of bitfireAT/synctools which is released under GPLv3.
+ * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -116,6 +122,9 @@ dependencies {
         exclude(group = "org.jsoup")
         exclude(group = "org.freemarker")
     }
+
+    // synctools.test package also provide test rules
+    implementation(libs.androidx.test.rules)
 
     // instrumented tests
     androidTestImplementation(libs.androidx.test.rules)

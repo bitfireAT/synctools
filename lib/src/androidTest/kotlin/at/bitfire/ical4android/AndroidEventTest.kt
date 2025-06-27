@@ -5,7 +5,6 @@
  */
 package at.bitfire.ical4android
 
-import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
@@ -22,12 +21,12 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -59,6 +58,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
+import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 import java.time.Period
@@ -72,10 +72,7 @@ class AndroidEventTest {
 
         @JvmField
         @ClassRule
-        val permissionRule = GrantPermissionRule.grant(
-            Manifest.permission.READ_CALENDAR,
-            Manifest.permission.WRITE_CALENDAR
-        )
+        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.getInstance()
 
         lateinit var provider: ContentProviderClient
 

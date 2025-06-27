@@ -263,4 +263,11 @@ open class AndroidCalendar(
 
     }
 
+
+    // default factory (will be removed as soon as AndroidCalendar is not open anymore)
+    object Factory : AndroidCalendarFactory<AndroidCalendar> {
+        override fun newInstance(account: Account, provider: ContentProviderClient, id: Long) =
+            AndroidCalendar(account, provider, id)
+    }
+
 }

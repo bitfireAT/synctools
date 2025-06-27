@@ -13,7 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.GrantPermissionOrSkipRule
+import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import junit.framework.TestCase.assertEquals
