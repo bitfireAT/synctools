@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools.storage
+package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentProviderClient
+import at.bitfire.synctools.storage.BatchOperation
 
 /**
  * [BatchOperation] for the Android calendar provider
