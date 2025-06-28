@@ -7,6 +7,7 @@
 package at.bitfire.synctools.mapper.calendar
 
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Uid
 
@@ -18,7 +19,7 @@ class CalendarUidSplitter(
 ) {
 
     fun associateEvents(): Map<Uid?, AssociatedVEvents> {
-        val vEvents = calendar.getComponents<VEvent>().toMutableList()
+        val vEvents = calendar.getComponents<VEvent>(Component.VEVENT).toMutableList()
 
         // Note: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
         // so it's possible that the Uid is null.

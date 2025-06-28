@@ -85,17 +85,23 @@ class AndroidEvent2Builder(
     data class SyncProperties(
         val calendarId: Long,
         val fileName: String,
-        val dirty: Boolean,
-        val deleted: Boolean,
-        val flags: Int
+        val dirty: Boolean = false,
+        val deleted: Boolean = false,
+        val flags: Int = 0
     )
 
 
     companion object {
 
         val features = arrayOf(
+            DescriptionBuilder,
+            DtEndBuilder,
+            DtStartBuilder,
+            EventTimeZoneBuilder,
             OriginalInstanceTimeBuilder,
             OriginalSyncIdBuilder,
+            SummaryBuilder,
+            // special case: SyncPropertiesBuilder is explicitly called by build()
             UidBuilder
         )
 
