@@ -21,6 +21,9 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidCalendar.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import java.io.FileNotFoundException
 import java.util.LinkedList
 import java.util.logging.Level
@@ -127,6 +130,29 @@ class AndroidCalendar(
         update(contentValuesOf(COLUMN_SYNC_STATE to state))
     }
 
+
+    // AndroidEvent2 CRUD
+
+    fun add(event: AndroidEvent2) {
+        val batch = CalendarBatchOperation(provider)
+
+        /* main event */
+        val mainEvent = event.mainEvent
+
+        // event row
+        batch += BatchOperation.CpoBuilder
+            .newInsert(Events.CONTENT_URI.asSyncAdapter(account))
+            .withValues(mainEvent.entityValues)
+
+        // other rows: reminders etc.
+
+        /* exceptions */
+
+        batch.commit()
+    }
+
+
+    // helpers
 
     fun calendarSyncURI() = ContentUris.withAppendedId(Calendars.CONTENT_URI, id).asSyncAdapter(account)
 
