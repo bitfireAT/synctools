@@ -266,7 +266,9 @@ open class BatchOperation internal constructor(
         }
 
         fun withValues(values: ContentValues): CpoBuilder {
-            values.putAll(values)
+            for ((key, value) in values.valueSet())
+                if (key != null)
+                    _values[key] = value
             return this
         }
 

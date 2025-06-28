@@ -57,7 +57,7 @@ data class AssociatedVEvents(
             } else
                 null
 
-        if (mainUid != null && exceptionsUid != mainUid)
+        if (mainUid != null && exceptionsUid != null && exceptionsUid != mainUid)
             throw IllegalArgumentException("Exceptions must have the same UID as the main event")
     }
 
