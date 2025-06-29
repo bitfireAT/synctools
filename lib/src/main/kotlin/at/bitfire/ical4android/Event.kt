@@ -14,6 +14,7 @@ import at.bitfire.synctools.icalendar.CalendarUidSplitter
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TextList
@@ -259,8 +260,8 @@ data class Event(
             val ical = fromReader(reader, properties)
 
             // process VEVENTs
-            val splitter = CalendarUidSplitter(ical)
-            val vEventsByUid = splitter.associateEvents()
+            val splitter = CalendarUidSplitter<VEvent>()
+            val vEventsByUid = splitter.associateByUid(ical, Component.VEVENT)
 
             /* Note: There may be UIDs which have only RECURRENCE-ID entries and not a main entry (for instance, a recurring
             event with an exception where the current user has been invited only to this exception. In this case,

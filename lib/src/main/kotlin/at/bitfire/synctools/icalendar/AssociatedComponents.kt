@@ -6,21 +6,22 @@
 
 package at.bitfire.synctools.icalendar
 
+import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
 
 /**
- * @param main          main VEVent (with UID, without RECURRENCE-ID), may be `null` if only exceptions are present
- * @param exceptions    exceptions (each with UID and RECURRENCE-ID); UID must be
- *   1. the same as the UID of [main] (if present),
+ * @param main          main component (with or without UID, but without RECURRENCE-ID), may be `null` if only exceptions are present
+ * @param exceptions    exceptions (each without RECURRENCE-ID); UID must be
+ *   1. the same as the UID of [main],
  *   2. the same for all exceptions.
  *
  * If no [main] is present, [exceptions] must not be empty.
  *
  * @throws IllegalArgumentException   when the constraints above are violated
  */
-data class AssociatedVEvents(
-    val main: VEvent?,
-    val exceptions: List<VEvent>
+data class AssociatedComponents<T: CalendarComponent>(
+    val main: T?,
+    val exceptions: List<T>
 ) {
 
     init {
@@ -35,8 +36,6 @@ data class AssociatedVEvents(
     private fun validate() {
         val mainUid =
             if (main != null) {
-                if (main.uid == null)
-                    throw IllegalArgumentException("Main event must have an UID")
                 if (main.recurrenceId != null)
                     throw IllegalArgumentException("Main event must not have a RECURRENCE-ID")
 
@@ -57,8 +56,10 @@ data class AssociatedVEvents(
             } else
                 null
 
-        if (mainUid != null && exceptionsUid != null && exceptionsUid != mainUid)
+        if (exceptions.isNotEmpty() && exceptionsUid != mainUid)
             throw IllegalArgumentException("Exceptions must have the same UID as the main event")
     }
 
 }
+
+typealias AssociatedEvents = AssociatedComponents<VEvent>

@@ -6,31 +6,30 @@
 
 package at.bitfire.synctools.icalendar
 
+import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.Component
-import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.component.CalendarComponent
 
 /**
  * Splits iCalendar components by UID.
  */
-class CalendarUidSplitter(
-    private val calendar: Calendar
-) {
+class CalendarUidSplitter<T: CalendarComponent> {
 
-    fun associateEvents(): Map<String?, AssociatedVEvents> {
-        val allVEvents = calendar.getComponents<VEvent>(Component.VEVENT).toMutableList()
+    fun associateByUid(calendar: Calendar, componentName: String): Map<String?, AssociatedComponents<T>> {
+        // get all components of type T (for instance: all VEVENTs)
+        val allComponents = calendar.getComponents<T>(componentName).toMutableList()
 
-        // Note: UID is REQUIRED for events in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
+        // Note for VEVENT: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
         // so it's possible that the Uid is null.
-        val byUid: Map<String?, List<VEvent>> = allVEvents
+        val byUid: Map<String?, List<T>> = allComponents
             .groupBy { it.uid?.value }
             .mapValues { filterBySequence(it.value) }
 
-        val result = mutableMapOf<String?, AssociatedVEvents>()
+        val result = mutableMapOf<String?, AssociatedComponents<T>>()
         for ((uid, vEventsWithUid) in byUid) {
-            val mainVEvent = vEventsWithUid.last { it.recurrenceId == null }
+            val mainVEvent = vEventsWithUid.lastOrNull { it.recurrenceId == null }
             val exceptions = vEventsWithUid.filter { it.recurrenceId != null }
-            result[uid] = AssociatedVEvents(mainVEvent, exceptions)
+            result[uid] = AssociatedComponents(mainVEvent, exceptions)
         }
 
         return result
@@ -43,7 +42,8 @@ class CalendarUidSplitter(
      *
      * @return same as input list, but each RECURRENCE-ID event only with the highest SEQUENCE
      */
-    private fun filterBySequence(events: List<VEvent>): List<VEvent> {
+    @VisibleForTesting
+    internal fun filterBySequence(events: List<T>): List<T> {
         // group by RECURRENCE-ID (may be null)
         val byRecurId = events.groupBy { it.recurrenceId?.value }.values
 
