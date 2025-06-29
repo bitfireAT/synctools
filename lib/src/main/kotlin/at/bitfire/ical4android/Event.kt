@@ -9,6 +9,7 @@ package at.bitfire.ical4android
 import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
 import at.bitfire.ical4android.util.DateUtils.isDateTime
 import at.bitfire.ical4android.validation.EventValidator
+import at.bitfire.synctools.exception.InvalidLocalResourceException
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
@@ -108,7 +109,7 @@ data class Event(
         ical.properties += Version.VERSION_2_0
         ical.properties += prodId.withUserAgents(userAgents)
 
-        val dtStart = dtStart ?: throw InvalidCalendarException("Won't generate event without start time")
+        val dtStart = dtStart ?: throw InvalidLocalResourceException("Won't generate event without start time")
 
         EventValidator.repair(this)     // repair this event before creating the VEVENT
 
