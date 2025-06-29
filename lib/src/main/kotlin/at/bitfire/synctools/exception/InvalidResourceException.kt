@@ -4,9 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.exception
 
-class InvalidCalendarException: Exception {
+/**
+ * Represents an invalid resource.
+ */
+abstract class InvalidResourceException: Exception {
 
     constructor(message: String): super(message)
     constructor(message: String, ex: Throwable): super(message, ex)

@@ -38,6 +38,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.CalendarBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
@@ -215,7 +216,7 @@ class AndroidEvent(
         }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-        val tsStart = row.getAsLong(Events.DTSTART) ?: throw LocalStorageException("Found event without DTSTART")
+        val tsStart = row.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
 
         var tsEnd = row.getAsLong(Events.DTEND)
         var duration =   // only use DURATION of DTEND is not defined
@@ -785,7 +786,7 @@ class AndroidEvent(
     private fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
         val event = recurrence ?: requireNotNull(event)
 
-        val dtStart = event.dtStart ?: throw InvalidCalendarException("Events must have DTSTART")
+        val dtStart = event.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android

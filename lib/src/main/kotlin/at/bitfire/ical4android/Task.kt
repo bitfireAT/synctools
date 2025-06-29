@@ -8,8 +8,8 @@ package at.bitfire.ical4android
 
 import androidx.annotation.IntRange
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import net.fortuna.ical4j.data.CalendarOutputter
-import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
@@ -106,8 +106,7 @@ data class Task(
          *
          * @return array of filled [Task] data objects (may have size 0)
          *
-         * @throws ParserException when the iCalendar can't be parsed
-         * @throws IllegalArgumentException when the iCalendar resource contains an invalid value
+         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
          * @throws IOException on I/O errors
          */
         fun tasksFromReader(reader: Reader): List<Task> {

@@ -14,13 +14,13 @@ import android.os.ParcelFileDescriptor
 import android.util.Base64
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.data.CalendarOutputter
-import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Date
@@ -283,8 +283,7 @@ open class JtxICalObject(
          *
          * @return array of filled [JtxICalObject] data objects (may have size 0)
          *
-         * @throws ParserException when the iCalendar can't be parsed
-         * @throws IllegalArgumentException when the iCalendar resource contains an invalid value
+         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
          * @throws IOException on I/O errors
          */
         fun fromReader(

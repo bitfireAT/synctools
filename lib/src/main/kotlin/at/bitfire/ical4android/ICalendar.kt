@@ -9,9 +9,9 @@ package at.bitfire.ical4android
 import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
 import at.bitfire.ical4android.validation.ICalPreprocessor
 import at.bitfire.synctools.BuildConfig
+import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.ICalendarParser
 import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.data.CalendarParserFactory
-import net.fortuna.ical4j.data.ContentHandlerContext
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
@@ -19,7 +19,6 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.Daylight
 import net.fortuna.ical4j.model.component.Observance
 import net.fortuna.ical4j.model.component.Standard
@@ -89,35 +88,14 @@ open class ICalendar {
          * @param properties Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
          *
          * @return parsed iCalendar resource
-         * @throws ParserException when the iCalendar can't be parsed
-         * @throws IllegalArgumentException when the iCalendar resource contains an invalid value
+         *
+         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
          */
+        @Deprecated("Use ICalendarParser directly")
         fun fromReader(reader: Reader, properties: MutableMap<String, String>? = null): Calendar {
             logger.fine("Parsing iCalendar stream")
 
-            // preprocess stream to work around some problems that can't be fixed later
-            val preprocessed = ICalPreprocessor.preprocessStream(reader)
-
-            // parse stream
-            val calendar: Calendar
-            try {
-                calendar = CalendarBuilder(
-                    CalendarParserFactory.getInstance().get(),
-                    ContentHandlerContext().withSupressInvalidProperties(true),
-                    TimeZoneRegistryFactory.getInstance().createRegistry()      // AndroidCompatTimeZoneRegistry
-                ).build(preprocessed)
-            } catch(e: ParserException) {
-                throw InvalidCalendarException("Couldn't parse iCalendar", e)
-            } catch(e: IllegalArgumentException) {
-                throw InvalidCalendarException("iCalendar contains invalid value", e)
-            }
-
-            // apply ICalPreprocessor for increased compatibility
-            try {
-                ICalPreprocessor.preprocessCalendar(calendar)
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't pre-process iCalendar", e)
-            }
+            val calendar = ICalendarParser().parse(reader)
 
             // fill calendar properties
             properties?.let {
