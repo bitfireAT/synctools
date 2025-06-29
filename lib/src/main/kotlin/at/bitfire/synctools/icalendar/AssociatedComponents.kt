@@ -56,7 +56,7 @@ data class AssociatedComponents<T: CalendarComponent>(
             } else
                 null
 
-        if (exceptions.isNotEmpty() && exceptionsUid != mainUid)
+        if (main != null && exceptions.isNotEmpty() && exceptionsUid != mainUid)
             throw IllegalArgumentException("Exceptions must have the same UID as the main event")
     }
 
