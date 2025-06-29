@@ -10,10 +10,10 @@ import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
 import at.bitfire.ical4android.util.DateUtils.isDateTime
 import at.bitfire.ical4android.validation.EventValidator
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.CalendarUidSplitter
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TextList
@@ -259,75 +259,42 @@ data class Event(
             val ical = fromReader(reader, properties)
 
             // process VEVENTs
-            val vEvents = ical.getComponents<VEvent>(Component.VEVENT)
+            val splitter = CalendarUidSplitter(ical)
+            val vEventsByUid = splitter.associateEvents()
 
-            // make sure every event has an UID
-            for (vEvent in vEvents)
-                if (vEvent.uid == null) {
-                    val uid = Uid(UUID.randomUUID().toString())
-                    logger.warning("Found VEVENT without UID, using a random one: ${uid.value}")
-                    vEvent.properties += uid
-                }
-
-            logger.fine("Assigning exceptions to main events")
-            val mainEvents = mutableMapOf<String /* UID */, VEvent>()
-            val exceptions = mutableMapOf<String /* UID */, MutableMap<String /* RECURRENCE-ID */, VEvent>>()
-            for (vEvent in vEvents) {
-                val uid = vEvent.uid.value
-                val sequence = vEvent.sequence?.sequenceNo ?: 0
-
-                if (vEvent.recurrenceId == null) {
-                    // main event (no RECURRENCE-ID)
-
-                    // If there are multiple entries, compare SEQUENCE and use the one with higher SEQUENCE.
-                    // If the SEQUENCE is identical, use latest version.
-                    val event = mainEvents[uid]
-                    if (event == null || (event.sequence != null && sequence >= event.sequence.sequenceNo))
-                        mainEvents[uid] = vEvent
-
-                } else {
-                    // exception (RECURRENCE-ID)
-                    var ex = exceptions[uid]
-                    // first index level: UID
-                    if (ex == null) {
-                        ex = mutableMapOf()
-                        exceptions[uid] = ex
-                    }
-                    // second index level: RECURRENCE-ID
-                    val recurrenceID = vEvent.recurrenceId.value
-                    val event = ex[recurrenceID]
-                    if (event == null || (event.sequence != null && sequence >= event.sequence.sequenceNo))
-                        ex[recurrenceID] = vEvent
-                }
-            }
-
-            /* There may be UIDs which have only RECURRENCE-ID entries and not a main entry (for instance, a recurring
+            /* Note: There may be UIDs which have only RECURRENCE-ID entries and not a main entry (for instance, a recurring
             event with an exception where the current user has been invited only to this exception. In this case,
             the UID will not appear in mainEvents but only in exceptions. */
 
-            val events = mutableListOf<Event>()
-            for ((uid, vEvent) in mainEvents) {
-                val event = fromVEvent(vEvent)
-
-                // assign exceptions to main event and then remove them from exceptions array
-                exceptions.remove(uid)?.let { eventExceptions ->
-                    event.exceptions.addAll(eventExceptions.values.map { fromVEvent(it) })
-                }
-
-                // make sure that exceptions have at least a SUMMARY
-                event.exceptions.forEach { it.summary = it.summary ?: event.summary }
-
-                events += event
+            // make sure every event has an UID
+            vEventsByUid[null]?.let { withoutUid ->
+                val uid = Uid(UUID.randomUUID().toString())
+                logger.warning("Found VEVENT without UID, using a random one: ${uid.value}")
+                withoutUid.main?.properties?.add(uid)
+                withoutUid.exceptions.forEach { it.properties.add(uid) }
             }
 
-            for ((uid, onlyExceptions) in exceptions) {
-                logger.info("UID $uid doesn't have a main event but only exceptions: $onlyExceptions")
+            // convert into Events (data class)
+            val events = mutableListOf<Event>()
+            for ((uid, associatedEvents) in vEventsByUid) {
+                val mainVEvent =
+                    if (associatedEvents.main != null)
+                        associatedEvents.main
+                    else {
+                        logger.info("UID $uid doesn't have a main event but only exceptions; creating fake main event")
+                        associatedEvents.exceptions.first()
+                    }
 
-                // create a fake main event from the first exception
-                val fakeEvent = fromVEvent(onlyExceptions.values.first())
-                fakeEvent.exceptions.addAll(onlyExceptions.values.map { fromVEvent(it) })
+                val event = fromVEvent(mainVEvent)
+                event.exceptions.addAll(associatedEvents.exceptions.map {
+                    fromVEvent(it).also { exception ->
+                        // make sure that exceptions have at least a SUMMARY (if the main event does have one)
+                        if (exception.summary == null)
+                            exception.summary = event.summary
+                    }
+                })
 
-                events += fakeEvent
+                events += event
             }
 
             // Try to repair all events after reading the whole iCalendar
