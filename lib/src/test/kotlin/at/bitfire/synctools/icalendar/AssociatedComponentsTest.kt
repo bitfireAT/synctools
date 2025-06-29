@@ -14,7 +14,7 @@ import org.junit.Test
 
 class AssociatedComponentsTest {
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testEmpty() {
         AssociatedEvents(null, emptyList())
     }

@@ -277,23 +277,20 @@ data class Event(
 
             // convert into Events (data class)
             val events = mutableListOf<Event>()
-            for ((uid, associatedEvents) in vEventsByUid) {
-                val mainVEvent =
-                    if (associatedEvents.main != null)
-                        associatedEvents.main
-                    else {
-                        logger.info("UID $uid doesn't have a main event but only exceptions; creating fake main event")
-                        associatedEvents.exceptions.first()
-                    }
+            for (associatedEvents in vEventsByUid.values) {
+                val mainVEvent = associatedEvents.main ?:
+                    // no main event but only exceptions, create fake main event
+                    // FIXME: we should construct a proper recurring fake event, not just take first the exception
+                    associatedEvents.exceptions.first()
 
                 val event = fromVEvent(mainVEvent)
-                event.exceptions.addAll(associatedEvents.exceptions.map {
-                    fromVEvent(it).also { exception ->
+                associatedEvents.exceptions.mapTo(event.exceptions) { exceptionVEvent ->
+                    fromVEvent(exceptionVEvent).also { exception ->
                         // make sure that exceptions have at least a SUMMARY (if the main event does have one)
                         if (exception.summary == null)
                             exception.summary = event.summary
                     }
-                })
+                }
 
                 events += event
             }
@@ -305,7 +302,7 @@ data class Event(
             return events
         }
 
-        private fun fromVEvent(event: VEvent): Event {
+        fun fromVEvent(event: VEvent): Event {
             val e = Event()
 
             // sequence must only be null for locally created, not-yet-synchronized events

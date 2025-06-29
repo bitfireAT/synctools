@@ -10,18 +10,22 @@ import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.component.CalendarComponent
 
-/**
- * Splits iCalendar components by UID.
- */
 class CalendarUidSplitter<T: CalendarComponent> {
 
+    /**
+     * Splits iCalendar components by UID and classifies them as main events (without RECURRENCE-ID)
+     * or exceptions (with RECURRENCE-ID).
+     *
+     * When there are multiple components with the same UID and RECURRENCE-ID, but different SEQUENCE,
+     * this method keeps only the ones with the highest SEQUENCE.
+     */
     fun associateByUid(calendar: Calendar, componentName: String): Map<String?, AssociatedComponents<T>> {
         // get all components of type T (for instance: all VEVENTs)
-        val allComponents = calendar.getComponents<T>(componentName).toMutableList()
+        val all = calendar.getComponents<T>(componentName)
 
         // Note for VEVENT: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
         // so it's possible that the Uid is null.
-        val byUid: Map<String?, List<T>> = allComponents
+        val byUid: Map<String?, List<T>> = all
             .groupBy { it.uid?.value }
             .mapValues { filterBySequence(it.value) }
 
@@ -38,9 +42,9 @@ class CalendarUidSplitter<T: CalendarComponent> {
     /**
      * Keeps only the events with the highest SEQUENCE (per RECURRENCE-ID).
      *
-     * @param events    list of VEVENTs with the same UID, but different RECURRENCE-IDs and SEQUENCEs
+     * @param events    list of VEVENTs with the same UID, but different RECURRENCE-IDs (may be `null`) and SEQUENCEs
      *
-     * @return same as input list, but each RECURRENCE-ID event only with the highest SEQUENCE
+     * @return same as input list, but each RECURRENCE-ID occurs only with the highest SEQUENCE
      */
     @VisibleForTesting
     internal fun filterBySequence(events: List<T>): List<T> {

@@ -786,7 +786,7 @@ class AndroidEvent(
     private fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
         val event = recurrence ?: requireNotNull(event)
 
-        val dtStart = event.dtStart ?: throw LocalStorageException("Events must have DTSTART")
+        val dtStart = event.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android

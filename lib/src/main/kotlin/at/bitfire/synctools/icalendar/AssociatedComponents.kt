@@ -10,6 +10,16 @@ import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
 
 /**
+ * Represents a set of components (like VEVENT) stored in a calendar object resource as defined
+ * in RFC 4791 section 4.1. It consists of
+ *
+ * - an (optional) main component,
+ * - optional exceptions of this main component.
+ *
+ * Note: It's possible and valid that there's no main component, but only exceptions, for instance
+ * when the user has been invited to a specific instance (= exception) of a recurring event, but
+ * not to the event as a whole (→ main event is unknown / not present).
+ *
  * @param main          main component (with or without UID, but without RECURRENCE-ID), may be `null` if only exceptions are present
  * @param exceptions    exceptions (each without RECURRENCE-ID); UID must be
  *   1. the same as the UID of [main],
@@ -34,6 +44,9 @@ data class AssociatedComponents<T: CalendarComponent>(
      * @throws IllegalArgumentException     if [main] and/or [exceptions] UIDs don't match
      */
     private fun validate() {
+        if (main == null && exceptions.isEmpty())
+            throw IllegalArgumentException("At least one component is required")
+
         val mainUid =
             if (main != null) {
                 if (main.recurrenceId != null)

@@ -91,6 +91,7 @@ open class ICalendar {
          *
          * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
          */
+        @Deprecated("Use ICalendarParser directly")
         fun fromReader(reader: Reader, properties: MutableMap<String, String>? = null): Calendar {
             logger.fine("Parsing iCalendar stream")
 

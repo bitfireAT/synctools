@@ -27,7 +27,7 @@ class ICalendarParser {
         get() = Logger.getLogger(javaClass.name)
 
     /**
-     * Parses the given iCalendar and applies some error correction:
+     * Parses the given iCalendar as lenient as possible and applies some error correction:
      *
      * 1. The input stream from is preprocessed with [ICalPreprocessor.preprocessStream].
      * 2. The parsed calendar is preprocessed with [ICalPreprocessor.preprocessCalendar].
