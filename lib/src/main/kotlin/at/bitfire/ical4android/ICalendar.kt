@@ -94,7 +94,7 @@ open class ICalendar {
         fun fromReader(reader: Reader, properties: MutableMap<String, String>? = null): Calendar {
             logger.fine("Parsing iCalendar stream")
 
-            val calendar = ICalendarParser(reader).parse()
+            val calendar = ICalendarParser().parse(reader)
 
             // fill calendar properties
             properties?.let {

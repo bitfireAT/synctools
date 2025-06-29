@@ -21,9 +21,7 @@ import java.util.logging.Logger
 /**
  * Custom iCalendar parser that applies error correction using [ICalPreprocessor].
  */
-class ICalendarParser(
-    private val reader: Reader
-) {
+class ICalendarParser {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
@@ -34,9 +32,9 @@ class ICalendarParser(
      * 1. The input stream from is preprocessed with [ICalPreprocessor.preprocessStream].
      * 2. The parsed calendar is preprocessed with [ICalPreprocessor.preprocessCalendar].
      *
-     * @throws InvalidRemoteResourceException   when the resource is invalid
+     * @throws InvalidRemoteResourceException   when the resource is can't be parsed
      */
-    fun parse(): Calendar {
+    fun parse(reader: Reader): Calendar {
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
         val preprocessed = ICalPreprocessor.preprocessStream(reader)
 

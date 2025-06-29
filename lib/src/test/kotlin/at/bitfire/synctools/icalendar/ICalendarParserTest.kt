@@ -6,5 +6,57 @@
 
 package at.bitfire.synctools.icalendar
 
+import at.bitfire.ical4android.validation.ICalPreprocessor
+import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import io.mockk.junit4.MockKRule
+import io.mockk.mockkObject
+import io.mockk.verify
+import org.junit.Rule
+import org.junit.Test
+import java.io.StringReader
+
 class ICalendarParserTest {
+
+    @get:Rule
+    val mockkRule = MockKRule(this)
+
+    @Test
+    fun `parse() applies pre-processing`() {
+        mockkObject(ICalPreprocessor)
+
+        val reader = StringReader(
+            "BEGIN:VCALENDAR\r\n" +
+            "BEGIN:VEVENT\r\n" +
+            "END:VEVENT\r\n" +
+            "END:VCALENDAR\r\n"
+        )
+        val cal = ICalendarParser().parse(reader)
+
+        verify(exactly = 1) {
+            // verify preprocessing was applied to stream
+            ICalPreprocessor.preprocessStream(any())
+
+            // verify preprocessing was applied to resulting calendar
+            ICalPreprocessor.preprocessCalendar(cal)
+        }
+    }
+
+    @Test
+    fun `parse() suppresses invalid properties`() {
+        val reader = StringReader(
+            "BEGIN:VCALENDAR\r\n" +
+                    "BEGIN:VEVENT\r\n" +
+                    "DTSTAMP:invalid\r\n" +
+                    "END:VEVENT\r\n" +
+                    "END:VCALENDAR\r\n"
+        )
+        ICalendarParser().parse(reader)
+    }
+
+    @Test(expected = InvalidRemoteResourceException::class)
+    fun `parse() throws exception on invalid input`() {
+        val reader = StringReader("invalid")
+        ICalendarParser().parse(reader)
+    }
+
 }

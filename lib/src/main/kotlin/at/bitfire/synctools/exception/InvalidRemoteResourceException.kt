@@ -9,7 +9,7 @@ package at.bitfire.synctools.exception
 /**
  * Represents an invalid remote resource (for instance, a calendar object resource).
  */
-class InvalidRemoteResourceException: Exception {
+class InvalidRemoteResourceException: InvalidResourceException {
 
     constructor(message: String): super(message)
     constructor(message: String, ex: Throwable): super(message, ex)
