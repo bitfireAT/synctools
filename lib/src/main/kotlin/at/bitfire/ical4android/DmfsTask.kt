@@ -13,7 +13,6 @@ import android.os.RemoteException
 import androidx.annotation.CallSuper
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
@@ -49,6 +48,7 @@ import org.dmfs.tasks.contract.TaskContract.Property.Category
 import org.dmfs.tasks.contract.TaskContract.Property.Comment
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
+import toContentValues
 import java.io.FileNotFoundException
 import java.net.URISyntaxException
 import java.time.ZoneId
@@ -110,7 +110,7 @@ abstract class DmfsTask(
                         val newTask = Task()
                         field = newTask
 
-                        val values = cursor.toValues(true)
+                        val values = cursor.toContentValues()
                         logger.log(Level.FINER, "Found task", values)
                         populateTask(values)
 
@@ -120,7 +120,7 @@ abstract class DmfsTask(
 
                             while (cursor.moveToNext()) {
                                 // process the other properties
-                                populateProperty(cursor.toValues(true))
+                                populateProperty(cursor.toContentValues())
                             }
                         }
 

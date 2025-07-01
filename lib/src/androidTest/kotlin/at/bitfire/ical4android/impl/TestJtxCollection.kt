@@ -11,8 +11,8 @@ import android.content.ContentProviderClient
 import at.bitfire.ical4android.JtxCollection
 import at.bitfire.ical4android.JtxCollectionFactory
 import at.bitfire.ical4android.JtxICalObject
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.techbee.jtx.JtxContract
+import toContentValues
 import java.util.LinkedList
 
 class TestJtxCollection(
@@ -35,7 +35,7 @@ class TestJtxCollection(
         val iCalObjects = LinkedList<JtxICalObject>()
         client.query(jtxSyncURI(), null, where, whereArgs, null)?.use { cursor ->
             while (cursor.moveToNext())
-                iCalObjects += TestJtxIcalObject.Factory.fromProvider(this, cursor.toValues())
+                iCalObjects += TestJtxIcalObject.Factory.fromProvider(this, cursor.toContentValues())
         }
         return iCalObjects
     }

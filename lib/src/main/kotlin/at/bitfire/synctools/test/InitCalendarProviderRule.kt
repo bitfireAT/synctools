@@ -9,7 +9,6 @@ package at.bitfire.synctools.test
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentUris
 import android.content.ContentValues
 import android.os.Build
 import android.provider.CalendarContract
@@ -18,6 +17,7 @@ import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
@@ -104,14 +104,11 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
     }
 
     private fun createAndVerifyCalendar(account: Account, provider: ContentProviderClient): AndroidCalendar? {
-        val uri = AndroidCalendar.Companion.create(account, provider, ContentValues())
+        val calendarProvider = AndroidCalendarProvider(account, provider)
+        val id = calendarProvider.createCalendar(ContentValues())
 
         return try {
-            AndroidCalendar.Companion.findByID(
-                account,
-                provider,
-                ContentUris.parseId(uri)
-            )
+            calendarProvider.getCalendar(id)
         } catch (e: Exception) {
             logger.warning("Couldn't find calendar after creation: $e")
             null

@@ -183,7 +183,7 @@ enum class Css3Color(val argb: Int) {
             fromString(color)?.argb
                 ?: try {
                     color.toColorInt()
-                } catch(e: IllegalArgumentException) {
+                } catch(e: Exception) {
                     logger.log(Level.WARNING, "Can't parse color value: $color", e)
                     null
                 }
@@ -197,7 +197,7 @@ enum class Css3Color(val argb: Int) {
         fun fromString(name: String) =
             try {
                 valueOf(name.lowercase())
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 logger.log(Level.WARNING, "Invalid color name: $name", e)
                 null
             }

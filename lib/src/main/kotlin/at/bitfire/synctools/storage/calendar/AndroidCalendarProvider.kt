@@ -12,6 +12,8 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.os.RemoteException
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Colors
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.icalendar.Css3Color
@@ -35,11 +37,11 @@ class AndroidCalendarProvider(
 
     // AndroidCalendar CRUD
 
-    fun create(values: ContentValues): Long {
+    fun createCalendar(values: ContentValues): Long {
         logger.log(Level.FINE, "Creating local calendar", values)
 
-        values.put(CalendarContract.Calendars.ACCOUNT_NAME, account.name)
-        values.put(CalendarContract.Calendars.ACCOUNT_TYPE, account.type)
+        values.put(Calendars.ACCOUNT_NAME, account.name)
+        values.put(Calendars.ACCOUNT_TYPE, account.type)
 
         val uri =
             try {
@@ -52,7 +54,7 @@ class AndroidCalendarProvider(
         return ContentUris.parseId(uri)
     }
 
-    fun find(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<AndroidCalendar> {
+    fun findCalendars(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<AndroidCalendar> {
         val result = LinkedList<AndroidCalendar>()
         try {
             provider.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
@@ -65,7 +67,7 @@ class AndroidCalendarProvider(
         return result
     }
 
-    fun findFirst(where: String, whereArgs: Array<String>?, sortOrder: String? = null): AndroidCalendar? {
+    fun findFirstCalendar(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): AndroidCalendar? {
         try {
             provider.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
                 if (cursor.moveToNext())
@@ -77,7 +79,7 @@ class AndroidCalendarProvider(
         return null
     }
 
-    fun find(id: Long): AndroidCalendar? {
+    fun getCalendar(id: Long): AndroidCalendar? {
         try {
             provider.query(calendarUri(id), null, null, null, null)?.use { cursor ->
                 if (cursor.moveToNext())
@@ -89,7 +91,7 @@ class AndroidCalendarProvider(
         return null
     }
 
-    fun update(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null) {
+    fun updateCalendar(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null) {
         logger.log(Level.FINE, "Updating local calendar #$id", values)
         try {
             provider.update(calendarUri(id), values, where, whereArgs)
@@ -98,7 +100,7 @@ class AndroidCalendarProvider(
         }
     }
 
-    fun delete(id: Long) {
+    fun deleteCalendar(id: Long) {
         logger.fine("Deleting local calendar #$id")
         try {
             provider.delete(calendarUri(id), null, null)
@@ -123,11 +125,11 @@ class AndroidCalendarProvider(
         }
 
     fun writeCalendarSyncState(id: Long, state: String?) {
-        update(id, contentValuesOf(COLUMN_CALENDAR_SYNC_STATE to state))
+        updateCalendar(id, contentValuesOf(COLUMN_CALENDAR_SYNC_STATE to state))
     }
 
     fun provideCss3Colors() {
-        provider.query(colorsUri, arrayOf(CalendarContract.Colors.COLOR_KEY), null, null, null)?.use { cursor ->
+        provider.query(colorsUri, arrayOf(Colors.COLOR_KEY), null, null, null)?.use { cursor ->
             if (cursor.count == Css3Color.entries.size)
                 // colors already inserted and up to date
                 return
@@ -135,16 +137,18 @@ class AndroidCalendarProvider(
 
         logger.fine("Inserting CSS3 colors to account $account")
         try {
-            provider.bulkInsert(colorsUri,
-            Css3Color.entries.map { color ->
-                ContentValues(5).apply {
-                    put(CalendarContract.Colors.ACCOUNT_NAME, account.name)
-                    put(CalendarContract.Colors.ACCOUNT_TYPE, account.type)
-                    put(CalendarContract.Colors.COLOR_TYPE, CalendarContract.Colors.TYPE_EVENT)
-                    put(CalendarContract.Colors.COLOR_KEY, color.name)
-                    put(CalendarContract.Colors.COLOR, color.argb)
-                }
-            }.toTypedArray())
+            provider.bulkInsert(
+                colorsUri,
+                Css3Color.entries.map { color ->
+                    contentValuesOf(
+                        Colors.ACCOUNT_NAME to account.name,
+                        Colors.ACCOUNT_TYPE to account.type,
+                        Colors.COLOR_TYPE to Colors.TYPE_EVENT,
+                        Colors.COLOR_KEY to color.name,
+                        Colors.COLOR to color.argb
+                    )
+                }.toTypedArray()
+            )
         } catch(e: RemoteException) {
             throw LocalStorageException("Couldn't insert CSS3 colors", e)
         }
@@ -160,7 +164,7 @@ class AndroidCalendarProvider(
            WORKAROUND: unassign event colors for each calendar
         */
         try {
-            provider.query(calendarsUri, arrayOf(CalendarContract.Calendars._ID), null, null, null)?.use { cursor ->
+            provider.query(calendarsUri, arrayOf(Calendars._ID), null, null, null)?.use { cursor ->
                 while (cursor.moveToNext()) {
                     val calendarId = cursor.getLong(0)
 
@@ -184,15 +188,15 @@ class AndroidCalendarProvider(
     // helpers
 
     private val calendarsUri
-        get() = CalendarContract.Calendars.CONTENT_URI.asSyncAdapter(account)
+        get() = Calendars.CONTENT_URI.asSyncAdapter(account)
 
     private fun calendarUri(id: Long) =
         ContentUris
-            .withAppendedId(CalendarContract.Calendars.CONTENT_URI, id)
+            .withAppendedId(Calendars.CONTENT_URI, id)
             .asSyncAdapter(account)
 
     private val colorsUri
-        get() = CalendarContract.Colors.CONTENT_URI.asSyncAdapter(account)
+        get() = Colors.CONTENT_URI.asSyncAdapter(account)
 
 
     companion object {
@@ -201,7 +205,7 @@ class AndroidCalendarProvider(
          * Column to store per-calendar sync state as a [String]. Not to be confused
          * with the account-wide [CalendarContract.SyncState].
          */
-        const val COLUMN_CALENDAR_SYNC_STATE = CalendarContract.Calendars.CAL_SYNC1
+        const val COLUMN_CALENDAR_SYNC_STATE = Calendars.CAL_SYNC1
 
     }
 

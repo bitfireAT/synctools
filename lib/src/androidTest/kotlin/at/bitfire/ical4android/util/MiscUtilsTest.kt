@@ -12,22 +12,22 @@ import android.database.MatrixCursor
 import android.net.Uri
 import androidx.test.filters.SmallTest
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.removeBlankStrings
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import removeBlank
+import toContentValues
 
 class MiscUtilsTest {
 
     @Test
     @SmallTest
-    fun testCursorToValues() {
+    fun testCursorToContentValues() {
         val columns = arrayOf("col1", "col2")
         val c = MatrixCursor(columns)
         c.addRow(arrayOf("row1_val1", "row1_val2"))
         c.moveToFirst()
-        val values = c.toValues()
+        val values = c.toContentValues()
         assertEquals("row1_val1", values.getAsString("col1"))
         assertEquals("row1_val2", values.getAsString("col2"))
     }
@@ -42,7 +42,7 @@ class MiscUtilsTest {
         values.put("key4", "\n")
         values.put("key5", " \n ")
         values.put("key6", " ")
-        values.removeBlankStrings()
+        values.removeBlank()
         assertEquals("value", values.getAsString("key1"))
         assertEquals(1L, values.getAsLong("key2"))
         assertNull(values.get("key3"))

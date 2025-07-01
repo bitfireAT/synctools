@@ -13,7 +13,6 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation
@@ -89,6 +88,7 @@ import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.model.property.Url
 import net.fortuna.ical4j.model.property.Version
 import net.fortuna.ical4j.model.property.XProperty
+import toContentValues
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.OutputStream
@@ -1753,7 +1753,7 @@ duration?.let(props::add)
         val values: MutableList<ContentValues> = mutableListOf()
         collection.client.query(uri, projection, selection, selectionArgs, sortOrder
         )?.use { cursor ->
-            while (cursor.moveToNext()) { values.add(cursor.toValues()) }
+            while (cursor.moveToNext()) { values.add(cursor.toContentValues()) }
         }
         return values
     }

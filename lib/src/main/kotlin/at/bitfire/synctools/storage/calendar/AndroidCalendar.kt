@@ -28,7 +28,7 @@ class AndroidCalendar(
     val values: ContentValues
 ) {
 
-    val id: Int = values.getAsInteger(CalendarContract.Calendars._ID)
+    val id: Long = values.getAsLong(CalendarContract.Calendars._ID)
         ?: throw IllegalArgumentException("${CalendarContract.Calendars._ID} must be set")
 
     /*val name: String?
@@ -58,6 +58,11 @@ class AndroidCalendar(
         }
         return events
     }
+
+
+    // shortcuts to upper level
+
+    fun delete() = calendarProvider.deleteCalendar(id)
 
 
     // helpers
