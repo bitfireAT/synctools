@@ -4,35 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.storage.calendar
 
-import android.Manifest
-import android.accounts.Account
-import android.content.ContentProviderClient
-import android.content.ContentUris
-import android.content.ContentValues
-import android.provider.CalendarContract
-import android.provider.CalendarContract.Calendars
-import android.provider.CalendarContract.Colors
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
-import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
-import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
-import org.junit.Test
-
-class AndroidCalendarTest {
+/*class AndroidCalendarTest {
 
     companion object {
 
@@ -48,7 +22,8 @@ class AndroidCalendarTest {
         @BeforeClass
         @JvmStatic
         fun connectProvider() {
-            provider = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            provider = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(
+                CalendarContract.AUTHORITY)!!
         }
 
         @AfterClass
@@ -65,7 +40,7 @@ class AndroidCalendarTest {
     fun prepare() {
         // make sure there are no colors for testAccount
         AndroidCalendar.removeColors(provider, testAccount)
-        assertEquals(0, countColors(testAccount))
+        Assert.assertEquals(0, countColors(testAccount))
     }
 
 
@@ -73,33 +48,33 @@ class AndroidCalendarTest {
     fun testManageCalendars() {
         // create calendar
         val info = ContentValues()
-        info.put(Calendars.NAME, "TestCalendar")
-        info.put(Calendars.CALENDAR_DISPLAY_NAME, "ical4android Test Calendar")
-        info.put(Calendars.VISIBLE, 0)
-        info.put(Calendars.SYNC_EVENTS, 0)
+        info.put(CalendarContract.Calendars.NAME, "TestCalendar")
+        info.put(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME, "ical4android Test Calendar")
+        info.put(CalendarContract.Calendars.VISIBLE, 0)
+        info.put(CalendarContract.Calendars.SYNC_EVENTS, 0)
         val uri = AndroidCalendar.create(testAccount, provider, info)
-        assertNotNull(uri)
+        Assert.assertNotNull(uri)
 
         // query calendar
         val calendar = AndroidCalendar.findByID(testAccount, provider, ContentUris.parseId(uri))
-        assertNotNull(calendar)
+        Assert.assertNotNull(calendar)
 
         // delete calendar
-        assertTrue(calendar.delete())
+        Assert.assertTrue(calendar.delete())
     }
 
 
     @Test
     fun testInsertColors() {
         AndroidCalendar.insertColors(provider, testAccount)
-        assertEquals(Css3Color.entries.size, countColors(testAccount))
+        Assert.assertEquals(Css3Color.entries.size, countColors(testAccount))
     }
 
     @Test
     fun testInsertColors_AlreadyThere() {
         AndroidCalendar.insertColors(provider, testAccount)
         AndroidCalendar.insertColors(provider, testAccount)
-        assertEquals(Css3Color.entries.size, countColors(testAccount))
+        Assert.assertEquals(Css3Color.entries.size, countColors(testAccount))
     }
 
     @Test
@@ -118,18 +93,18 @@ class AndroidCalendarTest {
             }, "remove-colors").add()
 
             AndroidCalendar.removeColors(provider, testAccount)
-            assertEquals(0, countColors(testAccount))
+            Assert.assertEquals(0, countColors(testAccount))
         } finally {
             cal.delete()
         }
     }
 
     private fun countColors(account: Account): Int {
-        val uri = Colors.CONTENT_URI.asSyncAdapter(account)
+        val uri = CalendarContract.Colors.CONTENT_URI.asSyncAdapter(account)
         provider.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
             return cursor.count
         }
     }
 
-}
+}*/

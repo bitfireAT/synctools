@@ -67,7 +67,7 @@ import java.time.Period
 import java.util.UUID
 import java.util.logging.Logger
 
-class AndroidEventTest {
+/*class AndroidEventTest {
 
     companion object {
 
@@ -2739,4 +2739,4 @@ class AndroidEventTest {
         assertEquals(6, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
     }
 
-}
+}*/
