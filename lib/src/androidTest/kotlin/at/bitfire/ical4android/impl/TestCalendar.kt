@@ -11,7 +11,7 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.provider.CalendarContract
-import at.bitfire.ical4android.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
 
 object TestCalendar {
 

@@ -26,6 +26,8 @@ import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -64,7 +66,6 @@ import java.time.Duration
 import java.time.Period
 import java.util.UUID
 import java.util.logging.Logger
-import kotlin.collections.plusAssign
 
 class AndroidEventTest {
 

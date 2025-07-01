@@ -7,21 +7,12 @@
 package at.bitfire.vcard4android
 
 import android.accounts.Account
-import android.content.ContentValues
-import android.database.Cursor
-import android.database.DatabaseUtils
 import android.net.Uri
 import android.provider.ContactsContract
 import ezvcard.property.StructuredName
 import java.util.Locale
 
 object Utils {
-
-    fun Cursor.toContentValues(): ContentValues {
-        val values = ContentValues(columnCount)
-        DatabaseUtils.cursorRowToContentValues(this, values)
-        return values
-    }
 
     fun String.capitalize(): String = split(' ').joinToString(" ") { word ->
         word.replaceFirstChar {

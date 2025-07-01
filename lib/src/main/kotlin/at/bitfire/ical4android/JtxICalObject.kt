@@ -15,6 +15,7 @@ import android.util.Base64
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
 import at.techbee.jtx.JtxContract

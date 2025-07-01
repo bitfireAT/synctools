@@ -15,9 +15,9 @@ import android.os.Build
 import android.provider.CalendarContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidCalendar
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert

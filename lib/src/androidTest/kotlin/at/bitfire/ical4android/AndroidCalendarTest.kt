@@ -19,6 +19,8 @@ import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.AfterClass

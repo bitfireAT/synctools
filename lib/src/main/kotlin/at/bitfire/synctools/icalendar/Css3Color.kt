@@ -4,14 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
-import android.graphics.Color
+import androidx.core.graphics.toColorInt
+import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.sqrt
 
 /**
- * Represents an RGBA COLOR value, as specified in https://tools.ietf.org/html/rfc7986#section-5.9
+ * Represents an RGBA COLOR value, as specified in RFC 7986 section 5.9
  *
  * @property argb   ARGB color value (0xAARRGGBB), alpha is 0xFF for all values
  */
@@ -179,11 +180,11 @@ enum class Css3Color(val argb: Int) {
          * @return          ARGB color value or *null* if the color couldn't be parsed
          */
         fun colorFromString(color: String): Int? =
-            fromString(color)?.argb ?:
-                try {
-                    Color.parseColor(color)
-                } catch(e: Exception) {
-                    logger.warning("Invalid color value: $color")
+            fromString(color)?.argb
+                ?: try {
+                    color.toColorInt()
+                } catch(e: IllegalArgumentException) {
+                    logger.log(Level.WARNING, "Can't parse color value: $color", e)
                     null
                 }
 
@@ -194,12 +195,12 @@ enum class Css3Color(val argb: Int) {
          * @return          [Css3Color] object or *null* if no match was found
          */
         fun fromString(name: String) =
-                try {
-                    valueOf(name.lowercase())
-                } catch (e: IllegalArgumentException) {
-                    logger.warning("Invalid color name: $name")
-                    null
-                }
+            try {
+                valueOf(name.lowercase())
+            } catch (e: IllegalArgumentException) {
+                logger.log(Level.WARNING, "Invalid color name: $name", e)
+                null
+            }
 
         /**
          * Finds the best matching [Css3Color] for a given RGBA value using a weighted Euclidian
@@ -209,7 +210,7 @@ enum class Css3Color(val argb: Int) {
          */
         fun nearestMatch(argb: Int): Css3Color {
             val rgb = argb and 0xFFFFFF
-            val distance = values().map {
+            val distance = entries.map {
                 val cssColor = it.argb and 0xFFFFFF
                 val r1 = rgb shr 16
                 val r2 = cssColor shr 16
@@ -219,10 +220,10 @@ enum class Css3Color(val argb: Int) {
                 val deltaB = (rgb and 0xFF) - (cssColor and 0xFF)
                 val deltaR2 = deltaR*deltaR
                 val deltaG2 = deltaG*deltaG
-                sqrt(2.0*deltaR2 + 4.0*deltaG2 + 3.0*deltaB*deltaB + (r*(deltaR2 - deltaG2))/256.0)
+                sqrt(2.0 * deltaR2 + 4.0 * deltaG2 + 3.0 * deltaB * deltaB + (r * (deltaR2 - deltaG2)) / 256.0)
             }
             val idx = distance.withIndex().minByOrNull { it.value }!!.index
-            return values()[idx]
+            return entries[idx]
         }
 
     }

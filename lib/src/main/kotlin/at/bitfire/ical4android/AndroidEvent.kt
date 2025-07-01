@@ -28,8 +28,6 @@ import at.bitfire.ical4android.AndroidEvent.Companion.numInstances
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.removeBlankStrings
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
@@ -39,9 +37,11 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
-import at.bitfire.synctools.storage.CalendarBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -68,6 +68,8 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
+import removeBlank
+import toContentValues
 import java.io.FileNotFoundException
 import java.net.URI
 import java.net.URISyntaxException
@@ -175,10 +177,10 @@ class AndroidEvent(
                     // calculate some scheduling properties
                     val groupScheduled = e.subValues.any { it.uri == Attendees.CONTENT_URI }
 
-                    populateEvent(e.entityValues.removeBlankStrings(), groupScheduled)
+                    populateEvent(e.entityValues.removeBlank(), groupScheduled)
 
                     for (subValue in e.subValues) {
-                        val subValues = subValue.values.removeBlankStrings()
+                        val subValues = subValue.values.removeBlank()
                         when (subValue.uri) {
                             Attendees.CONTENT_URI -> populateAttendee(subValues)
                             Reminders.CONTENT_URI -> populateReminder(subValues)
@@ -512,7 +514,7 @@ class AndroidEvent(
                 null,
                 Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
             while (c.moveToNext()) {
-                val values = c.toValues(true)
+                val values = c.toContentValues()
                 try {
                     val exception = AndroidEvent(calendar, values)
                     val exceptionEvent = exception.event!!
@@ -602,8 +604,8 @@ class AndroidEvent(
 
         // add attendees
         val organizer = event.organizerEmail ?:
-                /* no ORGANIZER, use current account owner as ORGANIZER */
-                calendar.ownerAccount ?: calendar.account.name
+            /* no ORGANIZER, use current account owner as ORGANIZER */
+            calendar.account.name
         event.attendees.forEach { insertAttendee(batch, idxEvent, it, organizer) }
 
         // add extended properties
@@ -991,11 +993,11 @@ class AndroidEvent(
                             return@let email
                         logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
                         null
-                    } ?: calendar.ownerAccount)
+                    } ?: calendar.account)
 
         } else /* !groupScheduled */
             builder .withValue(Events.HAS_ATTENDEE_DATA, 0)
-                    .withValue(Events.ORGANIZER, calendar.ownerAccount)
+                    .withValue(Events.ORGANIZER, calendar.account)
 
         // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
         // In this case, the whole event must be deleted and inserted again.

@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.synctools.icalendar.Css3Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
