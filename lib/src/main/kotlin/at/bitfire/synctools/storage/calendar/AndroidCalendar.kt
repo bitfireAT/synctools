@@ -18,13 +18,13 @@ import java.util.LinkedList
  * Communicates with the Android Contacts Provider which uses an SQLite
  * database to store the events.
  *
- * @param provider  calendar provider
+ * @param client  calendar provider
  * @param values    content values as read from the calendar provider; [android.provider.BaseColumns._ID] must be set
  *
  * @throws IllegalArgumentException when [android.provider.BaseColumns._ID] is not set
  */
 class AndroidCalendar(
-    val calendarProvider: AndroidCalendarProvider,
+    val provider: AndroidCalendarProvider,
     val values: ContentValues
 ) {
 
@@ -47,12 +47,12 @@ class AndroidCalendar(
      *
      * @return events from this calendar which match the selection
      */
-    fun queryEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent> {
+    fun findEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent> {
         val whereWithId = "(${where ?: "1"}) AND " + CalendarContract.Events.CALENDAR_ID + "=?"
         val whereArgsWithId = (whereArgs ?: arrayOf()) + id.toString()
 
         val events = LinkedList<AndroidEvent>()
-        provider.query(eventsUri, null, whereWithId, whereArgsWithId, null)?.use { cursor ->
+        client.query(eventsUri, null, whereWithId, whereArgsWithId, null)?.use { cursor ->
             while (cursor.moveToNext())
                 events += AndroidEvent(this, cursor.toContentValues())
         }
@@ -62,16 +62,16 @@ class AndroidCalendar(
 
     // shortcuts to upper level
 
-    fun delete() = calendarProvider.deleteCalendar(id)
+    fun delete() = provider.deleteCalendar(id)
 
 
     // helpers
 
     val account
-        get() = calendarProvider.account
+        get() = provider.account
 
-    val provider
-        get() = calendarProvider.provider
+    val client
+        get() = provider.client
 
     val eventsUri
         get() = CalendarContract.Events.CONTENT_URI.asSyncAdapter(account)

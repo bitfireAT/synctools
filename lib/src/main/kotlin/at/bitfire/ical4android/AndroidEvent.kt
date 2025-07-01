@@ -161,10 +161,10 @@ class AndroidEvent(
             var iterEvents: EntityIterator? = null
             try {
                 iterEvents = EventsEntity.newEntityIterator(
-                        calendar.provider.query(
+                        calendar.client.query(
                                 ContentUris.withAppendedId(EventsEntity.CONTENT_URI, id).asSyncAdapter(calendar.account),
                                 null, null, null, null),
-                        calendar.provider
+                        calendar.client
                 )
 
                 if (iterEvents.hasNext()) {
@@ -510,7 +510,7 @@ class AndroidEvent(
         requireNotNull(id)
         val event = requireNotNull(event)
 
-        calendar.provider.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
+        calendar.client.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
                 null,
                 Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
             while (c.moveToNext()) {
@@ -570,7 +570,7 @@ class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
-        val batch = CalendarBatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.client)
         val idxEvent = addOrUpdateRows(batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -702,7 +702,7 @@ class AndroidEvent(
         // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
         var rebuild = false
         if (event.status == null)
-            calendar.provider.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
+            calendar.client.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
                 if (cursor.moveToNext()) {
                     val statusIndex = cursor.getColumnIndexOrThrow(Events.STATUS)
                     if (!cursor.isNull(statusIndex))
@@ -716,7 +716,7 @@ class AndroidEvent(
 
         } else {        // update event
             // remove associated rows which are added later again
-            val batch = CalendarBatchOperation(calendar.provider)
+            val batch = CalendarBatchOperation(calendar.client)
             deleteExceptions(batch)
             batch += CpoBuilder
                 .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
@@ -745,7 +745,7 @@ class AndroidEvent(
     }
 
     fun update(values: ContentValues) {
-        calendar.provider.update(eventSyncURI(), values, null, null)
+        calendar.client.update(eventSyncURI(), values, null, null)
     }
 
     /**
@@ -756,7 +756,7 @@ class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun delete(): Int {
-        val batch = CalendarBatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.client)
 
         // remove exceptions of event, too (CalendarProvider doesn't do this)
         deleteExceptions(batch)
@@ -966,7 +966,7 @@ class AndroidEvent(
         val color = event.color
         if (color != null) {
             // set event color (if it's available for this account)
-            calendar.provider.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
+            calendar.client.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
                     "${Colors.COLOR_KEY}=? AND ${Colors.COLOR_TYPE}=${Colors.TYPE_EVENT}", arrayOf(color.name), null)?.use { cursor ->
                 if (cursor.moveToNext())
                     builder.withValue(Events.EVENT_COLOR_KEY, color.name)

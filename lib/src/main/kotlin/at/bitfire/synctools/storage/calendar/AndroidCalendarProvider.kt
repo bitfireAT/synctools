@@ -29,7 +29,7 @@ import java.util.logging.Logger
  */
 class AndroidCalendarProvider(
     internal val account: Account,
-    internal val provider: ContentProviderClient
+    internal val client: ContentProviderClient
 ) {
 
     private val logger = Logger.getLogger(javaClass.name)
@@ -45,7 +45,7 @@ class AndroidCalendarProvider(
 
         val uri =
             try {
-                provider.insert(calendarsUri, values)
+                client.insert(calendarsUri, values)
             } catch (e: RemoteException) {
                 throw LocalStorageException("Couldn't create calendar", e)
             }
@@ -54,10 +54,15 @@ class AndroidCalendarProvider(
         return ContentUris.parseId(uri)
     }
 
+    fun createAndGetCalendar(values: ContentValues): AndroidCalendar {
+        val id = createCalendar(values)
+        return getCalendar(id) ?: throw LocalStorageException("Couldn't query calendar that was just created")
+    }
+
     fun findCalendars(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<AndroidCalendar> {
         val result = LinkedList<AndroidCalendar>()
         try {
-            provider.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
+            client.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
                 while (cursor.moveToNext())
                     result += AndroidCalendar(this, cursor.toContentValues())
             }
@@ -69,7 +74,7 @@ class AndroidCalendarProvider(
 
     fun findFirstCalendar(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): AndroidCalendar? {
         try {
-            provider.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
+            client.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
                 if (cursor.moveToNext())
                     return AndroidCalendar(this, cursor.toContentValues())
             }
@@ -81,7 +86,7 @@ class AndroidCalendarProvider(
 
     fun getCalendar(id: Long): AndroidCalendar? {
         try {
-            provider.query(calendarUri(id), null, null, null, null)?.use { cursor ->
+            client.query(calendarUri(id), null, null, null, null)?.use { cursor ->
                 if (cursor.moveToNext())
                     return AndroidCalendar(this, cursor.toContentValues())
             }
@@ -94,7 +99,7 @@ class AndroidCalendarProvider(
     fun updateCalendar(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null) {
         logger.log(Level.FINE, "Updating local calendar #$id", values)
         try {
-            provider.update(calendarUri(id), values, where, whereArgs)
+            client.update(calendarUri(id), values, where, whereArgs)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update calendar", e)
         }
@@ -103,7 +108,7 @@ class AndroidCalendarProvider(
     fun deleteCalendar(id: Long) {
         logger.fine("Deleting local calendar #$id")
         try {
-            provider.delete(calendarUri(id), null, null)
+            client.delete(calendarUri(id), null, null)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete calendar", e)
         }
@@ -114,7 +119,7 @@ class AndroidCalendarProvider(
 
     fun readCalendarSyncState(id: Long): String? =
         try {
-            provider.query(calendarUri(id), arrayOf(COLUMN_CALENDAR_SYNC_STATE), null, null, null)?.use { cursor ->
+            client.query(calendarUri(id), arrayOf(COLUMN_CALENDAR_SYNC_STATE), null, null, null)?.use { cursor ->
                 if (cursor.moveToNext())
                     return cursor.getString(0)
                 else
@@ -129,7 +134,7 @@ class AndroidCalendarProvider(
     }
 
     fun provideCss3Colors() {
-        provider.query(colorsUri, arrayOf(Colors.COLOR_KEY), null, null, null)?.use { cursor ->
+        client.query(colorsUri, arrayOf(Colors.COLOR_KEY), null, null, null)?.use { cursor ->
             if (cursor.count == Css3Color.entries.size)
                 // colors already inserted and up to date
                 return
@@ -137,7 +142,7 @@ class AndroidCalendarProvider(
 
         logger.fine("Inserting CSS3 colors to account $account")
         try {
-            provider.bulkInsert(
+            client.bulkInsert(
                 colorsUri,
                 Css3Color.entries.map { color ->
                     contentValuesOf(
@@ -164,13 +169,13 @@ class AndroidCalendarProvider(
            WORKAROUND: unassign event colors for each calendar
         */
         try {
-            provider.query(calendarsUri, arrayOf(Calendars._ID), null, null, null)?.use { cursor ->
+            client.query(calendarsUri, arrayOf(Calendars._ID), null, null, null)?.use { cursor ->
                 while (cursor.moveToNext()) {
                     val calendarId = cursor.getLong(0)
 
                     val values = ContentValues(1)
                     values.putNull(CalendarContract.Events.EVENT_COLOR_KEY)
-                    provider.update(
+                    client.update(
                         CalendarContract.Events.CONTENT_URI.asSyncAdapter(account), values,
                         "${CalendarContract.Events.EVENT_COLOR_KEY} IS NOT NULL AND ${CalendarContract.Events.CALENDAR_ID}=?", arrayOf(calendarId.toString())
                     )
@@ -181,7 +186,7 @@ class AndroidCalendarProvider(
         }
 
         // remove entries from color table
-        provider.delete(colorsUri, null, null)
+        client.delete(colorsUri, null, null)
     }
 
 
