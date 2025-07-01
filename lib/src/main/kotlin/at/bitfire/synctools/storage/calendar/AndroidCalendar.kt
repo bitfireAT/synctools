@@ -8,6 +8,7 @@ package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentValues
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Calendars
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import toContentValues
@@ -28,11 +29,21 @@ class AndroidCalendar(
     val values: ContentValues
 ) {
 
-    val id: Long = values.getAsLong(CalendarContract.Calendars._ID)
-        ?: throw IllegalArgumentException("${CalendarContract.Calendars._ID} must be set")
+    val id: Long = values.getAsLong(Calendars._ID)
+        ?: throw IllegalArgumentException("${Calendars._ID} must be set")
 
-    /*val name: String?
-        get() = values.getAsString(Calendars.NAME)*/
+
+    val accessLevel: Int
+        get() = values.getAsInteger(Calendars.CALENDAR_ACCESS_LEVEL) ?: 0
+
+    val displayName: String?
+        get() = values.getAsString(Calendars.CALENDAR_DISPLAY_NAME)
+
+    val name: String?
+        get() = values.getAsString(Calendars.NAME)
+
+    val syncId: String?
+        get() = values.getAsString(Calendars._SYNC_ID)
 
 
     // CRUD AndroidEvent

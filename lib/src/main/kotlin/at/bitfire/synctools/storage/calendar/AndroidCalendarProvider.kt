@@ -28,7 +28,7 @@ import java.util.logging.Logger
  * Android calendar provider.
  */
 class AndroidCalendarProvider(
-    internal val account: Account,
+    val account: Account,
     internal val client: ContentProviderClient
 ) {
 
