@@ -21,7 +21,7 @@ class ICalendarParserTest {
     val mockkRule = MockKRule(this)
 
     @Test
-    fun `parse() applies pre-processing`() {
+    fun testParse_AppliesPreProcessing() {
         mockkObject(ICalPreprocessor)
 
         val reader = StringReader(
@@ -42,7 +42,7 @@ class ICalendarParserTest {
     }
 
     @Test
-    fun `parse() suppresses invalid properties`() {
+    fun testParse_SuppressesInvalidProperties() {
         val reader = StringReader(
             "BEGIN:VCALENDAR\r\n" +
                     "BEGIN:VEVENT\r\n" +
@@ -54,7 +54,7 @@ class ICalendarParserTest {
     }
 
     @Test(expected = InvalidRemoteResourceException::class)
-    fun `parse() throws exception on invalid input`() {
+    fun testParse_ThrowsExceptionOnInvalidInput() {
         val reader = StringReader("invalid")
         ICalendarParser().parse(reader)
     }
