@@ -59,7 +59,7 @@ class AndroidCalendarProvider(
         return getCalendar(id) ?: throw LocalStorageException("Couldn't query calendar that was just created")
     }
 
-    fun findCalendars(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): List<AndroidCalendar> {
+    fun findCalendars(where: String? = null, whereArgs: Array<String>? = null, sortOrder: String? = null): List<AndroidCalendar> {
         val result = LinkedList<AndroidCalendar>()
         try {
             client.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
@@ -96,19 +96,19 @@ class AndroidCalendarProvider(
         return null
     }
 
-    fun updateCalendar(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null) {
+    fun updateCalendar(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null): Int {
         logger.log(Level.FINE, "Updating local calendar #$id", values)
         try {
-            client.update(calendarUri(id), values, where, whereArgs)
+            return client.update(calendarUri(id), values, where, whereArgs)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update calendar", e)
         }
     }
 
-    fun deleteCalendar(id: Long) {
+    fun deleteCalendar(id: Long): Int {
         logger.fine("Deleting local calendar #$id")
         try {
-            client.delete(calendarUri(id), null, null)
+            return client.delete(calendarUri(id), null, null)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete calendar", e)
         }
@@ -192,13 +192,11 @@ class AndroidCalendarProvider(
 
     // helpers
 
-    private val calendarsUri
+    val calendarsUri
         get() = Calendars.CONTENT_URI.asSyncAdapter(account)
 
-    private fun calendarUri(id: Long) =
-        ContentUris
-            .withAppendedId(Calendars.CONTENT_URI, id)
-            .asSyncAdapter(account)
+    fun calendarUri(id: Long) =
+        ContentUris.withAppendedId(calendarsUri, id)
 
     private val colorsUri
         get() = Colors.CONTENT_URI.asSyncAdapter(account)
