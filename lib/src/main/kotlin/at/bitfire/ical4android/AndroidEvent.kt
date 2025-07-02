@@ -512,7 +512,7 @@ class AndroidEvent(
                 null,
                 Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
             while (c.moveToNext()) {
-                val values = c.toContentValues(true)
+                val values = c.toContentValues()
                 try {
                     val exception = AndroidEvent(calendar, values)
                     val exceptionEvent = exception.event!!

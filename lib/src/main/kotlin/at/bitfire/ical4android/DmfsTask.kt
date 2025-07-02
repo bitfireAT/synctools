@@ -110,7 +110,7 @@ abstract class DmfsTask(
                         val newTask = Task()
                         field = newTask
 
-                        val values = cursor.toContentValues(true)
+                        val values = cursor.toContentValues()
                         logger.log(Level.FINER, "Found task", values)
                         populateTask(values)
 
@@ -120,7 +120,7 @@ abstract class DmfsTask(
 
                             while (cursor.moveToNext()) {
                                 // process the other properties
-                                populateProperty(cursor.toContentValues(true))
+                                populateProperty(cursor.toContentValues())
                             }
                         }
 
