@@ -615,7 +615,7 @@ class AndroidEventTest {
     @Test
     fun testBuildEvent_Color_WhenAvailable() {
         val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3Colors()
+        provider.provideCss3ColorIndices()
         buildEvent(true) {
             color = Css3Color.darkseagreen
         }.let { result ->
@@ -1772,7 +1772,7 @@ class AndroidEventTest {
     @Test
     fun testPopulateEvent_Color_FromIndex() {
         val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3Colors()
+        provider.provideCss3ColorIndices()
         populateEvent(true) {
             put(Events.EVENT_COLOR_KEY, Css3Color.silver.name)
         }.let { result ->

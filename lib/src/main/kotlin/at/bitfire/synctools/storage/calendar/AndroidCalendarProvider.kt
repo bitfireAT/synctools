@@ -19,6 +19,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider.Companion.COLUMN_CALENDAR_SYNC_STATE
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 import java.util.logging.Level
@@ -27,6 +28,9 @@ import java.util.logging.Logger
 /**
  * Manages locally stored calendars (represented by [AndroidCalendar]) in the
  * Android calendar provider.
+ *
+ * @param account   Account that all operations are bound to
+ * @param client    content provider client
  */
 class AndroidCalendarProvider(
     val account: Account,
@@ -38,6 +42,13 @@ class AndroidCalendarProvider(
 
     // AndroidCalendar CRUD
 
+    /**
+     * Creates a new calendar.
+     *
+     * @param values    values to create the calendar from (account name and type are inserted)
+     * @return calendar ID of the newly created calendar
+     * @throws LocalStorageException when the content provider returns nothing or an error
+     */
     fun createCalendar(values: ContentValues): Long {
         logger.log(Level.FINE, "Creating local calendar", values)
 
@@ -55,11 +66,29 @@ class AndroidCalendarProvider(
         return ContentUris.parseId(uri)
     }
 
+    /**
+     * Creates a new calendar and directly returns it.
+     *
+     * @param values    values to create the calendar from (account name and type are inserted)
+     *
+     * @return the created calendar
+     * @throws LocalStorageException when the content provider returns nothing or an error
+     */
     fun createAndGetCalendar(values: ContentValues): AndroidCalendar {
         val id = createCalendar(values)
         return getCalendar(id) ?: throw LocalStorageException("Couldn't query calendar that was just created")
     }
 
+    /**
+     * Queries existing calendars.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     * @param sortOrder     sort order
+     *
+     * @return list of calendars
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun findCalendars(where: String? = null, whereArgs: Array<String>? = null, sortOrder: String? = null): List<AndroidCalendar> {
         val result = LinkedList<AndroidCalendar>()
         try {
@@ -73,6 +102,16 @@ class AndroidCalendarProvider(
         return result
     }
 
+    /**
+     * Queries existing calendars and returns the first calendar that matches the search criteria.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     * @param sortOrder     sort order
+     *
+     * @return first calendar that matches the search criteria (or `null`)
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun findFirstCalendar(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): AndroidCalendar? {
         try {
             client.query(calendarsUri, null, where, whereArgs, sortOrder)?.use { cursor ->
@@ -85,6 +124,14 @@ class AndroidCalendarProvider(
         return null
     }
 
+    /**
+     * Gets an existing calendar by its ID.
+     *
+     * @param id    calendar ID
+     *
+     * @return calendar (or `null` if not found)
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun getCalendar(id: Long): AndroidCalendar? {
         try {
             client.query(calendarUri(id), null, null, null, null)?.use { cursor ->
@@ -97,6 +144,17 @@ class AndroidCalendarProvider(
         return null
     }
 
+    /**
+     * Updates an existing calendar.
+     *
+     * @param id        calendar ID
+     * @param values    values to update
+     * @param where     selection
+     * @param whereArgs arguments for selection
+     *
+     * @return number of updated rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun updateCalendar(id: Long, values: ContentValues, where: String? = null, whereArgs: Array<String>? = null): Int {
         logger.log(Level.FINE, "Updating local calendar #$id", values)
         try {
@@ -106,6 +164,14 @@ class AndroidCalendarProvider(
         }
     }
 
+    /**
+     * Deletes an existing calendar.
+     *
+     * @param id    calendar ID
+     *
+     * @return number of deleted rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun deleteCalendar(id: Long): Int {
         logger.fine("Deleting local calendar #$id")
         try {
@@ -118,6 +184,16 @@ class AndroidCalendarProvider(
 
     // other methods: sync state, event colors
 
+    /**
+     * Reads the calendar sync state ([COLUMN_CALENDAR_SYNC_STATE] field).
+     *
+     * _Note: This is not to be confused with the totally unrelated [CalendarContract.SyncState]
+     * (which is per account, not per calendar)._
+     *
+     * @param id    calendar ID
+     * @return sync state (or `null` if not set)
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun readCalendarSyncState(id: Long): String? =
         try {
             client.query(calendarUri(id), arrayOf(COLUMN_CALENDAR_SYNC_STATE), null, null, null)?.use { cursor ->
@@ -130,11 +206,33 @@ class AndroidCalendarProvider(
             throw LocalStorageException("Couldn't query calendar sync state", e)
         }
 
+    /**
+     * Writes the calendar sync state ([COLUMN_CALENDAR_SYNC_STATE] field).
+     *
+     * _Note: This is not to be confused with the totally unrelated [CalendarContract.SyncState]
+     * (which is per account, not per calendar)._
+     *
+     * @param id    calendar ID
+     * @param state sync state (may be `null`)
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun writeCalendarSyncState(id: Long, state: String?) {
         updateCalendar(id, contentValuesOf(COLUMN_CALENDAR_SYNC_STATE to state))
     }
 
-    fun provideCss3Colors() {
+    /**
+     * Inserts all possible [Css3Color] values into the color index table of the account. This means that
+     *
+     * - calendar apps can allow users to select an event color from the possible values;
+     * - when [CalendarContract.Events.CALENDAR_COLOR_KEY] of an event is set to a CSS3 color name, the
+     *   [CalendarContract.Events.CALENDAR_COLOR] will be completed by the calendar provider.
+     *
+     * This method does a quick check whether the current number of colors is the same as the number
+     * of possible [Css3Color] values, in which case nothing will be inserted.
+     *
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun provideCss3ColorIndices() {
         client.query(colorsUri, arrayOf(Colors.COLOR_KEY), null, null, null)?.use { cursor ->
             if (cursor.count == Css3Color.entries.size)
                 // colors already inserted and up to date
@@ -160,7 +258,10 @@ class AndroidCalendarProvider(
         }
     }
 
-    fun removeCss3Colors() {
+    /**
+     * Unassigns colors from all events in this account and removes all entries from the color index table of the account.
+     */
+    fun removeColorIndices() {
         logger.fine("Removing CSS3 colors from account $account")
 
         // unassign colors from events
@@ -207,8 +308,10 @@ class AndroidCalendarProvider(
     companion object {
 
         /**
-         * Column to store per-calendar sync state as a [String]. Not to be confused
-         * with the account-wide [CalendarContract.SyncState].
+         * Column to store per-calendar sync state as a [String].
+         *
+         * _Note: This is not to be confused with the totally unrelated [CalendarContract.SyncState]
+         * (which is per account, not per calendar)._
          */
         const val COLUMN_CALENDAR_SYNC_STATE = Calendars.CAL_SYNC1
 

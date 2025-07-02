@@ -63,7 +63,7 @@ class AndroidCalendarTest {
     fun prepare() {
         // make sure there are no colors for testAccount
         provider = AndroidCalendarProvider(testAccount, client)
-        provider.removeCss3Colors()
+        provider.removeColorIndices()
         assertEquals(0, countColors())
     }
 
@@ -87,20 +87,20 @@ class AndroidCalendarTest {
 
     @Test
     fun testProvideCss3Colors() {
-        provider.provideCss3Colors()
+        provider.provideCss3ColorIndices()
         assertEquals(Css3Color.entries.size, countColors())
     }
 
     @Test
     fun testInsertColors_AlreadyThere() {
-        provider.provideCss3Colors()
-        provider.provideCss3Colors()
+        provider.provideCss3ColorIndices()
+        provider.provideCss3ColorIndices()
         assertEquals(Css3Color.entries.size, countColors())
     }
 
     @Test
     fun testRemoveCss3Colors() {
-        provider.provideCss3Colors()
+        provider.provideCss3ColorIndices()
 
         // insert an event with that color
         val cal = TestCalendar.findOrCreate(testAccount, client)
@@ -113,7 +113,7 @@ class AndroidCalendarTest {
                 summary = "Test event with color"
             }, "remove-colors").add()
 
-            provider.removeCss3Colors()
+            provider.removeColorIndices()
             assertEquals(0, countColors())
         } finally {
             cal.delete()

@@ -33,21 +33,27 @@ class AndroidCalendar(
     val values: ContentValues
 ) {
 
+    /** see [Calendars._ID] */
     val id: Long = values.getAsLong(Calendars._ID)
         ?: throw IllegalArgumentException("${Calendars._ID} must be set")
 
+    /** see [Calendars.CALENDAR_ACCESS_LEVEL] */
     val accessLevel: Int
         get() = values.getAsInteger(Calendars.CALENDAR_ACCESS_LEVEL) ?: 0
 
+    /** see [Calendars.CALENDAR_DISPLAY_NAME] */
     val displayName: String?
         get() = values.getAsString(Calendars.CALENDAR_DISPLAY_NAME)
 
+    /** see [Calendars.NAME] */
     val name: String?
         get() = values.getAsString(Calendars.NAME)
 
+    /** see [Calendars.OWNER_ACCOUNT] */
     val ownerAccount: String?
         get() = values.getAsString(Calendars.OWNER_ACCOUNT)
 
+    /** see [Calendars._SYNC_ID] */
     val syncId: String?
         get() = values.getAsString(Calendars._SYNC_ID)
 
@@ -78,11 +84,23 @@ class AndroidCalendar(
         return events
     }
 
+    /**
+     * Gets a specific event, identified by its ID, from this calendar.
+     *
+     * @param id    event ID
+     * @return event (or `null` if not found)
+     */
     fun getEvent(id: Long): AndroidEvent? {
         val values = getEventValues(id) ?: return null
         return AndroidEvent(this, values)
     }
 
+    /**
+     * Gets the main event row of a specific event, identified by its ID, from this calendar.
+     *
+     * @param id    event ID
+     * @return event row (or `null` if not found)
+     */
     fun getEventValues(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): ContentValues? {
         try {
             client.query(eventUri(id), projection, where, whereArgs, null)?.use { cursor ->
@@ -119,6 +137,16 @@ class AndroidCalendar(
         }
     }
 
+    /**
+     * Updates events in this calendar.
+     *
+     * @param values        values to update
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     *
+     * @return number of updated rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun updateEvents(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
         try {
             client.update(eventsUri, values, where, whereArgs)
@@ -129,9 +157,13 @@ class AndroidCalendar(
 
     // shortcuts to upper level
 
+    /** Calls [AndroidCalendarProvider.deleteCalendar] for this calendar. */
     fun delete() = provider.deleteCalendar(id)
 
+    /** Calls [AndroidCalendarProvider.readCalendarSyncState] for this calendar. */
     fun readSyncState() = provider.readCalendarSyncState(id)
+
+    /** Calls [AndroidCalendarProvider.writeCalendarSyncState] for this calendar. */
     fun writeSyncState(newState: String?) {
         provider.writeCalendarSyncState(id, newState)
     }
@@ -151,6 +183,13 @@ class AndroidCalendar(
     fun eventUri(id: Long) =
         ContentUris.withAppendedId(eventsUri, id)
 
+    /**
+     * Restricts a given selection/where clause to this calendar ID.
+     *
+     * @param where      selection
+     * @param whereArgs  arguments for selection
+     * @return           restricted selection and arguments
+     */
     private fun whereWithCalendarId(where: String?, whereArgs: Array<String>?): Pair<String, Array<String>> {
         val protectedWhere = "(${where ?: "1"}) AND " + Events.CALENDAR_ID + "=?"
         val protectedWhereArgs = (whereArgs ?: arrayOf()) + id.toString()
