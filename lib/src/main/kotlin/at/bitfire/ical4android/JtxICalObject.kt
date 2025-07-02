@@ -12,11 +12,12 @@ import android.net.ParseException
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
+import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
@@ -1349,13 +1350,13 @@ duration?.let(props::add)
         }
 
         this.attachments.forEach { attachment ->
-            val attachmentContentValues = ContentValues().apply {
-                put(JtxContract.JtxAttachment.ICALOBJECT_ID, id)
-                put(JtxContract.JtxAttachment.URI, attachment.uri)
-                put(JtxContract.JtxAttachment.FMTTYPE, attachment.fmttype)
-                put(JtxContract.JtxAttachment.OTHER, attachment.other)
-                put(JtxContract.JtxAttachment.FILENAME, attachment.filename)
-            }
+            val attachmentContentValues = contentValuesOf(
+                JtxContract.JtxAttachment.ICALOBJECT_ID to id,
+                JtxContract.JtxAttachment.URI to attachment.uri,
+                JtxContract.JtxAttachment.FMTTYPE to attachment.fmttype,
+                JtxContract.JtxAttachment.OTHER to attachment.other,
+                JtxContract.JtxAttachment.FILENAME to attachment.filename
+            )
             val newAttachment = collection.client.insert(JtxContract.JtxAttachment.CONTENT_URI.asSyncAdapter(collection.account), attachmentContentValues)
             if(attachment.uri.isNullOrEmpty() && newAttachment != null) {
                 val attachmentPFD = collection.client.openFile(newAttachment, "w")
@@ -1692,51 +1693,51 @@ duration?.let(props::add)
      * Puts the current JtxICalObjects attributes into Content Values
      * @return The JtxICalObject attributes as [ContentValues] (exluding list properties)
      */
-    private fun toContentValues() = ContentValues().apply {
-        put(JtxContract.JtxICalObject.ID, id)
-        put(JtxContract.JtxICalObject.SUMMARY, summary)
-        put(JtxContract.JtxICalObject.DESCRIPTION, description)
-        put(JtxContract.JtxICalObject.COMPONENT, component)
-        put(JtxContract.JtxICalObject.STATUS, status)
-        put(JtxContract.JtxICalObject.EXTENDED_STATUS, xstatus)
-        put(JtxContract.JtxICalObject.CLASSIFICATION, classification)
-        put(JtxContract.JtxICalObject.PRIORITY, priority)
-        put(JtxContract.JtxICalObject.ICALOBJECT_COLLECTIONID, collectionId)
-        put(JtxContract.JtxICalObject.UID, uid)
-        put(JtxContract.JtxICalObject.COLOR, color)
-        put(JtxContract.JtxICalObject.URL, url)
-        put(JtxContract.JtxICalObject.CONTACT, contact)
-        put(JtxContract.JtxICalObject.GEO_LAT, geoLat)
-        put(JtxContract.JtxICalObject.GEO_LONG, geoLong)
-        put(JtxContract.JtxICalObject.LOCATION, location)
-        put(JtxContract.JtxICalObject.LOCATION_ALTREP, locationAltrep)
-        put(JtxContract.JtxICalObject.GEOFENCE_RADIUS, geofenceRadius)
-        put(JtxContract.JtxICalObject.PERCENT, percent)
-        put(JtxContract.JtxICalObject.DTSTAMP, dtstamp)
-        put(JtxContract.JtxICalObject.DTSTART, dtstart)
-        put(JtxContract.JtxICalObject.DTSTART_TIMEZONE, dtstartTimezone)
-        put(JtxContract.JtxICalObject.DTEND, dtend)
-        put(JtxContract.JtxICalObject.DTEND_TIMEZONE, dtendTimezone)
-        put(JtxContract.JtxICalObject.COMPLETED, completed)
-        put(JtxContract.JtxICalObject.COMPLETED_TIMEZONE, completedTimezone)
-        put(JtxContract.JtxICalObject.DUE, due)
-        put(JtxContract.JtxICalObject.DUE_TIMEZONE, dueTimezone)
-        put(JtxContract.JtxICalObject.DURATION, duration)
-        put(JtxContract.JtxICalObject.CREATED, created)
-        put(JtxContract.JtxICalObject.LAST_MODIFIED, lastModified)
-        put(JtxContract.JtxICalObject.SEQUENCE, sequence)
-        put(JtxContract.JtxICalObject.RRULE, rrule)
-        put(JtxContract.JtxICalObject.RDATE, rdate)
-        put(JtxContract.JtxICalObject.EXDATE, exdate)
-        put(JtxContract.JtxICalObject.RECURID, recurid)
-        put(JtxContract.JtxICalObject.RECURID_TIMEZONE, recuridTimezone)
+    private fun toContentValues() = contentValuesOf(
+        JtxContract.JtxICalObject.ID to id,
+        JtxContract.JtxICalObject.SUMMARY to summary,
+        JtxContract.JtxICalObject.DESCRIPTION to description,
+        JtxContract.JtxICalObject.COMPONENT to component,
+        JtxContract.JtxICalObject.STATUS to status,
+        JtxContract.JtxICalObject.EXTENDED_STATUS to xstatus,
+        JtxContract.JtxICalObject.CLASSIFICATION to classification,
+        JtxContract.JtxICalObject.PRIORITY to priority,
+        JtxContract.JtxICalObject.ICALOBJECT_COLLECTIONID to collectionId,
+        JtxContract.JtxICalObject.UID to uid,
+        JtxContract.JtxICalObject.COLOR to color,
+        JtxContract.JtxICalObject.URL to url,
+        JtxContract.JtxICalObject.CONTACT to contact,
+        JtxContract.JtxICalObject.GEO_LAT to geoLat,
+        JtxContract.JtxICalObject.GEO_LONG to geoLong,
+        JtxContract.JtxICalObject.LOCATION to location,
+        JtxContract.JtxICalObject.LOCATION_ALTREP to locationAltrep,
+        JtxContract.JtxICalObject.GEOFENCE_RADIUS to geofenceRadius,
+        JtxContract.JtxICalObject.PERCENT to percent,
+        JtxContract.JtxICalObject.DTSTAMP to dtstamp,
+        JtxContract.JtxICalObject.DTSTART to dtstart,
+        JtxContract.JtxICalObject.DTSTART_TIMEZONE to dtstartTimezone,
+        JtxContract.JtxICalObject.DTEND to dtend,
+        JtxContract.JtxICalObject.DTEND_TIMEZONE to dtendTimezone,
+        JtxContract.JtxICalObject.COMPLETED to completed,
+        JtxContract.JtxICalObject.COMPLETED_TIMEZONE to completedTimezone,
+        JtxContract.JtxICalObject.DUE to due,
+        JtxContract.JtxICalObject.DUE_TIMEZONE to dueTimezone,
+        JtxContract.JtxICalObject.DURATION to duration,
+        JtxContract.JtxICalObject.CREATED to created,
+        JtxContract.JtxICalObject.LAST_MODIFIED to lastModified,
+        JtxContract.JtxICalObject.SEQUENCE to sequence,
+        JtxContract.JtxICalObject.RRULE to rrule,
+        JtxContract.JtxICalObject.RDATE to rdate,
+        JtxContract.JtxICalObject.EXDATE to exdate,
+        JtxContract.JtxICalObject.RECURID to recurid,
+        JtxContract.JtxICalObject.RECURID_TIMEZONE to recuridTimezone,
 
-        put(JtxContract.JtxICalObject.FILENAME, fileName)
-        put(JtxContract.JtxICalObject.ETAG, eTag)
-        put(JtxContract.JtxICalObject.SCHEDULETAG, scheduleTag)
-        put(JtxContract.JtxICalObject.FLAGS, flags)
-        put(JtxContract.JtxICalObject.DIRTY, dirty)
-    }
+        JtxContract.JtxICalObject.FILENAME to fileName,
+        JtxContract.JtxICalObject.ETAG to eTag,
+        JtxContract.JtxICalObject.SCHEDULETAG to scheduleTag,
+        JtxContract.JtxICalObject.FLAGS to flags,
+        JtxContract.JtxICalObject.DIRTY to dirty
+    )
 
     /**
      * @return The result of the given query as content values of the given JtxICalObject as a list of ContentValues
@@ -1752,7 +1753,7 @@ duration?.let(props::add)
         val values: MutableList<ContentValues> = mutableListOf()
         collection.client.query(uri, projection, selection, selectionArgs, sortOrder
         )?.use { cursor ->
-            while (cursor.moveToNext()) { values.add(cursor.toValues()) }
+            while (cursor.moveToNext()) { values.add(cursor.toContentValues()) }
         }
         return values
     }

@@ -10,10 +10,10 @@ import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
-import android.content.ContentValues
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Colors
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
@@ -70,11 +70,12 @@ class AndroidCalendarTest {
     @Test
     fun testManageCalendars() {
         // create calendar
-        val info = ContentValues()
-        info.put(Calendars.NAME, "TestCalendar")
-        info.put(Calendars.CALENDAR_DISPLAY_NAME, "ical4android Test Calendar")
-        info.put(Calendars.VISIBLE, 0)
-        info.put(Calendars.SYNC_EVENTS, 0)
+        val info = contentValuesOf(
+            Calendars.NAME to "TestCalendar",
+            Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
+            Calendars.VISIBLE to 0,
+            Calendars.SYNC_EVENTS to 0
+        )
         val uri = AndroidCalendar.create(testAccount, provider, info)
         assertNotNull(uri)
 

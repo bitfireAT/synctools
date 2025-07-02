@@ -12,8 +12,8 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
@@ -45,7 +45,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             val collections = LinkedList<T>()
             client.query(JtxContract.JtxCollection.CONTENT_URI.asSyncAdapter(account), null, where, whereArgs, null)?.use { cursor ->
                 while (cursor.moveToNext()) {
-                    val values = cursor.toValues()
+                    val values = cursor.toContentValues()
                     val collection = factory.newInstance(account, client, values.getAsLong(JtxContract.JtxCollection.ID))
                     collection.populate(values, context)
                     collections += collection
@@ -122,7 +122,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
         ).use { cursor ->
             logger.fine("findDeleted: found ${cursor?.count} deleted records in ${account.name}")
             while (cursor?.moveToNext() == true) {
-                values.add(cursor.toValues())
+                values.add(cursor.toContentValues())
             }
         }
         return values
@@ -142,7 +142,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
         ).use { cursor ->
             logger.fine("findDirty: found ${cursor?.count} dirty records in ${account.name}")
             while (cursor?.moveToNext() == true) {
-                values.add(cursor.toValues())
+                values.add(cursor.toContentValues())
             }
         }
         return values
@@ -163,7 +163,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             if (cursor?.count != 1)
                 return null
             cursor.moveToFirst()
-            return cursor.toValues()
+            return cursor.toContentValues()
         }
     }
 
@@ -178,7 +178,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             if (cursor?.count != 1)
                 return null
             cursor.moveToFirst()
-            return cursor.toValues()
+            return cursor.toContentValues()
         }
     }
 
@@ -201,7 +201,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             if (cursor?.count != 1)
                 return null
             cursor.moveToFirst()
-            return cursor.toValues()
+            return cursor.toContentValues()
         }
     }
 
@@ -264,7 +264,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
 
             while (cursor?.moveToNext() == true) {
                 val jtxIcalObject = JtxICalObject(this)
-                jtxIcalObject.populateFromContentValues(cursor.toValues())
+                jtxIcalObject.populateFromContentValues(cursor.toContentValues())
                 val singleICS = jtxIcalObject.getICalendarFormat(prodId)
                 singleICS?.components?.forEach { component ->
                     if(component is VToDo || component is VJournal)

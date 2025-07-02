@@ -13,8 +13,10 @@ import android.provider.ContactsContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.vcard4android.impl.TestAddressBook
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
@@ -47,6 +49,21 @@ class AndroidGroupTest {
             @Suppress("DEPRECATION")
             provider.release()
         }
+    }
+
+    @Before
+    fun setUp() {
+        removeGroups()
+    }
+
+    @After
+    fun tearDown() {
+        removeGroups()
+    }
+
+    private fun removeGroups() {
+        addressBook.provider!!.delete(addressBook.groupsSyncUri(), null, null)
+        assertEquals(0, addressBook.queryGroups(null, null).size)
     }
 
 
