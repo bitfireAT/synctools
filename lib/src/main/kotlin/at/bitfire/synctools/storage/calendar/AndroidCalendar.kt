@@ -45,6 +45,9 @@ class AndroidCalendar(
     val name: String?
         get() = values.getAsString(Calendars.NAME)
 
+    val ownerAccount: String?
+        get() = values.getAsString(Calendars.OWNER_ACCOUNT)
+
     val syncId: String?
         get() = values.getAsString(Calendars._SYNC_ID)
 

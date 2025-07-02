@@ -605,7 +605,7 @@ class AndroidEvent(
         // add attendees
         val organizer = event.organizerEmail ?:
             /* no ORGANIZER, use current account owner as ORGANIZER */
-            calendar.account.name
+            calendar.ownerAccount ?: calendar.account.name
         event.attendees.forEach { insertAttendee(batch, idxEvent, it, organizer) }
 
         // add extended properties
@@ -990,14 +990,16 @@ class AndroidEvent(
                         else
                             organizer.getParameter<Email>(Parameter.EMAIL)?.value
 
-                        if (email == null)
-                            logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-                        email
-                    })
+                        if (email != null)
+                            return@let email
+
+                        logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
+                        null
+                    } ?: calendar.ownerAccount)
 
         } else /* !groupScheduled */
             builder .withValue(Events.HAS_ATTENDEE_DATA, 0)
-                    .withValue(Events.ORGANIZER, null)
+                    .withValue(Events.ORGANIZER, calendar.ownerAccount)
 
         // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
         // In this case, the whole event must be deleted and inserted again.
