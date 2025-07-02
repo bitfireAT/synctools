@@ -18,6 +18,7 @@ import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.plusAssign
 import java.io.FileNotFoundException
 import java.util.logging.Logger
 
@@ -133,13 +134,15 @@ open class AndroidGroup(
      * @throws LocalStorageException when the group can't be added
      */
     fun add(): Uri {
-        val values = contentValuesOf(
+        val values = contentValues()
+        values += contentValuesOf(
             Groups.ACCOUNT_TYPE to addressBook.addressBookAccount.type,
             Groups.ACCOUNT_NAME to addressBook.addressBookAccount.name,
-            Groups.SHOULD_SYNC to 1,
-            Groups.GROUP_IS_READ_ONLY to if (addressBook.readOnly) 1 else 0
+            Groups.SHOULD_SYNC to 1
         )
-        val uri = addressBook.provider!!.insert(addressBook.syncAdapterURI(Groups.CONTENT_URI), values)
+        if (addressBook.readOnly)
+            values.put(Groups.GROUP_IS_READ_ONLY, 1)
+        val uri = addressBook.provider!!.insert(addressBook.groupsSyncUri(), values)
                 ?: throw LocalStorageException("Empty result from content provider when adding group")
         id = ContentUris.parseId(uri)
         return uri
@@ -170,7 +173,7 @@ open class AndroidGroup(
 
     fun groupSyncURI(): Uri {
         val id = requireNotNull(id)
-        return addressBook.syncAdapterURI(ContentUris.withAppendedId(Groups.CONTENT_URI, id))
+        return ContentUris.withAppendedId(addressBook.groupsSyncUri(), id)
     }
 
     override fun toString() =

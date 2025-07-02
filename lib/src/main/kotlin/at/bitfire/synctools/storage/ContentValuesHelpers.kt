@@ -10,6 +10,10 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.DatabaseUtils
 
+operator fun ContentValues.plusAssign(other: ContentValues) {
+    putAll(other)
+}
+
 /**
  * Removes blank (empty or only white-space) [String] values from [ContentValues].
  *
