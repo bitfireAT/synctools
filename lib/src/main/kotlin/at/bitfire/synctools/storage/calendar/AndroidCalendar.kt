@@ -160,6 +160,14 @@ class AndroidCalendar(
     /** Calls [AndroidCalendarProvider.deleteCalendar] for this calendar. */
     fun delete() = provider.deleteCalendar(id)
 
+    /**
+     * Calls [AndroidCalendarProvider.updateCalendar] for this calendar.
+     *
+     * **Attention**: Does not update this object with the new values!
+     * */
+    fun update(values: ContentValues) =
+        provider.updateCalendar(id, values)
+
     /** Calls [AndroidCalendarProvider.readCalendarSyncState] for this calendar. */
     fun readSyncState() = provider.readCalendarSyncState(id)
 
