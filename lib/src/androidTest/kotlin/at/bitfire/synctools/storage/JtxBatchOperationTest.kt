@@ -9,7 +9,7 @@ package at.bitfire.synctools.storage
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
-import android.content.ContentValues
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.JtxCollection
 import at.bitfire.ical4android.JtxICalObject
@@ -48,11 +48,11 @@ class JtxBatchOperationTest {
     @Test
     fun testJtxBoard_OperationsPerYieldPoint_501() {
         val batch = JtxBatchOperation(provider)
-        val uri = JtxCollection.create(testAccount, provider, ContentValues().apply {
-            put(JtxContract.JtxCollection.ACCOUNT_NAME, testAccount.name)
-            put(JtxContract.JtxCollection.ACCOUNT_TYPE, testAccount.type)
-            put(JtxContract.JtxCollection.DISPLAYNAME, javaClass.name)
-        })
+        val uri = JtxCollection.create(testAccount, provider, contentValuesOf(
+            JtxContract.JtxCollection.ACCOUNT_NAME to testAccount.name,
+            JtxContract.JtxCollection.ACCOUNT_TYPE to testAccount.type,
+            JtxContract.JtxCollection.DISPLAYNAME to javaClass.name
+        ))
         val collectionId = ContentUris.parseId(uri)
 
         try {

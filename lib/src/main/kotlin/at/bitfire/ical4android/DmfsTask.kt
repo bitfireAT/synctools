@@ -16,6 +16,7 @@ import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
+import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -48,7 +49,6 @@ import org.dmfs.tasks.contract.TaskContract.Property.Category
 import org.dmfs.tasks.contract.TaskContract.Property.Comment
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
-import toContentValues
 import java.io.FileNotFoundException
 import java.net.URISyntaxException
 import java.time.ZoneId

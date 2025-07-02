@@ -42,6 +42,8 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
+import at.bitfire.synctools.storage.removeBlank
+import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -68,8 +70,6 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
-import removeBlank
-import toContentValues
 import java.io.FileNotFoundException
 import java.net.URI
 import java.net.URISyntaxException

@@ -11,8 +11,8 @@ import android.content.ContentProviderClient
 import at.bitfire.ical4android.JtxCollection
 import at.bitfire.ical4android.JtxCollectionFactory
 import at.bitfire.ical4android.JtxICalObject
+import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
-import toContentValues
 import java.util.LinkedList
 
 class TestJtxCollection(

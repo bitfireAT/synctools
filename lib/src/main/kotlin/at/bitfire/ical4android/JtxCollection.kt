@@ -13,6 +13,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
@@ -20,7 +21,6 @@ import net.fortuna.ical4j.model.component.VJournal
 import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.Version
-import toContentValues
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger

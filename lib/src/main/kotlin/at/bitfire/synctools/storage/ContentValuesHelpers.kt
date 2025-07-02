@@ -4,9 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+package at.bitfire.synctools.storage
+
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.DatabaseUtils
+
+operator fun ContentValues.plusAssign(other: ContentValues) {
+    putAll(other)
+}
 
 /**
  * Removes blank (empty or only white-space) [String] values from [ContentValues].
@@ -24,18 +30,15 @@ fun ContentValues.removeBlank(): ContentValues {
 }
 
 /**
- * Returns the entire contents of the current row as a [ContentValues] object.
+ * Returns the contents of the current row as a [android.content.ContentValues] object.
  *
- * @param  removeBlankRows  whether rows with blank values should be removed
+ * Removes blank fields using [ContentValues.removeBlank].
  *
- * @return entire contents of the current row
+ * @return contents of the current row (blank fields removed)
  */
-fun Cursor.toContentValues(removeBlankRows: Boolean = true): ContentValues {
+fun Cursor.toContentValues(): ContentValues {
     val values = ContentValues(columnCount)
     DatabaseUtils.cursorRowToContentValues(this, values)
 
-    if (removeBlankRows)
-        values.removeBlank()
-
-    return values
+    return values.removeBlank()
 }

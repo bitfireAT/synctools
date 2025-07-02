@@ -15,7 +15,7 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.LocalStorageException
-import toContentValues
+import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**

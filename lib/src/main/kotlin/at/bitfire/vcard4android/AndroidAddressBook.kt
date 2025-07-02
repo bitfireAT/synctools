@@ -13,7 +13,7 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
-import toContentValues
+import at.bitfire.synctools.storage.toContentValues
 import java.io.FileNotFoundException
 import java.util.LinkedList
 

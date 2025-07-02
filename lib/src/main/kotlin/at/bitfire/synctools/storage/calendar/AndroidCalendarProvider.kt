@@ -19,7 +19,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.LocalStorageException
-import toContentValues
+import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
