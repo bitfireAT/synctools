@@ -20,6 +20,7 @@ class LoggingTestRunner: AndroidJUnitRunner() {
         // enable verbose logging during tests
         val rootLogger = Logger.getLogger("")
         rootLogger.level = Level.ALL
+        rootLogger.handlers.forEach { rootLogger.removeHandler(it) }
         rootLogger.addHandler(LogcatHandler(javaClass.packageName))
     }
 

@@ -67,14 +67,6 @@ import java.time.Duration
 import java.time.Period
 import java.util.UUID
 import java.util.logging.Logger
-import kotlin.collections.Map
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.emptyMap
-import kotlin.collections.first
-import kotlin.collections.firstOrNull
-import kotlin.collections.iterator
-import kotlin.collections.mapOf
 import kotlin.collections.plusAssign
 
 class AndroidEventTest {
@@ -83,7 +75,7 @@ class AndroidEventTest {
 
         @JvmField
         @ClassRule
-        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.getInstance()
+        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
         lateinit var client: ContentProviderClient
 

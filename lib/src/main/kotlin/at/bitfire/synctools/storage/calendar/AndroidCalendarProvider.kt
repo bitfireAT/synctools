@@ -14,6 +14,7 @@ import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Colors
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.icalendar.Css3Color
@@ -198,7 +199,8 @@ class AndroidCalendarProvider(
     fun calendarUri(id: Long) =
         ContentUris.withAppendedId(calendarsUri, id)
 
-    private val colorsUri
+    @VisibleForTesting
+    internal val colorsUri
         get() = Colors.CONTENT_URI.asSyncAdapter(account)
 
 

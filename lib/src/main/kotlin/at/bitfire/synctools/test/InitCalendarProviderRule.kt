@@ -11,6 +11,7 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.os.Build
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Calendars
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -42,7 +43,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         private var isInitialized = false
         private val logger = Logger.getLogger(InitCalendarProviderRule::javaClass.name)
 
-        fun getInstance(): RuleChain = RuleChain
+        fun initialize(): RuleChain = RuleChain
             .outerRule(GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
             .around(InitCalendarProviderRule())
 
@@ -106,7 +107,10 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
 
     private fun createAndVerifyCalendar(provider: ContentProviderClient): AndroidCalendar? {
         val calendarProvider = AndroidCalendarProvider(account, provider)
-        val id = calendarProvider.createCalendar(contentValuesOf())
+        val id = calendarProvider.createCalendar(contentValuesOf(
+            Calendars.ACCOUNT_NAME to account.name,
+            Calendars.ACCOUNT_TYPE to account.type
+        ))
 
         return try {
             calendarProvider.getCalendar(id)

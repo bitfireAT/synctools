@@ -989,15 +989,15 @@ class AndroidEvent(
                             uri.schemeSpecificPart
                         else
                             organizer.getParameter<Email>(Parameter.EMAIL)?.value
-                        if (email != null)
-                            return@let email
-                        logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-                        null
-                    } ?: calendar.account)
+
+                        if (email == null)
+                            logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
+                        email
+                    })
 
         } else /* !groupScheduled */
             builder .withValue(Events.HAS_ATTENDEE_DATA, 0)
-                    .withValue(Events.ORGANIZER, calendar.account)
+                    .withValue(Events.ORGANIZER, null)
 
         // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
         // In this case, the whole event must be deleted and inserted again.
