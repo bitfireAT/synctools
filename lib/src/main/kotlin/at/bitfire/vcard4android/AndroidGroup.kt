@@ -16,6 +16,7 @@ import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
 import android.provider.ContactsContract.RawContacts.Data
 import androidx.annotation.CallSuper
+import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.LocalStorageException
 import java.io.FileNotFoundException
 import java.util.logging.Logger
@@ -114,14 +115,14 @@ open class AndroidGroup(
 
     @CallSuper
     protected open fun contentValues(): ContentValues {
-        val values = ContentValues()
-        values.put(COLUMN_FILENAME, fileName)
-        values.put(COLUMN_ETAG, eTag)
-
         val contact = getContact()
-        values.put(COLUMN_UID, contact.uid)
-        values.put(Groups.TITLE, contact.displayName)
-        values.put(Groups.NOTES, contact.note)
+        val values = contentValuesOf(
+            COLUMN_FILENAME to fileName,
+            COLUMN_ETAG to eTag,
+            COLUMN_UID to contact.uid,
+            Groups.TITLE to contact.displayName,
+            Groups.NOTES to contact.note
+        )
         return values
     }
 
@@ -132,12 +133,12 @@ open class AndroidGroup(
      * @throws LocalStorageException when the group can't be added
      */
     fun add(): Uri {
-        val values = contentValues()
-		values.put(Groups.ACCOUNT_TYPE, addressBook.addressBookAccount.type)
-		values.put(Groups.ACCOUNT_NAME, addressBook.addressBookAccount.name)
-        values.put(Groups.SHOULD_SYNC, 1)
-        if (addressBook.readOnly)
-            values.put(Groups.GROUP_IS_READ_ONLY, 1)
+        val values = contentValuesOf(
+            Groups.ACCOUNT_TYPE to addressBook.addressBookAccount.type,
+            Groups.ACCOUNT_NAME to addressBook.addressBookAccount.name,
+            Groups.SHOULD_SYNC to 1,
+            Groups.GROUP_IS_READ_ONLY to if (addressBook.readOnly) 1 else 0
+        )
         val uri = addressBook.provider!!.insert(addressBook.syncAdapterURI(Groups.CONTENT_URI), values)
                 ?: throw LocalStorageException("Empty result from content provider when adding group")
         id = ContentUris.parseId(uri)

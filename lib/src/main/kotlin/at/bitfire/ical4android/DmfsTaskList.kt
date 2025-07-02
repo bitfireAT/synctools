@@ -14,10 +14,10 @@ import android.net.Uri
 import androidx.annotation.CallSuper
 import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
+import at.bitfire.synctools.storage.toContentValues
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.TaskLists
@@ -71,7 +71,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
             )?.use { cursor ->
                 if (cursor.moveToNext()) {
                     val taskList = factory.newInstance(account, provider, providerName, id)
-                    taskList.populate(cursor.toValues())
+                    taskList.populate(cursor.toContentValues())
                     return taskList
                 }
             }
@@ -95,7 +95,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
                 null
             )?.use { cursor ->
                 while (cursor.moveToNext()) {
-                    val values = cursor.toValues()
+                    val values = cursor.toContentValues()
                     val taskList =
                         factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
                     taskList.populate(values)
@@ -177,7 +177,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
             null, null
         )?.use { cursor ->
             while (cursor.moveToNext()) {
-                val values = cursor.toValues()
+                val values = cursor.toContentValues()
                 val id = values.getAsLong(Relation.PROPERTY_ID)
                 val propertyContentUri = ContentUris.withAppendedId(tasksPropertiesSyncUri(), id)
                 batch += BatchOperation.CpoBuilder
@@ -209,7 +209,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
             where, whereArgs, null
         )?.use { cursor ->
             while (cursor.moveToNext())
-                tasks += taskFactory.fromProvider(this, cursor.toValues())
+                tasks += taskFactory.fromProvider(this, cursor.toContentValues())
         }
         return tasks
     }

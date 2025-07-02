@@ -13,9 +13,9 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.ContactsContract.Groups
 import android.provider.ContactsContract.RawContacts
-import at.bitfire.vcard4android.Utils.toContentValues
+import at.bitfire.synctools.storage.toContentValues
 import java.io.FileNotFoundException
-import java.util.*
+import java.util.LinkedList
 
 open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
     var addressBookAccount: Account,

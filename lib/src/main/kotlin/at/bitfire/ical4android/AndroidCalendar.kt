@@ -20,7 +20,7 @@ import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidCalendar.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.toValues
+import at.bitfire.synctools.storage.toContentValues
 import java.io.FileNotFoundException
 import java.util.LinkedList
 import java.util.logging.Level
@@ -106,7 +106,7 @@ class AndroidCalendar(
         val events = LinkedList<AndroidEvent>()
         provider.query(Events.CONTENT_URI.asSyncAdapter(account), null, where, whereArgs, null)?.use { cursor ->
             while (cursor.moveToNext())
-                events += AndroidEvent(this, cursor.toValues())
+                events += AndroidEvent(this, cursor.toContentValues())
         }
         return events
     }

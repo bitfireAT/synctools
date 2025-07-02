@@ -13,10 +13,10 @@ import android.os.RemoteException
 import androidx.annotation.CallSuper
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
+import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -110,7 +110,7 @@ abstract class DmfsTask(
                         val newTask = Task()
                         field = newTask
 
-                        val values = cursor.toValues(true)
+                        val values = cursor.toContentValues(true)
                         logger.log(Level.FINER, "Found task", values)
                         populateTask(values)
 
@@ -120,7 +120,7 @@ abstract class DmfsTask(
 
                             while (cursor.moveToNext()) {
                                 // process the other properties
-                                populateProperty(cursor.toValues(true))
+                                populateProperty(cursor.toContentValues(true))
                             }
                         }
 

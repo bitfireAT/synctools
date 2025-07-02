@@ -28,8 +28,6 @@ import at.bitfire.ical4android.AndroidEvent.Companion.numInstances
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.removeBlankStrings
-import at.bitfire.ical4android.util.MiscUtils.toValues
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
@@ -42,6 +40,8 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.CalendarBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.removeBlank
+import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -175,10 +175,10 @@ class AndroidEvent(
                     // calculate some scheduling properties
                     val groupScheduled = e.subValues.any { it.uri == Attendees.CONTENT_URI }
 
-                    populateEvent(e.entityValues.removeBlankStrings(), groupScheduled)
+                    populateEvent(e.entityValues.removeBlank(), groupScheduled)
 
                     for (subValue in e.subValues) {
-                        val subValues = subValue.values.removeBlankStrings()
+                        val subValues = subValue.values.removeBlank()
                         when (subValue.uri) {
                             Attendees.CONTENT_URI -> populateAttendee(subValues)
                             Reminders.CONTENT_URI -> populateReminder(subValues)
@@ -512,7 +512,7 @@ class AndroidEvent(
                 null,
                 Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
             while (c.moveToNext()) {
-                val values = c.toValues(true)
+                val values = c.toContentValues(true)
                 try {
                     val exception = AndroidEvent(calendar, values)
                     val exceptionEvent = exception.event!!
