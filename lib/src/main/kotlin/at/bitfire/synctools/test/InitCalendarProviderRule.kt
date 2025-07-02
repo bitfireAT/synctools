@@ -9,9 +9,9 @@ package at.bitfire.synctools.test
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentValues
 import android.os.Build
 import android.provider.CalendarContract
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.AndroidEvent
@@ -48,6 +48,9 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
 
     }
 
+    val account = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+
+
     override fun before() {
         if (!isInitialized) {
             logger.info("Initializing calendar provider")
@@ -66,12 +69,10 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
     }
 
     private fun initCalendarProvider(provider: ContentProviderClient) {
-        val account = Account("LocalCalendarTest", CalendarContract.ACCOUNT_TYPE_LOCAL)
-
         // Sometimes, the calendar provider returns an ID for the created calendar, but then fails to find it.
         var calendarOrNull: AndroidCalendar? = null
         for (i in 0..50) {
-            calendarOrNull = createAndVerifyCalendar(account, provider)
+            calendarOrNull = createAndVerifyCalendar(provider)
             if (calendarOrNull != null)
                 break
             else
@@ -87,7 +88,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
             normalLocalEvent.add()
-            AndroidEvent.Companion.numInstances(provider, account, normalLocalEvent.id!!)
+            AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
 
             // recurring event init
             val recurringEvent = Event().apply {
@@ -97,15 +98,15 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
             localRecurringEvent.add()
-            AndroidEvent.Companion.numInstances(provider, account, localRecurringEvent.id!!)
+            AndroidEvent.numInstances(provider, account, localRecurringEvent.id!!)
         } finally {
             calendar.delete()
         }
     }
 
-    private fun createAndVerifyCalendar(account: Account, provider: ContentProviderClient): AndroidCalendar? {
+    private fun createAndVerifyCalendar(provider: ContentProviderClient): AndroidCalendar? {
         val calendarProvider = AndroidCalendarProvider(account, provider)
-        val id = calendarProvider.createCalendar(ContentValues())
+        val id = calendarProvider.createCalendar(contentValuesOf())
 
         return try {
             calendarProvider.getCalendar(id)

@@ -11,6 +11,7 @@ import android.content.ContentValues
 import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.LocalStorageException
@@ -74,6 +75,11 @@ class AndroidCalendar(
         return events
     }
 
+    fun getEvent(id: Long): AndroidEvent? {
+        val values = getEventValues(id) ?: return null
+        return AndroidEvent(this, values)
+    }
+
     fun getEventValues(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): ContentValues? {
         try {
             client.query(eventUri(id), projection, where, whereArgs, null)?.use { cursor ->
@@ -122,6 +128,11 @@ class AndroidCalendar(
 
     fun delete() = provider.deleteCalendar(id)
 
+    fun readSyncState() = provider.readCalendarSyncState(id)
+    fun writeSyncState(newState: String?) {
+        provider.writeCalendarSyncState(id, newState)
+    }
+
 
     // helpers
 
@@ -132,13 +143,13 @@ class AndroidCalendar(
         get() = provider.client
 
     val eventsUri
-        get() = CalendarContract.Events.CONTENT_URI.asSyncAdapter(account)
+        get() = Events.CONTENT_URI.asSyncAdapter(account)
 
     fun eventUri(id: Long) =
         ContentUris.withAppendedId(eventsUri, id)
 
     private fun whereWithCalendarId(where: String?, whereArgs: Array<String>?): Pair<String, Array<String>> {
-        val protectedWhere = "(${where ?: "1"}) AND " + CalendarContract.Events.CALENDAR_ID + "=?"
+        val protectedWhere = "(${where ?: "1"}) AND " + Events.CALENDAR_ID + "=?"
         val protectedWhereArgs = (whereArgs ?: arrayOf()) + id.toString()
         return Pair(protectedWhere, protectedWhereArgs)
     }
