@@ -12,14 +12,14 @@ plugins {
 }
 
 android {
-    compileSdk = 35
+    compileSdk = 36
 
     namespace = "at.bitfire.synctools"
 
     defaultConfig {
         minSdk = 23        // Android 6
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "at.bitfire.synctools.LoggingTestRunner"
 
         buildConfigField("String", "version_ical4j", "\"${libs.versions.ical4j.get()}\"")
 
