@@ -4,29 +4,28 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
-import java.time.ZoneId
-import java.util.logging.Logger
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.TimeZoneRegistryImpl
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.TzId
+import java.time.ZoneId
+import java.util.logging.Logger
 
 /**
- * Wrapper around default [TimeZoneRegistry] that uses the Android name if a time zone has a
+ * Wrapper around default [net.fortuna.ical4j.model.TimeZoneRegistry] that uses the Android name if a time zone has a
  * different name in ical4j and Android.
  *
  * **This time zone registry is set as default registry for ical4android projects in
  * resources/ical4j.properties.**
  *
  * For instance, if a time zone is known as "Europe/Kyiv" (with alias "Europe/Kiev") in ical4j
- * and only "Europe/Kiev" in Android, this registry behaves like the default [TimeZoneRegistryImpl],
+ * and only "Europe/Kiev" in Android, this registry behaves like the default [net.fortuna.ical4j.model.TimeZoneRegistryImpl],
  * but the returned time zone for `getTimeZone("Europe/Kiev")` has an ID of "Europe/Kiev" and not
  * "Europe/Kyiv".
  */
@@ -80,10 +79,12 @@ class AndroidCompatTimeZoneRegistry(
             val vTimeZone = tz.vTimeZone
             val newVTimeZoneProperties = PropertyList<Property>()
             newVTimeZoneProperties += TzId(androidTzId)
-            return TimeZone(VTimeZone(
-                newVTimeZoneProperties,
-                vTimeZone.observances
-            ))
+            return TimeZone(
+                VTimeZone(
+                    newVTimeZoneProperties,
+                    vTimeZone.observances
+                )
+            )
         } else
             return tz
     }

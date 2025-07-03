@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
-import at.bitfire.ical4android.validation.FixInvalidUtcOffsetPreprocessor.TZOFFSET_REGEXP
+import at.bitfire.synctools.icalendar.validation.FixInvalidUtcOffsetPreprocessor.TZOFFSET_REGEXP
 import java.util.logging.Level
 import java.util.logging.Logger
 

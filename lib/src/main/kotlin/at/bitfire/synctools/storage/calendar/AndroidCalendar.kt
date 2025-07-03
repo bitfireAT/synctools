@@ -8,25 +8,36 @@ package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentUris
 import android.content.ContentValues
+import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.AndroidEvent
+import android.provider.CalendarContract.EventsEntity
+import android.provider.CalendarContract.ExtendedProperties
+import android.provider.CalendarContract.Instances
+import android.provider.CalendarContract.Reminders
+import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
+import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
+import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_CATEGORIES
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_ICAL_UID
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_URL
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**
- * Represents a locally stored calendar, containing [at.bitfire.ical4android.AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
- * Communicates with the Android Contacts Provider which uses an SQLite
- * database to store the events.
+ * Represents a locally stored calendar, containing [AndroidEvent]s (whose data objects are [Event]s).
  *
- * @param client  calendar provider
- * @param values    content values as read from the calendar provider; [android.provider.BaseColumns._ID] must be set
+ * Manages locally stored events (and other data like instances of events) in the Android calendar provider.
  *
- * @throws IllegalArgumentException when [android.provider.BaseColumns._ID] is not set
+ * @param client    calendar provider
+ * @param values    content values as read from the calendar provider; [Calendars._ID] must be set
+ *
+ * @throws IllegalArgumentException when [Calendars._ID] is not set
  */
 class AndroidCalendar(
     val provider: AndroidCalendarProvider,
@@ -61,6 +72,41 @@ class AndroidCalendar(
     // CRUD AndroidEvent
 
     /**
+     * @return ID of the created event in the provider
+     */
+    fun createEventFromDataObject(
+        event: Event,
+        syncId: String? = null,
+        eTag: String? = null,
+        scheduleTag: String? = null,
+        flags: Int = 0
+    ): Long {
+        val batch = CalendarBatchOperation(client)
+
+        val builder = LegacyAndroidEventBuilder(
+            calendar = this,
+            event = event,
+            id = null,
+            syncId = syncId,
+            eTag = eTag,
+            scheduleTag = scheduleTag,
+            flags = flags
+        )
+        val idxEvent = builder.addOrUpdateRows(event, batch) ?: throw AssertionError("Expected Events._ID backref")
+        batch.commit()
+
+        val resultUri = batch.getResult(idxEvent)?.uri
+            ?: throw LocalStorageException("Empty result from content provider when adding event")
+
+        return ContentUris.parseId(resultUri)
+    }
+
+    fun createAndGetEventFromDataObject(event: Event): AndroidEvent {
+        val id = createEventFromDataObject(event)
+        return getEvent(id) ?: throw LocalStorageException("Created event not available")
+    }
+
+    /**
      * Queries events from this calendar.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
@@ -74,9 +120,8 @@ class AndroidCalendar(
         val events = LinkedList<AndroidEvent>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
-            client.query(eventsUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
-                while (cursor.moveToNext())
-                    events += AndroidEvent(this, cursor.toContentValues())
+            iterateEventEntities(null, protectedWhere, protectedWhereArgs) { event ->
+                events += AndroidEvent(this, event)
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
@@ -91,8 +136,31 @@ class AndroidCalendar(
      * @return event (or `null` if not found)
      */
     fun getEvent(id: Long): AndroidEvent? {
-        val values = getEventValues(id) ?: return null
+        val values = getEventEntity(id) ?: return null
         return AndroidEvent(this, values)
+    }
+
+    /**
+     * Gets the event row + data rows of a specific event, identified by its ID, from this calendar.
+     *
+     * @param id    event ID
+     * @return event row + data rows (or `null` if not found)
+     */
+    fun getEventEntity(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): Entity? {
+        try {
+            client.query(eventUri(id), projection, where, whereArgs, null)?.use { cursor ->
+                val entityIterator = EventsEntity.newEntityIterator(cursor, client)
+                try {
+                    if (entityIterator.hasNext())
+                        return entityIterator.next()
+                } finally {
+                    entityIterator.close()
+                }
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query event entity", e)
+        }
+        return null
     }
 
     /**
@@ -111,6 +179,32 @@ class AndroidCalendar(
             throw LocalStorageException("Couldn't query event", e)
         }
         return null
+    }
+
+    /**
+     * Iterates event entites from this calendar.
+     *
+     * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
+     *
+     * @param projection    requested fields
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     */
+    fun iterateEventEntities(projection: Array<String>?, where: String?, whereArgs: Array<String>?, body: (Entity) -> Unit) {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                val entityIterator = EventsEntity.newEntityIterator(cursor, client)
+                try {
+                    while (entityIterator.hasNext())
+                        body(entityIterator.next())
+                } finally {
+                    entityIterator.close()
+                }
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't iterate events", e)
+        }
     }
 
     /**
@@ -137,6 +231,100 @@ class AndroidCalendar(
         }
     }
 
+    fun updateEventFromDataObject(
+        event: Event,
+        id: Long,
+        syncId: String? = null,
+        eTag: String? = null,
+        scheduleTag: String? = null,
+        flags: Int = 0
+    ): Long {
+        // There are cases where the event cannot be updated, but must be completely re-created.
+        // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
+        var rebuild = false
+        if (event.status == null)
+            getEventValues(id, arrayOf(Events.STATUS))?.let { values ->
+                if (values.getAsInteger(Events.STATUS) != null)
+                    rebuild = true
+            }
+
+        if (rebuild) {
+            // delete whole event, insert updated event, return new ID
+            deleteEvent(id)
+            return createEventFromDataObject(
+                event = event,
+                syncId = syncId,
+                eTag = eTag,
+                scheduleTag = scheduleTag,
+                flags = flags
+            )
+
+        } else {
+            // update event
+
+            // remove associated rows which are added later again
+            val batch = CalendarBatchOperation(client)
+
+            deleteExceptions(batch)
+            batch += CpoBuilder
+                .newDelete(Reminders.CONTENT_URI.asSyncAdapter(account))
+                .withSelection("${Reminders.EVENT_ID}=?", arrayOf(id.toString()))
+            batch += CpoBuilder
+                .newDelete(Attendees.CONTENT_URI.asSyncAdapter(account))
+                .withSelection("${Attendees.EVENT_ID}=?", arrayOf(id.toString()))
+            batch += CpoBuilder
+                .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(account))
+                .withSelection(
+                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
+                    arrayOf(
+                        id.toString(),
+                        EXTNAME_CATEGORIES,
+                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                        EXTNAME_URL,
+                        UnknownProperty.CONTENT_ITEM_TYPE
+                    )
+                )
+
+            // update main row / add data rows again
+            val builder = LegacyAndroidEventBuilder(
+                calendar = this,
+                event = event,
+                id = id,
+                syncId = syncId,
+                eTag = eTag,
+                scheduleTag = scheduleTag,
+                flags = flags
+            )
+            builder.addOrUpdateRows(event, batch)
+            batch.commit()
+
+            return id   // return unchanged ID
+        }
+    }
+
+    private fun deleteExceptions(batch: CalendarBatchOperation) {
+        val existingId = requireNotNull(id)
+        batch += CpoBuilder
+            .newDelete(Events.CONTENT_URI.asSyncAdapter(account))
+            .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
+    }
+
+    /**
+     * Updates event in this calendar.
+     *
+     * @param id            ID of the event to update
+     * @param values        values to update
+     *
+     * @return number of updated rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun updateEvent(id: Long, values: ContentValues): Int =
+        try {
+            client.update(eventUri(id), values, null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't update events", e)
+        }
+
     /**
      * Updates events in this calendar.
      *
@@ -153,6 +341,14 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
+
+    fun deleteEvent(id: Long): Int {
+        try {
+            return client.delete(eventUri(id), null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't delete event", e)
+        }
+    }
 
 
     // shortcuts to upper level
@@ -177,6 +373,74 @@ class AndroidCalendar(
     }
 
 
+    // event instances
+
+    /**
+     * Finds the amount of direct instances this event has (without exceptions); used by [numInstances]
+     * to find the number of instances of exceptions.
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of direct event instances (not counting instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numDirectInstances(eventId: Long): Int? {
+        // query event to get first and last instance
+        var first: Long? = null
+        var last: Long? = null
+        getEventValues(eventId, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { event ->
+            first = event.getAsLong(Events.DTSTART)
+            last = event.getAsLong(Events.LAST_DATE)
+        }
+        // if this event doesn't have a last occurrence, it's endless and always has instances
+        if (first == null || last == null)
+            return null
+
+        /* Query instances of the event within a given start and end. We can't use Long.MIN_VALUE and
+         Long.MAX_VALUE because the calendar provider generates the instances on the fly and doesn't accept those
+         values. So we use the first/last actual occurrence of the event (as calculated by the provider). */
+        val instancesUri = Instances.CONTENT_URI.asSyncAdapter(account).buildUpon()
+            .appendPath(first.toString())       // begin timestamp
+            .appendPath(last.toString())        // end timestamp
+            .build()
+
+        var numInstances = 0
+        client.query(
+            instancesUri, null,
+            "${Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
+            null
+        )?.use { cursor ->
+            numInstances += cursor.count
+        }
+        return numInstances
+    }
+
+    /**
+     * Finds the total number of instances this event has (including instances of exceptions).
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of direct event instances (not counting instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numInstances(eventId: Long): Int? {
+        // num instances of the main event
+        var numInstances: Int? = numDirectInstances(eventId) ?: return null
+
+        // add the number of instances of every main event's exception
+        iterateEvents(arrayOf(Events._ID), "${Events.ORIGINAL_ID}=?", arrayOf(eventId.toString())) { event ->
+            val exceptionEventId = event.getAsLong(Events._ID)
+            val exceptionInstances = numDirectInstances(exceptionEventId)
+
+            numInstances = if (exceptionInstances == null)
+                null    // number of instances of exception can't be determined; so the total number of instances is also unclear
+            else
+                numInstances?.plus(exceptionInstances)
+        }
+        return numInstances
+    }
+
+
     // helpers
 
     val account
@@ -184,6 +448,9 @@ class AndroidCalendar(
 
     val client
         get() = provider.client
+
+    val eventEntitiesUri
+        get() = EventsEntity.CONTENT_URI.asSyncAdapter(account)
 
     val eventsUri
         get() = Events.CONTENT_URI.asSyncAdapter(account)

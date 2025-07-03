@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor.streamPreprocessors
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule

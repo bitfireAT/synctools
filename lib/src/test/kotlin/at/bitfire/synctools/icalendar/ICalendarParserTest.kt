@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.validation.ICalPreprocessor
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import io.mockk.junit4.MockKRule
 import io.mockk.mockkObject
 import io.mockk.verify

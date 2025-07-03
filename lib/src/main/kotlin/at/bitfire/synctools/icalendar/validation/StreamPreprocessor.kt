@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
 import java.io.IOException
 import java.io.Reader

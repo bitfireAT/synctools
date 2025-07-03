@@ -4,14 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
+import org.junit.Assert
 import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
@@ -40,7 +38,7 @@ class AndroidCompatTimeZoneRegistryTest {
 
     @Test
     fun getTimeZone_Existing() {
-        assertEquals(
+        Assert.assertEquals(
             ical4jRegistry.getTimeZone("Europe/Vienna"),
             registry.getTimeZone("Europe/Vienna")
         )
@@ -48,23 +46,23 @@ class AndroidCompatTimeZoneRegistryTest {
 
     @Test
     fun getTimeZone_Existing_ButNotInIcal4j() {
-        val reg = AndroidCompatTimeZoneRegistry(object: TimeZoneRegistry {
+        val reg = AndroidCompatTimeZoneRegistry(object : TimeZoneRegistry {
             override fun register(timezone: TimeZone?) = throw NotImplementedError()
             override fun register(timezone: TimeZone?, update: Boolean) = throw NotImplementedError()
             override fun clear() = throw NotImplementedError()
             override fun getTimeZone(id: String?) = null
 
         })
-        assertNull(reg.getTimeZone("Europe/Berlin"))
+        Assert.assertNull(reg.getTimeZone("Europe/Berlin"))
     }
 
     @Test
     fun getTimeZone_Existing_Kiev() {
         Assume.assumeFalse(systemKnowsKyiv)
         val tz = registry.getTimeZone("Europe/Kiev")
-        assertFalse(tz === ical4jRegistry.getTimeZone("Europe/Kiev"))      // we have made a copy
-        assertEquals("Europe/Kiev", tz?.id)
-        assertEquals("Europe/Kiev", tz?.vTimeZone?.timeZoneId?.value)
+        Assert.assertFalse(tz === ical4jRegistry.getTimeZone("Europe/Kiev"))      // we have made a copy
+        Assert.assertEquals("Europe/Kiev", tz?.id)
+        Assert.assertEquals("Europe/Kiev", tz?.vTimeZone?.timeZoneId?.value)
     }
 
     @Test
@@ -73,7 +71,7 @@ class AndroidCompatTimeZoneRegistryTest {
 
         /* Unfortunately, AndroidCompatTimeZoneRegistry can't rewrite to Europy/Kyiv to anything because
            it doesn't know a valid Android name for it. */
-        assertEquals(
+        Assert.assertEquals(
             ical4jRegistry.getTimeZone("Europe/Kyiv"),
             registry.getTimeZone("Europe/Kyiv")
         )
@@ -82,13 +80,13 @@ class AndroidCompatTimeZoneRegistryTest {
     @Test
     fun getTimeZone_Copenhagen_NoBerlin() {
         val tz = registry.getTimeZone("Europe/Copenhagen")!!
-        assertEquals("Europe/Copenhagen", tz.id)
-        assertFalse(tz.vTimeZone.toString().contains("Berlin"))
+        Assert.assertEquals("Europe/Copenhagen", tz.id)
+        Assert.assertFalse(tz.vTimeZone.toString().contains("Berlin"))
     }
 
     @Test
     fun getTimeZone_NotExisting() {
-        assertNull(registry.getTimeZone("Test/NotExisting"))
+        Assert.assertNull(registry.getTimeZone("Test/NotExisting"))
     }
 
 }

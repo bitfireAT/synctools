@@ -16,6 +16,7 @@ import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
+import at.bitfire.synctools.storage.calendar.UnknownProperty
 import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
