@@ -58,6 +58,10 @@ import java.time.ZonedDateTime
 import java.util.Locale
 import java.util.logging.Logger
 
+/**
+ * Legacy mapper from an [Event] data object to Android content provider data rows
+ * (former "build..." methods).
+ */
 class LegacyAndroidEventBuilder(
     private val calendar: AndroidCalendar,
     private val event: Event,

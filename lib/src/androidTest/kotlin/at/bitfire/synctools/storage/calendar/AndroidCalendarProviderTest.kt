@@ -12,7 +12,6 @@ import android.content.ContentProviderClient
 import android.provider.CalendarContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
@@ -66,20 +65,23 @@ class AndroidCalendarProviderTest {
         provider.provideCss3ColorIndices()
 
         // insert an event with that color
-        val cal = TestCalendar.findOrCreate(testAccount, client)
+        val calendar = TestCalendar.findOrCreate(testAccount, client)
         try {
             // add event with color
-            AndroidEvent(cal, Event().apply {
-                dtStart = DtStart("20210314T204200Z")
-                dtEnd = DtEnd("20210314T204230Z")
-                color = Css3Color.limegreen
-                summary = "Test event with color"
-            }, "remove-colors").add()
+            calendar.createEventFromDataObject(
+                event = Event().apply {
+                    dtStart = DtStart("20210314T204200Z")
+                    dtEnd = DtEnd("20210314T204230Z")
+                    color = Css3Color.limegreen
+                    summary = "Test event with color"
+                },
+                syncId = "remove-colors"
+            )
 
             provider.removeColorIndices()
             assertEquals(0, countColors())
         } finally {
-            cal.delete()
+            calendar.delete()
         }
     }
 

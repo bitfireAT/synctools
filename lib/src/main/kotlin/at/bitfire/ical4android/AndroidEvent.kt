@@ -12,7 +12,6 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Entity
-import android.net.Uri
 import android.os.RemoteException
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
@@ -28,10 +27,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
-import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
-import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -137,6 +133,22 @@ class AndroidEvent(
             // post-processing
             useRetainedClassification(newEvent)
         }
+    }
+
+    private fun useRetainedClassification(event: Event) {
+        var retainedClazz: Clazz? = null
+        val it = event.unknownProperties.iterator()
+        while (it.hasNext()) {
+            val prop = it.next()
+            if (prop is Clazz) {
+                retainedClazz = prop
+                it.remove()
+            }
+        }
+
+        if (event.classification == null)
+        // no classification, use retained one if possible
+            event.classification = retainedClazz
     }
 
     /**
@@ -473,113 +485,14 @@ class AndroidEvent(
     }
 
 
-    /**
-     * Updates an already existing event in the calendar storage with the values
-     * from the instance.
-     * @throws LocalStorageException when the calendar provider doesn't return a result row
-     * @throws RemoteException on calendar provider errors
-     */
-    fun update(event: Event): Uri {
-        this.event = event
-        val existingId = requireNotNull(id)
+    // shortcuts to upper level
 
-        // There are cases where the event cannot be updated, but must be completely re-created.
-        // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
-        var rebuild = false
-        if (event.status == null)
-            calendar.client.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
-                if (cursor.moveToNext()) {
-                    val statusIndex = cursor.getColumnIndexOrThrow(Events.STATUS)
-                    if (!cursor.isNull(statusIndex))
-                        rebuild = true
-                }
-            }
-
-        if (rebuild) {  // delete whole event and insert updated event
-            delete()
-            return add()
-
-        } else {        // update event
-            // remove associated rows which are added later again
-            val batch = CalendarBatchOperation(calendar.client)
-            deleteExceptions(batch)
-            batch += CpoBuilder
-                .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Reminders.EVENT_ID}=?", arrayOf(existingId.toString()))
-            batch += CpoBuilder
-                .newDelete(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Attendees.EVENT_ID}=?", arrayOf(existingId.toString()))
-            batch += CpoBuilder
-                .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection(
-                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
-                    arrayOf(
-                        existingId.toString(),
-                        EXTNAME_CATEGORIES,
-                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                        EXTNAME_URL,
-                        UnknownProperty.CONTENT_ITEM_TYPE
-                    )
-                )
-
-            addOrUpdateRows(batch)
-            batch.commit()
-
-            return ContentUris.withAppendedId(Events.CONTENT_URI, existingId)
-        }
-    }
-
-    fun update(values: ContentValues) {
+    /*fun update(values: ContentValues) {
         calendar.client.update(eventSyncURI(), values, null, null)
-    }
+    }*/
 
-    /**
-     * Deletes an existing event from the calendar storage.
-     *
-     * @return number of affected rows
-     *
-     * @throws RemoteException on calendar provider errors
-     */
-    fun delete(): Int {
-        val batch = CalendarBatchOperation(calendar.client)
+    fun delete() = calendar.deleteEvent(id)
 
-        // remove exceptions of event, too (CalendarProvider doesn't do this)
-        deleteExceptions(batch)
-
-        // remove event and unset known id
-        batch += CpoBuilder.newDelete(eventSyncURI())
-        id = null
-
-        return batch.commit()
-    }
-
-    private fun deleteExceptions(batch: CalendarBatchOperation) {
-        val existingId = requireNotNull(id)
-        batch += CpoBuilder
-            .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
-            .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
-    }
-
-    private fun useRetainedClassification(event: Event) {
-        var retainedClazz: Clazz? = null
-        val it = event.unknownProperties.iterator()
-        while (it.hasNext()) {
-            val prop = it.next()
-            if (prop is Clazz) {
-                retainedClazz = prop
-                it.remove()
-            }
-        }
-
-        if (event.classification == null)
-            // no classification, use retained one if possible
-            event.classification = retainedClazz
-    }
-
-
-
-    val eventUri: Uri
-        get() = calendar.eventUri(id)
 
     //override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$event)"
 

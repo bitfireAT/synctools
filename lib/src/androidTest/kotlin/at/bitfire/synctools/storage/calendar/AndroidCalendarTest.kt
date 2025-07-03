@@ -15,7 +15,6 @@ import android.provider.CalendarContract.Calendars
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import net.fortuna.ical4j.model.property.DtStart
@@ -72,14 +71,10 @@ class AndroidCalendarTest {
     fun testNumInstances_SingleInstance() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
+            val eventId = calendar.createEventFromDataObject(Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with 1 instance"
-            }
-            val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
-
+            })
             assertEquals(1, calendar.numInstances(eventId))
         } finally {
             calendar.delete()
@@ -90,15 +85,11 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
+            val eventId = calendar.createEventFromDataObject(Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with 5 instances"
                 rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-            val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
-
+            })
             assertEquals(5, calendar.numInstances(eventId))
         } finally {
             calendar.delete()
@@ -109,15 +100,11 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring_Endless() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
+            val eventId = calendar.createEventFromDataObject(Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with infinite instances"
                 rRules.add(RRule("FREQ=YEARLY"))
-            }
-            val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
-
+            })
             assertNull(calendar.numInstances(eventId))
         } finally {
             calendar.delete()
@@ -128,14 +115,11 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring_LateEnd() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
+            val eventId = calendar.createEventFromDataObject(Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event over 22 years"
                 rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
-            }
-            val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
+            })
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                 assertEquals(52, calendar.numInstances(eventId))
@@ -150,14 +134,11 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring_ManyInstances() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
+            val eventId = calendar.createEventFromDataObject(Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event over two years"
                 rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
-            }
-            val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
+            })
 
             assertEquals(
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
@@ -175,26 +156,27 @@ class AndroidCalendarTest {
     fun testNumInstances_RecurringWithExceptions() {
         val calendar = provider.createAndGetCalendar(contentValuesOf())
         try {
-            val event = Event().apply {
-                dtStart = DtStart("20220120T010203Z")
-                summary = "Event with 6 instances"
-                rRules.add(RRule("FREQ=DAILY;COUNT=6"))
-                exceptions.add(Event().apply {
-                    recurrenceId = RecurrenceId("20220122T010203Z")
-                    dtStart = DtStart("20220122T130203Z")
-                    summary = "Exception on 3rd day"
-                })
-                exceptions.add(Event().apply {
-                    recurrenceId = RecurrenceId("20220124T010203Z")
-                    dtStart = DtStart("20220122T160203Z")
-                    summary = "Exception on 5th day"
-                })
-            }
-            val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
-            localEvent.add()
-            val eventId = localEvent.id!!
+            val eventId = calendar.createEventFromDataObject(
+                event = Event().apply {
+                    dtStart = DtStart("20220120T010203Z")
+                    summary = "Event with 6 instances"
+                    rRules.add(RRule("FREQ=DAILY;COUNT=6"))
+                    exceptions.add(Event().apply {
+                        recurrenceId = RecurrenceId("20220122T010203Z")
+                        dtStart = DtStart("20220122T130203Z")
+                        summary = "Exception on 3rd day"
+                    })
+                    exceptions.add(Event().apply {
+                        recurrenceId = RecurrenceId("20220124T010203Z")
+                        dtStart = DtStart("20220122T160203Z")
+                        summary = "Exception on 5th day"
+                    })
+                },
+                syncId = "filename.ics"
+            )
 
-            calendar.getEvent(eventId)!!
+            // explicitly read from calendar provider
+            calendar.getEvent(eventId)
 
             assertEquals(6, calendar.numInstances(eventId))
         } finally {

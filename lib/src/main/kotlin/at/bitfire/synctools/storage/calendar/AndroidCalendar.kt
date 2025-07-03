@@ -11,20 +11,28 @@ import android.content.ContentValues
 import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
+import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Instances
+import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.AndroidEvent
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
+import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**
- * Represents a locally stored calendar, containing [AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
+ * Represents a locally stored calendar, containing [AndroidEvent]s (whose data objects are [Event]s).
  *
  * Manages locally stored events (and other data like instances of events) in the Android calendar provider.
  *
@@ -65,10 +73,27 @@ class AndroidCalendar(
 
     // CRUD AndroidEvent
 
-    fun createEventFromDataObject(event: Event): Long {
+    /**
+     * @return ID of the created event in the provider
+     */
+    fun createEventFromDataObject(
+        event: Event,
+        syncId: String? = null,
+        eTag: String? = null,
+        scheduleTag: String? = null,
+        flags: Int = 0
+    ): Long {
         val batch = CalendarBatchOperation(client)
 
-        val builder = LegacyAndroidEventBuilder(this, event)
+        val builder = LegacyAndroidEventBuilder(
+            calendar = this,
+            event = event,
+            id = null,
+            syncId = syncId,
+            eTag = eTag,
+            scheduleTag = scheduleTag,
+            flags = flags
+        )
         val idxEvent = builder.addOrUpdateRows(event, batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -208,6 +233,84 @@ class AndroidCalendar(
         }
     }
 
+    fun updateEventFromDataObject(
+        event: Event,
+        id: Long,
+        syncId: String? = null,
+        eTag: String? = null,
+        scheduleTag: String? = null,
+        flags: Int = 0
+    ): Long {
+        // There are cases where the event cannot be updated, but must be completely re-created.
+        // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
+        var rebuild = false
+        if (event.status == null)
+            getEventValues(id, arrayOf(Events.STATUS))?.let { values ->
+                if (values.getAsInteger(Events.STATUS) != null)
+                    rebuild = true
+            }
+
+        if (rebuild) {
+            // delete whole event, insert updated event, return new ID
+            deleteEvent(id)
+            return createEventFromDataObject(
+                event = event,
+                syncId = syncId,
+                eTag = eTag,
+                scheduleTag = scheduleTag,
+                flags = flags
+            )
+
+        } else {
+            // update event
+
+            // remove associated rows which are added later again
+            val batch = CalendarBatchOperation(client)
+
+            deleteExceptions(batch)
+            batch += CpoBuilder
+                .newDelete(Reminders.CONTENT_URI.asSyncAdapter(account))
+                .withSelection("${Reminders.EVENT_ID}=?", arrayOf(id.toString()))
+            batch += CpoBuilder
+                .newDelete(Attendees.CONTENT_URI.asSyncAdapter(account))
+                .withSelection("${Attendees.EVENT_ID}=?", arrayOf(id.toString()))
+            batch += CpoBuilder
+                .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(account))
+                .withSelection(
+                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
+                    arrayOf(
+                        id.toString(),
+                        EXTNAME_CATEGORIES,
+                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                        EXTNAME_URL,
+                        UnknownProperty.CONTENT_ITEM_TYPE
+                    )
+                )
+
+            // update main row / add data rows again
+            val builder = LegacyAndroidEventBuilder(
+                calendar = this,
+                event = event,
+                id = id,
+                syncId = syncId,
+                eTag = eTag,
+                scheduleTag = scheduleTag,
+                flags = flags
+            )
+            builder.addOrUpdateRows(event, batch)
+            batch.commit()
+
+            return id   // return unchanged ID
+        }
+    }
+
+    private fun deleteExceptions(batch: CalendarBatchOperation) {
+        val existingId = requireNotNull(id)
+        batch += CpoBuilder
+            .newDelete(Events.CONTENT_URI.asSyncAdapter(account))
+            .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
+    }
+
     /**
      * Updates events in this calendar.
      *
@@ -224,6 +327,14 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
+
+    fun deleteEvent(id: Long): Int {
+        try {
+            return client.delete(eventUri(id), null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't delete event", e)
+        }
+    }
 
 
     // shortcuts to upper level

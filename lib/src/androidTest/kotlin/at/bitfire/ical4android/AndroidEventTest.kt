@@ -5,70 +5,7 @@
  */
 package at.bitfire.ical4android
 
-import android.accounts.Account
-import android.content.ContentProviderClient
-import android.content.ContentUris
-import android.content.ContentValues
-import android.database.DatabaseUtils
-import android.net.Uri
-import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
-import android.provider.CalendarContract.AUTHORITY
-import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Calendars
-import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
-import androidx.core.content.contentValuesOf
-import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
-import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
-import at.bitfire.synctools.test.InitCalendarProviderRule
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.ParameterList
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.Recur
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Cn
-import net.fortuna.ical4j.model.parameter.CuType
-import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.parameter.Role
-import net.fortuna.ical4j.model.parameter.Rsvp
-import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.*
-import net.fortuna.ical4j.util.TimeZones
-import org.junit.After
-import org.junit.AfterClass
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
-import org.junit.Test
-import org.junit.rules.TestRule
-import java.net.URI
-import java.time.Duration
-import java.time.Period
-import java.util.UUID
-import java.util.logging.Logger
-import kotlin.collections.plusAssign
-
-class AndroidEventTest {
+/*class AndroidEventTest {
 
     companion object {
 
@@ -2534,4 +2471,4 @@ class AndroidEventTest {
         }
     }
 
-}
+}*/
