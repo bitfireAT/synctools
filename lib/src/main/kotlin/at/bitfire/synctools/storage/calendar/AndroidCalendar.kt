@@ -8,10 +8,12 @@ package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentUris
 import android.content.ContentValues
+import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.Instances
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -20,14 +22,14 @@ import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**
- * Represents a locally stored calendar, containing [at.bitfire.ical4android.AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
- * Communicates with the Android Contacts Provider which uses an SQLite
- * database to store the events.
+ * Represents a locally stored calendar, containing [AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
  *
- * @param client  calendar provider
- * @param values    content values as read from the calendar provider; [android.provider.BaseColumns._ID] must be set
+ * Manages locally stored events (and other data like instances of events) in the Android calendar provider.
  *
- * @throws IllegalArgumentException when [android.provider.BaseColumns._ID] is not set
+ * @param client    calendar provider
+ * @param values    content values as read from the calendar provider; [Calendars._ID] must be set
+ *
+ * @throws IllegalArgumentException when [Calendars._ID] is not set
  */
 class AndroidCalendar(
     val provider: AndroidCalendarProvider,
@@ -75,9 +77,8 @@ class AndroidCalendar(
         val events = LinkedList<AndroidEvent>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
-            client.query(eventsUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
-                while (cursor.moveToNext())
-                    events += AndroidEvent(this, cursor.toContentValues())
+            iterateEventEntities(null, protectedWhere, protectedWhereArgs) { event ->
+                events += AndroidEvent(this, event)
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
@@ -92,8 +93,31 @@ class AndroidCalendar(
      * @return event (or `null` if not found)
      */
     fun getEvent(id: Long): AndroidEvent? {
-        val values = getEventValues(id) ?: return null
+        val values = getEventEntity(id) ?: return null
         return AndroidEvent(this, values)
+    }
+
+    /**
+     * Gets the event row + data rows of a specific event, identified by its ID, from this calendar.
+     *
+     * @param id    event ID
+     * @return event row + data rows (or `null` if not found)
+     */
+    fun getEventEntity(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): Entity? {
+        try {
+            client.query(eventUri(id), projection, where, whereArgs, null)?.use { cursor ->
+                val entityIterator = EventsEntity.newEntityIterator(cursor, client)
+                try {
+                    if (entityIterator.hasNext())
+                        return entityIterator.next()
+                } finally {
+                    entityIterator.close()
+                }
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query event entity", e)
+        }
+        return null
     }
 
     /**
@@ -115,6 +139,32 @@ class AndroidCalendar(
     }
 
     /**
+     * Iterates event entites from this calendar.
+     *
+     * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
+     *
+     * @param projection    requested fields
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     */
+    fun iterateEventEntities(projection: Array<String>?, where: String?, whereArgs: Array<String>?, body: (Entity) -> Unit) {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                val entityIterator = EventsEntity.newEntityIterator(cursor, client)
+                try {
+                    while (entityIterator.hasNext())
+                        body(entityIterator.next())
+                } finally {
+                    entityIterator.close()
+                }
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't iterate events", e)
+        }
+    }
+
+    /**
      * Iterates events from this calendar.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
@@ -122,10 +172,8 @@ class AndroidCalendar(
      * @param projection    requested fields
      * @param where         selection
      * @param whereArgs     arguments for selection
-     *
-     * @return event IDs from this calendar which match the selection
      */
-    fun iterateEvents(projection: Array<String>, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
+    fun iterateEvents(projection: Array<String>?, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
@@ -253,6 +301,9 @@ class AndroidCalendar(
 
     val client
         get() = provider.client
+
+    val eventEntitiesUri
+        get() = EventsEntity.CONTENT_URI.asSyncAdapter(account)
 
     val eventsUri
         get() = Events.CONTENT_URI.asSyncAdapter(account)

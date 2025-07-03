@@ -11,13 +11,12 @@ import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
-import android.content.EntityIterator
+import android.content.Entity
 import android.net.Uri
 import android.os.RemoteException
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
@@ -40,8 +39,6 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
-import at.bitfire.synctools.storage.removeBlank
-import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -81,138 +78,89 @@ import java.util.logging.Level
 import java.util.logging.Logger
 
 /**
- * Stores and retrieves VEVENT iCalendar objects (represented as [Event]s) to/from the
- * Android Calendar provider.
- *
- * Extend this class to process specific fields of the event.
+ * Represents a locally stored event with an associated [Event] data object.
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ *
+ * @param calendar      calendar that manages this event
+ * @param entity        event row and associated data rows as read from the calendar provider; [Events._ID] must be set
+ *
+ * @throws IllegalArgumentException when [Events._ID] is not set
  */
 class AndroidEvent(
-    val calendar: AndroidCalendar
+    val calendar: AndroidCalendar,
+    val entity: Entity      // TODO removeBlank
 ) {
+
+    private val mainValues
+        get() = entity.entityValues
 
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
 
-    var id: Long? = null
-        private set
+    /** see [Events._ID] */
+    val id: Long = mainValues.getAsLong(Events._ID)
+        ?: throw IllegalArgumentException("${Events._ID} must be set")
 
-    var syncId: String? = null
+    val syncId: String?
+        get() = mainValues.getAsString(Events._SYNC_ID)
 
-    var eTag: String? = null
-    var scheduleTag: String? = null
-    var flags: Int = 0
+    val eTag: String?
+        get() = mainValues.getAsString(COLUMN_ETAG)
 
-    /**
-     * Creates a new object from an event which already exists in the calendar storage.
-     *
-     * @param values database row with all columns, as returned by the calendar provider
-     */
-    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
-        this.id = values.getAsLong(Events._ID)
-        this.syncId = values.getAsString(Events._SYNC_ID)
-        this.eTag = values.getAsString(COLUMN_ETAG)
-        this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
-        this.flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
-    }
+    val scheduleTag: String?
+        get() = mainValues.getAsString(COLUMN_SCHEDULE_TAG)
 
-    /**
-     * Creates a new object from an event which doesn't exist in the calendar storage yet.
-     *
-     * @param event event that can be saved into the calendar storage
-     */
-    constructor(
-        calendar: AndroidCalendar,
-        event: Event,
-        syncId: String?,
-        eTag: String? = null,
-        scheduleTag: String? = null,
-        flags: Int = 0
-    ) : this(calendar) {
-        this.event = event
-        this.syncId = syncId
-        this.eTag = eTag
-        this.scheduleTag = scheduleTag
-        this.flags = flags
-    }
-
-    private var _event: Event? = null
+    val flags: Int
+        get() = mainValues.getAsInteger(COLUMN_FLAGS) ?: 0
 
     /**
      * Returns the full event data, either from [event] or, if [event] is null, by reading event
-     * number [id] from the Android calendar storage
+     * number [id] from the Android calendar storage.
+     *
      * @throws IllegalArgumentException if event has not been saved yet
      * @throws FileNotFoundException if there's no event with [id] in the calendar storage
      * @throws RemoteException on calendar provider errors
      */
-    var event: Event?
-        private set(value) {
-            _event = value
-        }
-        get() {
-            if (_event != null)
-                return _event
-            val id = requireNotNull(id)
+    val event: Event by lazy {
+        Event().also { newEvent ->
+            // calculate some scheduling properties
+            val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
 
-            var iterEvents: EntityIterator? = null
-            try {
-                iterEvents = EventsEntity.newEntityIterator(
-                        calendar.client.query(
-                                ContentUris.withAppendedId(EventsEntity.CONTENT_URI, id).asSyncAdapter(calendar.account),
-                                null, null, null, null),
-                        calendar.client
-                )
+            // main row
+            populateEvent(mainValues, groupScheduled = hasAttendees, to = newEvent)
 
-                if (iterEvents.hasNext()) {
-                    val e = iterEvents.next()
-
-                    // create new Event which will be populated
-                    val newEvent = Event()
-                    _event = newEvent
-
-                    // calculate some scheduling properties
-                    val groupScheduled = e.subValues.any { it.uri == Attendees.CONTENT_URI }
-
-                    populateEvent(e.entityValues.removeBlank(), groupScheduled)
-
-                    for (subValue in e.subValues) {
-                        val subValues = subValue.values.removeBlank()
-                        when (subValue.uri) {
-                            Attendees.CONTENT_URI -> populateAttendee(subValues)
-                            Reminders.CONTENT_URI -> populateReminder(subValues)
-                            ExtendedProperties.CONTENT_URI -> populateExtended(subValues)
-                        }
-                    }
-                    populateExceptions()
-                    useRetainedClassification()
-                    return newEvent
+            // data rows
+            for (subValue in entity.subValues) {
+                val subValues = subValue.values
+                when (subValue.uri) {
+                    Attendees.CONTENT_URI -> populateAttendee(subValues, to = newEvent)
+                    Reminders.CONTENT_URI -> populateReminder(subValues, to = newEvent)
+                    ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = newEvent)
                 }
-            } catch (e: Exception) {
-                /* Populating event has been interrupted by an exception, so we reset the event to
-                avoid an inconsistent state. This also ensures that the exception will be thrown
-                again on the next get() call. */
-                _event = null
-                throw e
-            } finally {
-                iterEvents?.close()
             }
-            throw FileNotFoundException("Couldn't find event $id")
+
+            // exceptions
+            populateExceptions(to = newEvent)
+
+            // post-processing
+            useRetainedClassification(newEvent)
         }
+    }
 
     /**
-     * Reads event data from the calendar provider.
+     * Reads event data from the calendar provider = maps the [entity] values to
+     * the [event] data object.
      *
      * @param row values of an [Events] row, as returned by the calendar provider
      */
-    private fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
+    private fun populateEvent(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
-        val event = requireNotNull(event)
 
         row.getAsString(Events.MUTATORS)?.let { strPackages ->
             val packages = strPackages.split(MUTATORS_SEPARATOR).toSet()
-            event.userAgents.addAll(packages)
+            to.userAgents.addAll(packages)
         }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
@@ -226,7 +174,7 @@ class AndroidEvent(
                     null
 
         if (allDay) {
-            event.dtStart = DtStart(Date(tsStart))
+            to.dtStart = DtStart(Date(tsStart))
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 day if missing (should never occur, but occurs).
@@ -251,7 +199,7 @@ class AndroidEvent(
                         logger.fine("dtEnd $tsEnd (allDay) = dtStart, won't generate DTEND property")
 
                     else /* tsEnd > tsStart */ ->
-                        event.dtEnd = DtEnd(Date(tsEnd))
+                        to.dtEnd = DtEnd(Date(tsEnd))
                 }
             }
 
@@ -269,7 +217,7 @@ class AndroidEvent(
                         timeZone = startTz
                 }
             }
-            event.dtStart = DtStart(dtStartDateTime)
+            to.dtStart = DtStart(dtStartDateTime)
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 hour if missing (should never occur, but occurs).
@@ -292,7 +240,7 @@ class AndroidEvent(
                     val endTz = row.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
                         DateUtils.ical4jTimeZone(tzId)
                     } ?: startTz
-                    event.dtEnd = DtEnd(DateTime(tsEnd).apply {
+                    to.dtEnd = DtEnd(DateTime(tsEnd).apply {
                         if (endTz != null) {
                             if (TimeZones.isUtc(endTz))
                                 isUtc = true
@@ -309,35 +257,35 @@ class AndroidEvent(
         try {
             row.getAsString(Events.RRULE)?.let { rulesStr ->
                 for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    event.rRules += RRule(rule)
+                    to.rRules += RRule(rule)
             }
             row.getAsString(Events.RDATE)?.let { datesStr ->
                 val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, allDay, tsStart) { RDate(it) }
-                event.rDates += rDate
+                to.rDates += rDate
             }
 
             row.getAsString(Events.EXRULE)?.let { rulesStr ->
                 for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    event.exRules += ExRule(null, rule)
+                    to.exRules += ExRule(null, rule)
             }
             row.getAsString(Events.EXDATE)?.let { datesStr ->
                 val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, allDay) { ExDate(it) }
-                event.exDates += exDate
+                to.exDates += exDate
             }
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
 
-        event.uid = row.getAsString(Events.UID_2445)
-        event.sequence = row.getAsInteger(COLUMN_SEQUENCE)
-        event.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
+        to.uid = row.getAsString(Events.UID_2445)
+        to.sequence = row.getAsInteger(COLUMN_SEQUENCE)
+        to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
-        event.summary = row.getAsString(Events.TITLE)
-        event.location = row.getAsString(Events.EVENT_LOCATION)
-        event.description = row.getAsString(Events.DESCRIPTION)
+        to.summary = row.getAsString(Events.TITLE)
+        to.location = row.getAsString(Events.EVENT_LOCATION)
+        to.description = row.getAsString(Events.DESCRIPTION)
 
         // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
-        event.color =
+        to.color =
             row.getAsString(Events.EVENT_COLOR_KEY)?.let { name ->      // try color key first
                 try {
                     Css3Color.valueOf(name)
@@ -352,20 +300,20 @@ class AndroidEvent(
 
         // status
         when (row.getAsInteger(Events.STATUS)) {
-            Events.STATUS_CONFIRMED -> event.status = Status.VEVENT_CONFIRMED
-            Events.STATUS_TENTATIVE -> event.status = Status.VEVENT_TENTATIVE
-            Events.STATUS_CANCELED -> event.status = Status.VEVENT_CANCELLED
+            Events.STATUS_CONFIRMED -> to.status = Status.VEVENT_CONFIRMED
+            Events.STATUS_TENTATIVE -> to.status = Status.VEVENT_TENTATIVE
+            Events.STATUS_CANCELED -> to.status = Status.VEVENT_CANCELLED
         }
 
         // availability
-        event.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
+        to.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
 
         // scheduling
         if (groupScheduled) {
             // ORGANIZER must only be set for group-scheduled events (= events with attendees)
             if (row.containsKey(Events.ORGANIZER))
                 try {
-                    event.organizer = Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
+                    to.organizer = Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
                 } catch (e: URISyntaxException) {
                     logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
                 }
@@ -373,9 +321,9 @@ class AndroidEvent(
 
         // classification
         when (row.getAsInteger(Events.ACCESS_LEVEL)) {
-            Events.ACCESS_PUBLIC -> event.classification = Clazz.PUBLIC
-            Events.ACCESS_PRIVATE -> event.classification = Clazz.PRIVATE
-            Events.ACCESS_CONFIDENTIAL -> event.classification = Clazz.CONFIDENTIAL
+            Events.ACCESS_PUBLIC -> to.classification = Clazz.PUBLIC
+            Events.ACCESS_PRIVATE -> to.classification = Clazz.PRIVATE
+            Events.ACCESS_CONFIDENTIAL -> to.classification = Clazz.CONFIDENTIAL
         }
 
         // exceptions from recurring events
@@ -387,18 +335,18 @@ class AndroidEvent(
                     else
                         DateTime(originalInstanceTime)
             if (originalDate is DateTime) {
-                event.dtStart?.let { dtStart ->
+                to.dtStart?.let { dtStart ->
                     if (dtStart.isUtc)
                         originalDate.isUtc = true
                     else if (dtStart.timeZone != null)
                         originalDate.timeZone = dtStart.timeZone
                 }
             }
-            event.recurrenceId = RecurrenceId(originalDate)
+            to.recurrenceId = RecurrenceId(originalDate)
         }
     }
 
-    private fun populateAttendee(row: ContentValues) {
+    private fun populateAttendee(row: ContentValues, to: Event) {
         logger.log(Level.FINE, "Read event attendee from calender provider", row)
 
         try {
@@ -433,15 +381,14 @@ class AndroidEvent(
                 Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
             }
 
-            event!!.attendees.add(attendee)
+            to.attendees.add(attendee)
         } catch (e: URISyntaxException) {
             logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
         }
     }
 
-    private fun populateReminder(row: ContentValues) {
+    private fun populateReminder(row: ContentValues, to: Event) {
         logger.log(Level.FINE, "Read event reminder from calender provider", row)
-        val event = requireNotNull(event)
 
         val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
 
@@ -452,106 +399,92 @@ class AndroidEvent(
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
                     props += Action.EMAIL
                     // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
-                    props += Summary(event.summary)
-                    props += Description(event.description ?: event.summary)
+                    props += Summary(to.summary)
+                    props += Description(to.description ?: to.summary)
                     // Android doesn't allow to save email reminder recipients, so we always use the
                     // account name (should be account owner's email address)
                     props += Attendee(URI("mailto", calendar.account.name, null))
                 } else {
                     logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
                     props += Action.DISPLAY
-                    props += Description(event.summary)
+                    props += Description(to.summary)
                 }
             }
 
             // default: set ACTION:DISPLAY (requires DESCRIPTION)
             else -> {
                 props += Action.DISPLAY
-                props += Description(event.summary)
+                props += Description(to.summary)
             }
         }
-        event.alarms += alarm
+        to.alarms += alarm
     }
 
-    private fun populateExtended(row: ContentValues) {
+    private fun populateExtended(row: ContentValues, to: Event) {
         val name = row.getAsString(ExtendedProperties.NAME)
         val rawValue = row.getAsString(ExtendedProperties.VALUE)
         logger.log(Level.FINE, "Read extended property from calender provider", arrayOf(name, rawValue))
-        val event = requireNotNull(event)
 
         try {
             when (name) {
                 EXTNAME_CATEGORIES ->
-                    event.categories += rawValue.split(CATEGORIES_SEPARATOR)
+                    to.categories += rawValue.split(CATEGORIES_SEPARATOR)
 
                 EXTNAME_URL ->
                     try {
-                        event.url = URI(rawValue)
+                        to.url = URI(rawValue)
                     } catch(_: URISyntaxException) {
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
 
                 EXTNAME_ICAL_UID ->
                     // only consider iCalUid when there's no uid
-                    if (event.uid == null)
-                        event.uid = rawValue
+                    if (to.uid == null)
+                        to.uid = rawValue
 
                 UnknownProperty.CONTENT_ITEM_TYPE ->
-                    event.unknownProperties += UnknownProperty.fromJsonString(rawValue)
+                    to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
             }
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't parse extended property", e)
         }
     }
 
-    private fun populateExceptions() {
-        requireNotNull(id)
-        val event = requireNotNull(event)
+    private fun populateExceptions(to: Event) {
+        calendar.iterateEventEntities(null, Events.ORIGINAL_ID + "=?", arrayOf(id.toString())) { exceptionEntity ->
+            val exception = AndroidEvent(calendar, exceptionEntity)
+            val exceptionEvent = exception.event
+            val recurrenceId = exceptionEvent.recurrenceId!!
 
-        calendar.client.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
-                null,
-                Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
-            while (c.moveToNext()) {
-                val values = c.toContentValues()
-                try {
-                    val exception = AndroidEvent(calendar, values)
-                    val exceptionEvent = exception.event!!
-                    val recurrenceId = exceptionEvent.recurrenceId!!
-
-                    // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-                    if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
-                        val list = DateList(
-                                if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
-                                recurrenceId.timeZone
-                        )
-                        list.add(recurrenceId.date)
-                        event.exDates += ExDate(list).apply {
-                            if (DateUtils.isDateTime(recurrenceId)) {
-                                if (recurrenceId.isUtc)
-                                    setUtc(true)
-                                else
-                                    timeZone = recurrenceId.timeZone
-                            }
-                        }
-
-                    } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                        // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-                        exceptionEvent.organizer = event.organizer
-
-                        // add exception to list of exceptions
-                        event.exceptions += exceptionEvent
+            // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
+            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
+                val list = DateList(
+                    if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
+                    recurrenceId.timeZone
+                )
+                list.add(recurrenceId.date)
+                to.exDates += ExDate(list).apply {
+                    if (DateUtils.isDateTime(recurrenceId)) {
+                        if (recurrenceId.isUtc)
+                            setUtc(true)
+                        else
+                            timeZone = recurrenceId.timeZone
                     }
-                } catch (e: Exception) {
-                    logger.log(Level.WARNING, "Couldn't find exception details", e)
                 }
+
+            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
+                // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
+                exceptionEvent.organizer = to.organizer
+
+                // add exception to list of exceptions
+                to.exceptions += exceptionEvent
             }
         }
     }
 
-    private fun retainClassification() {
+    private fun retainClassification(event: Event) {
         /* retain classification other than PUBLIC and PRIVATE as unknown property so
            that it can be reused when "server default" is selected */
-        val event = requireNotNull(event)
         event.classification?.let {
             if (it != Clazz.PUBLIC && it != Clazz.PRIVATE)
                 event.unknownProperties += it
@@ -1108,9 +1041,7 @@ class AndroidEvent(
         insertExtendedProperty(batch, idxEvent, UnknownProperty.CONTENT_ITEM_TYPE, UnknownProperty.toJsonString(property))
     }
 
-    private fun useRetainedClassification() {
-        val event = requireNotNull(event)
-
+    private fun useRetainedClassification(event: Event) {
         var retainedClazz: Clazz? = null
         val it = event.unknownProperties.iterator()
         while (it.hasNext()) {
