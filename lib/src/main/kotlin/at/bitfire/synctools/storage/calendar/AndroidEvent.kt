@@ -10,6 +10,7 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
@@ -73,14 +74,12 @@ class AndroidEvent(
 
     // shortcuts to upper level
 
-    /*fun update(values: ContentValues) {
-        calendar.client.update(eventSyncURI(), values, null, null)
-    }*/
+    fun update(values: ContentValues) = calendar.updateEvent(id, values)
 
     fun delete() = calendar.deleteEvent(id)
 
 
-    //override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$event)"
+    // TODO: override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$event)"
 
 
     companion object {

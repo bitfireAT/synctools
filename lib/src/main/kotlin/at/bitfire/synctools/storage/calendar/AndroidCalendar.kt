@@ -310,6 +310,22 @@ class AndroidCalendar(
     }
 
     /**
+     * Updates event in this calendar.
+     *
+     * @param id            ID of the event to update
+     * @param values        values to update
+     *
+     * @return number of updated rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun updateEvent(id: Long, values: ContentValues): Int =
+        try {
+            client.update(eventUri(id), values, null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't update events", e)
+        }
+
+    /**
      * Updates events in this calendar.
      *
      * @param values        values to update
