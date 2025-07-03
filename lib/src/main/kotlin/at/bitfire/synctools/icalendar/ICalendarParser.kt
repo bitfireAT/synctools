@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.validation.ICalPreprocessor
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.CalendarParserFactory
 import net.fortuna.ical4j.data.ContentHandlerContext

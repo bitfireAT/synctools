@@ -4,11 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.provider.CalendarContract
-import android.provider.CalendarContract.Attendees
 import at.bitfire.synctools.storage.BatchOperation
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
@@ -17,7 +16,7 @@ import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
 
 /**
- * Defines mappings between Android [CalendarContract.Attendees] and iCalendar parameters.
+ * Defines mappings between Android [android.provider.CalendarContract.Attendees] and iCalendar parameters.
  *
  * Because the available Android values are quite different from the one in iCalendar, the
  * mapping is very lossy. Some special mapping rules are defined:
@@ -29,8 +28,8 @@ import net.fortuna.ical4j.model.property.Attendee
 object AttendeeMappings {
 
     /**
-     * Maps Android [Attendees.ATTENDEE_TYPE] and [Attendees.ATTENDEE_RELATIONSHIP] to
-     * iCalendar [CuType] and [Role] according to this matrix:
+     * Maps Android [android.provider.CalendarContract.AttendeesColumns.ATTENDEE_TYPE] and [android.provider.CalendarContract.AttendeesColumns.ATTENDEE_RELATIONSHIP] to
+     * iCalendar [net.fortuna.ical4j.model.parameter.CuType] and [net.fortuna.ical4j.model.parameter.Role] according to this matrix:
      *
      *     TYPE ↓ / RELATIONSHIP → ATTENDEE¹  PERFORMER  SPEAKER   NONE
      *     REQUIRED                indᴰ,reqᴰ  gro,reqᴰ   indᴰ,cha  unk,reqᴰ
@@ -45,30 +44,30 @@ object AttendeeMappings {
      * @param attendee   iCalendar attendee to fill
      */
     fun androidToICalendar(row: ContentValues, attendee: Attendee) {
-        val type = row.getAsInteger(Attendees.ATTENDEE_TYPE) ?: Attendees.TYPE_NONE
-        val relationship = row.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP) ?: Attendees.RELATIONSHIP_NONE
+        val type = row.getAsInteger(CalendarContract.Attendees.ATTENDEE_TYPE) ?: CalendarContract.Attendees.TYPE_NONE
+        val relationship = row.getAsInteger(CalendarContract.Attendees.ATTENDEE_RELATIONSHIP) ?: CalendarContract.Attendees.RELATIONSHIP_NONE
 
         var cuType: CuType? = null
         val role: Role?
 
-        if (relationship == Attendees.RELATIONSHIP_SPEAKER) {
+        if (relationship == CalendarContract.Attendees.RELATIONSHIP_SPEAKER) {
             role = Role.CHAIR
-            if (type == Attendees.TYPE_RESOURCE)
+            if (type == CalendarContract.Attendees.TYPE_RESOURCE)
                 cuType = CuType.RESOURCE
 
         } else /* relationship != Attendees.RELATIONSHIP_SPEAKER */ {
 
             cuType = when (relationship) {
-                Attendees.RELATIONSHIP_PERFORMER -> CuType.GROUP
-                Attendees.RELATIONSHIP_NONE -> CuType.UNKNOWN
+                CalendarContract.Attendees.RELATIONSHIP_PERFORMER -> CuType.GROUP
+                CalendarContract.Attendees.RELATIONSHIP_NONE -> CuType.UNKNOWN
                 else -> CuType.INDIVIDUAL
             }
 
             when (type) {
-                Attendees.TYPE_OPTIONAL -> role = Role.OPT_PARTICIPANT
-                Attendees.TYPE_RESOURCE  -> {
+                CalendarContract.Attendees.TYPE_OPTIONAL -> role = Role.OPT_PARTICIPANT
+                CalendarContract.Attendees.TYPE_RESOURCE  -> {
                     cuType =
-                            if (relationship == Attendees.RELATIONSHIP_PERFORMER)
+                            if (relationship == CalendarContract.Attendees.RELATIONSHIP_PERFORMER)
                                 CuType.ROOM
                             else
                                 CuType.RESOURCE
@@ -88,8 +87,8 @@ object AttendeeMappings {
 
 
     /**
-     * Maps iCalendar [CuType] and [Role] to Android [Attendees.ATTENDEE_TYPE] and
-     * [Attendees.ATTENDEE_RELATIONSHIP] according to this matrix:
+     * Maps iCalendar [CuType] and [Role] to Android [CalendarContract.AttendeesColumns.ATTENDEE_TYPE] and
+     * [CalendarContract.AttendeesColumns.ATTENDEE_RELATIONSHIP] according to this matrix:
      *
      *     CuType ↓ / Role →   CHAIR    REQ-PARTICIPANT¹ᴰ OPT-PARTICIPANT  NON-PARTICIPANT
      *     INDIVIDUALᴰ         req,spk  req,att           opt,att          non,att
@@ -118,45 +117,45 @@ object AttendeeMappings {
 
         when (cuType) {
             CuType.RESOURCE -> {
-                type = Attendees.TYPE_RESOURCE
+                type = CalendarContract.Attendees.TYPE_RESOURCE
                 relationship =
                         if (role == Role.CHAIR)
-                            Attendees.RELATIONSHIP_SPEAKER
+                            CalendarContract.Attendees.RELATIONSHIP_SPEAKER
                         else
-                            Attendees.RELATIONSHIP_NONE
+                            CalendarContract.Attendees.RELATIONSHIP_NONE
             }
             CuType.ROOM -> {
-                type = Attendees.TYPE_RESOURCE
-                relationship = Attendees.RELATIONSHIP_PERFORMER
+                type = CalendarContract.Attendees.TYPE_RESOURCE
+                relationship = CalendarContract.Attendees.RELATIONSHIP_PERFORMER
             }
 
             else -> {
                 // not a room and not a resource -> individual (default), group or unknown (includes x-custom)
                 relationship = when (cuType) {
                     CuType.GROUP ->
-                        Attendees.RELATIONSHIP_PERFORMER
+                        CalendarContract.Attendees.RELATIONSHIP_PERFORMER
                     CuType.UNKNOWN ->
-                        Attendees.RELATIONSHIP_NONE
+                        CalendarContract.Attendees.RELATIONSHIP_NONE
                     else -> /* CuType.INDIVIDUAL and custom/unknown values */
-                        Attendees.RELATIONSHIP_ATTENDEE
+                        CalendarContract.Attendees.RELATIONSHIP_ATTENDEE
                 }
 
                 when (role) {
                     Role.CHAIR -> {
-                        type = Attendees.TYPE_REQUIRED
-                        relationship = Attendees.RELATIONSHIP_SPEAKER
+                        type = CalendarContract.Attendees.TYPE_REQUIRED
+                        relationship = CalendarContract.Attendees.RELATIONSHIP_SPEAKER
                     }
                     Role.OPT_PARTICIPANT ->
-                        type = Attendees.TYPE_OPTIONAL
+                        type = CalendarContract.Attendees.TYPE_OPTIONAL
                     Role.NON_PARTICIPANT ->
-                        type = Attendees.TYPE_NONE
+                        type = CalendarContract.Attendees.TYPE_NONE
                     else -> /* Role.REQ_PARTICIPANT and custom/unknown values */
-                        type = Attendees.TYPE_REQUIRED
+                        type = CalendarContract.Attendees.TYPE_REQUIRED
                 }
             }
         }
 
-        if (relationship == Attendees.RELATIONSHIP_ATTENDEE) {
+        if (relationship == CalendarContract.Attendees.RELATIONSHIP_ATTENDEE) {
             val uri = attendee.calAddress
             val email = if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
@@ -164,11 +163,11 @@ object AttendeeMappings {
                 attendee.getParameter<Email>(Parameter.EMAIL)?.value
 
             if (email == organizer)
-                relationship = Attendees.RELATIONSHIP_ORGANIZER
+                relationship = CalendarContract.Attendees.RELATIONSHIP_ORGANIZER
         }
 
-        row     .withValue(Attendees.ATTENDEE_TYPE, type)
-                .withValue(Attendees.ATTENDEE_RELATIONSHIP, relationship)
+        row     .withValue(CalendarContract.Attendees.ATTENDEE_TYPE, type)
+                .withValue(CalendarContract.Attendees.ATTENDEE_RELATIONSHIP, relationship)
     }
 
 }

@@ -11,18 +11,8 @@ import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-import at.bitfire.ical4android.AndroidEvent
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_ETAG
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_FLAGS
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SCHEDULE_TAG
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SEQUENCE
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
-import at.bitfire.ical4android.AttendeeMappings
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.ICalendar
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -36,7 +26,16 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.CATEGORIES_SEPARATOR
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.COLUMN_ETAG
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.COLUMN_FLAGS
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.COLUMN_SCHEDULE_TAG
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.COLUMN_SEQUENCE
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_CATEGORIES
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_URL
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
+import at.bitfire.synctools.storage.calendar.UnknownProperty
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -61,6 +60,9 @@ import java.util.logging.Logger
 /**
  * Legacy mapper from an [Event] data object to Android content provider data rows
  * (former "build..." methods).
+ *
+ * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
+ * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
 class LegacyAndroidEventBuilder(
     private val calendar: AndroidCalendar,

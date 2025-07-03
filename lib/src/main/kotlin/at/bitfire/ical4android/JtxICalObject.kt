@@ -18,6 +18,7 @@ import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
+import at.bitfire.synctools.storage.calendar.UnknownProperty
 import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY

@@ -4,28 +4,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.storage.calendar
 
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Entity
-import android.os.RemoteException
+import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
+import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
-import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import java.io.FileNotFoundException
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import java.util.logging.Logger
 
 /**
- * Represents a locally stored event with an associated [Event] data object.
- *
- * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
- * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ * Represents a locally stored event with an associated [at.bitfire.ical4android.Event] data object.
  *
  * @param calendar      calendar that manages this event
  * @param entity        event row and associated data rows as read from the calendar provider; [Events._ID] must be set
@@ -43,7 +39,7 @@ class AndroidEvent(
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
 
-    /** see [Events._ID] */
+    /** see [android.provider.BaseColumns._ID] */
     val id: Long = mainValues.getAsLong(Events._ID)
         ?: throw IllegalArgumentException("${Events._ID} must be set")
 
@@ -64,8 +60,8 @@ class AndroidEvent(
      * number [id] from the Android calendar storage.
      *
      * @throws IllegalArgumentException if event has not been saved yet
-     * @throws FileNotFoundException if there's no event with [id] in the calendar storage
-     * @throws RemoteException on calendar provider errors
+     * @throws java.io.FileNotFoundException if there's no event with [id] in the calendar storage
+     * @throws android.os.RemoteException on calendar provider errors
      */
     val event: Event by lazy {
         Event().also { newEvent ->
@@ -112,9 +108,9 @@ class AndroidEvent(
         const val COLUMN_SCHEDULE_TAG = Events.SYNC_DATA4
 
         /**
-         * VEVENT CATEGORIES are stored as an extended property with this [android.provider.CalendarContract.ExtendedProperties.NAME].
+         * VEVENT CATEGORIES are stored as an extended property with this [CalendarContract.ExtendedProperties.NAME].
          *
-         * The [android.provider.CalendarContract.ExtendedProperties.VALUE] format is the same as used by the AOSP Exchange ActiveSync adapter:
+         * The [CalendarContract.ExtendedProperties.VALUE] format is the same as used by the AOSP Exchange ActiveSync adapter:
          * the category values are stored as list, separated by [CATEGORIES_SEPARATOR]. (If a category
          * value contains [CATEGORIES_SEPARATOR], [CATEGORIES_SEPARATOR] will be dropped.)
          *
@@ -125,15 +121,15 @@ class AndroidEvent(
 
         /**
          * Google Calendar uses an extended property called `iCalUid` for storing the event's UID, instead of the
-         * standard [Events.UID_2445].
+         * standard [CalendarContract.EventsColumns.UID_2445].
          *
          * @see <a href="https://github.com/bitfireAT/ical4android/issues/125">GitHub Issue</a>
          */
         const val EXTNAME_ICAL_UID = "iCalUid"
 
         /**
-         * VEVENT URL is stored as an extended property with this [android.provider.CalendarContract.ExtendedProperties.NAME].
-         * The URL is directly put into [android.provider.CalendarContract.ExtendedProperties.VALUE].
+         * VEVENT URL is stored as an extended property with this [CalendarContract.ExtendedProperties.NAME].
+         * The URL is directly put into [CalendarContract.ExtendedProperties.VALUE].
          */
         const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
 

@@ -13,16 +13,7 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
-import at.bitfire.ical4android.AndroidEvent
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SEQUENCE
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
-import at.bitfire.ical4android.AndroidEvent.Companion.MUTATORS_SEPARATOR
-import at.bitfire.ical4android.AttendeeMappings
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
@@ -30,6 +21,14 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.CATEGORIES_SEPARATOR
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.COLUMN_SEQUENCE
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_CATEGORIES
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_ICAL_UID
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.EXTNAME_URL
+import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.MUTATORS_SEPARATOR
+import at.bitfire.synctools.storage.calendar.UnknownProperty
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -67,7 +66,10 @@ import java.util.logging.Logger
 /**
  * Legacy mapper from Android event main + data rows to an [Event]
  * (former "populate..." methods).
- **/
+ *
+ * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
+ * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ */
 class LegacyAndroidEventProcessor(
     private val calendar: AndroidCalendar,
     private val id: Long,

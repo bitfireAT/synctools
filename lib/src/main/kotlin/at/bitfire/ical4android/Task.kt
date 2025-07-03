@@ -100,7 +100,7 @@ data class Task(
             get() = Logger.getLogger(Task::class.java.name)
 
         /**
-         * Parses an iCalendar resource, applies [at.bitfire.ical4android.validation.ICalPreprocessor] to increase compatibility
+         * Parses an iCalendar resource, applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor] to increase compatibility
          * and extracts the VTODOs.
          *
          * @param reader where the iCalendar is taken from

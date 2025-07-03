@@ -243,7 +243,7 @@ data class Event(
             get() = Logger.getLogger(Event::class.java.name)
 
         /**
-         * Parses an iCalendar resource, applies [at.bitfire.ical4android.validation.ICalPreprocessor]
+         * Parses an iCalendar resource, applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor]
          * and [EventValidator] to increase compatibility and extracts the VEVENTs.
          *
          * @param reader where the iCalendar is taken from

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentResolver
 import net.fortuna.ical4j.data.DefaultParameterFactorySupplier
