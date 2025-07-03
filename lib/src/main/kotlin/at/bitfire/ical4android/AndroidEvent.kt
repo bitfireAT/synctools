@@ -37,9 +37,11 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
-import at.bitfire.synctools.storage.CalendarBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import at.bitfire.synctools.storage.removeBlank
 import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Date
@@ -159,10 +161,10 @@ class AndroidEvent(
             var iterEvents: EntityIterator? = null
             try {
                 iterEvents = EventsEntity.newEntityIterator(
-                        calendar.provider.query(
+                        calendar.client.query(
                                 ContentUris.withAppendedId(EventsEntity.CONTENT_URI, id).asSyncAdapter(calendar.account),
                                 null, null, null, null),
-                        calendar.provider
+                        calendar.client
                 )
 
                 if (iterEvents.hasNext()) {
@@ -508,7 +510,7 @@ class AndroidEvent(
         requireNotNull(id)
         val event = requireNotNull(event)
 
-        calendar.provider.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
+        calendar.client.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
                 null,
                 Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
             while (c.moveToNext()) {
@@ -568,7 +570,7 @@ class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun add(): Uri {
-        val batch = CalendarBatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.client)
         val idxEvent = addOrUpdateRows(batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -602,8 +604,8 @@ class AndroidEvent(
 
         // add attendees
         val organizer = event.organizerEmail ?:
-                /* no ORGANIZER, use current account owner as ORGANIZER */
-                calendar.ownerAccount ?: calendar.account.name
+            /* no ORGANIZER, use current account owner as ORGANIZER */
+            calendar.ownerAccount ?: calendar.account.name
         event.attendees.forEach { insertAttendee(batch, idxEvent, it, organizer) }
 
         // add extended properties
@@ -700,7 +702,7 @@ class AndroidEvent(
         // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
         var rebuild = false
         if (event.status == null)
-            calendar.provider.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
+            calendar.client.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
                 if (cursor.moveToNext()) {
                     val statusIndex = cursor.getColumnIndexOrThrow(Events.STATUS)
                     if (!cursor.isNull(statusIndex))
@@ -714,7 +716,7 @@ class AndroidEvent(
 
         } else {        // update event
             // remove associated rows which are added later again
-            val batch = CalendarBatchOperation(calendar.provider)
+            val batch = CalendarBatchOperation(calendar.client)
             deleteExceptions(batch)
             batch += CpoBuilder
                 .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
@@ -743,7 +745,7 @@ class AndroidEvent(
     }
 
     fun update(values: ContentValues) {
-        calendar.provider.update(eventSyncURI(), values, null, null)
+        calendar.client.update(eventSyncURI(), values, null, null)
     }
 
     /**
@@ -754,7 +756,7 @@ class AndroidEvent(
      * @throws RemoteException on calendar provider errors
      */
     fun delete(): Int {
-        val batch = CalendarBatchOperation(calendar.provider)
+        val batch = CalendarBatchOperation(calendar.client)
 
         // remove exceptions of event, too (CalendarProvider doesn't do this)
         deleteExceptions(batch)
@@ -964,7 +966,7 @@ class AndroidEvent(
         val color = event.color
         if (color != null) {
             // set event color (if it's available for this account)
-            calendar.provider.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
+            calendar.client.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
                     "${Colors.COLOR_KEY}=? AND ${Colors.COLOR_TYPE}=${Colors.TYPE_EVENT}", arrayOf(color.name), null)?.use { cursor ->
                 if (cursor.moveToNext())
                     builder.withValue(Events.EVENT_COLOR_KEY, color.name)
@@ -987,8 +989,10 @@ class AndroidEvent(
                             uri.schemeSpecificPart
                         else
                             organizer.getParameter<Email>(Parameter.EMAIL)?.value
+
                         if (email != null)
                             return@let email
+
                         logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
                         null
                     } ?: calendar.ownerAccount)

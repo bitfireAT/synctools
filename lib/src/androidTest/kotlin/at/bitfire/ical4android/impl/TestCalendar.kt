@@ -8,25 +8,22 @@ package at.bitfire.ical4android.impl
 
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentUris
-import android.content.ContentValues
-import android.provider.CalendarContract
-import at.bitfire.ical4android.AndroidCalendar
+import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Reminders
+import androidx.core.content.contentValuesOf
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 
 object TestCalendar {
 
-    fun findOrCreate(account: Account, provider: ContentProviderClient): AndroidCalendar {
-        val calendars = AndroidCalendar.find(account, provider, null, null)
-        return if (calendars.isEmpty()) {
-            val values = ContentValues(3)
-            values.put(CalendarContract.Calendars.NAME, "TestCalendar")
-            values.put(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME, "ical4android Test Calendar")
-            values.put(CalendarContract.Calendars.ALLOWED_REMINDERS, CalendarContract.Reminders.METHOD_DEFAULT)
-            val uri = AndroidCalendar.create(account, provider, values)
-
-            AndroidCalendar(account, provider, ContentUris.parseId(uri))
-        } else
-            calendars.first()
+    fun findOrCreate(account: Account, client: ContentProviderClient): AndroidCalendar {
+        val provider = AndroidCalendarProvider(account, client)
+        return provider.findFirstCalendar( null, null)
+            ?: provider.createAndGetCalendar(contentValuesOf(
+                Calendars.NAME to "TestCalendar",
+                Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
+                Calendars.ALLOWED_REMINDERS to Reminders.METHOD_DEFAULT)
+            )
     }
 
 }

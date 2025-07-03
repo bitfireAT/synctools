@@ -136,4 +136,5 @@ dependencies {
     // unit tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
+    testImplementation(kotlin("test"))
 }

@@ -11,6 +11,7 @@ import at.bitfire.ical4android.util.DateUtils.isDateTime
 import at.bitfire.ical4android.validation.EventValidator
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.CalendarUidSplitter
+import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar

@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.synctools.icalendar.Css3Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -45,7 +46,7 @@ class Css3ColorTest {
     @Test
     fun testNearestMatch() {
         // every color is its own nearest match
-        Css3Color.values().forEach {
+        Css3Color.entries.forEach {
             assertEquals(it.argb, Css3Color.nearestMatch(it.argb).argb)
         }
     }

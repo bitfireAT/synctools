@@ -9,15 +9,16 @@ package at.bitfire.synctools.test
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentUris
-import android.content.ContentValues
 import android.os.Build
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Calendars
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidCalendar
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
@@ -42,11 +43,14 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         private var isInitialized = false
         private val logger = Logger.getLogger(InitCalendarProviderRule::javaClass.name)
 
-        fun getInstance(): RuleChain = RuleChain
+        fun initialize(): RuleChain = RuleChain
             .outerRule(GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
             .around(InitCalendarProviderRule())
 
     }
+
+    val account = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+
 
     override fun before() {
         if (!isInitialized) {
@@ -66,12 +70,10 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
     }
 
     private fun initCalendarProvider(provider: ContentProviderClient) {
-        val account = Account("LocalCalendarTest", CalendarContract.ACCOUNT_TYPE_LOCAL)
-
         // Sometimes, the calendar provider returns an ID for the created calendar, but then fails to find it.
         var calendarOrNull: AndroidCalendar? = null
         for (i in 0..50) {
-            calendarOrNull = createAndVerifyCalendar(account, provider)
+            calendarOrNull = createAndVerifyCalendar(provider)
             if (calendarOrNull != null)
                 break
             else
@@ -87,7 +89,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
             normalLocalEvent.add()
-            AndroidEvent.Companion.numInstances(provider, account, normalLocalEvent.id!!)
+            AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
 
             // recurring event init
             val recurringEvent = Event().apply {
@@ -97,21 +99,21 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
             localRecurringEvent.add()
-            AndroidEvent.Companion.numInstances(provider, account, localRecurringEvent.id!!)
+            AndroidEvent.numInstances(provider, account, localRecurringEvent.id!!)
         } finally {
             calendar.delete()
         }
     }
 
-    private fun createAndVerifyCalendar(account: Account, provider: ContentProviderClient): AndroidCalendar? {
-        val uri = AndroidCalendar.Companion.create(account, provider, ContentValues())
+    private fun createAndVerifyCalendar(provider: ContentProviderClient): AndroidCalendar? {
+        val calendarProvider = AndroidCalendarProvider(account, provider)
+        val id = calendarProvider.createCalendar(contentValuesOf(
+            Calendars.ACCOUNT_NAME to account.name,
+            Calendars.ACCOUNT_TYPE to account.type
+        ))
 
         return try {
-            AndroidCalendar.Companion.findByID(
-                account,
-                provider,
-                ContentUris.parseId(uri)
-            )
+            calendarProvider.getCalendar(id)
         } catch (e: Exception) {
             logger.warning("Couldn't find calendar after creation: $e")
             null

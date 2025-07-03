@@ -26,6 +26,9 @@ import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -72,20 +75,20 @@ class AndroidEventTest {
 
         @JvmField
         @ClassRule
-        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.getInstance()
+        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
-        lateinit var provider: ContentProviderClient
+        lateinit var client: ContentProviderClient
 
         @BeforeClass
         @JvmStatic
         fun connectProvider() {
-            provider = getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(AUTHORITY)!!
+            client = getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(AUTHORITY)!!
         }
 
         @AfterClass
         @JvmStatic
         fun closeProvider() {
-            provider.closeCompat()
+            client.closeCompat()
         }
 
     }
@@ -105,7 +108,7 @@ class AndroidEventTest {
 
     @Before
     fun prepare() {
-        calendar = TestCalendar.findOrCreate(testAccount, provider)
+        calendar = TestCalendar.findOrCreate(testAccount, client)
         assertNotNull(calendar)
         calendarUri = ContentUris.withAppendedId(Calendars.CONTENT_URI, calendar.id)
     }
@@ -171,7 +174,7 @@ class AndroidEventTest {
         }
         // write event with random file name/sync_id
         val uri = AndroidEvent(calendar, event, syncId = UUID.randomUUID().toString()).add()
-        provider.query(uri, null, null, null, null)!!.use { cursor ->
+        client.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
             val values = ContentValues(cursor.columnCount)
             DatabaseUtils.cursorRowToContentValues(cursor, values)
@@ -181,7 +184,7 @@ class AndroidEventTest {
 
     private fun firstExtendedProperty(values: ContentValues): String? {
         val id = values.getAsInteger(Events._ID)
-        provider.query(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), arrayOf(ExtendedProperties.VALUE),
+        client.query(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), arrayOf(ExtendedProperties.VALUE),
                 "${ExtendedProperties.EVENT_ID}=?", arrayOf(id.toString()), null)?.use {
             if (it.moveToNext())
                 return it.getString(0)
@@ -611,7 +614,8 @@ class AndroidEventTest {
 
     @Test
     fun testBuildEvent_Color_WhenAvailable() {
-        AndroidCalendar.insertColors(provider, testAccount)
+        val provider = AndroidCalendarProvider(testAccount, client)
+        provider.provideCss3ColorIndices()
         buildEvent(true) {
             color = Css3Color.darkseagreen
         }.let { result ->
@@ -783,7 +787,7 @@ class AndroidEventTest {
 
     private fun firstReminder(row: ContentValues): ContentValues? {
         val id = row.getAsInteger(Events._ID)
-        provider.query(Reminders.CONTENT_URI.asSyncAdapter(testAccount), null,
+        client.query(Reminders.CONTENT_URI.asSyncAdapter(testAccount), null,
                 "${Reminders.EVENT_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
             if (cursor.moveToNext()) {
                 val subRow = ContentValues(cursor.count)
@@ -953,7 +957,7 @@ class AndroidEventTest {
 
     private fun firstAttendee(row: ContentValues): ContentValues? {
         val id = row.getAsInteger(Events._ID)
-        provider.query(Attendees.CONTENT_URI.asSyncAdapter(testAccount), null,
+        client.query(Attendees.CONTENT_URI.asSyncAdapter(testAccount), null,
                 "${Attendees.EVENT_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
             if (cursor.moveToNext()) {
                 val subRow = ContentValues(cursor.count)
@@ -1323,7 +1327,7 @@ class AndroidEventTest {
 
     private fun firstException(values: ContentValues): ContentValues? {
         val id = values.getAsInteger(Events._ID)
-        provider.query(Events.CONTENT_URI.asSyncAdapter(testAccount), null,
+        client.query(Events.CONTENT_URI.asSyncAdapter(testAccount), null,
                 "${Events.ORIGINAL_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
             if (cursor.moveToNext()) {
                 val result = ContentValues(cursor.count)
@@ -1455,7 +1459,7 @@ class AndroidEventTest {
         }
         valuesBuilder(values)
         logger.info("Inserting test event: $values")
-        val uri = provider.insert(
+        val uri = client.insert(
             if (asSyncAdapter)
                 Events.CONTENT_URI.asSyncAdapter(testAccount)
             else
@@ -1473,10 +1477,10 @@ class AndroidEventTest {
                 ExtendedProperties.NAME to name,
                 ExtendedProperties.VALUE to value
             )
-            provider.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
+            client.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
         }
 
-        return destinationCalendar.findById(id)
+        return destinationCalendar.getEvent(id)!!
     }
 
     private fun populateEvent(
@@ -1767,7 +1771,8 @@ class AndroidEventTest {
 
     @Test
     fun testPopulateEvent_Color_FromIndex() {
-        AndroidCalendar.insertColors(provider, testAccount)
+        val provider = AndroidCalendarProvider(testAccount, client)
+        provider.provideCss3ColorIndices()
         populateEvent(true) {
             put(Events.EVENT_COLOR_KEY, Css3Color.silver.name)
         }.let { result ->
@@ -1860,7 +1865,7 @@ class AndroidEventTest {
     @Test
     fun testPopulateEvent_Organizer_GroupScheduled() {
         populateEvent(true, insertCallback = { id ->
-            provider.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), ContentValues().apply {
+            client.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), ContentValues().apply {
                 put(Attendees.EVENT_ID, id)
                 put(Attendees.ATTENDEE_EMAIL, "organizer@example.com")
                 put(Attendees.ATTENDEE_TYPE, Attendees.RELATIONSHIP_ORGANIZER)
@@ -1949,7 +1954,7 @@ class AndroidEventTest {
             reminderValues.put(Reminders.EVENT_ID, id)
             builder(reminderValues)
             logger.info("Inserting test reminder: $reminderValues")
-            provider.insert(Reminders.CONTENT_URI.asSyncAdapter(testAccount), reminderValues)
+            client.insert(Reminders.CONTENT_URI.asSyncAdapter(testAccount), reminderValues)
         }).let { result ->
             return result.alarms.firstOrNull()
         }
@@ -1974,7 +1979,7 @@ class AndroidEventTest {
     fun testPopulateReminder_TypeEmail_AccountNameNotEmail() {
         // test account name that doesn't look like an email address
         val nonEmailAccount = Account("ical4android", ACCOUNT_TYPE_LOCAL)
-        val testCalendar = TestCalendar.findOrCreate(nonEmailAccount, provider)
+        val testCalendar = TestCalendar.findOrCreate(nonEmailAccount, client)
         try {
             populateReminder(testCalendar) {
                 put(Reminders.METHOD, Reminders.METHOD_EMAIL)
@@ -2026,7 +2031,7 @@ class AndroidEventTest {
             attendeeValues.put(Attendees.EVENT_ID, id)
             builder(attendeeValues)
             logger.info("Inserting test attendee: $attendeeValues")
-            provider.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), attendeeValues)
+            client.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), attendeeValues)
         }).let { result ->
             return result.attendees.firstOrNull()
         }
@@ -2277,7 +2282,7 @@ class AndroidEventTest {
                 val exceptionValues = ContentValues()
                 exceptionValues.put(Events.CALENDAR_ID, calendar.id)
                 exceptionBuilder(exceptionValues)
-                provider.insert(Events.CONTENT_URI.asSyncAdapter(testAccount), exceptionValues)
+                client.insert(Events.CONTENT_URI.asSyncAdapter(testAccount), exceptionValues)
             })
 
     @Test
@@ -2375,7 +2380,7 @@ class AndroidEventTest {
         val uri = AndroidEvent(calendar, event, "update-event").add()
 
         // update test event in calendar
-        val testEvent = calendar.findById(ContentUris.parseId(uri))
+        val testEvent = calendar.getEvent(ContentUris.parseId(uri))!!
         val event2 = testEvent.event!!
         event2.summary = "Updated event"
         // add data rows
@@ -2387,7 +2392,7 @@ class AndroidEventTest {
         assertEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.findById(ContentUris.parseId(uri2))
+        val updatedEvent = calendar.getEvent(ContentUris.parseId(uri2))!!
         try {
             val event3 = updatedEvent.event!!
             assertEquals(event2.summary, event3.summary)
@@ -2410,7 +2415,7 @@ class AndroidEventTest {
         val id = ContentUris.parseId(uri)
 
         // verify that it has color
-        val beforeUpdate = calendar.findById(id)
+        val beforeUpdate = calendar.getEvent(id)!!
         assertNotNull(beforeUpdate.event?.color)
 
         // update: reset color
@@ -2418,7 +2423,7 @@ class AndroidEventTest {
         beforeUpdate.update(event)
 
         // verify that it doesn't have color anymore
-        val afterUpdate = calendar.findById(id)
+        val afterUpdate = calendar.getEvent(id)!!
         assertNull(afterUpdate.event!!.color)
     }
 
@@ -2432,7 +2437,7 @@ class AndroidEventTest {
         val uri = AndroidEvent(calendar, event, "update-status-from-null").add()
 
         // update test event in calendar
-        val testEvent = calendar.findById(ContentUris.parseId(uri))
+        val testEvent = calendar.getEvent(ContentUris.parseId(uri))!!
         val event2 = testEvent.event!!
         event2.summary = "Sample event without STATUS"
         event2.status = Status.VEVENT_CONFIRMED
@@ -2442,7 +2447,7 @@ class AndroidEventTest {
         assertEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.findById(ContentUris.parseId(uri2))
+        val updatedEvent = calendar.getEvent(ContentUris.parseId(uri2))!!
         try {
             val event3 = updatedEvent.event!!
             assertEquals(Status.VEVENT_CONFIRMED, event3.status)
@@ -2462,7 +2467,7 @@ class AndroidEventTest {
         val uri = AndroidEvent(calendar, event, "update-status-to-null").add()
 
         // update test event in calendar
-        val testEvent = calendar.findById(ContentUris.parseId(uri))
+        val testEvent = calendar.getEvent(ContentUris.parseId(uri))!!
         val event2 = testEvent.event!!
         event2.summary = "Sample event without STATUS"
         event2.status = null
@@ -2472,7 +2477,7 @@ class AndroidEventTest {
         assertNotEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.findById(ContentUris.parseId(uri2))
+        val updatedEvent = calendar.getEvent(ContentUris.parseId(uri2))!!
         try {
             val event3 = updatedEvent.event!!
             assertNull(event3.status)
@@ -2494,7 +2499,7 @@ class AndroidEventTest {
             event.attendees += Attendee(URI("mailto:att$i@example.com"))
         val uri = AndroidEvent(calendar, event, "transaction").add()
 
-        val testEvent = calendar.findById(ContentUris.parseId(uri))
+        val testEvent = calendar.getEvent(ContentUris.parseId(uri))!!
         try {
             assertEquals(20, testEvent.event!!.attendees.size)
         } finally {
@@ -2516,10 +2521,10 @@ class AndroidEventTest {
         localEvent.add()
 
         // Delete event
-        AndroidEvent.markAsDeleted(provider, testAccount, localEvent.id!!)
+        AndroidEvent.markAsDeleted(client, testAccount, localEvent.id!!)
 
         // Get the status of whether the event is deleted
-        provider.query(
+        client.query(
             ContentUris.withAppendedId(Events.CONTENT_URI, localEvent.id!!).asSyncAdapter(testAccount),
             arrayOf(Events.DELETED),
             null,
@@ -2540,7 +2545,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertEquals(1, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(1, AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2553,7 +2558,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertEquals(5, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(5, AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2566,7 +2571,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        assertNull(AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2581,9 +2586,9 @@ class AndroidEventTest {
         localEvent.add()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+            assertEquals(52, AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
         else
-            assertNull(AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+            assertNull(AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2595,7 +2600,7 @@ class AndroidEventTest {
         }
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
-        val number = AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!)
+        val number = AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!)
 
         // Some android versions (i.e. <=Q and S) return 365*2 instances (wrong, 365*2+1 => correct),
         // but we are satisfied with either result for now
@@ -2613,7 +2618,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertEquals(4, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(4, AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2636,7 +2641,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
         localEvent.add()
 
-        assertEquals(5 - 2, AndroidEvent.numDirectInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(5 - 2, AndroidEvent.numDirectInstances(client, testAccount, localEvent.id!!))
     }
 
 
@@ -2649,7 +2654,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertEquals(1, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(1, AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2662,7 +2667,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertEquals(5, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(5, AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2675,7 +2680,7 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
         localEvent.add()
 
-        assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        assertNull(AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2689,9 +2694,9 @@ class AndroidEventTest {
         localEvent.add()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+            assertEquals(52, AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
         else
-            assertNull(AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+            assertNull(AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
     }
 
     @Test
@@ -2709,7 +2714,7 @@ class AndroidEventTest {
                 365 * 2       // Android <10: does not include UNTIL (incorrect!)
             else
                 365 * 2 + 1,  // Android ≥10: includes UNTIL (correct)
-            AndroidEvent.numInstances(provider, testAccount, localEvent.id!!)
+            AndroidEvent.numInstances(client, testAccount, localEvent.id!!)
         )
     }
 
@@ -2733,9 +2738,9 @@ class AndroidEventTest {
         val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
         localEvent.add()
 
-        calendar.findById(localEvent.id!!)
+        calendar.getEvent(localEvent.id!!)!!
 
-        assertEquals(6, AndroidEvent.numInstances(provider, testAccount, localEvent.id!!))
+        assertEquals(6, AndroidEvent.numInstances(client, testAccount, localEvent.id!!))
     }
 
 }

@@ -8,6 +8,7 @@ package at.bitfire.ical4android
 
 import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter

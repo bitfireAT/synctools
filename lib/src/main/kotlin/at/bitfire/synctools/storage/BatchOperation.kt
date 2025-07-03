@@ -78,9 +78,10 @@ open class BatchOperation internal constructor(
         var affected = 0
         if (!queue.isEmpty()) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "Committing ${queue.size} operations:")
-                for ((idx, op) in queue.withIndex())
-                    logger.log(Level.FINE, "#$idx: ${op.build()}")
+                logger.log(Level.FINE, "Committing ${queue.size} operation(s)",
+                    queue.mapIndexed { idx, op ->
+                        "[$idx] ${op.build()}"
+                    })
             }
 
             results = arrayOfNulls(queue.size)
