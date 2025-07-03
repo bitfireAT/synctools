@@ -12,6 +12,7 @@ import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.Instances
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.LocalStorageException
@@ -174,6 +175,74 @@ class AndroidCalendar(
     /** Calls [AndroidCalendarProvider.writeCalendarSyncState] for this calendar. */
     fun writeSyncState(newState: String?) {
         provider.writeCalendarSyncState(id, newState)
+    }
+
+
+    // event instances
+
+    /**
+     * Finds the amount of direct instances this event has (without exceptions); used by [numInstances]
+     * to find the number of instances of exceptions.
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of direct event instances (not counting instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numDirectInstances(eventId: Long): Int? {
+        // query event to get first and last instance
+        var first: Long? = null
+        var last: Long? = null
+        getEventValues(eventId, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { event ->
+            first = event.getAsLong(Events.DTSTART)
+            last = event.getAsLong(Events.LAST_DATE)
+        }
+        // if this event doesn't have a last occurrence, it's endless and always has instances
+        if (first == null || last == null)
+            return null
+
+        /* Query instances of the event within a given start and end. We can't use Long.MIN_VALUE and
+         Long.MAX_VALUE because the calendar provider generates the instances on the fly and doesn't accept those
+         values. So we use the first/last actual occurrence of the event (as calculated by the provider). */
+        val instancesUri = Instances.CONTENT_URI.asSyncAdapter(account).buildUpon()
+            .appendPath(first.toString())       // begin timestamp
+            .appendPath(last.toString())        // end timestamp
+            .build()
+
+        var numInstances = 0
+        client.query(
+            instancesUri, null,
+            "${Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
+            null
+        )?.use { cursor ->
+            numInstances += cursor.count
+        }
+        return numInstances
+    }
+
+    /**
+     * Finds the total number of instances this event has (including instances of exceptions).
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of direct event instances (not counting instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numInstances(eventId: Long): Int? {
+        // num instances of the main event
+        var numInstances: Int? = numDirectInstances(eventId) ?: return null
+
+        // add the number of instances of every main event's exception
+        iterateEvents(arrayOf(Events._ID), "${Events.ORIGINAL_ID}=?", arrayOf(eventId.toString())) { event ->
+            val exceptionEventId = event.getAsLong(Events._ID)
+            val exceptionInstances = numDirectInstances(exceptionEventId)
+
+            numInstances = if (exceptionInstances == null)
+                null    // number of instances of exception can't be determined; so the total number of instances is also unclear
+            else
+                numInstances?.plus(exceptionInstances)
+        }
+        return numInstances
     }
 
 

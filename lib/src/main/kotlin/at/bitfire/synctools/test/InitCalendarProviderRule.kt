@@ -89,7 +89,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
             normalLocalEvent.add()
-            AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
+            calendar.numInstances(normalLocalEvent.id!!)
 
             // recurring event init
             val recurringEvent = Event().apply {
@@ -99,7 +99,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
             localRecurringEvent.add()
-            AndroidEvent.numInstances(provider, account, localRecurringEvent.id!!)
+            calendar.numInstances(localRecurringEvent.id!!)
         } finally {
             calendar.delete()
         }
