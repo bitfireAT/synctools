@@ -560,8 +560,6 @@ class AndroidEvent(
             .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
     }
 
-
-
     private fun useRetainedClassification(event: Event) {
         var retainedClazz: Clazz? = null
         val it = event.unknownProperties.iterator()

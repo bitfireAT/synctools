@@ -69,7 +69,7 @@ class AndroidCalendar(
         val batch = CalendarBatchOperation(client)
 
         val builder = LegacyAndroidEventBuilder(this, event)
-        val idxEvent = builder.addOrUpdateRows(event, batch, id = null) ?: throw AssertionError("Expected Events._ID backref")
+        val idxEvent = builder.addOrUpdateRows(event, batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
         val resultUri = batch.getResult(idxEvent)?.uri
@@ -192,8 +192,10 @@ class AndroidCalendar(
      * @param projection    requested fields
      * @param where         selection
      * @param whereArgs     arguments for selection
+     *
+     * @return event IDs from this calendar which match the selection
      */
-    fun iterateEvents(projection: Array<String>?, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
+    fun iterateEvents(projection: Array<String>, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
