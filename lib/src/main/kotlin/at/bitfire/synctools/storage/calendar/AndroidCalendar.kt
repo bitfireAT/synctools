@@ -16,7 +16,9 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.Instances
 import at.bitfire.ical4android.AndroidEvent
+import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
+import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
@@ -62,6 +64,24 @@ class AndroidCalendar(
 
 
     // CRUD AndroidEvent
+
+    fun createEventFromDataObject(event: Event): Long {
+        val batch = CalendarBatchOperation(client)
+
+        val builder = LegacyAndroidEventBuilder(this, event)
+        val idxEvent = builder.addOrUpdateRows(event, batch, id = null) ?: throw AssertionError("Expected Events._ID backref")
+        batch.commit()
+
+        val resultUri = batch.getResult(idxEvent)?.uri
+            ?: throw LocalStorageException("Empty result from content provider when adding event")
+
+        return ContentUris.parseId(resultUri)
+    }
+
+    fun createAndGetEventFromDataObject(event: Event): AndroidEvent {
+        val id = createEventFromDataObject(event)
+        return getEvent(id) ?: throw LocalStorageException("Created event not available")
+    }
 
     /**
      * Queries events from this calendar.
