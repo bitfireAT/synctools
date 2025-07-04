@@ -6,12 +6,17 @@
 
 package at.bitfire.synctools.exception
 
+import android.net.Uri
+
 /**
  * Represents an invalid local resource (for instance, an Android event).
+ *
+ * @param message       detail message
+ * @param ex            cause
+ * @param contentUri    android content provider URI of the local resource (like `content://provider/entry`)
  */
-class InvalidLocalResourceException: InvalidResourceException {
-
-    constructor(message: String): super(message)
-    constructor(message: String, ex: Throwable): super(message, ex)
-
-}
+class InvalidLocalResourceException(
+    message: String,
+    ex: Throwable? = null,
+    val contentUri: Uri? = null
+) : InvalidResourceException(message, ex)

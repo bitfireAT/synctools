@@ -11,7 +11,6 @@ package at.bitfire.synctools.exception
  */
 abstract class InvalidResourceException: Exception {
 
-    constructor(message: String): super(message)
-    constructor(message: String, ex: Throwable): super(message, ex)
+    constructor(message: String, ex: Throwable? = null): super(message, ex)
 
 }

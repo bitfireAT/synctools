@@ -6,12 +6,17 @@
 
 package at.bitfire.synctools.exception
 
+import java.net.URI
+
 /**
  * Represents an invalid remote resource (for instance, a calendar object resource).
+ *
+ * @param message   detail message
+ * @param ex        cause
+ * @param url       URL of the invalid resource
  */
-class InvalidRemoteResourceException: InvalidResourceException {
-
-    constructor(message: String): super(message)
-    constructor(message: String, ex: Throwable): super(message, ex)
-
-}
+class InvalidRemoteResourceException(
+    message: String,
+    ex: Throwable? = null,
+    val url: URI? = null
+): InvalidResourceException(message, ex)
