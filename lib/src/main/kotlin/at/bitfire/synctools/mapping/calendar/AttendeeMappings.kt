@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.provider.CalendarContract
@@ -17,7 +17,7 @@ import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
 
 /**
- * Defines mappings between Android [CalendarContract.Attendees] and iCalendar parameters.
+ * Defines mappings between Android [Attendees] and iCalendar parameters.
  *
  * Because the available Android values are quite different from the one in iCalendar, the
  * mapping is very lossy. Some special mapping rules are defined:
@@ -88,8 +88,8 @@ object AttendeeMappings {
 
 
     /**
-     * Maps iCalendar [CuType] and [Role] to Android [Attendees.ATTENDEE_TYPE] and
-     * [Attendees.ATTENDEE_RELATIONSHIP] according to this matrix:
+     * Maps iCalendar [CuType] and [Role] to Android [CalendarContract.AttendeesColumns.ATTENDEE_TYPE] and
+     * [CalendarContract.AttendeesColumns.ATTENDEE_RELATIONSHIP] according to this matrix:
      *
      *     CuType ↓ / Role →   CHAIR    REQ-PARTICIPANT¹ᴰ OPT-PARTICIPANT  NON-PARTICIPANT
      *     INDIVIDUALᴰ         req,spk  req,att           opt,att          non,att
@@ -113,8 +113,8 @@ object AttendeeMappings {
         val type: Int
         var relationship: Int
 
-        val cuType = attendee.getParameter<CuType>(Parameter.CUTYPE) ?: CuType.INDIVIDUAL
-        val role = attendee.getParameter<Role>(Parameter.ROLE) ?: Role.REQ_PARTICIPANT
+        val cuType = attendee.getParameter(Parameter.CUTYPE) ?: CuType.INDIVIDUAL
+        val role = attendee.getParameter(Parameter.ROLE) ?: Role.REQ_PARTICIPANT
 
         when (cuType) {
             CuType.RESOURCE -> {
