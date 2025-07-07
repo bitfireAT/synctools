@@ -459,7 +459,7 @@ class AndroidEventProcessor(
         }
 
         if (event.classification == null)
-        // no classification, use retained one if possible
+            // no classification, use retained one if possible
             event.classification = retainedClazz
     }
 
