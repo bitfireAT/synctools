@@ -143,7 +143,7 @@ class AndroidEvent(
 
 
     /**
-     * Saves an unsaved event into the calendar storage.
+     * Saves the unsaved [event] into the calendar storage.
      *
      * @return content URI of the created event
      *
@@ -153,8 +153,9 @@ class AndroidEvent(
     fun add(): Uri {
         val batch = CalendarBatchOperation(calendar.client)
 
-        val builder = AndroidEventBuilder(calendar, event!!, id, syncId, eTag, scheduleTag, flags)
-        val idxEvent = builder.addOrUpdateRows(event!!, batch) ?: throw AssertionError("Expected Events._ID backref")
+        val requiredEvent = requireNotNull(event)
+        val builder = AndroidEventBuilder(calendar, requiredEvent, id, syncId, eTag, scheduleTag, flags)
+        val idxEvent = builder.addOrUpdateRows(requiredEvent, batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
         val resultUri = batch.getResult(idxEvent)?.uri
