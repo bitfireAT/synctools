@@ -19,6 +19,7 @@ import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
@@ -81,9 +82,10 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         }
         val calendar = calendarOrNull ?: throw IllegalStateException("Couldn't create calendar")
 
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         try {
             // single event init
-            val normalEvent = Event().apply {
+            val normalEvent = Event(tzRegistry = tzRegistry).apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with 1 instance"
             }
@@ -92,7 +94,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
 
             // recurring event init
-            val recurringEvent = Event().apply {
+            val recurringEvent = Event(tzRegistry = tzRegistry).apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event over 22 years"
                 rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year needs to be  >2074 (not supported by Android <11 Calendar Storage)

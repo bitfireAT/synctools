@@ -94,13 +94,12 @@ import java.util.logging.Logger
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
 class AndroidEvent(
-    val calendar: AndroidCalendar
+    val calendar: AndroidCalendar,
+    private val tzRegistry: TimeZoneRegistry
 ) {
 
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
-
-    private val tzRegistry: TimeZoneRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
         private set
@@ -116,7 +115,7 @@ class AndroidEvent(
      *
      * @param values database row with all columns, as returned by the calendar provider
      */
-    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
+    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar, TimeZoneRegistryFactory.getInstance().createRegistry()) {
         this.id = values.getAsLong(Events._ID)
         this.syncId = values.getAsString(Events._SYNC_ID)
         this.eTag = values.getAsString(COLUMN_ETAG)
@@ -136,7 +135,7 @@ class AndroidEvent(
         eTag: String? = null,
         scheduleTag: String? = null,
         flags: Int = 0
-    ) : this(calendar) {
+    ) : this(calendar, event.tzRegistry) {
         this.event = event
         this.syncId = syncId
         this.eTag = eTag
@@ -175,7 +174,7 @@ class AndroidEvent(
                     val e = iterEvents.next()
 
                     // create new Event which will be populated
-                    val newEvent = Event()
+                    val newEvent = Event(tzRegistry = tzRegistry)
                     _event = newEvent
 
                     // calculate some scheduling properties

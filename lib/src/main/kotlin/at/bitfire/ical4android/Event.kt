@@ -20,6 +20,8 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
@@ -97,7 +99,10 @@ data class Event(
     var lastModified: LastModified? = null,
 
     val categories: LinkedList<String> = LinkedList(),
-    val unknownProperties: LinkedList<Property> = LinkedList()
+    val unknownProperties: LinkedList<Property> = LinkedList(),
+
+    /** the time zone registry that time zones of this event belong to */
+    val tzRegistry: TimeZoneRegistry
 ) : ICalendar() {
 
     /**
@@ -246,8 +251,8 @@ data class Event(
          * Parses an iCalendar resource, applies [at.bitfire.ical4android.validation.ICalPreprocessor]
          * and [EventValidator] to increase compatibility and extracts the VEVENTs.
          *
-         * @param reader where the iCalendar is taken from
-         * @param properties Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
+         * @param reader        where the iCalendar is read from
+         * @param properties    Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
          *
          * @return array of filled [Event] data objects (may have size 0)
          *
@@ -258,7 +263,8 @@ data class Event(
             reader: Reader,
             properties: MutableMap<String, String>? = null
         ): List<Event> {
-            val ical = fromReader(reader, properties)
+            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+            val ical = fromReader(reader, tzRegistry, properties)
 
             // process VEVENTs
             val splitter = CalendarUidSplitter<VEvent>()
@@ -284,9 +290,9 @@ data class Event(
                     // FIXME: we should construct a proper recurring fake event, not just take first the exception
                     associatedEvents.exceptions.first()
 
-                val event = fromVEvent(mainVEvent)
+                val event = fromVEvent(mainVEvent, tzRegistry)
                 associatedEvents.exceptions.mapTo(event.exceptions) { exceptionVEvent ->
-                    fromVEvent(exceptionVEvent).also { exception ->
+                    fromVEvent(exceptionVEvent, tzRegistry).also { exception ->
                         // make sure that exceptions have at least a SUMMARY (if the main event does have one)
                         if (exception.summary == null)
                             exception.summary = event.summary
@@ -303,8 +309,8 @@ data class Event(
             return events
         }
 
-        fun fromVEvent(event: VEvent): Event {
-            val e = Event()
+        fun fromVEvent(event: VEvent, tzRegistry: TimeZoneRegistry): Event {
+            val e = Event(tzRegistry = tzRegistry)
 
             // sequence must only be null for locally created, not-yet-synchronized events
             e.sequence = 0

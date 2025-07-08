@@ -147,7 +147,7 @@ class AndroidEventTest {
      */
 
     private fun buildEvent(automaticDates: Boolean, eventBuilder: Event.() -> Unit): ContentValues {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             if (automaticDates)
                 dtStart = DtStart(DateTime())
             eventBuilder()
@@ -1323,7 +1323,7 @@ class AndroidEventTest {
         buildEvent(false) {
             dtStart = DtStart("20200706T193000", tzVienna)
             rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
+            exceptions += Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20200707T193000", tzVienna)
                 dtStart = DtStart("20200706T203000", tzShanghai)
                 summary = "Event moved to one hour later"
@@ -1349,7 +1349,7 @@ class AndroidEventTest {
         buildEvent(false) {
             dtStart = DtStart("20200706T193000", tzVienna)
             rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
+            exceptions += Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId(Date("20200707"))   // illegal! should be rewritten to DateTime("20200707T193000", tzVienna)
                 dtStart = DtStart("20200706T203000", tzShanghai)
                 summary = "Event moved to one hour later"
@@ -1375,7 +1375,7 @@ class AndroidEventTest {
         buildEvent(false) {
             dtStart = DtStart(Date("20200706"))
             rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
+            exceptions += Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId(Date("20200707"))
                 dtStart = DtStart("20200706T123000", tzVienna)
                 summary = "Today not an all-day event"
@@ -1400,7 +1400,7 @@ class AndroidEventTest {
         buildEvent(false) {
             dtStart = DtStart(Date("20200706"))
             rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
+            exceptions += Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20200707T000000", tzVienna)     // illegal! should be rewritten to Date("20200707")
                 dtStart = DtStart("20200706T123000", tzVienna)
                 summary = "Today not an all-day event"
@@ -2351,7 +2351,7 @@ class AndroidEventTest {
     @Test
     fun testUpdateEvent() {
         // add test event without reminder
-        val event = Event()
+        val event = Event(tzRegistry = tzRegistry)
         event.uid = "sample1@testAddEvent"
         event.summary = "Sample event"
         event.dtStart = DtStart("20150502T120000Z")
@@ -2386,7 +2386,7 @@ class AndroidEventTest {
     @Test
     fun testUpdateEvent_ResetColor() {
         // add event with color
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             uid = "sample1@testAddEvent"
             dtStart = DtStart(DateTime())
             color = Css3Color.silver
@@ -2409,7 +2409,7 @@ class AndroidEventTest {
 
     @Test
     fun testUpdateEvent_UpdateStatusFromNull() {
-        val event = Event()
+        val event = Event(tzRegistry = tzRegistry)
         event.uid = "sample1@testAddEvent"
         event.summary = "Sample event with STATUS"
         event.dtStart = DtStart("20150502T120000Z")
@@ -2438,7 +2438,7 @@ class AndroidEventTest {
 
     @Test
     fun testUpdateEvent_UpdateStatusToNull() {
-        val event = Event()
+        val event = Event(tzRegistry = tzRegistry)
         event.uid = "sample1@testAddEvent"
         event.summary = "Sample event with STATUS"
         event.dtStart = DtStart("20150502T120000Z")
@@ -2470,7 +2470,7 @@ class AndroidEventTest {
 
     @Test
     fun testTransaction() {
-        val event = Event()
+        val event = Event(tzRegistry = tzRegistry)
         event.uid = "sample1@testTransaction"
         event.summary = "an event"
         event.dtStart = DtStart("20150502T120000Z")
@@ -2493,7 +2493,7 @@ class AndroidEventTest {
     @Test
     fun testMarkEventAsDeleted() {
         // Create event
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "A fine event"
         }
@@ -2518,7 +2518,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_SingleInstance() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 1 instance"
         }
@@ -2530,7 +2530,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_Recurring() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
@@ -2543,7 +2543,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_Recurring_Endless() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event without end"
             rRules.add(RRule("FREQ=DAILY"))
@@ -2557,7 +2557,7 @@ class AndroidEventTest {
     @Test
     // flaky, needs InitCalendarProviderRule
     fun testNumDirectInstances_Recurring_LateEnd() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 53 years"
             rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 is not supported by Android <11 Calendar Storage
@@ -2573,7 +2573,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_Recurring_ManyInstances() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 2 years"
             rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
@@ -2589,7 +2589,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_RecurringWithExdate() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart(Date("20220120T010203Z"))
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
@@ -2603,16 +2603,16 @@ class AndroidEventTest {
 
     @Test
     fun testNumDirectInstances_RecurringWithExceptions() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-            exceptions.add(Event().apply {
+            exceptions.add(Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20220122T010203Z")
                 dtStart = DtStart("20220122T130203Z")
                 summary = "Exception on 3rd day"
             })
-            exceptions.add(Event().apply {
+            exceptions.add(Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20220124T010203Z")
                 dtStart = DtStart("20220122T160203Z")
                 summary = "Exception on 5th day"
@@ -2627,7 +2627,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_SingleInstance() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 1 instance"
         }
@@ -2639,7 +2639,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_Recurring() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
@@ -2652,7 +2652,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_Recurring_Endless() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with infinite instances"
             rRules.add(RRule("FREQ=YEARLY"))
@@ -2665,7 +2665,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_Recurring_LateEnd() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event over 22 years"
             rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
@@ -2681,7 +2681,7 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_Recurring_ManyInstances() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event over two years"
             rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
@@ -2700,16 +2700,16 @@ class AndroidEventTest {
 
     @Test
     fun testNumInstances_RecurringWithExceptions() {
-        val event = Event().apply {
+        val event = Event(tzRegistry = tzRegistry).apply {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 6 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=6"))
-            exceptions.add(Event().apply {
+            exceptions.add(Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20220122T010203Z")
                 dtStart = DtStart("20220122T130203Z")
                 summary = "Exception on 3rd day"
             })
-            exceptions.add(Event().apply {
+            exceptions.add(Event(tzRegistry = tzRegistry).apply {
                 recurrenceId = RecurrenceId("20220124T010203Z")
                 dtStart = DtStart("20220122T160203Z")
                 summary = "Exception on 5th day"
