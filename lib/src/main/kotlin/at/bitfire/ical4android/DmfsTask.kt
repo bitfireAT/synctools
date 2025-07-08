@@ -539,8 +539,8 @@ abstract class DmfsTask(
             builder .withValue(Tasks.IS_ALLDAY, 1)
                     .withValue(Tasks.TZ, null)
         } else {
-            AndroidTimeUtils.androidifyTimeZone(task.dtStart)
-            AndroidTimeUtils.androidifyTimeZone(task.due)
+            AndroidTimeUtils.androidifyTimeZone(task.dtStart, tzRegistry)
+            AndroidTimeUtils.androidifyTimeZone(task.due, tzRegistry)
             builder .withValue(Tasks.IS_ALLDAY, 0)
                     .withValue(Tasks.TZ, getTimeZone().id)
         }

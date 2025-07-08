@@ -68,11 +68,11 @@ object AndroidTimeUtils {
      * use [storageTzId].
      *
      * @param date [DateProperty] to validate. Values which are not DATE-TIME will be ignored.
+     * @param tzRegistry    time zone registry to get time zones from
      */
-    fun androidifyTimeZone(date: DateProperty?) {
+    fun androidifyTimeZone(date: DateProperty?, tzRegistry: TimeZoneRegistry) {
         if (DateUtils.isDateTime(date) && date?.isUtc == false) {
             val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
-            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
             date.timeZone = tzRegistry.getTimeZone(tzID)
         }
     }

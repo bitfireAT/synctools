@@ -794,7 +794,8 @@ class AndroidEvent(
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android
-        AndroidTimeUtils.androidifyTimeZone(dtStart)
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
 
         val recurring = event.rRules.isNotEmpty() || event.rDates.isNotEmpty()
 
@@ -830,7 +831,7 @@ class AndroidEvent(
                 .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
         var dtEnd = event.dtEnd
-        AndroidTimeUtils.androidifyTimeZone(dtEnd)
+        AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
 
         var duration =
                 if (dtEnd == null)
@@ -949,7 +950,7 @@ class AndroidEvent(
                 }
             }
 
-            AndroidTimeUtils.androidifyTimeZone(dtEnd)
+            AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
             builder .withValue(Events.DTEND, dtEnd.date.time)
                     .withValue(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
                     .withValue(Events.DURATION, null)
