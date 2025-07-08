@@ -7,7 +7,6 @@
 package at.bitfire.ical4android.validation
 
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -144,7 +143,7 @@ class EventValidatorTest {
         }
         assertEquals(
             DateTime("20211214T235959Z"),
-            event.rRules.first.recur.until
+            event.rRules.first().recur.until
         )
         EventValidator.sameTypeForDtStartAndRruleUntil(event.dtStart!!, event.rRules)
         assertEquals("FREQ=MONTHLY;UNTIL=20211214", event.rRules.joinToString())
@@ -160,7 +159,7 @@ class EventValidatorTest {
                         "END:VCALENDAR"
             )
         ).first()
-        assertEquals(1639440000000, event1.rRules.first.recur.until.time)
+        assertEquals(1639440000000, event1.rRules.first().recur.until.time)
         assertEquals("FREQ=MONTHLY;UNTIL=20211214;BYMONTHDAY=15", event1.rRules.joinToString())
     }
 
@@ -375,7 +374,8 @@ class EventValidatorTest {
     @Test
     fun testRemoveRecurrencesOfRecurringWithExceptions() {
         // Test manually created event
-        val tz = DateUtils.ical4jTimeZone("Europe/Paris")
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+        val tz = tzRegistry.getTimeZone("Europe/Paris")
         val manualEvent = Event().apply {
             dtStart = DtStart("20240219T130000", tz)
             dtEnd = DtEnd("20240219T140000", tz)
@@ -507,7 +507,7 @@ class EventValidatorTest {
 
     // helpers
 
-    private fun Iterable<RRule>.joinToString(): String =
-        this.map { rRule -> rRule.value }.joinToString("\n")
+    private fun Iterable<RRule>.joinToString() =
+        this.joinToString("\n") { rRule -> rRule.value }
 
 }

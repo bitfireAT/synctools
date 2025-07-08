@@ -10,7 +10,6 @@ import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.DateProperty
 import java.io.StringReader
@@ -27,13 +26,6 @@ object DateUtils {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
-
-    /**
-     * Global ical4j time zone registry used for event/task processing. Do not
-     * modify this registry or its entries!
-     */
-    @Deprecated("For every context, it's own TimeZoneRegistry should be used")
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
 
     // time zones
@@ -92,20 +84,6 @@ object DateUtils {
                     null
                 }
             }
-
-    /**
-     * Loads a time zone from the ical4j time zone registry (which contains the
-     * VTIMEZONE definitions).
-     *
-     * All Android time zone IDs plus some other time zones should be available.
-     * However, the possibility that the time zone is not available in ical4j should
-     * be handled.
-     *
-     * @param id    time zone ID (like `Europe/Vienna`)
-     * @return the ical4j time zone (VTIMEZONE), or `null` if no VTIMEZONE is available
-     */
-    @Deprecated("Create and query new TimeZoneRegistry instance if one is needed")
-    fun ical4jTimeZone(id: String): TimeZone? = tzRegistry.getTimeZone(id)
 
     /**
      * Determines whether a given date represents a DATE value.

@@ -12,7 +12,6 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,18 +19,6 @@ import java.time.ZoneId
 import java.util.TimeZone
 
 class DateUtilsTest {
-
-    private val tzIdToronto = "America/Toronto"
-    private val tzToronto = DateUtils.ical4jTimeZone(tzIdToronto)!!
-
-    @Test
-    fun testTimeZoneRegistry() {
-        assertNotNull(DateUtils.ical4jTimeZone("Europe/Vienna"))
-
-        // https://github.com/ical4j/ical4j/issues/207
-        assertNotNull(DateUtils.ical4jTimeZone("EST"))
-    }
-
 
     @Test
     fun testFindAndroidTimezoneID() {

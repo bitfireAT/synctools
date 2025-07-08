@@ -49,6 +49,7 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
@@ -99,7 +100,7 @@ class AndroidEvent(
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
 
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+    private val tzRegistry: TimeZoneRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
         private set
