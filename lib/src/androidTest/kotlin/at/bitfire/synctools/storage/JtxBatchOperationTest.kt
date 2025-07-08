@@ -16,6 +16,7 @@ import at.bitfire.ical4android.JtxICalObject
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.BuildConfig
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import io.mockk.mockk
@@ -29,7 +30,7 @@ class JtxBatchOperationTest {
     @get:Rule
     val permissionRule = GrantPermissionOrSkipRule(TaskProvider.PERMISSIONS_JTX.toSet())
 
-    private val testAccount = Account(javaClass.name, javaClass.packageName)
+    private val testAccount = Account(javaClass.name, BuildConfig.APPLICATION_ID)
 
     lateinit var provider: ContentProviderClient
 

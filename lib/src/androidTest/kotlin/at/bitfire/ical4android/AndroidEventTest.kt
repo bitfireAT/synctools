@@ -10,12 +10,10 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
-import android.net.Uri
 import android.os.Build
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
@@ -50,7 +48,6 @@ import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.*
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -58,8 +55,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
 import java.net.URI
@@ -71,27 +67,8 @@ import kotlin.collections.plusAssign
 
 class AndroidEventTest {
 
-    companion object {
-
-        @JvmField
-        @ClassRule
-        val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
-
-        lateinit var client: ContentProviderClient
-
-        @BeforeClass
-        @JvmStatic
-        fun connectProvider() {
-            client = getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(AUTHORITY)!!
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun closeProvider() {
-            client.closeCompat()
-        }
-
-    }
+    @get:Rule
+    val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
     private val logger = Logger.getLogger(javaClass.name)
 
@@ -103,19 +80,21 @@ class AndroidEventTest {
     private val tzIdDefault = java.util.TimeZone.getDefault().id
     private val tzDefault = DateUtils.ical4jTimeZone(tzIdDefault)
 
-    private lateinit var calendarUri: Uri
+    lateinit var client: ContentProviderClient
     private lateinit var calendar: AndroidCalendar
 
     @Before
     fun prepare() {
+        val context = getInstrumentation().targetContext
+        client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
+
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        assertNotNull(calendar)
-        calendarUri = ContentUris.withAppendedId(Calendars.CONTENT_URI, calendar.id)
     }
 
     @After
     fun shutdown() {
         calendar.delete()
+        client.closeCompat()
     }
 
 
@@ -2710,8 +2689,8 @@ class AndroidEventTest {
         localEvent.add()
 
         assertEquals(
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
-                365 * 2       // Android <10: does not include UNTIL (incorrect!)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+                365 * 2       // Android <9: does not include UNTIL (incorrect!)
             else
                 365 * 2 + 1,  // Android ≥10: includes UNTIL (correct)
             AndroidEvent.numInstances(client, testAccount, localEvent.id!!)

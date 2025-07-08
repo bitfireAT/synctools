@@ -10,6 +10,7 @@ import android.accounts.Account
 import at.bitfire.ical4android.DmfsStyleProvidersTaskTest
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.impl.TestTaskList
+import at.bitfire.synctools.test.BuildConfig
 import org.dmfs.tasks.contract.TaskContract
 import org.junit.Test
 
@@ -17,7 +18,7 @@ class TasksBatchOperationTest(
     providerName: TaskProvider.ProviderName
 ): DmfsStyleProvidersTaskTest(providerName) {
 
-    private val testAccount = Account(javaClass.name, javaClass.packageName)
+    private val testAccount = Account(javaClass.name, BuildConfig.APPLICATION_ID)
 
     @Test(expected = LocalStorageException::class)
     fun testTasksProvider_OperationsPerYieldPoint_500_WithoutMax() {
