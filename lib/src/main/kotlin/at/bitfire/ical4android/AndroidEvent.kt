@@ -316,7 +316,7 @@ class AndroidEvent(
                     event.rRules += RRule(rule)
             }
             row.getAsString(Events.RDATE)?.let { datesStr ->
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, datesStr, allDay, tsStart) { RDate(it) }
+                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay, tsStart) { RDate(it) }
                 event.rDates += rDate
             }
 
@@ -325,7 +325,7 @@ class AndroidEvent(
                     event.exRules += ExRule(null, rule)
             }
             row.getAsString(Events.EXDATE)?.let { datesStr ->
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, datesStr, allDay) { ExDate(it) }
+                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay) { ExDate(it) }
                 event.exDates += exDate
             }
         } catch (e: Exception) {
@@ -672,7 +672,7 @@ class AndroidEvent(
                         dtStartDate.toLocalTime(),
                         dtStartDate.requireZoneId()
                 )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
+                recurrenceDate = zonedTime.toIcal4jDateTime(tzRegistry)
             }
             exBuilder   .withValue(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
                         .withValue(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
@@ -926,7 +926,7 @@ class AndroidEvent(
                     } else {
                         val zonedStartTime = (dtStart.date as DateTime).toZonedDateTime()
                         val calcEnd = zonedStartTime + duration
-                        val calcDtEnd = DtEnd(calcEnd.toIcal4jDateTime())
+                        val calcDtEnd = DtEnd(calcEnd.toIcal4jDateTime(tzRegistry))
                         calcDtEnd.timeZone = dtStart.timeZone
                         dtEnd = calcDtEnd
                     }

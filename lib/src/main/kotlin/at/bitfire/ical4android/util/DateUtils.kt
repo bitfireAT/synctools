@@ -32,6 +32,7 @@ object DateUtils {
      * Global ical4j time zone registry used for event/task processing. Do not
      * modify this registry or its entries!
      */
+    @Deprecated("For every context, it's own TimeZoneRegistry should be used")
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
 
@@ -46,7 +47,7 @@ object DateUtils {
      * 2. Find partial matches (case-sensitive) in both directions, so both "Vienna"
      *    and "MyClient: Europe/Vienna" will return "Europe/Vienna". This shouln't be
      *    case-insensitive, because that would for instance return "EST" for "Westeuropäische Sommerzeit".
-     * 3. If nothing can be found or [tzId] is `null`, return the system default time zone.
+     * 3. If nothing can be found or [tzID] is `null`, return the system default time zone.
      *
      * @param tzID time zone ID to be converted into Android time zone ID
      *
@@ -87,7 +88,7 @@ object DateUtils {
                 try {
                     val zone = ZoneId.of(id)
                     zone
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
@@ -127,8 +128,8 @@ object DateUtils {
      *
      * @return parsed [VTimeZone], or `null` when the timezone definition can't be parsed
      */
-    fun parseVTimeZone(timezoneDef: String): VTimeZone? {
-        val builder = CalendarBuilder(tzRegistry)
+    fun parseVTimeZone(timezoneDef: String ): VTimeZone? {
+        val builder = CalendarBuilder()
         try {
             val cal = builder.build(StringReader(timezoneDef))
             return cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone
