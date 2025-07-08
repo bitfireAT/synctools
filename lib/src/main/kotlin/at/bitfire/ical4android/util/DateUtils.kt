@@ -103,6 +103,7 @@ object DateUtils {
      * @param id    time zone ID (like `Europe/Vienna`)
      * @return the ical4j time zone (VTIMEZONE), or `null` if no VTIMEZONE is available
      */
+    @Deprecated("Create and query new TimeZoneRegistry instance if one is needed")
     fun ical4jTimeZone(id: String): TimeZone? = tzRegistry.getTimeZone(id)
 
     /**

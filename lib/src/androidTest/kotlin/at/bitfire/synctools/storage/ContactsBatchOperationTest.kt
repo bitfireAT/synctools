@@ -13,6 +13,7 @@ import android.provider.ContactsContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.BuildConfig
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -26,7 +27,7 @@ class ContactsBatchOperationTest {
         Manifest.permission.WRITE_CONTACTS
     )
 
-    private val testAccount = Account(javaClass.name, javaClass.packageName)
+    private val testAccount = Account(javaClass.name, BuildConfig.APPLICATION_ID)
 
     lateinit var provider: ContentProviderClient
 
