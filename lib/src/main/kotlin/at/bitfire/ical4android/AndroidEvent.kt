@@ -49,7 +49,6 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
@@ -94,8 +93,7 @@ import java.util.logging.Logger
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
 class AndroidEvent(
-    val calendar: AndroidCalendar,
-    private val tzRegistry: TimeZoneRegistry
+    val calendar: AndroidCalendar
 ) {
 
     private val logger: Logger
@@ -115,7 +113,7 @@ class AndroidEvent(
      *
      * @param values database row with all columns, as returned by the calendar provider
      */
-    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar, TimeZoneRegistryFactory.getInstance().createRegistry()) {
+    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
         this.id = values.getAsLong(Events._ID)
         this.syncId = values.getAsString(Events._SYNC_ID)
         this.eTag = values.getAsString(COLUMN_ETAG)
@@ -135,7 +133,7 @@ class AndroidEvent(
         eTag: String? = null,
         scheduleTag: String? = null,
         flags: Int = 0
-    ) : this(calendar, event.tzRegistry) {
+    ) : this(calendar) {
         this.event = event
         this.syncId = syncId
         this.eTag = eTag
@@ -174,7 +172,7 @@ class AndroidEvent(
                     val e = iterEvents.next()
 
                     // create new Event which will be populated
-                    val newEvent = Event(tzRegistry = tzRegistry)
+                    val newEvent = Event()
                     _event = newEvent
 
                     // calculate some scheduling properties
@@ -214,6 +212,8 @@ class AndroidEvent(
     private fun populateEvent(row: ContentValues, groupScheduled: Boolean) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
         val event = requireNotNull(event)
+
+        val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
         row.getAsString(Events.MUTATORS)?.let { strPackages ->
             val packages = strPackages.split(MUTATORS_SEPARATOR).toSet()
@@ -672,7 +672,7 @@ class AndroidEvent(
                         dtStartDate.toLocalTime(),
                         dtStartDate.requireZoneId()
                 )
-                recurrenceDate = zonedTime.toIcal4jDateTime(tzRegistry)
+                recurrenceDate = zonedTime.toIcal4jDateTime()
             }
             exBuilder   .withValue(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
                         .withValue(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
@@ -926,7 +926,7 @@ class AndroidEvent(
                     } else {
                         val zonedStartTime = (dtStart.date as DateTime).toZonedDateTime()
                         val calcEnd = zonedStartTime + duration
-                        val calcDtEnd = DtEnd(calcEnd.toIcal4jDateTime(tzRegistry))
+                        val calcDtEnd = DtEnd(calcEnd.toIcal4jDateTime())
                         calcDtEnd.timeZone = dtStart.timeZone
                         dtEnd = calcDtEnd
                     }

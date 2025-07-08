@@ -20,8 +20,6 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistry
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
@@ -99,10 +97,7 @@ data class Event(
     var lastModified: LastModified? = null,
 
     val categories: LinkedList<String> = LinkedList(),
-    val unknownProperties: LinkedList<Property> = LinkedList(),
-
-    /** the time zone registry that time zones of this event belong to */
-    val tzRegistry: TimeZoneRegistry
+    val unknownProperties: LinkedList<Property> = LinkedList()
 ) : ICalendar() {
 
     /**
@@ -263,8 +258,7 @@ data class Event(
             reader: Reader,
             properties: MutableMap<String, String>? = null
         ): List<Event> {
-            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-            val ical = fromReader(reader, tzRegistry, properties)
+            val ical = fromReader(reader, properties)
 
             // process VEVENTs
             val splitter = CalendarUidSplitter<VEvent>()
@@ -290,9 +284,9 @@ data class Event(
                     // FIXME: we should construct a proper recurring fake event, not just take first the exception
                     associatedEvents.exceptions.first()
 
-                val event = fromVEvent(mainVEvent, tzRegistry)
+                val event = fromVEvent(mainVEvent)
                 associatedEvents.exceptions.mapTo(event.exceptions) { exceptionVEvent ->
-                    fromVEvent(exceptionVEvent, tzRegistry).also { exception ->
+                    fromVEvent(exceptionVEvent).also { exception ->
                         // make sure that exceptions have at least a SUMMARY (if the main event does have one)
                         if (exception.summary == null)
                             exception.summary = event.summary
@@ -309,8 +303,8 @@ data class Event(
             return events
         }
 
-        fun fromVEvent(event: VEvent, tzRegistry: TimeZoneRegistry): Event {
-            val e = Event(tzRegistry = tzRegistry)
+        fun fromVEvent(event: VEvent): Event {
+            val e = Event()
 
             // sequence must only be null for locally created, not-yet-synchronized events
             e.sequence = 0

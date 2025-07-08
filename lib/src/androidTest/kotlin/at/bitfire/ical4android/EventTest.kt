@@ -76,7 +76,7 @@ class EventTest {
 
     @Test
     fun testGenerateEtcUTC() {
-        val e = Event(tzRegistry = tzRegistry)
+        val e = Event()
         e.uid = "etc-utc-test@example.com"
         e.dtStart = DtStart("20200926T080000", tzUTC)
         e.dtEnd = DtEnd("20200926T100000", tzUTC)
@@ -129,18 +129,18 @@ class EventTest {
 
     @Test
     fun testRecurringWriteFullDayException() {
-        val event = Event(tzRegistry = tzRegistry).apply {
+        val event = Event().apply {
             uid = "test1"
             dtStart = DtStart("20190117T083000", tzBerlin)
             summary = "Main event"
             rRules += RRule("FREQ=DAILY;COUNT=5")
             exceptions += arrayOf(
-                    Event(tzRegistry = tzRegistry).apply {
+                    Event().apply {
                         uid = "test2"
                         recurrenceId = RecurrenceId(DateTime("20190118T073000", tzLondon))
                         summary = "Normal exception"
                     },
-                    Event(tzRegistry = tzRegistry).apply {
+                    Event().apply {
                         uid = "test3"
                         recurrenceId = RecurrenceId(Date("20190223"))
                         summary = "Full-day exception"
@@ -239,7 +239,7 @@ class EventTest {
 
     @Test
     fun testToString() {
-        val e = Event(tzRegistry = tzRegistry)
+        val e = Event()
         e.uid = "SAMPLEUID"
         val s = e.toString()
         assertTrue(s.contains(Event::class.java.simpleName))
@@ -251,7 +251,7 @@ class EventTest {
 
     @Test
     fun testWrite() {
-        val e = Event(tzRegistry = tzRegistry)
+        val e = Event()
         e.uid = "SAMPLEUID"
         e.dtStart = DtStart("20190101T100000", tzBerlin)
         e.alarms += VAlarm(Duration.ofHours(-1))
@@ -314,12 +314,12 @@ class EventTest {
 
     @Test
     fun testOrganizerEmail_None() {
-        assertNull(Event(tzRegistry = tzRegistry).organizerEmail)
+        assertNull(Event().organizerEmail)
     }
 
     @Test
     fun testOrganizerEmail_EmailParameter() {
-        assertEquals("organizer@example.com", Event(tzRegistry = tzRegistry).apply {
+        assertEquals("organizer@example.com", Event().apply {
             organizer = Organizer("SomeFancyOrganizer").apply {
                 parameters.add(Email("organizer@example.com"))
             }
@@ -328,7 +328,7 @@ class EventTest {
 
     @Test
     fun testOrganizerEmail_MailtoValue() {
-        assertEquals("organizer@example.com", Event(tzRegistry = tzRegistry).apply {
+        assertEquals("organizer@example.com", Event().apply {
             organizer = Organizer("mailto:organizer@example.com")
         }.organizerEmail)
     }

@@ -9,6 +9,7 @@ package at.bitfire.ical4android.util
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
@@ -97,7 +98,9 @@ object TimeApiExtensions {
      *
      * @return ical4j [DateTime] of the given zoned date-time
      */
-    fun ZonedDateTime.toIcal4jDateTime(tzRegistry: TimeZoneRegistry): DateTime {
+    fun ZonedDateTime.toIcal4jDateTime(
+        tzRegistry: TimeZoneRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    ): DateTime {
         val date = DateTime(toEpochSecond() * MILLIS_PER_SECOND)
         if (zone == ZoneOffset.UTC)
             date.isUtc = true

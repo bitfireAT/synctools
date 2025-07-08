@@ -96,7 +96,7 @@ class AndroidCalendarTest {
         val cal = TestCalendar.findOrCreate(testAccount, client)
         try {
             // add event with color
-            AndroidEvent(cal, Event(tzRegistry = tzRegistry).apply {
+            AndroidEvent(cal, Event().apply {
                 dtStart = DtStart("20210314T204200Z")
                 dtEnd = DtEnd("20210314T204230Z")
                 color = Css3Color.limegreen

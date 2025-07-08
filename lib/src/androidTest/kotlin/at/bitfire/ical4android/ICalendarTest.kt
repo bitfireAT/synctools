@@ -218,7 +218,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:-P1DT1H1M29S
 		val (ref, min) = ICalendar.vAlarmToMin(
 			VAlarm(Duration.parse("-P1DT1H1M29S")),
-			Event(tzRegistry = tzRegistry), false
+			Event(), false
 		)!!
 		assertEquals(Related.START, ref)
 		assertEquals(60*24 + 60 + 1, min)
@@ -229,7 +229,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:-PT3600S
 		val (ref, min) = ICalendar.vAlarmToMin(
 			VAlarm(Duration.parse("-PT3600S")),
-			Event(tzRegistry = tzRegistry), false
+			Event(), false
 		)!!
 		assertEquals(Related.START, ref)
 		assertEquals(60, min)
@@ -240,7 +240,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
 		val (ref, min) = ICalendar.vAlarmToMin(
 			VAlarm(Duration.parse("P1DT1H1M30S")),
-			Event(tzRegistry = tzRegistry), false
+			Event(), false
 		)!!
 		assertEquals(Related.START, ref)
 		assertEquals(-(60*24 + 60 + 1), min)
@@ -251,7 +251,7 @@ class ICalendarTest {
 		// TRIGGER;REL=END:-P1DT1H1M30S (caller accepts Related.END)
 		val alarm = VAlarm(Duration.parse("-P1DT1H1M30S"))
 		alarm.trigger.parameters.add(Related.END)
-		val (ref, min) = ICalendar.vAlarmToMin(alarm, Event(tzRegistry = tzRegistry), true)!!
+		val (ref, min) = ICalendar.vAlarmToMin(alarm, Event(), true)!!
 		assertEquals(Related.END, ref)
 		assertEquals(60*24 + 60 + 1, min)
 	}
@@ -261,7 +261,7 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtStart = DtStart(DateTime(currentTime))
 		event.dtEnd = DtEnd(DateTime(currentTime + 180*1000))    // 180 sec later
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, event, false)!!
@@ -275,7 +275,7 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtEnd = DtEnd(DateTime(currentTime))
 		assertNull(ICalendar.vAlarmToMin(alarm, event, false))
 	}
@@ -285,7 +285,7 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtStart = DtStart(DateTime(currentTime))
 		assertNull(ICalendar.vAlarmToMin(alarm, event, false))
 	}
@@ -305,7 +305,7 @@ class ICalendarTest {
 
 	@Test
 	fun testVAlarm_TriggerPeriod() {
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtStart = DtStart(Date(currentTime))
 		val (ref, min) = ICalendar.vAlarmToMin(
 			VAlarm(Period.parse("-P1W1D")),
@@ -318,7 +318,7 @@ class ICalendarTest {
 	@Test
 	fun testVAlarm_TriggerAbsoluteValue() {
 		// TRIGGER;VALUE=DATE-TIME:<xxxx>
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtStart = DtStart(DateTime(currentTime))
 		val alarm = VAlarm(DateTime(currentTime - 89*1000))	// 89 sec (should be cut off to 1 min) before event
 		alarm.trigger.parameters.add(Related.END)	// not useful for DATE-TIME values, should be ignored
@@ -335,7 +335,7 @@ class ICalendarTest {
 		// Event start: 2020/04/01 01:00 Vienna, alarm: one day before start of the event
 		// DST changes on 2020/03/29 02:00 -> 03:00, so there is one hour less!
 		// The alarm has to be set 23 hours before the event so that it is set one day earlier.
-		val event = Event(tzRegistry = tzRegistry)
+		val event = Event()
 		event.dtStart = DtStart("20200401T010000", tzVienna)
 		val (ref, min) = ICalendar.vAlarmToMin(
 				VAlarm(Period.parse("-P1W1D")),

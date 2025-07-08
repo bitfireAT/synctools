@@ -13,7 +13,7 @@ import net.fortuna.ical4j.data.CalendarParserFactory
 import net.fortuna.ical4j.data.ContentHandlerContext
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import java.io.Reader
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -37,7 +37,7 @@ class ICalendarParser {
      *
      * @throws InvalidRemoteResourceException   when the resource is can't be parsed
      */
-    fun parse(reader: Reader, tzRegistry: TimeZoneRegistry): Calendar {
+    fun parse(reader: Reader): Calendar {
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
         val preprocessed = ICalPreprocessor.preprocessStream(reader)
 
@@ -47,7 +47,7 @@ class ICalendarParser {
             calendar = CalendarBuilder(
                 /* parser = */ CalendarParserFactory.getInstance().get(),
                 /* contentHandlerContext = */ ContentHandlerContext().withSupressInvalidProperties(/* supressInvalidProperties = */ true),
-                /* tzRegistry = */ tzRegistry
+                /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
             ).build(preprocessed)
         } catch(e: ParserException) {
             throw InvalidRemoteResourceException("Couldn't parse iCalendar", e)

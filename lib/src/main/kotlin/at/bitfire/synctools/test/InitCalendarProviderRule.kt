@@ -85,7 +85,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         try {
             // single event init
-            val normalEvent = Event(tzRegistry = tzRegistry).apply {
+            val normalEvent = Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with 1 instance"
             }
@@ -94,7 +94,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
 
             // recurring event init
-            val recurringEvent = Event(tzRegistry = tzRegistry).apply {
+            val recurringEvent = Event().apply {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event over 22 years"
                 rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year needs to be  >2074 (not supported by Android <11 Calendar Storage)
