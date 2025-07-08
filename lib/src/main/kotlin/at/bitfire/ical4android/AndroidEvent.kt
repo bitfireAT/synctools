@@ -49,6 +49,7 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
@@ -97,6 +98,8 @@ class AndroidEvent(
 
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
+
+    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
         private set
@@ -241,7 +244,7 @@ class AndroidEvent(
                 if (duration is Duration)
                     duration = Period.ofDays(duration.toDays().toInt())
                 tsEnd = (startDate + duration).toEpochDay() * TimeApiExtensions.MILLIS_PER_DAY
-                duration = null
+                //duration = null
             }
 
             if (tsEnd != null) {
@@ -259,10 +262,9 @@ class AndroidEvent(
 
         } else /* !allDay */ {
             // use DATE-TIME values
-
             // check time zone ID (calendar apps may insert no or an invalid ID)
             val startTzId = DateUtils.findAndroidTimezoneID(row.getAsString(Events.EVENT_TIMEZONE))
-            val startTz = DateUtils.ical4jTimeZone(startTzId)
+            val startTz = tzRegistry.getTimeZone(startTzId)
             val dtStartDateTime = DateTime(tsStart).apply {
                 if (startTz != null) {  // null if there was not ical4j time zone for startTzId, which should not happen, but technically may happen
                     if (TimeZones.isUtc(startTz))
@@ -282,7 +284,7 @@ class AndroidEvent(
                 // Some servers have problems with DURATION, so we always generate DTEND.
                 val zonedStart = dtStartDateTime.toZonedDateTime()
                 tsEnd = (zonedStart + duration).toInstant().toEpochMilli()
-                duration = null
+                //duration = null
             }
 
             if (tsEnd != null) {
@@ -292,7 +294,7 @@ class AndroidEvent(
                     logger.fine("dtEnd $tsEnd == dtStart, won't generate DTEND property")*/
                 else /* tsEnd > tsStart */ {
                     val endTz = row.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
-                        DateUtils.ical4jTimeZone(tzId)
+                        tzRegistry.getTimeZone(tzId)
                     } ?: startTz
                     event.dtEnd = DtEnd(DateTime(tsEnd).apply {
                         if (endTz != null) {
@@ -314,7 +316,7 @@ class AndroidEvent(
                     event.rRules += RRule(rule)
             }
             row.getAsString(Events.RDATE)?.let { datesStr ->
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, allDay, tsStart) { RDate(it) }
+                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, datesStr, allDay, tsStart) { RDate(it) }
                 event.rDates += rDate
             }
 
@@ -323,7 +325,7 @@ class AndroidEvent(
                     event.exRules += ExRule(null, rule)
             }
             row.getAsString(Events.EXDATE)?.let { datesStr ->
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, allDay) { ExDate(it) }
+                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, datesStr, allDay) { ExDate(it) }
                 event.exDates += exDate
             }
         } catch (e: Exception) {

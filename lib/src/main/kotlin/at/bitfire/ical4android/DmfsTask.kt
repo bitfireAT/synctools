@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.RemoteException
 import androidx.annotation.CallSuper
 import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
@@ -23,6 +22,7 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.RelType
@@ -71,11 +71,10 @@ abstract class DmfsTask(
 
     companion object {
         const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
-
-        val utcTimeZone by lazy { DateUtils.ical4jTimeZone(TimeZones.UTC_ID) }
     }
 
     protected val logger = Logger.getLogger(javaClass.name)
+    protected val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
 
@@ -210,7 +209,10 @@ abstract class DmfsTask(
         val allDay = (values.getAsInteger(Tasks.IS_ALLDAY) ?: 0) != 0
 
         val tzID = values.getAsString(Tasks.TZ)
-        val tz = tzID?.let { DateUtils.ical4jTimeZone(it) }
+        val tz = tzID?.let {
+            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+            tzRegistry.getTimeZone(it)
+        }
 
         values.getAsLong(Tasks.CREATED)?.let { task.createdAt = it }
         values.getAsLong(Tasks.LAST_MODIFIED)?.let { task.lastModified = it }
@@ -253,10 +255,10 @@ abstract class DmfsTask(
         }
 
         values.getAsString(Tasks.RDATE)?.let {
-            task.rDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, allDay) { dates -> RDate(dates) }
+            task.rDates += AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, it, allDay) { dates -> RDate(dates) }
         }
         values.getAsString(Tasks.EXDATE)?.let {
-            task.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, allDay) { dates -> ExDate(dates) }
+            task.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(tzRegistry, it, allDay) { dates -> ExDate(dates) }
         }
 
         values.getAsString(Tasks.RRULE)?.let { task.rRule = RRule(it) }
@@ -570,17 +572,17 @@ abstract class DmfsTask(
         val task = requireNotNull(task)
         return  task.dtStart?.let { dtStart ->
                     if (dtStart.isUtc)
-                        utcTimeZone
+                        tzRegistry.getTimeZone(TimeZones.UTC_ID)
                     else
                         dtStart.timeZone
                 } ?:
                 task.due?.let { due ->
                     if (due.isUtc)
-                        utcTimeZone
+                        tzRegistry.getTimeZone(TimeZones.UTC_ID)
                     else
                         due.timeZone
                 } ?:
-                DateUtils.ical4jTimeZone(ZoneId.systemDefault().id)!!
+                tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
     }
 
 

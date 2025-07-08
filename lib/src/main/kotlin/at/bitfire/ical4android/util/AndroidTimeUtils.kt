@@ -18,6 +18,8 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
@@ -70,7 +72,8 @@ object AndroidTimeUtils {
     fun androidifyTimeZone(date: DateProperty?) {
         if (DateUtils.isDateTime(date) && date?.isUtc == false) {
             val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
-            date.timeZone = DateUtils.ical4jTimeZone(tzID)
+            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+            date.timeZone = tzRegistry.getTimeZone(tzID)
         }
     }
 
@@ -83,6 +86,8 @@ object AndroidTimeUtils {
      * @param dateList [DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
      */
     fun androidifyTimeZone(dateList: DateListProperty) {
+        val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+
         // periods (RDate only)
         val periods = (dateList as? RDate)?.periods
         if (periods != null && periods.size > 0 && !periods.isUtc) {
@@ -90,7 +95,7 @@ object AndroidTimeUtils {
 
             // Setting the time zone won't work until resolved in ical4j (https://github.com/ical4j/ical4j/discussions/568)
             // DateListProperty.setTimeZone() does not set the timeZone property when the DateList has PERIODs
-            dateList.timeZone = DateUtils.ical4jTimeZone(tzID)
+            dateList.timeZone = tzRegistry.getTimeZone(tzID)
 
             return //  RDate can only contain periods OR dates - not both, bail out fast
         }
@@ -100,7 +105,7 @@ object AndroidTimeUtils {
         if (dates != null && dates.size > 0) {
             if (dates.type == Value.DATE_TIME && !dates.isUtc) {
                 val tzID = DateUtils.findAndroidTimezoneID(dates.timeZone?.id)
-                dateList.timeZone = DateUtils.ical4jTimeZone(tzID)
+                dateList.timeZone = tzRegistry.getTimeZone(tzID)
             }
         }
     }
@@ -238,7 +243,13 @@ object AndroidTimeUtils {
      *
      * @throws ParseException when the string cannot be parsed
      */
-    fun<T: DateListProperty> androidStringToRecurrenceSet(dbStr: String, allDay: Boolean, exclude: Long? = null, generator: (DateList) -> T): T
+    fun<T: DateListProperty> androidStringToRecurrenceSet(
+        tzRegistry: TimeZoneRegistry,
+        dbStr: String,
+        allDay: Boolean,
+        exclude: Long? = null,
+        generator: (DateList) -> T
+    ): T
     {
         // 1. split string into time zone and actual dates
         var timeZone: TimeZone?
@@ -247,7 +258,7 @@ object AndroidTimeUtils {
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
             val tzId = dbStr.substring(0, limiter)
-            timeZone = DateUtils.ical4jTimeZone(tzId)
+            timeZone = tzRegistry.getTimeZone(tzId)
             if (TimeZones.isUtc(timeZone))
                 timeZone = null
             datesStr = dbStr.substring(limiter + 1)
