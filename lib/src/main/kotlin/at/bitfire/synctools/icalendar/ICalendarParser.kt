@@ -32,6 +32,9 @@ class ICalendarParser {
      * 1. The input stream from is preprocessed with [ICalPreprocessor.preprocessStream].
      * 2. The parsed calendar is preprocessed with [ICalPreprocessor.preprocessCalendar].
      *
+     * @param reader        where the iCalendar is read from
+     * @param tzRegistry    time zone registry where VTIMEZONE definitions of the iCalendar will be put
+     *
      * @throws InvalidRemoteResourceException   when the resource is can't be parsed
      */
     fun parse(reader: Reader): Calendar {
@@ -44,7 +47,7 @@ class ICalendarParser {
             calendar = CalendarBuilder(
                 /* parser = */ CalendarParserFactory.getInstance().get(),
                 /* contentHandlerContext = */ ContentHandlerContext().withSupressInvalidProperties(/* supressInvalidProperties = */ true),
-                /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()      // AndroidCompatTimeZoneRegistry
+                /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
             ).build(preprocessed)
         } catch(e: ParserException) {
             throw InvalidRemoteResourceException("Couldn't parse iCalendar", e)

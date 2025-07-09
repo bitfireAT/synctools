@@ -10,7 +10,6 @@ import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.DateProperty
 import java.io.StringReader
@@ -28,12 +27,6 @@ object DateUtils {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    /**
-     * Global ical4j time zone registry used for event/task processing. Do not
-     * modify this registry or its entries!
-     */
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-
 
     // time zones
 
@@ -46,7 +39,7 @@ object DateUtils {
      * 2. Find partial matches (case-sensitive) in both directions, so both "Vienna"
      *    and "MyClient: Europe/Vienna" will return "Europe/Vienna". This shouln't be
      *    case-insensitive, because that would for instance return "EST" for "Westeuropäische Sommerzeit".
-     * 3. If nothing can be found or [tzId] is `null`, return the system default time zone.
+     * 3. If nothing can be found or [tzID] is `null`, return the system default time zone.
      *
      * @param tzID time zone ID to be converted into Android time zone ID
      *
@@ -87,24 +80,10 @@ object DateUtils {
                 try {
                     val zone = ZoneId.of(id)
                     zone
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 }
             }
-
-    /**
-     * Loads a time zone from the ical4j time zone registry (which contains the
-     * VTIMEZONE definitions).
-     *
-     * All Android time zone IDs plus some other time zones should be available.
-     * However, the possibility that the time zone is not available in ical4j should
-     * be handled.
-     *
-     * @param id    time zone ID (like `Europe/Vienna`)
-     * @return the ical4j time zone (VTIMEZONE), or `null` if no VTIMEZONE is available
-     */
-    @Deprecated("Create and query new TimeZoneRegistry instance if one is needed")
-    fun ical4jTimeZone(id: String): TimeZone? = tzRegistry.getTimeZone(id)
 
     /**
      * Determines whether a given date represents a DATE value.
@@ -127,8 +106,8 @@ object DateUtils {
      *
      * @return parsed [VTimeZone], or `null` when the timezone definition can't be parsed
      */
-    fun parseVTimeZone(timezoneDef: String): VTimeZone? {
-        val builder = CalendarBuilder(tzRegistry)
+    fun parseVTimeZone(timezoneDef: String ): VTimeZone? {
+        val builder = CalendarBuilder()
         try {
             val cal = builder.build(StringReader(timezoneDef))
             return cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone

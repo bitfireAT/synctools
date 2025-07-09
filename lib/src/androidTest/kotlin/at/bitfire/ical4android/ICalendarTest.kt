@@ -6,12 +6,12 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
@@ -31,7 +31,9 @@ import java.time.Period
 class ICalendarTest {
 
 	// UTC timezone
-	private val tzUTC = DateUtils.ical4jTimeZone(TimeZones.UTC_ID)!!.vTimeZone
+	private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+	val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
+	private val vtzUTC = tzUTC.vTimeZone
 
 	// Austria (Europa/Vienna) uses DST regularly
 	private val vtzVienna = readTimeZone("Vienna.ics")
@@ -98,8 +100,8 @@ class ICalendarTest {
 		// Keep the only observance for UTC.
 		// DATE-TIME values in UTC are usually noted with ...Z and don't have a VTIMEZONE,
 		// but it is allowed to write them as TZID=Etc/UTC.
-		assertEquals(1, tzUTC.observances.size)
-		ICalendar.minifyVTimeZone(tzUTC, Date("20200612")).let { minified ->
+		assertEquals(1, vtzUTC.observances.size)
+		ICalendar.minifyVTimeZone(vtzUTC, Date("20200612")).let { minified ->
 			assertEquals(1, minified.observances.size)
 		}
 	}

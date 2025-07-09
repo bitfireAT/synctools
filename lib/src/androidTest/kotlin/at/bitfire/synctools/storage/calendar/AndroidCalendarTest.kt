@@ -19,6 +19,7 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.After
@@ -36,6 +37,7 @@ class AndroidCalendarTest {
     )
 
     private val testAccount = Account("ical4android.AndroidCalendarTest", CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
     lateinit var client: ContentProviderClient
     lateinit var provider: AndroidCalendarProvider

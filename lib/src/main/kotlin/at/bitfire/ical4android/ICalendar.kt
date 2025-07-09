@@ -84,15 +84,18 @@ open class ICalendar {
         /**
          * Parses an iCalendar resource and applies [ICalPreprocessor] to increase compatibility.
          *
-         * @param reader where the iCalendar is taken from
-         * @param properties Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
+         * @param reader        where the iCalendar is read from
+         * @param properties    Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
          *
          * @return parsed iCalendar resource
          *
          * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
          */
         @Deprecated("Use ICalendarParser directly")
-        fun fromReader(reader: Reader, properties: MutableMap<String, String>? = null): Calendar {
+        fun fromReader(
+            reader: Reader,
+            properties: MutableMap<String, String>? = null
+        ): Calendar {
             logger.fine("Parsing iCalendar stream")
 
             val calendar = ICalendarParser().parse(reader)

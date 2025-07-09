@@ -18,6 +18,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,7 +35,8 @@ import java.time.ZonedDateTime
 
 class TimeApiExtensionsTest {
 
-    val tzBerlin: TimeZone = DateUtils.ical4jTimeZone("Europe/Berlin")!!
+    val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()!!
+    val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin")!!
 
 
     @Test
@@ -155,10 +157,9 @@ class TimeApiExtensionsTest {
 
     @Test
     fun testZonedDateTime_toIcal4jDateTime_NotUtc() {
-        val tzBerlin = DateUtils.ical4jTimeZone("Europe/Berlin")
         assertEquals(
             DateTime("20200705T010203", tzBerlin),
-            ZonedDateTime.of(2020, 7, 5, 1, 2, 3, 0, ZoneId.of("Europe/Berlin")).toIcal4jDateTime()
+            ZonedDateTime.of(2020, 7, 5, 1, 2, 3, 0, ZoneId.of("Europe/Berlin")).toIcal4jDateTime(tzRegistry)
         )
     }
 
@@ -166,7 +167,7 @@ class TimeApiExtensionsTest {
     fun testZonedDateTime_toIcal4jDateTime_Utc() {
         assertEquals(
             DateTime("20200705T010203Z"),
-            ZonedDateTime.of(2020, 7, 5, 1, 2, 3, 0, ZoneOffset.UTC).toIcal4jDateTime()
+            ZonedDateTime.of(2020, 7, 5, 1, 2, 3, 0, ZoneOffset.UTC).toIcal4jDateTime(tzRegistry)
         )
     }
 

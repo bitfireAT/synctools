@@ -13,11 +13,11 @@ import android.database.DatabaseUtils
 import android.net.Uri
 import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.storage.LocalStorageException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.RelType
@@ -58,9 +58,10 @@ class DmfsTaskTest(
     providerName: TaskProvider.ProviderName
 ): DmfsStyleProvidersTaskTest(providerName) {
 
-    private val tzVienna = DateUtils.ical4jTimeZone("Europe/Vienna")!!
-    private val tzChicago = DateUtils.ical4jTimeZone("America/Chicago")!!
-    private val tzDefault = DateUtils.ical4jTimeZone(ZoneId.systemDefault().id)!!
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()!!
+    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+    private val tzChicago = tzRegistry.getTimeZone("America/Chicago")!!
+    private val tzDefault = tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
 
     private val testAccount = Account("AndroidTaskTest", LOCAL_ACCOUNT_TYPE)
 

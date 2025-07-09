@@ -7,12 +7,12 @@
 package at.bitfire.ical4android
 
 import at.bitfire.ical4android.impl.testProdId
-import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Value
@@ -39,7 +39,9 @@ import java.nio.charset.Charset
 
 class TaskTest {
 
-    val tzVienna: TimeZone = DateUtils.ical4jTimeZone("Europe/Vienna")!!
+    val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()!!
+    val tzBerlin: TimeZone = tzRegistry.getTimeZone("Europe/Berlin")!!
+    val tzVienna: TimeZone = tzRegistry.getTimeZone("Europe/Vienna")!!
 
 
     /* public interface tests */
@@ -200,7 +202,7 @@ class TaskTest {
     fun testWrite() {
         val t = Task()
         t.uid = "SAMPLEUID"
-        t.dtStart = DtStart("20190101T100000", DateUtils.ical4jTimeZone("Europe/Berlin"))
+        t.dtStart = DtStart("20190101T100000", tzBerlin)
 
         val alarm = VAlarm(java.time.Duration.ofHours(-1) /*Dur(0, -1, 0, 0)*/)
         alarm.properties += Action.AUDIO

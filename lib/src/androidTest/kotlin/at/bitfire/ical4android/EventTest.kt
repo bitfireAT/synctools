@@ -12,6 +12,7 @@ import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
@@ -20,6 +21,7 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -32,6 +34,11 @@ import java.nio.charset.Charset
 import java.time.Duration
 
 class EventTest {
+
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin")!!
+    private val tzLondon = tzRegistry.getTimeZone("Europe/London")!!
+    private val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
 
     /* public interface tests */
 
@@ -69,8 +76,6 @@ class EventTest {
 
     @Test
     fun testGenerateEtcUTC() {
-        val tzUTC = DateUtils.ical4jTimeZone("Etc/UTC")
-
         val e = Event()
         e.uid = "etc-utc-test@example.com"
         e.dtStart = DtStart("20200926T080000", tzUTC)
@@ -126,13 +131,13 @@ class EventTest {
     fun testRecurringWriteFullDayException() {
         val event = Event().apply {
             uid = "test1"
-            dtStart = DtStart("20190117T083000", DateUtils.ical4jTimeZone("Europe/Berlin"))
+            dtStart = DtStart("20190117T083000", tzBerlin)
             summary = "Main event"
             rRules += RRule("FREQ=DAILY;COUNT=5")
             exceptions += arrayOf(
                     Event().apply {
                         uid = "test2"
-                        recurrenceId = RecurrenceId(DateTime("20190118T073000", DateUtils.ical4jTimeZone("Europe/London")))
+                        recurrenceId = RecurrenceId(DateTime("20190118T073000", tzLondon))
                         summary = "Normal exception"
                     },
                     Event().apply {
@@ -248,7 +253,7 @@ class EventTest {
     fun testWrite() {
         val e = Event()
         e.uid = "SAMPLEUID"
-        e.dtStart = DtStart("20190101T100000", DateUtils.ical4jTimeZone("Europe/Berlin"))
+        e.dtStart = DtStart("20190101T100000", tzBerlin)
         e.alarms += VAlarm(Duration.ofHours(-1))
 
         val os = ByteArrayOutputStream()

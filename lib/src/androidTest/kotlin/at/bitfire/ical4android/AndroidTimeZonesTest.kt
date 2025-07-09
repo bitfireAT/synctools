@@ -6,7 +6,7 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.ical4android.util.DateUtils
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import org.junit.Assert
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -18,10 +18,11 @@ class AndroidTimeZonesTest {
 
     @Test
     fun testLoadSystemTimezones() {
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         for (id in ZoneId.getAvailableZoneIds()) {
             val name = ZoneId.of(id).getDisplayName(TextStyle.FULL, Locale.US)
             val info = try {
-                DateUtils.ical4jTimeZone(id)
+                tzRegistry.getTimeZone(id)
             } catch(e: Exception) {
                 Assert.fail("Invalid system timezone $name ($id)")
             }
