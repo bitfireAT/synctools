@@ -244,7 +244,7 @@ class AndroidEvent(
                 if (duration is Duration)
                     duration = Period.ofDays(duration.toDays().toInt())
                 tsEnd = (startDate + duration).toEpochDay() * TimeApiExtensions.MILLIS_PER_DAY
-                //duration = null
+                duration = null
             }
 
             if (tsEnd != null) {
@@ -284,7 +284,7 @@ class AndroidEvent(
                 // Some servers have problems with DURATION, so we always generate DTEND.
                 val zonedStart = dtStartDateTime.toZonedDateTime()
                 tsEnd = (zonedStart + duration).toInstant().toEpochMilli()
-                //duration = null
+                duration = null
             }
 
             if (tsEnd != null) {
