@@ -23,7 +23,6 @@ import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
 import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
@@ -72,21 +71,24 @@ class AndroidCalendar(
 
     // CRUD AndroidEvent
 
-    fun addEvent(entity: Entity) {
+    fun addEvent(entity: Entity): Long {
         try {
             val batch = CalendarBatchOperation(client)
 
             // insert main row
-            batch += BatchOperation.CpoBuilder.newInsert(eventsUri)
+            batch += CpoBuilder.newInsert(eventsUri)
                 .withValues(entity.entityValues)
 
             // insert data rows (with reference to main row ID)
             for (row in entity.subValues)
-                batch += BatchOperation.CpoBuilder.newInsert(eventsUri)
+                batch += CpoBuilder.newInsert(eventsUri)
                     .withValues(row.values)
                     .withValueBackReference(DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
 
             batch.commit()
+
+            val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
+            return ContentUris.parseId(uri)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't insert event", e)
         }
@@ -452,7 +454,7 @@ class AndroidCalendar(
         ContentUris.withAppendedId(eventsUri, id)
 
     val eventEntitiesUri
-        get() = CalendarContract.EventsEntity.CONTENT_URI.asSyncAdapter(account)
+        get() = EventsEntity.CONTENT_URI.asSyncAdapter(account)
 
     fun eventEntityUri(id: Long) =
         ContentUris.withAppendedId(eventEntitiesUri, id)

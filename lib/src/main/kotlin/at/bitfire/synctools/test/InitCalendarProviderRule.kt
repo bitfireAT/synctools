@@ -9,18 +9,16 @@ package at.bitfire.synctools.test
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
+import android.content.Entity
 import android.os.Build
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidEvent
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
 import org.junit.rules.ExternalResource
 import org.junit.rules.RuleChain
@@ -83,24 +81,21 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
 
         try {
             // single event init
-            val normalEvent = Event().apply {
-                dtStart = DtStart("20220120T010203Z")
-                summary = "Event with 1 instance"
-            }
-            val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
-            normalLocalEvent.add()
-
-            calendar.numInstances(normalLocalEvent.id!!)
+            val normalLocalEventId = calendar.addEvent(Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.DTSTART to 1752075270000,
+                Events.TITLE to "Event with 1 instance"
+            )))
+            calendar.numInstances(normalLocalEventId)
 
             // recurring event init
-            val recurringEvent = Event().apply {
-                dtStart = DtStart("20220120T010203Z")
-                summary = "Event over 22 years"
-                rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year needs to be  >2074 (not supported by Android <11 Calendar Storage)
-            }
-            val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
-            localRecurringEvent.add()
-            calendar.numInstances(localRecurringEvent.id!!)
+            val recurringEventId = calendar.addEvent(Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.DTSTART to 1752075410000,
+                Events.TITLE to "Event over 22 years",
+                Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
+            )))
+            calendar.numInstances(recurringEventId)
         } finally {
             calendar.delete()
         }
