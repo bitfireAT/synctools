@@ -17,11 +17,14 @@ import java.util.UUID
 
 object TestCalendar {
 
-    fun findOrCreate(account: Account, client: ContentProviderClient): AndroidCalendar {
+    fun findOrCreate(account: Account, client: ContentProviderClient, withColors: Boolean = false): AndroidCalendar {
         val provider = AndroidCalendarProvider(account, client)
 
         // we use colors for testing
-        provider.provideCss3ColorIndices()
+        if (withColors)
+            provider.provideCss3ColorIndices()
+        else
+            provider.removeColorIndices()
 
         return provider.findFirstCalendar( null, null)
             ?: provider.createAndGetCalendar(contentValuesOf(

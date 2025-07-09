@@ -155,6 +155,88 @@ class AndroidCalendar(
         }
 
 
+    // event instances (these methods operate directly with event IDs and without the events themselves and thus belong to the calendar class)
+
+    /**
+     * Finds the amount of direct instances this event has (without exceptions); used by [numInstances]
+     * to find the number of instances of exceptions.
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of direct event instances (not counting instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numDirectInstances(eventId: Long): Int? {
+        // query event to get first and last instance
+        var first: Long? = null
+        var last: Long? = null
+        client.query(
+            eventUri(eventId),
+            arrayOf(Events.DTSTART, Events.LAST_DATE), null, null, null
+        )?.use { cursor ->
+            cursor.moveToNext()
+            if (!cursor.isNull(0))
+                first = cursor.getLong(0)
+            if (!cursor.isNull(1))
+                last = cursor.getLong(1)
+        }
+        // if this event doesn't have a last occurrence, it's endless and always has instances
+        if (first == null || last == null)
+            return null
+
+        /* We can't use Long.MIN_VALUE and Long.MAX_VALUE because Android generates the instances
+         on the fly and it doesn't accept those values. So we use the first/last actual occurence
+         of the event (calculated by Android). */
+        val instancesUri = CalendarContract.Instances.CONTENT_URI.asSyncAdapter(account)
+            .buildUpon()
+            .appendPath(first.toString())       // begin timestamp
+            .appendPath(last.toString())        // end timestamp
+            .build()
+
+        var numInstances = 0
+        client.query(
+            instancesUri, null,
+            "${CalendarContract.Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
+            null
+        )?.use { cursor ->
+            numInstances += cursor.count
+        }
+        return numInstances
+    }
+
+    /**
+     * Finds the total number of instances this event has (including instances of exceptions)
+     *
+     * The number of returned instances may vary with the Android version.
+     *
+     * @return number of event instances (including instances of exceptions); *null* if
+     * the number can't be determined or if the event has no last date (recurring event without last instance)
+     */
+    fun numInstances(eventId: Long): Int? {
+        // num instances of the main event
+        var numInstances = numDirectInstances(eventId) ?: return null
+
+        // add the number of instances of every main event's exception
+        client.query(
+            Events.CONTENT_URI,
+            arrayOf(Events._ID),
+            "${Events.ORIGINAL_ID}=?", // get exception events of the main event
+            arrayOf(eventId.toString()), null
+        )?.use { exceptionsEventCursor ->
+            while (exceptionsEventCursor.moveToNext()) {
+                val exceptionEventId = exceptionsEventCursor.getLong(0)
+                val exceptionInstances = numDirectInstances(exceptionEventId)
+
+                if (exceptionInstances == null)
+                    return null   // number of instances of exception can't be determined; so the total number of instances is also unclear
+
+                numInstances += exceptionInstances
+            }
+        }
+        return numInstances
+    }
+
+
     // shortcuts to upper level
 
     /** Calls [AndroidCalendarProvider.deleteCalendar] for this calendar. */
