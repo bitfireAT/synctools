@@ -65,7 +65,7 @@ import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 
-class AndroidEventProcessorTest {
+class LegacyAndroidEventProcessorTest {
 
     @get:Rule
     val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()

@@ -69,7 +69,7 @@ import java.net.URI
 import java.time.Period
 import java.util.UUID
 
-class AndroidEventBuilderTest {
+class LegacyAndroidEventBuilderTest {
 
     @get:Rule
     val initCalendarProviderRule = InitCalendarProviderRule.initialize()

@@ -19,8 +19,8 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.synctools.mapping.calendar.AndroidEventBuilder
-import at.bitfire.synctools.mapping.calendar.AndroidEventProcessor
+import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
+import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
@@ -114,7 +114,7 @@ class AndroidEvent(
                 if (iterEvents.hasNext()) {
                     val entity = iterEvents.next()
                     return Event().also { newEvent ->
-                        val processor = AndroidEventProcessor(calendar, id, entity)
+                        val processor = LegacyAndroidEventProcessor(calendar, id, entity)
                         processor.populate(to = newEvent)
 
                         _event = newEvent
@@ -145,7 +145,7 @@ class AndroidEvent(
         val batch = CalendarBatchOperation(calendar.client)
 
         val requiredEvent = requireNotNull(event)
-        val builder = AndroidEventBuilder(calendar, requiredEvent, id, syncId, eTag, scheduleTag, flags)
+        val builder = LegacyAndroidEventBuilder(calendar, requiredEvent, id, syncId, eTag, scheduleTag, flags)
         val idxEvent = builder.addOrUpdateRows(requiredEvent, batch) ?: throw AssertionError("Expected Events._ID backref")
         batch.commit()
 
@@ -204,7 +204,7 @@ class AndroidEvent(
                     )
                 )
 
-            val builder = AndroidEventBuilder(calendar, event, id, syncId, eTag, scheduleTag, flags)
+            val builder = LegacyAndroidEventBuilder(calendar, event, id, syncId, eTag, scheduleTag, flags)
             builder.addOrUpdateRows(event, batch)
             batch.commit()
 

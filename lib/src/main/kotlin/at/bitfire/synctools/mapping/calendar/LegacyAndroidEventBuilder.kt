@@ -64,7 +64,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-class AndroidEventBuilder(
+class LegacyAndroidEventBuilder(
     private val calendar: AndroidCalendar,
     private val event: Event,
 
