@@ -138,6 +138,16 @@ class AndroidCalendar(
     }
 
     /**
+     * Updates a specific event's main row with the given values.
+     *
+     * @param id        event ID
+     * @param values    new values
+     */
+    fun updateEvent(id: Long, values: ContentValues) {
+        client.update(eventUri(id), values, null, null)
+    }
+
+    /**
      * Updates events in this calendar.
      *
      * @param values        values to update
@@ -153,7 +163,6 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
-
 
     // event instances (these methods operate directly with event IDs and without the events themselves and thus belong to the calendar class)
 

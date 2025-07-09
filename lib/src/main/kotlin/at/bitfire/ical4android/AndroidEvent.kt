@@ -6,8 +6,6 @@
 
 package at.bitfire.ical4android
 
-import android.accounts.Account
-import android.content.ContentProviderClient
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
@@ -19,7 +17,6 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.mapping.calendar.AndroidEventBuilder
@@ -302,24 +299,6 @@ class AndroidEvent(
          * The URL is directly put into [ExtendedProperties.VALUE].
          */
         const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
-
-
-        // helpers
-
-        /**
-         * Marks the event as deleted
-         * @param eventID
-         */
-        fun markAsDeleted(provider: ContentProviderClient, account: Account, eventID: Long) {
-            provider.update(
-                ContentUris.withAppendedId(
-                    Events.CONTENT_URI,
-                    eventID
-                ).asSyncAdapter(account),
-                contentValuesOf(Events.DELETED to 1),
-                null, null
-            )
-        }
 
     }
 

@@ -14,7 +14,6 @@ import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
@@ -201,7 +200,6 @@ class AndroidEventTest {
     }
 
 
-
     @Test
     fun testTransaction() {
         val event = Event()
@@ -218,34 +216,6 @@ class AndroidEventTest {
             assertEquals(20, testEvent.event!!.attendees.size)
         } finally {
             testEvent.delete()
-        }
-    }
-
-
-    // companion object
-
-    @Test
-    fun testMarkEventAsDeleted() {
-        // Create event
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "A fine event"
-        }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
-
-        // Delete event
-        AndroidEvent.markAsDeleted(client, testAccount, localEvent.id!!)
-
-        // Get the status of whether the event is deleted
-        client.query(
-            ContentUris.withAppendedId(Events.CONTENT_URI, localEvent.id!!).asSyncAdapter(testAccount),
-            arrayOf(Events.DELETED),
-            null,
-            null, null
-        )!!.use { cursor ->
-            cursor.moveToFirst()
-            assertEquals(1, cursor.getInt(0))
         }
     }
 
