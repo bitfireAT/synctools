@@ -13,14 +13,19 @@ import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import java.util.UUID
 
 object TestCalendar {
 
     fun findOrCreate(account: Account, client: ContentProviderClient): AndroidCalendar {
         val provider = AndroidCalendarProvider(account, client)
+
+        // we use colors for testing
+        provider.provideCss3ColorIndices()
+
         return provider.findFirstCalendar( null, null)
             ?: provider.createAndGetCalendar(contentValuesOf(
-                Calendars.NAME to "TestCalendar",
+                Calendars.NAME to UUID.randomUUID().toString(),
                 Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
                 Calendars.ALLOWED_REMINDERS to Reminders.METHOD_DEFAULT)
             )

@@ -11,6 +11,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.net.Uri
+import android.provider.CalendarContract
 import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.ical4android.util.DateUtils
@@ -62,7 +63,7 @@ class DmfsTaskTest(
     private val tzChicago = DateUtils.ical4jTimeZone("America/Chicago")!!
     private val tzDefault = DateUtils.ical4jTimeZone(ZoneId.systemDefault().id)!!
 
-    private val testAccount = Account("AndroidTaskTest", LOCAL_ACCOUNT_TYPE)
+    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
     private lateinit var taskListUri: Uri
     private var taskList: TestTaskList? = null

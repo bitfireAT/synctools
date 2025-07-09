@@ -57,6 +57,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -69,7 +70,7 @@ class AndroidEventProcessorTest {
     @get:Rule
     val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
-    private val testAccount = Account("ical4android@example.com", ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account("${javaClass.name}@example.com", ACCOUNT_TYPE_LOCAL)
     private val tzVienna = DateUtils.ical4jTimeZone("Europe/Vienna")!!
     private val tzShanghai = DateUtils.ical4jTimeZone("Asia/Shanghai")!!
 
@@ -614,7 +615,7 @@ class AndroidEventProcessorTest {
     @Test
     fun testPopulateReminder_TypeEmail_AccountNameEmail() {
         // account name looks like an email address
-        assertEquals("ical4android@example.com", testAccount.name)
+        assumeTrue(testAccount.name.endsWith("@example.com"))
 
         populateReminder {
             put(Reminders.METHOD, Reminders.METHOD_EMAIL)

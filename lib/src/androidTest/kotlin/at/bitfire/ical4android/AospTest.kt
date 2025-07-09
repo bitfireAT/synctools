@@ -30,7 +30,7 @@ class AospTest {
         Manifest.permission.WRITE_CALENDAR
     )!!
 
-    private val testAccount = Account("test@example.com", CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
     private val provider by lazy {
         InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!

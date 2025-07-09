@@ -51,7 +51,7 @@ class AndroidEventTest {
     @get:Rule
     val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
-    private val testAccount = Account("ical4android@example.com", ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
     private lateinit var calendar: AndroidCalendar
     lateinit var client: ContentProviderClient
@@ -62,13 +62,12 @@ class AndroidEventTest {
         client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
 
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        assertNotNull(calendar)
     }
 
     @After
     fun shutdown() {
-        client.closeCompat()
         calendar.delete()
+        client.closeCompat()
     }
 
 

@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
-import android.database.DatabaseUtils
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
@@ -28,6 +27,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import at.bitfire.synctools.storage.toContentValues
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -59,8 +59,8 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.XProperty
 import net.fortuna.ical4j.util.TimeZones
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
@@ -74,7 +74,7 @@ class AndroidEventBuilderTest {
     @get:Rule
     val initCalendarProviderRule = InitCalendarProviderRule.initialize()
 
-    private val testAccount = Account("ical4android@example.com", ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
     private val tzIdDefault = java.util.TimeZone.getDefault().id
     private val tzDefault = DateUtils.ical4jTimeZone(tzIdDefault)
@@ -89,11 +89,11 @@ class AndroidEventBuilderTest {
         val context = getInstrumentation().targetContext
         client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        assertNotNull(calendar)
     }
 
-    @Before
+    @After
     fun tearDown() {
+        calendar.delete()
         client.closeCompat()
     }
 
@@ -136,9 +136,7 @@ class AndroidEventBuilderTest {
         val uri = AndroidEvent(calendar, event, syncId = UUID.randomUUID().toString()).add()
         client.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
-            val values = ContentValues(cursor.columnCount)
-            DatabaseUtils.cursorRowToContentValues(cursor, values)
-            return values
+            return cursor.toContentValues()
         }
     }
 
@@ -749,11 +747,8 @@ class AndroidEventBuilderTest {
         val id = row.getAsInteger(Events._ID)
         client.query(Reminders.CONTENT_URI.asSyncAdapter(testAccount), null,
             "${Reminders.EVENT_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
-            if (cursor.moveToNext()) {
-                val subRow = ContentValues(cursor.count)
-                DatabaseUtils.cursorRowToContentValues(cursor, subRow)
-                return subRow
-            }
+            if (cursor.moveToNext())
+                return cursor.toContentValues()
         }
         return null
     }
@@ -919,11 +914,8 @@ class AndroidEventBuilderTest {
         val id = row.getAsInteger(Events._ID)
         client.query(Attendees.CONTENT_URI.asSyncAdapter(testAccount), null,
             "${Attendees.EVENT_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
-            if (cursor.moveToNext()) {
-                val subRow = ContentValues(cursor.count)
-                DatabaseUtils.cursorRowToContentValues(cursor, subRow)
-                return subRow
-            }
+            if (cursor.moveToNext())
+                return cursor.toContentValues()
         }
         return null
     }
@@ -1289,11 +1281,8 @@ class AndroidEventBuilderTest {
         val id = values.getAsInteger(Events._ID)
         client.query(Events.CONTENT_URI.asSyncAdapter(testAccount), null,
             "${Events.ORIGINAL_ID}=?", arrayOf(id.toString()), null)?.use { cursor ->
-            if (cursor.moveToNext()) {
-                val result = ContentValues(cursor.count)
-                DatabaseUtils.cursorRowToContentValues(cursor, result)
-                return result
-            }
+            if (cursor.moveToNext())
+                return cursor.toContentValues()
         }
         return null
     }
