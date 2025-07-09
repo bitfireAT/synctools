@@ -114,7 +114,6 @@ class EventValidatorTest {
         assertEquals(DateTime("20211115T001100Z"), event.dtStart!!.date)
         assertEquals("FREQ=MONTHLY;UNTIL=20251214T001100Z", event.rRules.joinToString())
 
-        val eventReader = EventReader()
         val event1 = eventReader.readEvents(StringReader(
             "BEGIN:VCALENDAR\n" +
                "BEGIN:VEVENT\n" +

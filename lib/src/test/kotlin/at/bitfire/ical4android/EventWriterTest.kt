@@ -20,7 +20,7 @@ import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayOutputStream
+import java.io.StringWriter
 import java.time.Duration
 
 class EventWriterTest {
@@ -40,12 +40,13 @@ class EventWriterTest {
         e.dtEnd = DtEnd("20200926T100000", tzUTC)
         e.alarms += VAlarm(Duration.ofMinutes(-30))
         e.attendees += Attendee("mailto:test@example.com")
-        val baos = ByteArrayOutputStream()
-        writer.write(e, baos)
-        val ical = baos.toString()
+        val ical = StringWriter()
+        writer.write(e, ical)
 
         assertTrue(
-            "BEGIN:VTIMEZONE.+BEGIN:STANDARD.+END:STANDARD.+END:VTIMEZONE".toRegex(RegexOption.DOT_MATCHES_ALL).containsMatchIn(ical)
+            "BEGIN:VTIMEZONE.+BEGIN:STANDARD.+END:STANDARD.+END:VTIMEZONE"
+                .toRegex(RegexOption.DOT_MATCHES_ALL)
+                .containsMatchIn(ical.toString())
         )
     }
 
@@ -69,9 +70,10 @@ class EventWriterTest {
                 }
             )
         }
-        val baos = ByteArrayOutputStream()
-        writer.write(event, baos)
-        val iCal = baos.toString()
+        val iCal = StringWriter().let {
+            writer.write(event, it)
+            it.toString()
+        }
         assertTrue(iCal.contains("UID:test1\r\n"))
         assertTrue(iCal.contains("DTSTART;TZID=Europe/Berlin:20190117T083000\r\n"))
 
@@ -94,9 +96,9 @@ class EventWriterTest {
         e.dtStart = DtStart("20190101T100000", tzBerlin)
         e.alarms += VAlarm(Duration.ofHours(-1))
 
-        val os = ByteArrayOutputStream()
-        writer.write(e, os)
-        val raw = os.toString(Charsets.UTF_8.name())
+        val iCal = StringWriter()
+        writer.write(e, iCal)
+        val raw = iCal.toString()
 
         assertTrue(raw.contains("PRODID:${javaClass.name}"))
         assertTrue(raw.contains("UID:SAMPLEUID"))

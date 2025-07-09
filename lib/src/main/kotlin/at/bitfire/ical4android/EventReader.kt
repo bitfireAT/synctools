@@ -49,7 +49,7 @@ import java.util.logging.Logger
 class EventReader {
 
     private val logger
-        get() = Logger.getLogger(Event::class.java.name)
+        get() = Logger.getLogger(javaClass.name)
 
     /**
      * Parses an iCalendar resource, applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor]
