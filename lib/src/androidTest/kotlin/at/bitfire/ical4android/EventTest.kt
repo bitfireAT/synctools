@@ -6,32 +6,20 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.ical4android.impl.testProdId
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.icalendar.Css3Color
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.property.Attendee
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Organizer
-import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
-import java.time.Duration
 
 class EventTest {
 
@@ -75,21 +63,6 @@ class EventTest {
     }
 
     @Test
-    fun testGenerateEtcUTC() {
-        val e = Event()
-        e.uid = "etc-utc-test@example.com"
-        e.dtStart = DtStart("20200926T080000", tzUTC)
-        e.dtEnd = DtEnd("20200926T100000", tzUTC)
-        e.alarms += VAlarm(Duration.ofMinutes(-30))
-        e.attendees += Attendee("mailto:test@example.com")
-        val baos = ByteArrayOutputStream()
-        e.write(baos, testProdId)
-        val ical = baos.toString()
-
-        assertTrue("BEGIN:VTIMEZONE.+BEGIN:STANDARD.+END:STANDARD.+END:VTIMEZONE".toRegex(RegexOption.DOT_MATCHES_ALL).containsMatchIn(ical))
-    }
-
-    @Test
     fun testGrouping() {
         val events = parseCalendar("multiple.ics")
         assertEquals(3, events.size)
@@ -125,44 +98,6 @@ class EventTest {
         assertEquals("X-UNKNOWN-PROP", unknown.name)
         assertEquals("xxx", unknown.getParameter<Parameter>("param1").value)
         assertEquals("Unknown Value", unknown.value)
-    }
-
-    @Test
-    fun testRecurringWriteFullDayException() {
-        val event = Event().apply {
-            uid = "test1"
-            dtStart = DtStart("20190117T083000", tzBerlin)
-            summary = "Main event"
-            rRules += RRule("FREQ=DAILY;COUNT=5")
-            exceptions += arrayOf(
-                    Event().apply {
-                        uid = "test2"
-                        recurrenceId = RecurrenceId(DateTime("20190118T073000", tzLondon))
-                        summary = "Normal exception"
-                    },
-                    Event().apply {
-                        uid = "test3"
-                        recurrenceId = RecurrenceId(Date("20190223"))
-                        summary = "Full-day exception"
-                    }
-            )
-        }
-        val baos = ByteArrayOutputStream()
-        event.write(baos, testProdId)
-        val iCal = baos.toString()
-        assertTrue(iCal.contains("UID:test1\r\n"))
-        assertTrue(iCal.contains("DTSTART;TZID=Europe/Berlin:20190117T083000\r\n"))
-
-        // first RECURRENCE-ID has been rewritten
-        // - to main event's UID
-        // - to time zone Europe/Berlin (with one hour time difference)
-        assertTrue(iCal.contains("UID:test1\r\n" +
-                "RECURRENCE-ID;TZID=Europe/Berlin:20190118T083000\r\n" +
-                "SUMMARY:Normal exception\r\n" +
-                "END:VEVENT"))
-
-        // no RECURRENCE-ID;VALUE=DATE:20190223
-        assertFalse(iCal.contains(":20190223"))
     }
 
     @Test
@@ -244,30 +179,6 @@ class EventTest {
         val s = e.toString()
         assertTrue(s.contains(Event::class.java.simpleName))
         assertTrue(s.contains("uid=SAMPLEUID"))
-    }
-
-
-    /* generating */
-
-    @Test
-    fun testWrite() {
-        val e = Event()
-        e.uid = "SAMPLEUID"
-        e.dtStart = DtStart("20190101T100000", tzBerlin)
-        e.alarms += VAlarm(Duration.ofHours(-1))
-
-        val os = ByteArrayOutputStream()
-        e.write(os, testProdId)
-        val raw = os.toString(Charsets.UTF_8.name())
-
-        assertTrue(raw.contains("PRODID:${testProdId.value}"))
-        assertTrue(raw.contains("UID:SAMPLEUID"))
-        assertTrue(raw.contains("DTSTART;TZID=Europe/Berlin:20190101T100000"))
-        assertTrue(raw.contains("DTSTAMP:"))
-        assertTrue(raw.contains("BEGIN:VALARM\r\n" +
-                "TRIGGER:-PT1H\r\n" +
-                "END:VALARM\r\n"))
-        assertTrue(raw.contains("BEGIN:VTIMEZONE"))
     }
 
 

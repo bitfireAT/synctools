@@ -7,19 +7,13 @@
 package at.bitfire.ical4android
 
 import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
-import at.bitfire.ical4android.util.DateUtils.isDateTime
 import at.bitfire.ical4android.validation.EventValidator
-import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.CalendarUidSplitter
 import at.bitfire.synctools.icalendar.Css3Color
-import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
-import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TextList
-import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
@@ -47,9 +41,7 @@ import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.model.property.Transp
 import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.model.property.Url
-import net.fortuna.ical4j.model.property.Version
 import java.io.IOException
-import java.io.OutputStream
 import java.io.Reader
 import java.net.URI
 import java.util.LinkedList
@@ -99,129 +91,6 @@ data class Event(
     val categories: LinkedList<String> = LinkedList(),
     val unknownProperties: LinkedList<Property> = LinkedList()
 ) : ICalendar() {
-
-    /**
-     * Generates an iCalendar from the Event.
-     *
-     * @param os        stream that the iCalendar is written to
-     * @param prodId    `PRODID` that identifies the app
-     */
-    fun write(os: OutputStream, prodId: ProdId) {
-        val ical = Calendar()
-        ical.properties += Version.VERSION_2_0
-        ical.properties += prodId.withUserAgents(userAgents)
-
-        val dtStart = dtStart ?: throw InvalidLocalResourceException("Won't generate event without start time")
-
-        EventValidator.repair(this)     // repair this event before creating the VEVENT
-
-        // "main event" (without exceptions)
-        val components = ical.components
-        val mainEvent = toVEvent()
-        components += mainEvent
-
-        // remember used time zones
-        val usedTimeZones = mutableSetOf<TimeZone>()
-        dtStart.timeZone?.let(usedTimeZones::add)
-        dtEnd?.timeZone?.let(usedTimeZones::add)
-
-        // recurrence exceptions
-        for (exception in exceptions) {
-            // exceptions must always have the same UID as the main event
-            exception.uid = uid
-
-            val recurrenceId = exception.recurrenceId
-            if (recurrenceId == null) {
-                logger.warning("Ignoring exception without recurrenceId")
-                continue
-            }
-
-            /* Exceptions must always have the same value type as DTSTART [RFC 5545 3.8.4.4].
-               If this is not the case, we don't add the exception to the event because we're
-               strict in what we send (and servers may reject such a case).
-             */
-            if (isDateTime(recurrenceId) != isDateTime(dtStart)) {
-                logger.warning("Ignoring exception $recurrenceId with other date type than dtStart: $dtStart")
-                continue
-            }
-
-            // for simplicity and compatibility, rewrite date-time exceptions to the same time zone as DTSTART
-            if (isDateTime(recurrenceId) && recurrenceId.timeZone != dtStart.timeZone) {
-                logger.fine("Changing timezone of $recurrenceId to same time zone as dtStart: $dtStart")
-                recurrenceId.timeZone = dtStart.timeZone
-            }
-
-            // create and add VEVENT for exception
-            val vException = exception.toVEvent()
-            components += vException
-
-            // remember used time zones
-            exception.dtStart?.timeZone?.let(usedTimeZones::add)
-            exception.dtEnd?.timeZone?.let(usedTimeZones::add)
-        }
-
-        // determine first dtStart (there may be exceptions with an earlier DTSTART that the main event)
-        val dtStarts = mutableListOf(dtStart.date)
-        dtStarts.addAll(exceptions.mapNotNull { it.dtStart?.date })
-        val earliest = dtStarts.minOrNull()
-        // add VTIMEZONE components
-        for (tz in usedTimeZones)
-            ical.components += minifyVTimeZone(tz.vTimeZone, earliest)
-
-        softValidate(ical)
-        CalendarOutputter(false).output(ical, os)
-    }
-
-    /**
-     * Generates a VEvent representation of this event.
-     *
-     * @return generated VEvent
-     */
-    private fun toVEvent(): VEvent {
-        val event = VEvent(/* generates DTSTAMP */)
-        val props = event.properties
-        props += Uid(uid)
-
-        recurrenceId?.let { props += it }
-        sequence?.let {
-            if (it != 0)
-                props += Sequence(it)
-        }
-
-        summary?.let { props += Summary(it) }
-        location?.let { props += Location(it) }
-        url?.let { props += Url(it) }
-        description?.let { props += Description(it) }
-        color?.let { props += Color(null, it.name) }
-
-        dtStart?.let { props += it }
-        dtEnd?.let { props += it }
-        duration?.let { props += it }
-
-        props.addAll(rRules)
-        props.addAll(rDates)
-        props.addAll(exRules)
-        props.addAll(exDates)
-
-        classification?.let { props += it }
-        status?.let { props += it }
-        if (!opaque)
-            props += Transp.TRANSPARENT
-
-        organizer?.let { props += it }
-        props.addAll(attendees)
-
-        if (categories.isNotEmpty())
-            props += Categories(TextList(categories.toTypedArray()))
-        props.addAll(unknownProperties)
-
-        lastModified?.let { props += it }
-
-        event.components.addAll(alarms)
-
-        return event
-    }
-
 
     val organizerEmail: String?
         get() {
