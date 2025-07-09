@@ -55,7 +55,7 @@ class EventReader {
      * Parses an iCalendar resource, applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor]
      * and [EventValidator] to increase compatibility and extracts the VEVENTs.
      *
-     * @param reader        where the iCalendar is read from
+     * @param from        where the iCalendar is read from
      * @param properties    Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
      *
      * @return array of filled [Event] data objects (may have size 0)
@@ -63,11 +63,11 @@ class EventReader {
      * @throws IOException on I/O errors
      * @throws ParserException when the iCalendar can't be parsed
      */
-    fun eventsFromReader(
-        reader: Reader,
+    fun readEvents(
+        from: Reader,
         properties: MutableMap<String, String>? = null
     ): List<Event> {
-        val ical = fromReader(reader, properties)
+        val ical = fromReader(from, properties)
 
         // process VEVENTs
         val splitter = CalendarUidSplitter<VEvent>()

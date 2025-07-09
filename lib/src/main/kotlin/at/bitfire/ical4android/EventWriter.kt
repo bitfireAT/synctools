@@ -28,7 +28,7 @@ import net.fortuna.ical4j.model.property.Transp
 import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.model.property.Url
 import net.fortuna.ical4j.model.property.Version
-import java.io.OutputStream
+import java.io.Writer
 import java.util.logging.Logger
 
 /**
@@ -49,9 +49,9 @@ class EventWriter(
      * Applies error correction over [EventValidator] to an [Event] and generates an iCalendar from it.
      *
      * @param event     event to generate iCalendar from
-     * @param os        stream that the iCalendar is written to
+     * @param to        stream that the iCalendar is written to
      */
-    fun write(event: Event, os: OutputStream) {
+    fun write(event: Event, to: Writer) {
         val ical = Calendar()
         ical.properties += Version.VERSION_2_0
         ical.properties += prodId.withUserAgents(event.userAgents)
@@ -114,7 +114,7 @@ class EventWriter(
             ical.components += minifyVTimeZone(tz.vTimeZone, earliest)
 
         softValidate(ical)
-        CalendarOutputter(false).output(ical, os)
+        CalendarOutputter(false).output(ical, to)
     }
 
     /**

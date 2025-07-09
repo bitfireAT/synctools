@@ -26,7 +26,7 @@ class EventReaderTest {
     fun testCalendarProperties() {
         javaClass.getResourceAsStream("/events/multiple.ics").use { stream ->
             val properties = mutableMapOf<String, String>()
-            reader.eventsFromReader(InputStreamReader(stream, Charsets.UTF_8), properties)
+            reader.readEvents(InputStreamReader(stream, Charsets.UTF_8), properties)
             assertEquals(1, properties.size)
             assertEquals("Test-Kalender", properties[ICalendar.CALENDAR_NAME])
         }
@@ -212,7 +212,7 @@ class EventReaderTest {
 
     private fun parseCalendar(fname: String, charset: Charset = Charsets.UTF_8): List<Event> =
         javaClass.getResourceAsStream("/events/$fname").use { stream ->
-            return reader.eventsFromReader(InputStreamReader(stream, charset))
+            return reader.readEvents(InputStreamReader(stream, charset))
         }
 
 }
