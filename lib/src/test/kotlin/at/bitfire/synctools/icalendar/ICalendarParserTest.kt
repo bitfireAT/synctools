@@ -6,13 +6,18 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.validation.ICalPreprocessor
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
+import io.mockk.every
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit4.MockKRule
-import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.verify
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.io.Reader
 import java.io.StringReader
 
 class ICalendarParserTest {
@@ -20,24 +25,35 @@ class ICalendarParserTest {
     @get:Rule
     val mockkRule = MockKRule(this)
 
+    @RelaxedMockK
+    lateinit var preprocessor: ICalPreprocessor
+
+    @InjectMockKs
+    lateinit var parser: ICalendarParser
+
+    @Before
+    fun setUp() {
+        val reader = slot<Reader>()
+        every { preprocessor.preprocessStream(capture(reader)) } answers { reader.captured }
+    }
+
+
     @Test
     fun testParse_AppliesPreProcessing() {
-        mockkObject(ICalPreprocessor)
-
         val reader = StringReader(
             "BEGIN:VCALENDAR\r\n" +
             "BEGIN:VEVENT\r\n" +
             "END:VEVENT\r\n" +
             "END:VCALENDAR\r\n"
         )
-        val cal = ICalendarParser().parse(reader)
+        val cal = parser.parse(reader)
 
         verify(exactly = 1) {
             // verify preprocessing was applied to stream
-            ICalPreprocessor.preprocessStream(any())
+            preprocessor.preprocessStream(any())
 
             // verify preprocessing was applied to resulting calendar
-            ICalPreprocessor.preprocessCalendar(cal)
+            preprocessor.preprocessCalendar(cal)
         }
     }
 
@@ -50,13 +66,14 @@ class ICalendarParserTest {
                     "END:VEVENT\r\n" +
                     "END:VCALENDAR\r\n"
         )
-        ICalendarParser().parse(reader)
+        parser.parse(reader)
+        // no exception called
     }
 
     @Test(expected = InvalidRemoteResourceException::class)
     fun testParse_ThrowsExceptionOnInvalidInput() {
         val reader = StringReader("invalid")
-        ICalendarParser().parse(reader)
+        parser.parse(reader)
     }
 
 }

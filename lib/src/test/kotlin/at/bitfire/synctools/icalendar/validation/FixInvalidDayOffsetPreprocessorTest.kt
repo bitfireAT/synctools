@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -13,9 +13,11 @@ import org.junit.Test
 import java.time.Duration
 
 class FixInvalidDayOffsetPreprocessorTest {
+    
+    private val processor = FixInvalidDayOffsetPreprocessor()
 
     /**
-     * Calls [FixInvalidDayOffsetPreprocessor.fixString] and asserts the result is equal to [expected].
+     * Calls `processor.fixString` and asserts the result is equal to [expected].
      *
      * @param expected      The expected result
      * @param testValue     The value to test
@@ -23,7 +25,7 @@ class FixInvalidDayOffsetPreprocessorTest {
      */
     private fun assertFixedEquals(expected: String, testValue: String, parseDuration: Boolean = true) {
         // Fix the duration string
-        val fixed = FixInvalidDayOffsetPreprocessor.fixString(testValue)
+        val fixed = processor.fixString(testValue)
 
         // Test the duration can now be parsed
         if (parseDuration)
@@ -40,7 +42,7 @@ class FixInvalidDayOffsetPreprocessorTest {
     fun test_FixString_NoOccurrence() {
         assertEquals(
             "Some String",
-            FixInvalidDayOffsetPreprocessor.fixString("Some String"),
+            processor.fixString("Some String"),
         )
     }
 
@@ -99,14 +101,14 @@ class FixInvalidDayOffsetPreprocessorTest {
 
     @Test
     fun test_RegexpForProblem_DayOffsetTo_Invalid() {
-        val regex = FixInvalidDayOffsetPreprocessor.regexpForProblem()
+        val regex = processor.regexpForProblem()
         assertTrue(regex.matches("DURATION:PT2D"))
         assertTrue(regex.matches("TRIGGER:PT1D"))
     }
 
     @Test
     fun test_RegexpForProblem_DayOffsetTo_Valid() {
-        val regex = FixInvalidDayOffsetPreprocessor.regexpForProblem()
+        val regex = processor.regexpForProblem()
         assertFalse(regex.matches("DURATION:-PT12H"))
         assertFalse(regex.matches("TRIGGER:-PT15M"))
     }

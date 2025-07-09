@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
+import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
@@ -24,7 +25,7 @@ import java.util.logging.Logger
  * (like "W. Europe Standard Time" to an Android-friendly name like "Europe/Vienna")
  *
  */
-object ICalPreprocessor {
+class ICalPreprocessor {
 
     private val propertyRules = arrayOf(
         CreatedPropertyRule(),      // make sure CREATED is UTC
@@ -33,9 +34,10 @@ object ICalPreprocessor {
         DateListPropertyRule()      // ... by the ical4j VTIMEZONE with the same TZID!
     )
 
-    private val streamPreprocessors = arrayOf(
-        FixInvalidUtcOffsetPreprocessor,    // fix things like TZOFFSET(FROM,TO):+5730
-        FixInvalidDayOffsetPreprocessor     // fix things like DURATION:PT2D
+    @VisibleForTesting
+    internal val streamPreprocessors = arrayOf(
+        FixInvalidUtcOffsetPreprocessor(),  // fix things like TZOFFSET(FROM,TO):+5730
+        FixInvalidDayOffsetPreprocessor()   // fix things like DURATION:PT2D
     )
 
     /**

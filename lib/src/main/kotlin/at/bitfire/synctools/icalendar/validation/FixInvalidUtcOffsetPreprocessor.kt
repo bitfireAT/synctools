@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.validation
+package at.bitfire.synctools.icalendar.validation
 
-import at.bitfire.ical4android.validation.FixInvalidUtcOffsetPreprocessor.TZOFFSET_REGEXP
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -17,7 +16,7 @@ import java.util.logging.Logger
  * Rewrites values of all TZOFFSETFROM and TZOFFSETTO properties which match [TZOFFSET_REGEXP]
  * so that an hour value of 00 is inserted.
  */
-object FixInvalidUtcOffsetPreprocessor: StreamPreprocessor() {
+class FixInvalidUtcOffsetPreprocessor: StreamPreprocessor() {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)

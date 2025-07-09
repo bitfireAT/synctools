@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.validation.ICalPreprocessor
 import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.CalendarParserFactory
 import net.fortuna.ical4j.data.ContentHandlerContext
@@ -20,8 +20,12 @@ import java.util.logging.Logger
 
 /**
  * Custom iCalendar parser that applies error correction using [ICalPreprocessor].
+ *
+ * @param preprocessor  pre-processor to use
  */
-class ICalendarParser {
+class ICalendarParser(
+    private val preprocessor: ICalPreprocessor = ICalPreprocessor()
+) {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
@@ -39,7 +43,7 @@ class ICalendarParser {
      */
     fun parse(reader: Reader): Calendar {
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
-        val preprocessed = ICalPreprocessor.preprocessStream(reader)
+        val preprocessed = preprocessor.preprocessStream(reader)
 
         // parse stream, ignoring invalid properties (if possible)
         val calendar: Calendar
@@ -57,7 +61,7 @@ class ICalendarParser {
 
         // Pre-process calendar for increased compatibility (fixes some common errors)
         try {
-            ICalPreprocessor.preprocessCalendar(calendar)
+            preprocessor.preprocessCalendar(calendar)
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't pre-process iCalendar", e)
         }
