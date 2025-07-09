@@ -17,6 +17,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.mapping.calendar.AndroidEventBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import net.fortuna.ical4j.model.property.DtStart
@@ -87,8 +88,12 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
                 dtStart = DtStart("20220120T010203Z")
                 summary = "Event with 1 instance"
             }
+
+            val builder = AndroidEventBuilder(calendar, normalEvent, null, null, null, null, 0)
+
             val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
             normalLocalEvent.add()
+
             calendar.numInstances(normalLocalEvent.id!!)
 
             // recurring event init

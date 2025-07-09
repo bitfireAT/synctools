@@ -134,7 +134,7 @@ class AndroidEventProcessorTest {
             client.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
         }
 
-        return destinationCalendar.getEvent(id)!!
+        return destinationCalendar.getLegacyEvent(id)!!
     }
 
     private fun populateEvent(
