@@ -46,9 +46,10 @@ class EventWriter(
 
 
     /**
-     * Generates an iCalendar from the Event.
+     * Applies error correction over [EventValidator] to an [Event] and generates an iCalendar from it.
      *
-     * @param os    stream that the iCalendar is written to
+     * @param event     event to generate iCalendar from
+     * @param os        stream that the iCalendar is written to
      */
     fun write(event: Event, os: OutputStream) {
         val ical = Calendar()

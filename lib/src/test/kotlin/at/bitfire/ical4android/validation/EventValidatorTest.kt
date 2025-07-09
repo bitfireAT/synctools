@@ -7,6 +7,7 @@
 package at.bitfire.ical4android.validation
 
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.EventReader
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -38,6 +39,8 @@ class EventValidatorTest {
     companion object {
         val tzReg: TimeZoneRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     }
+    
+    val eventReader = EventReader()
 
 
     // DTSTART and DTEND
@@ -83,7 +86,7 @@ class EventValidatorTest {
         EventValidator.correctStartAndEndTime(event)
         assertNull(event.dtEnd)
 
-        val event1 = Event.eventsFromReader(StringReader(
+        val event1 = eventReader.eventsFromReader(StringReader(
             "BEGIN:VCALENDAR\n" +
                "BEGIN:VEVENT\n" +
                "UID:51d8529a-5844-4609-918b-2891b855e0e8\n" +
@@ -111,7 +114,8 @@ class EventValidatorTest {
         assertEquals(DateTime("20211115T001100Z"), event.dtStart!!.date)
         assertEquals("FREQ=MONTHLY;UNTIL=20251214T001100Z", event.rRules.joinToString())
 
-        val event1 = Event.eventsFromReader(StringReader(
+        val eventReader = EventReader()
+        val event1 = eventReader.eventsFromReader(StringReader(
             "BEGIN:VCALENDAR\n" +
                "BEGIN:VEVENT\n" +
                "UID:51d8529a-5844-4609-918b-2891b855e0e8\n" +
@@ -121,7 +125,7 @@ class EventValidatorTest {
                "END:VCALENDAR")).first()
         assertEquals("FREQ=MONTHLY;UNTIL=20231214;BYMONTHDAY=15", event1.rRules.joinToString())
 
-        val event2 = Event.eventsFromReader(StringReader(
+        val event2 = eventReader.eventsFromReader(StringReader(
             "BEGIN:VCALENDAR\n" +
                "BEGIN:VEVENT\n" +
                "UID:381fb26b-2da5-4dd2-94d7-2e0874128aa7\n" +
@@ -148,7 +152,7 @@ class EventValidatorTest {
         EventValidator.sameTypeForDtStartAndRruleUntil(event.dtStart!!, event.rRules)
         assertEquals("FREQ=MONTHLY;UNTIL=20211214", event.rRules.joinToString())
 
-        val event1 = Event.eventsFromReader(
+        val event1 = eventReader.eventsFromReader(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
                         "BEGIN:VEVENT\n" +
@@ -194,7 +198,7 @@ class EventValidatorTest {
         EventValidator.sameTypeForDtStartAndRruleUntil(event.dtStart!!, event.rRules)
         assertEquals("FREQ=MONTHLY;UNTIL=20211214T001100Z", event.rRules.joinToString())
 
-        val event1 = Event.eventsFromReader(StringReader(
+        val event1 = eventReader.eventsFromReader(StringReader(
             "BEGIN:VCALENDAR\n" +
                 "BEGIN:VEVENT\n" +
                 "UID:51d8529a-5844-4609-918b-2891b855e0e8\n" +
@@ -217,7 +221,7 @@ class EventValidatorTest {
         EventValidator.sameTypeForDtStartAndRruleUntil(event.dtStart!!, event.rRules)
         assertEquals("FREQ=MONTHLY;UNTIL=20211214T001100Z", event.rRules.joinToString())
 
-        val event2 = Event.eventsFromReader(
+        val event2 = eventReader.eventsFromReader(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
                         "BEGIN:VEVENT\n" +
@@ -449,7 +453,7 @@ class EventValidatorTest {
         assertTrue(manualEvent.exceptions.first().exDates.isEmpty())
 
         // Test event from reader, the reader will repair the event itself
-        val eventFromReader = Event.eventsFromReader(StringReader(
+        val eventFromReader = eventReader.eventsFromReader(StringReader(
             "BEGIN:VCALENDAR\n" +
                 "BEGIN:VEVENT\n" +
                 "DTSTAMP:20240215T102755Z\n" +

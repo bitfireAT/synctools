@@ -9,10 +9,7 @@ package at.bitfire.ical4android
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.property.Organizer
-import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -21,20 +18,15 @@ import java.io.FileNotFoundException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 
-class EventTest {
+class EventReaderTest {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin")!!
-    private val tzLondon = tzRegistry.getTimeZone("Europe/London")!!
-    private val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
-
-    /* public interface tests */
+    val reader = EventReader()
 
     @Test
     fun testCalendarProperties() {
-        javaClass.classLoader!!.getResourceAsStream("events/multiple.ics").use { stream ->
+        javaClass.getResourceAsStream("/events/multiple.ics").use { stream ->
             val properties = mutableMapOf<String, String>()
-            Event.eventsFromReader(InputStreamReader(stream, Charsets.UTF_8), properties)
+            reader.eventsFromReader(InputStreamReader(stream, Charsets.UTF_8), properties)
             assertEquals(1, properties.size)
             assertEquals("Test-Kalender", properties[ICalendar.CALENDAR_NAME])
         }
@@ -173,19 +165,7 @@ class EventTest {
     }
 
     @Test
-    fun testToString() {
-        val e = Event()
-        e.uid = "SAMPLEUID"
-        val s = e.toString()
-        assertTrue(s.contains(Event::class.java.simpleName))
-        assertTrue(s.contains("uid=SAMPLEUID"))
-    }
-
-
-    /* internal tests */
-
-    @Test
-    fun testFindMasterEventsAndExceptions() {
+    fun testFindMainEventsAndExceptions() {
         // two single events
         var events = parseCalendar("two-events-without-exceptions.ics")
         assertEquals(2, events.size)
@@ -221,30 +201,6 @@ class EventTest {
     }
 
 
-    // methods / fields
-
-    @Test
-    fun testOrganizerEmail_None() {
-        assertNull(Event().organizerEmail)
-    }
-
-    @Test
-    fun testOrganizerEmail_EmailParameter() {
-        assertEquals("organizer@example.com", Event().apply {
-            organizer = Organizer("SomeFancyOrganizer").apply {
-                parameters.add(Email("organizer@example.com"))
-            }
-        }.organizerEmail)
-    }
-
-    @Test
-    fun testOrganizerEmail_MailtoValue() {
-        assertEquals("organizer@example.com", Event().apply {
-            organizer = Organizer("mailto:organizer@example.com")
-        }.organizerEmail)
-    }
-
-
     // helpers
 
     private fun findEvent(events: Iterable<Event>, uid: String): Event {
@@ -255,8 +211,8 @@ class EventTest {
     }
 
     private fun parseCalendar(fname: String, charset: Charset = Charsets.UTF_8): List<Event> =
-        javaClass.classLoader!!.getResourceAsStream("events/$fname").use { stream ->
-            return Event.eventsFromReader(InputStreamReader(stream, charset))
+        javaClass.getResourceAsStream("/events/$fname").use { stream ->
+            return reader.eventsFromReader(InputStreamReader(stream, charset))
         }
 
 }
