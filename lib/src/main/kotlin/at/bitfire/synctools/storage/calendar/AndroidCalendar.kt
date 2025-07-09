@@ -8,12 +8,23 @@ package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentUris
 import android.content.ContentValues
+import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Attendees
+import android.provider.CalendarContract.CalendarEntity
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
+import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.AndroidEvent
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
+import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
+import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
@@ -60,6 +71,26 @@ class AndroidCalendar(
 
     // CRUD AndroidEvent
 
+    fun addEvent(entity: Entity) {
+        try {
+            val batch = CalendarBatchOperation(client)
+
+            // insert main row
+            batch += BatchOperation.CpoBuilder.newInsert(eventsUri)
+                .withValues(entity.entityValues)
+
+            // insert data rows (with reference to main row ID)
+            for (row in entity.subValues)
+                batch += BatchOperation.CpoBuilder.newInsert(eventsUri)
+                    .withValues(row.values)
+                    .withValueBackReference(DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
+
+            batch.commit()
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't insert event", e)
+        }
+    }
+
     /**
      * Queries events from this calendar.
      *
@@ -75,9 +106,9 @@ class AndroidCalendar(
         val events = LinkedList<AndroidEvent>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
-            client.query(eventsUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
-                while (cursor.moveToNext())
-                    events += AndroidEvent(this, cursor.toContentValues())
+            client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                for (entity in CalendarEntity.newEntityIterator(cursor))
+                    events += AndroidEvent(this, entity)
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
@@ -92,8 +123,21 @@ class AndroidCalendar(
      * @return event (or `null` if not found)
      */
     fun getEvent(id: Long): AndroidEvent? {
-        val values = getEventValues(id) ?: return null
+        val values = getEventEntity(id) ?: return null
         return AndroidEvent(this, values)
+    }
+
+    fun getEventEntity(id: Long, where: String? = null, whereArgs: Array<String>? = null): Entity? {
+        try {
+            client.query(eventEntityUri(id), null, where, whereArgs, null)?.use { cursor ->
+                val iterator = CalendarEntity.newEntityIterator(cursor)
+                if (iterator.hasNext())
+                    return iterator.next()
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query event entity", e)
+        }
+        return null
     }
 
     /**
@@ -142,7 +186,7 @@ class AndroidCalendar(
     }
 
     /**
-     * Updates a specific event's main row with the given values.
+     * Updates a specific event's main row with the given values. Doesn't influence data rows.
      *
      * @param id        event ID
      * @param values    new values
@@ -157,8 +201,66 @@ class AndroidCalendar(
         }
     }
 
+    fun updateEvent(id: Long, entity: Entity) {
+        try {
+            /* TODO:
+            There are cases where the event cannot be updated, but must be completely re-created.
+            Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
+            */
+            /*val rebuild = false
+            if (rebuild) {
+                deleteEvent(id)
+                addEvent(entity)
+                return
+            }*/
+
+            val batch = CalendarBatchOperation(client)
+
+            // remove existing data rows which are created by us (don't touch 3rd-party calendar apps rows)
+            deleteDataRows(id, batch)
+
+            // update main row
+            batch += CpoBuilder.newUpdate(eventUri(id))
+                .withValues(ContentValues(entity.entityValues).apply {
+                    remove(Events._ID)  // don't update ID
+                })
+
+            // insert data rows (with reference to main row ID)
+            for (row in entity.subValues)
+                batch += CpoBuilder.newInsert(eventsUri)
+                    .withValues(ContentValues(row.values).apply {
+                        put(DATA_ROW_EVENT_ID, id)      // never update reference to main row ID
+                    })
+
+            batch.commit()
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't update event $id", e)
+        }
+    }
+
+    private fun deleteDataRows(eventId: Long, batch: CalendarBatchOperation) {
+        batch += CpoBuilder
+            .newDelete(Reminders.CONTENT_URI.asSyncAdapter(account))
+            .withSelection("${Reminders.EVENT_ID}=?", arrayOf(eventId.toString()))
+        batch += CpoBuilder
+            .newDelete(Attendees.CONTENT_URI.asSyncAdapter(account))
+            .withSelection("${Attendees.EVENT_ID}=?", arrayOf(eventId.toString()))
+        batch += CpoBuilder
+            .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(account))
+            .withSelection(
+                "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
+                arrayOf(
+                    eventId.toString(),
+                    EXTNAME_CATEGORIES,
+                    EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                    EXTNAME_URL,
+                    UnknownProperty.CONTENT_ITEM_TYPE
+                )
+            )
+    }
+
     /**
-     * Updates events in this calendar.
+     * Updates event (main) rows in this calendar.
      *
      * @param values        values to update
      * @param where         selection
@@ -174,6 +276,15 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
+
+    fun deleteEvent(id: Long): Int =
+        try {
+            client.delete(eventUri(id), null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't delete event $id", e)
+        }
+
+
 
     // event instances (these methods operate directly with event IDs and without the events themselves and thus belong to the calendar class)
 
@@ -303,6 +414,12 @@ class AndroidCalendar(
     fun eventUri(id: Long) =
         ContentUris.withAppendedId(eventsUri, id)
 
+    val eventEntitiesUri
+        get() = CalendarContract.EventsEntity.CONTENT_URI.asSyncAdapter(account)
+
+    fun eventEntityUri(id: Long) =
+        ContentUris.withAppendedId(eventEntitiesUri, id)
+
     /**
      * Restricts a given selection/where clause to this calendar ID.
      *
@@ -314,6 +431,18 @@ class AndroidCalendar(
         val protectedWhere = "(${where ?: "1"}) AND " + Events.CALENDAR_ID + "=?"
         val protectedWhereArgs = (whereArgs ?: arrayOf()) + id.toString()
         return Pair(protectedWhere, protectedWhereArgs)
+    }
+
+
+    companion object {
+
+        /**
+         * Name of the data row field that references the main row ID.
+         *
+         * Equals to [Attendees.EVENT_ID], [Reminders.EVENT_ID] etc.
+         */
+        const val DATA_ROW_EVENT_ID = "event_id"
+
     }
 
 }

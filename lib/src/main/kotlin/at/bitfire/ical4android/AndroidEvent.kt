@@ -7,247 +7,58 @@
 package at.bitfire.ical4android
 
 import android.content.ContentResolver
-import android.content.ContentUris
 import android.content.ContentValues
-import android.content.EntityIterator
-import android.net.Uri
-import android.os.RemoteException
-import android.provider.CalendarContract.Attendees
+import android.content.Entity
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.EventsEntity
-import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.synctools.mapping.calendar.AndroidEventBuilder
-import at.bitfire.synctools.mapping.calendar.AndroidEventProcessor
-import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
-import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
-import java.io.FileNotFoundException
 
 /**
- * Stores and retrieves VEVENT iCalendar objects (represented as [Event]s) to/from the
- * Android Calendar provider.
+ * Stores and retrieves events to/from the Android calendar provider.
  *
- * Extend this class to process specific fields of the event.
+ * An event in the context of this class one row in the [Events] table,
+ * plus associated data rows (like alarms and reminders).
  *
- * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
- * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ * Exceptions (of recurring events) have their own entries in the [Events] table and thus
+ * are separate [AndroidEvent]s.
+ *
+ * @param calendar  calendar where the event is stored
+ * @param values    entity with all columns, as returned by the calendar provider; [Events._ID] must be set to a non-null value
  */
 class AndroidEvent(
-    val calendar: AndroidCalendar
+    val calendar: AndroidCalendar,
+    private val values: Entity
 ) {
 
-    var id: Long? = null
-        private set
+    private val mainValues
+        get() = values.entityValues
 
-    var syncId: String? = null
+    val id: Long
+        get() = mainValues.getAsLong(Events._ID)
 
-    var eTag: String? = null
-    var scheduleTag: String? = null
-    var flags: Int = 0
+    val syncId: String?
+        get() = mainValues.getAsString(Events._SYNC_ID)
 
-    /**
-     * Creates a new object from an event which already exists in the calendar storage.
-     *
-     * @param values database row with all columns, as returned by the calendar provider
-     */
-    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
-        this.id = values.getAsLong(Events._ID)
-        this.syncId = values.getAsString(Events._SYNC_ID)
-        this.eTag = values.getAsString(COLUMN_ETAG)
-        this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
-        this.flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
-    }
+    val eTag: String?
+        get() = mainValues.getAsString(COLUMN_ETAG)
 
-    /**
-     * Creates a new object from an event which doesn't exist in the calendar storage yet.
-     *
-     * @param event event that can be saved into the calendar storage
-     */
-    constructor(
-        calendar: AndroidCalendar,
-        event: Event,
-        syncId: String?,
-        eTag: String? = null,
-        scheduleTag: String? = null,
-        flags: Int = 0
-    ) : this(calendar) {
-        this.event = event
-        this.syncId = syncId
-        this.eTag = eTag
-        this.scheduleTag = scheduleTag
-        this.flags = flags
-    }
+    val scheduleTag: String?
+        get() = mainValues.getAsString(COLUMN_SCHEDULE_TAG)
 
-    private var _event: Event? = null
+    val flags: Int
+        get() = mainValues.getAsInteger(COLUMN_FLAGS) ?: 0
 
-    /**
-     * Returns the full event data, either from [event] or, if [event] is null, by reading event
-     * number [id] from the Android calendar storage.
-     *
-     * @throws IllegalArgumentException if event has not been saved yet
-     * @throws FileNotFoundException if there's no event with [id] in the calendar storage
-     * @throws RemoteException on calendar provider errors
-     */
-    var event: Event?
-        private set(value) {
-            _event = value
-        }
-        get() {
-            if (_event != null)
-                return _event
-            val id = requireNotNull(id)
 
-            var iterEvents: EntityIterator? = null
-            try {
-                iterEvents = EventsEntity.newEntityIterator(
-                        calendar.client.query(
-                                ContentUris.withAppendedId(EventsEntity.CONTENT_URI, id).asSyncAdapter(calendar.account),
-                                null, null, null, null),
-                        calendar.client
-                )
+    // shortcuts to upper level
 
-                if (iterEvents.hasNext()) {
-                    val entity = iterEvents.next()
-                    return Event().also { newEvent ->
-                        val processor = AndroidEventProcessor(calendar, id, entity)
-                        processor.populate(to = newEvent)
+    fun update(values: ContentValues) = calendar.updateEvent(id, values)
+    fun update(entity: Entity) = calendar.updateEvent(id, entity)
+    fun delete() = calendar.deleteEvent(id)
 
-                        _event = newEvent
-                    }
-                }
-            } catch (e: Exception) {
-                /* Populating event has been interrupted by an exception, so we reset the event to
-                avoid an inconsistent state. This also ensures that the exception will be thrown
-                again on the next get() call. */
-                _event = null
-                throw e
-            } finally {
-                iterEvents?.close()
-            }
 
-            throw FileNotFoundException("Couldn't find event $id")
-        }
+    // helpers
 
-    /**
-     * Saves the unsaved [event] into the calendar storage.
-     *
-     * @return content URI of the created event
-     *
-     * @throws LocalStorageException when the calendar provider doesn't return a result row
-     * @throws RemoteException on calendar provider errors
-     */
-    fun add(): Uri {
-        val batch = CalendarBatchOperation(calendar.client)
-
-        val requiredEvent = requireNotNull(event)
-        val builder = AndroidEventBuilder(calendar, requiredEvent, id, syncId, eTag, scheduleTag, flags)
-        val idxEvent = builder.addOrUpdateRows(requiredEvent, batch) ?: throw AssertionError("Expected Events._ID backref")
-        batch.commit()
-
-        val resultUri = batch.getResult(idxEvent)?.uri
-            ?: throw LocalStorageException("Empty result from content provider when adding event")
-        id = ContentUris.parseId(resultUri)
-        return resultUri
-    }
-
-    /**
-     * Updates an already existing event in the calendar storage with the values
-     * from the instance.
-     * @throws LocalStorageException when the calendar provider doesn't return a result row
-     * @throws RemoteException on calendar provider errors
-     */
-    fun update(event: Event): Uri {
-        this.event = event
-        val existingId = requireNotNull(id)
-
-        // There are cases where the event cannot be updated, but must be completely re-created.
-        // Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
-        var rebuild = false
-        if (event.status == null)
-            calendar.client.query(eventSyncURI(), arrayOf(Events.STATUS), null, null, null)?.use { cursor ->
-                if (cursor.moveToNext()) {
-                    val statusIndex = cursor.getColumnIndexOrThrow(Events.STATUS)
-                    if (!cursor.isNull(statusIndex))
-                        rebuild = true
-                }
-            }
-
-        if (rebuild) {  // delete whole event and insert updated event
-            delete()
-            return add()
-
-        } else {        // update event
-            // remove associated rows which are added later again
-            val batch = CalendarBatchOperation(calendar.client)
-            deleteExceptions(batch)
-            batch += CpoBuilder
-                .newDelete(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Reminders.EVENT_ID}=?", arrayOf(existingId.toString()))
-            batch += CpoBuilder
-                .newDelete(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection("${Attendees.EVENT_ID}=?", arrayOf(existingId.toString()))
-            batch += CpoBuilder
-                .newDelete(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withSelection(
-                    "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
-                    arrayOf(
-                        existingId.toString(),
-                        EXTNAME_CATEGORIES,
-                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                        EXTNAME_URL,
-                        UnknownProperty.CONTENT_ITEM_TYPE
-                    )
-                )
-
-            val builder = AndroidEventBuilder(calendar, event, id, syncId, eTag, scheduleTag, flags)
-            builder.addOrUpdateRows(event, batch)
-            batch.commit()
-
-            return ContentUris.withAppendedId(Events.CONTENT_URI, existingId)
-        }
-    }
-
-    fun update(values: ContentValues) {
-        calendar.client.update(eventSyncURI(), values, null, null)
-    }
-
-    /**
-     * Deletes an existing event from the calendar storage.
-     *
-     * @return number of affected rows
-     *
-     * @throws RemoteException on calendar provider errors
-     */
-    fun delete(): Int {
-        val batch = CalendarBatchOperation(calendar.client)
-
-        // remove exceptions of event, too (CalendarProvider doesn't do this)
-        deleteExceptions(batch)
-
-        // remove event and unset known id
-        batch += CpoBuilder.newDelete(eventSyncURI())
-        id = null
-
-        return batch.commit()
-    }
-
-    private fun deleteExceptions(batch: CalendarBatchOperation) {
-        val existingId = requireNotNull(id)
-        batch += CpoBuilder
-            .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
-            .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
-    }
-    
-    private fun eventSyncURI(): Uri {
-        val id = requireNotNull(id)
-        return ContentUris.withAppendedId(Events.CONTENT_URI, id).asSyncAdapter(calendar.account)
-    }
-
-    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$_event)"
+    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, values=$values)"
 
 
     companion object {

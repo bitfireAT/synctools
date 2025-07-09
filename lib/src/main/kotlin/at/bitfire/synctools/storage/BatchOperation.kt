@@ -10,6 +10,7 @@ import android.content.ContentProviderClient
 import android.content.ContentProviderOperation
 import android.content.ContentProviderResult
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.OperationApplicationException
 import android.net.Uri
 import android.os.RemoteException
@@ -262,6 +263,12 @@ open class BatchOperation internal constructor(
 
         fun withValue(key: String, value: Any?): CpoBuilder {
             _values[key] = value
+            return this
+        }
+
+        fun withValues(values: ContentValues): CpoBuilder {
+            for ((key, value) in values.valueSet())
+                _values[key] = value
             return this
         }
 
