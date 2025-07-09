@@ -4,35 +4,43 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar.validation
 
-import androidx.test.filters.SdkSuppress
-import at.bitfire.ical4android.validation.FixInvalidDayOffsetPreprocessor
-import at.bitfire.ical4android.validation.FixInvalidUtcOffsetPreprocessor
-import at.bitfire.ical4android.validation.ICalPreprocessor
+import io.mockk.junit4.MockKRule
 import io.mockk.mockkObject
 import io.mockk.verify
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import java.io.InputStreamReader
 import java.io.StringReader
 
 class ICalPreprocessorTest {
 
-    @Test
-    @SdkSuppress(minSdkVersion = 28)
-    fun testPreprocessStream_appliesStreamProcessors() {
-        // Can only run on API Level 28 or newer because mockkObject doesn't support Android < P
-        mockkObject(FixInvalidDayOffsetPreprocessor, FixInvalidUtcOffsetPreprocessor) {
-            ICalPreprocessor.preprocessStream(StringReader(""))
+    @get:Rule
+    val mockkRule = MockKRule(this)
 
-            // verify that the required stream processors have been called
-            verify {
-                FixInvalidDayOffsetPreprocessor.preprocess(any())
-                FixInvalidUtcOffsetPreprocessor.preprocess(any())
+    val processor = ICalPreprocessor()
+
+
+    @Test
+    fun testPreprocessStream_appliesStreamProcessors() {
+        val preprocessors = processor.streamPreprocessors
+        assertTrue(preprocessors.isNotEmpty())
+        processor.streamPreprocessors.forEach {
+            mockkObject(it)
+        }
+
+        processor.preprocessStream(StringReader(""))
+
+        // verify that the required stream processors have been called
+        verify {
+            processor.streamPreprocessors.forEach {
+                it.preprocess(any())
             }
         }
     }
@@ -40,13 +48,13 @@ class ICalPreprocessorTest {
 
     @Test
     fun testPreprocessCalendar_MsTimeZones() {
-        javaClass.classLoader!!.getResourceAsStream("events/outlook1.ics").use { stream ->
+        javaClass.getResourceAsStream("/events/outlook1.ics").use { stream ->
             val reader = InputStreamReader(stream, Charsets.UTF_8)
             val calendar = CalendarBuilder().build(reader)
             val vEvent = calendar.getComponent(Component.VEVENT) as VEvent
 
             assertEquals("W. Europe Standard Time", vEvent.startDate.timeZone.id)
-            ICalPreprocessor.preprocessCalendar(calendar)
+            processor.preprocessCalendar(calendar)
             assertEquals("Europe/Vienna", vEvent.startDate.timeZone.id)
         }
     }
