@@ -21,7 +21,6 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
@@ -36,6 +35,7 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.CuType
@@ -76,10 +76,11 @@ class AndroidEventBuilderTest {
 
     private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzIdDefault = java.util.TimeZone.getDefault().id
-    private val tzDefault = DateUtils.ical4jTimeZone(tzIdDefault)
-    private val tzVienna = DateUtils.ical4jTimeZone("Europe/Vienna")!!
-    private val tzShanghai = DateUtils.ical4jTimeZone("Asia/Shanghai")!!
+    private val tzDefault = tzRegistry.getTimeZone(tzIdDefault)
+    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
+    private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")
 
     lateinit var client: ContentProviderClient
     lateinit var calendar: AndroidCalendar

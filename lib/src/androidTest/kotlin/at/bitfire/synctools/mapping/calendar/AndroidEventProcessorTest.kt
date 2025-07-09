@@ -25,7 +25,6 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
@@ -36,6 +35,7 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
@@ -71,8 +71,9 @@ class AndroidEventProcessorTest {
     val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
 
     private val testAccount = Account("${javaClass.name}@example.com", ACCOUNT_TYPE_LOCAL)
-    private val tzVienna = DateUtils.ical4jTimeZone("Europe/Vienna")!!
-    private val tzShanghai = DateUtils.ical4jTimeZone("Asia/Shanghai")!!
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+    private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
 
     private lateinit var calendarUri: Uri
     private lateinit var calendar: AndroidCalendar
