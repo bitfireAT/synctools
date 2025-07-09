@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.net.Uri
@@ -34,8 +34,12 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -45,8 +49,12 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -56,8 +64,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(CuType.GROUP, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.GROUP,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -67,8 +82,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertEquals(
+                Role.CHAIR,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -78,8 +100,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(CuType.UNKNOWN, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.UNKNOWN,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -90,8 +119,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertEquals(Role.OPT_PARTICIPANT, getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertEquals(
+                Role.OPT_PARTICIPANT,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -101,8 +137,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertEquals(Role.OPT_PARTICIPANT, getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertEquals(
+                Role.OPT_PARTICIPANT,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -112,8 +155,14 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(CuType.GROUP, getParameter(Parameter.CUTYPE))
-            assertEquals(Role.OPT_PARTICIPANT, getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.GROUP,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertEquals(
+                Role.OPT_PARTICIPANT,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -123,8 +172,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertEquals(
+                Role.CHAIR,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -134,8 +190,14 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(CuType.UNKNOWN, getParameter(Parameter.CUTYPE))
-            assertEquals(Role.OPT_PARTICIPANT, getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.UNKNOWN,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertEquals(
+                Role.OPT_PARTICIPANT,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -146,8 +208,16 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -157,8 +227,16 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -168,8 +246,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(CuType.GROUP, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.GROUP,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -179,8 +264,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(getParameter(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, getParameter(Parameter.ROLE))
+            assertNull(
+                getParameter(
+                    Parameter.CUTYPE
+                )
+            )
+            assertEquals(
+                Role.CHAIR,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -190,8 +282,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(CuType.UNKNOWN, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.UNKNOWN,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -202,8 +301,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertEquals(CuType.RESOURCE, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.RESOURCE,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -213,8 +319,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertEquals(CuType.RESOURCE, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.RESOURCE,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -224,8 +337,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(CuType.ROOM, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.ROOM,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -235,8 +355,14 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertEquals(CuType.RESOURCE, getParameter(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.RESOURCE,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertEquals(
+                Role.CHAIR,
+                getParameter(Parameter.ROLE)
+            )
         }
     }
 
@@ -246,8 +372,15 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(CuType.RESOURCE, getParameter(Parameter.CUTYPE))
-            assertNull(getParameter(Parameter.ROLE))
+            assertEquals(
+                CuType.RESOURCE,
+                getParameter(Parameter.CUTYPE)
+            )
+            assertNull(
+                getParameter(
+                    Parameter.ROLE
+                )
+            )
         }
     }
 
@@ -256,361 +389,625 @@ class AttendeeMappingsTest {
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleNone() {
         testICalendarToAndroid(Attendee("mailto:attendee@example.com")) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_SPEAKER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_OPTIONAL, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_OPTIONAL,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_NONE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_NONE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeNone_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_SPEAKER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_OPTIONAL, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_OPTIONAL,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_NONE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_NONE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.INDIVIDUAL)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_ATTENDEE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_SPEAKER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_OPTIONAL, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_OPTIONAL,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_NONE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_NONE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeUnknown_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.UNKNOWN)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_SPEAKER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_OPTIONAL, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_OPTIONAL,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_NONE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_NONE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeGroup_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.GROUP)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_REQUIRED,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_SPEAKER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeResource_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.RESOURCE)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_NONE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_NONE,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.ROOM)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.ROOM)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.ROOM)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(
+                Attendees.TYPE_RESOURCE,
+                values[Attendees.ATTENDEE_TYPE]
+            )
+            assertEquals(
+                Attendees.RELATIONSHIP_PERFORMER,
+                values[Attendees.ATTENDEE_RELATIONSHIP]
+            )
         }
     }
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .apply {
             parameters.add(CuType.ROOM)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
