@@ -19,7 +19,6 @@ import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
@@ -82,7 +81,6 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         }
         val calendar = calendarOrNull ?: throw IllegalStateException("Couldn't create calendar")
 
-        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         try {
             // single event init
             val normalEvent = Event().apply {
@@ -91,7 +89,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
             normalLocalEvent.add()
-            AndroidEvent.numInstances(provider, account, normalLocalEvent.id!!)
+            calendar.numInstances(normalLocalEvent.id!!)
 
             // recurring event init
             val recurringEvent = Event().apply {
@@ -101,7 +99,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             }
             val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
             localRecurringEvent.add()
-            AndroidEvent.numInstances(provider, account, localRecurringEvent.id!!)
+            calendar.numInstances(localRecurringEvent.id!!)
         } finally {
             calendar.delete()
         }
