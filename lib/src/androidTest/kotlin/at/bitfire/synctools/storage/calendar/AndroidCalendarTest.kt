@@ -19,52 +19,42 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
-import org.junit.AfterClass
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.BeforeClass
-import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 
 class AndroidCalendarTest {
 
-    companion object {
-
-        @JvmField
-        @ClassRule
-        val permissionRule = GrantPermissionRule.grant(
-            Manifest.permission.READ_CALENDAR,
-            Manifest.permission.WRITE_CALENDAR
-        )
-
-        lateinit var client: ContentProviderClient
-
-        @BeforeClass
-        @JvmStatic
-        fun connectProvider() {
-            client = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(
-                CalendarContract.AUTHORITY)!!
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun closeProvider() {
-            client.closeCompat()
-        }
-
-    }
+    @get:Rule
+    val permissionRule = GrantPermissionRule.grant(
+        Manifest.permission.READ_CALENDAR,
+        Manifest.permission.WRITE_CALENDAR
+    )
 
     private val testAccount = Account("ical4android.AndroidCalendarTest", CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+
+    lateinit var client: ContentProviderClient
     lateinit var provider: AndroidCalendarProvider
 
     @Before
     fun prepare() {
+        client = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+
         // make sure there are no colors for testAccount
         provider = AndroidCalendarProvider(testAccount, client)
         provider.removeColorIndices()
         assertEquals(0, countColors())
+    }
+
+    @After
+    fun tearDown() {
+        client.closeCompat()
     }
 
 

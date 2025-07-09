@@ -30,7 +30,6 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
-import net.fortuna.ical4j.model.property.Clazz
 import java.io.FileNotFoundException
 import java.util.logging.Logger
 
@@ -141,7 +140,6 @@ class AndroidEvent(
             throw FileNotFoundException("Couldn't find event $id")
         }
 
-
     /**
      * Saves the unsaved [event] into the calendar storage.
      *
@@ -251,27 +249,7 @@ class AndroidEvent(
             .newDelete(Events.CONTENT_URI.asSyncAdapter(calendar.account))
             .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(existingId.toString()))
     }
-
-
-    private fun useRetainedClassification() {
-        val event = requireNotNull(event)
-
-        var retainedClazz: Clazz? = null
-        val it = event.unknownProperties.iterator()
-        while (it.hasNext()) {
-            val prop = it.next()
-            if (prop is Clazz) {
-                retainedClazz = prop
-                it.remove()
-            }
-        }
-
-        if (event.classification == null)
-            // no classification, use retained one if possible
-            event.classification = retainedClazz
-    }
-
-
+    
     private fun eventSyncURI(): Uri {
         val id = requireNotNull(id)
         return ContentUris.withAppendedId(Events.CONTENT_URI, id).asSyncAdapter(calendar.account)

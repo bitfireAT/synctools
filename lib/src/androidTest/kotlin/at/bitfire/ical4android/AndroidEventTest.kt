@@ -432,8 +432,8 @@ class AndroidEventTest {
         localEvent.add()
 
         assertEquals(
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q)
-                365 * 2       // Android <10: does not include UNTIL (incorrect!)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+                365 * 2       // Android <9: does not include UNTIL (incorrect!)
             else
                 365 * 2 + 1,  // Android ≥10: includes UNTIL (correct)
             AndroidEvent.numInstances(client, testAccount, localEvent.id!!)

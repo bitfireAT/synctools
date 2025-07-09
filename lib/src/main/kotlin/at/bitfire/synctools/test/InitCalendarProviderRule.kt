@@ -19,6 +19,7 @@ import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
@@ -81,6 +82,7 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
         }
         val calendar = calendarOrNull ?: throw IllegalStateException("Couldn't create calendar")
 
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         try {
             // single event init
             val normalEvent = Event().apply {

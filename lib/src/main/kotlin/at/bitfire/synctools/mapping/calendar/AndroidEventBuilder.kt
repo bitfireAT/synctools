@@ -40,6 +40,7 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
@@ -77,6 +78,9 @@ class AndroidEventBuilder(
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
+
+    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+
 
     fun addOrUpdateRows(event: Event, batch: CalendarBatchOperation): Int? {
         val builder =
@@ -186,7 +190,7 @@ class AndroidEventBuilder(
     /**
      * Builds an Android [Events] row for a given event. Takes information from
      *
-     * - this [AndroidEvent] object: fields like calendar ID, sync ID, eTag etc,
+     * - `this` object: fields like calendar ID, sync ID, eTag etc,
      * - the [event]: all other fields.
      *
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
@@ -199,7 +203,7 @@ class AndroidEventBuilder(
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android
-        AndroidTimeUtils.androidifyTimeZone(dtStart)
+        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
 
         val recurring = event.rRules.isNotEmpty() || event.rDates.isNotEmpty()
 
@@ -235,7 +239,7 @@ class AndroidEventBuilder(
             .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
         var dtEnd = event.dtEnd
-        AndroidTimeUtils.androidifyTimeZone(dtEnd)
+        AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
 
         var duration =
             if (dtEnd == null)
@@ -354,7 +358,7 @@ class AndroidEventBuilder(
                 }
             }
 
-            AndroidTimeUtils.androidifyTimeZone(dtEnd)
+            AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
             builder .withValue(Events.DTEND, dtEnd.date.time)
                 .withValue(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
                 .withValue(Events.DURATION, null)

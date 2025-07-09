@@ -8,6 +8,8 @@ package at.bitfire.ical4android.util
 
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
@@ -59,25 +61,25 @@ object TimeApiExtensions {
     }
 
     fun DateTime.requireTimeZone(): TimeZone =
-            if (isUtc)
-                TimeZones.getUtcTimeZone()
-            else
-                timeZone ?: TimeZone.getDefault()
+        if (isUtc)
+            TimeZones.getUtcTimeZone()
+        else
+            timeZone ?: TimeZone.getDefault()
 
     fun DateTime.requireZoneId(): ZoneId =
-            if (isUtc)
-                ZoneOffset.UTC
-            else
-                timeZone?.toZoneIdCompat() ?: ZoneId.systemDefault()
+        if (isUtc)
+            ZoneOffset.UTC
+        else
+            timeZone?.toZoneIdCompat() ?: ZoneId.systemDefault()
 
     fun DateTime.toLocalDate(): LocalDate =
-            toZonedDateTime().toLocalDate()
+        toZonedDateTime().toLocalDate()
 
     fun DateTime.toLocalTime(): LocalTime =
-            toZonedDateTime().toLocalTime()
+        toZonedDateTime().toLocalTime()
 
     fun DateTime.toZonedDateTime(): ZonedDateTime =
-            ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), requireZoneId())
+        ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), requireZoneId())
 
     fun LocalDate.toIcal4jDate(): Date {
         val cal = Calendar.getInstance(TimeZones.getDateTimeZone())
@@ -92,14 +94,18 @@ object TimeApiExtensions {
      * Sets UTC flag ([DateTime.isUtc], means `...ThhmmddZ` format) when this zone-date time object has a
      * time zone of [ZoneOffset.UTC].
      *
+     * @param tzRegistry    time zone registry to get the [net.fortuna.ical4j.model.TimeZone] from (if needed)
+     *
      * @return ical4j [DateTime] of the given zoned date-time
      */
-    fun ZonedDateTime.toIcal4jDateTime(): DateTime {
+    fun ZonedDateTime.toIcal4jDateTime(
+        tzRegistry: TimeZoneRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    ): DateTime {
         val date = DateTime(toEpochSecond() * MILLIS_PER_SECOND)
         if (zone == ZoneOffset.UTC)
             date.isUtc = true
         else
-            date.timeZone = DateUtils.ical4jTimeZone(zone.id)
+            date.timeZone = tzRegistry.getTimeZone(zone.id)
         return date
     }
 

@@ -246,8 +246,8 @@ data class Event(
          * Parses an iCalendar resource, applies [at.bitfire.ical4android.validation.ICalPreprocessor]
          * and [EventValidator] to increase compatibility and extracts the VEVENTs.
          *
-         * @param reader where the iCalendar is taken from
-         * @param properties Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
+         * @param reader        where the iCalendar is read from
+         * @param properties    Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
          *
          * @return array of filled [Event] data objects (may have size 0)
          *

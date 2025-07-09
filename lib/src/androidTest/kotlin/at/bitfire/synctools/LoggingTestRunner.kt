@@ -21,7 +21,7 @@ class LoggingTestRunner: AndroidJUnitRunner() {
         val rootLogger = Logger.getLogger("")
         rootLogger.level = Level.ALL
         rootLogger.handlers.forEach { rootLogger.removeHandler(it) }
-        rootLogger.addHandler(LogcatHandler(javaClass.packageName))
+        rootLogger.addHandler(LogcatHandler(BuildConfig.LIBRARY_PACKAGE_NAME))
     }
 
 }
