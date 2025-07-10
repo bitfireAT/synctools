@@ -12,7 +12,6 @@ import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.CalendarEntity
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
@@ -110,7 +109,7 @@ class AndroidCalendar(
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
-                for (entity in CalendarEntity.newEntityIterator(cursor))
+                for (entity in EventsEntity.newEntityIterator(cursor, client))
                     events += AndroidEvent2(this, entity)
             }
         } catch (e: RemoteException) {
@@ -133,7 +132,7 @@ class AndroidCalendar(
     fun getEventEntity(id: Long, where: String? = null, whereArgs: Array<String>? = null): Entity? {
         try {
             client.query(eventEntityUri(id), null, where, whereArgs, null)?.use { cursor ->
-                val iterator = CalendarEntity.newEntityIterator(cursor)
+                val iterator = EventsEntity.newEntityIterator(cursor, client)
                 if (iterator.hasNext())
                     return iterator.next()
             }

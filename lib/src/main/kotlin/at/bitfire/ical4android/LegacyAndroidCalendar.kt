@@ -9,6 +9,7 @@ package at.bitfire.ical4android
 import android.net.Uri
 import android.os.RemoteException
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
+import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
@@ -46,6 +47,22 @@ class LegacyAndroidCalendar(
         val resultUri = batch.getResult(idxEvent)?.uri
             ?: throw LocalStorageException("Empty result from content provider when adding event")
         return resultUri
+    }
+
+    /**
+     * Gets an [Event] data object from an Android event with a specific ID.
+     *
+     * @param id    event ID
+     *
+     * @return event data object
+     */
+    fun getEvent(id: Long): Event? {
+        val entity = calendar.getEventEntity(id) ?: return null
+        return Event().also { event ->
+            val processor = LegacyAndroidEventProcessor(calendar, id, entity)
+            processor.populate(to = event)
+        }
+
     }
 
 }

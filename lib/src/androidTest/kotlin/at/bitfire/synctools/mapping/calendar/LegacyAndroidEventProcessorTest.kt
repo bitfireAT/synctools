@@ -22,6 +22,7 @@ import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
@@ -85,7 +86,6 @@ class LegacyAndroidEventProcessorTest {
         client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
 
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        assertNotNull(calendar)
         calendarUri = ContentUris.withAppendedId(Calendars.CONTENT_URI, calendar.id)
     }
 
@@ -145,14 +145,15 @@ class LegacyAndroidEventProcessorTest {
         extendedProperties: Map<String, String> = emptyMap(),
         valuesBuilder: ContentValues.() -> Unit = {}
     ): Event {
-        return populateAndroidEvent(
+        val androidEvent = populateAndroidEvent(
             automaticDates,
             destinationCalendar,
             asSyncAdapter,
             insertCallback,
             extendedProperties,
             valuesBuilder
-        ).event!!
+        )
+        return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 
     @Test

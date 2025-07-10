@@ -9,23 +9,19 @@ package at.bitfire.ical4android
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
-import android.content.EntityIterator
 import android.net.Uri
 import android.os.RemoteException
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
-import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
-import java.io.FileNotFoundException
 
 /**
  * Stores and retrieves VEVENT iCalendar objects (represented as [Event]s) to/from the
@@ -52,64 +48,15 @@ class AndroidEvent(
     var scheduleTag: String? = values.getAsString(COLUMN_SCHEDULE_TAG)
     var flags: Int = values.getAsInteger(COLUMN_FLAGS) ?: 0
 
-    private var _event: Event? = null
-
-    /**
-     * Returns the full event data, either from [event] or, if [event] is null, by reading event
-     * number [id] from the Android calendar storage.
-     *
-     * @throws IllegalArgumentException if event has not been saved yet
-     * @throws FileNotFoundException if there's no event with [id] in the calendar storage
-     * @throws RemoteException on calendar provider errors
-     */
-    var event: Event?
-        private set(value) {
-            _event = value
-        }
-        get() {
-            if (_event != null)
-                return _event
-            val id = requireNotNull(id)
-
-            var iterEvents: EntityIterator? = null
-            try {
-                iterEvents = EventsEntity.newEntityIterator(
-                        calendar.client.query(
-                                ContentUris.withAppendedId(EventsEntity.CONTENT_URI, id).asSyncAdapter(calendar.account),
-                                null, null, null, null),
-                        calendar.client
-                )
-
-                if (iterEvents.hasNext()) {
-                    val entity = iterEvents.next()
-                    return Event().also { newEvent ->
-                        val processor = LegacyAndroidEventProcessor(calendar, id, entity)
-                        processor.populate(to = newEvent)
-
-                        _event = newEvent
-                    }
-                }
-            } catch (e: Exception) {
-                /* Populating event has been interrupted by an exception, so we reset the event to
-                avoid an inconsistent state. This also ensures that the exception will be thrown
-                again on the next get() call. */
-                _event = null
-                throw e
-            } finally {
-                iterEvents?.close()
-            }
-
-            throw FileNotFoundException("Couldn't find event $id")
-        }
-
     /**
      * Updates an already existing event in the calendar storage with the values
      * from the instance.
+     *
      * @throws LocalStorageException when the calendar provider doesn't return a result row
      * @throws RemoteException on calendar provider errors
      */
     fun update(event: Event): Uri {
-        this.event = event
+        //this.event = event
         val existingId = requireNotNull(id)
 
         // There are cases where the event cannot be updated, but must be completely re-created.
@@ -194,7 +141,7 @@ class AndroidEvent(
         return ContentUris.withAppendedId(Events.CONTENT_URI, id).asSyncAdapter(calendar.account)
     }
 
-    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, event=$_event)"
+    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id)"
 
 
     companion object {
