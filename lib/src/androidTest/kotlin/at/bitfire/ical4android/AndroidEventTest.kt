@@ -17,6 +17,7 @@ import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VAlarm
@@ -70,9 +71,9 @@ class AndroidEventTest {
             calendar, contentValuesOf(
                 Events._ID to 123,
                 Events._SYNC_ID to "some-ical.ics",
-                AndroidEvent.COLUMN_ETAG to "some-etag",
-                AndroidEvent.COLUMN_SCHEDULE_TAG to "some-schedule-tag",
-                AndroidEvent.COLUMN_FLAGS to 45
+                AndroidEvent2.COLUMN_ETAG to "some-etag",
+                AndroidEvent2.COLUMN_SCHEDULE_TAG to "some-schedule-tag",
+                AndroidEvent2.COLUMN_FLAGS to 45
             )
         )
         assertEquals(123L, e.id)

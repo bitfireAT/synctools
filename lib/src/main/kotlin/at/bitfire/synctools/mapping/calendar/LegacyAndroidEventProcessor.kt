@@ -13,12 +13,6 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SEQUENCE
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
-import at.bitfire.ical4android.AndroidEvent.Companion.MUTATORS_SEPARATOR
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
@@ -118,7 +112,7 @@ class LegacyAndroidEventProcessor(
         logger.log(Level.FINE, "Read event entity from calender provider", row)
 
         row.getAsString(Events.MUTATORS)?.let { strPackages ->
-            val packages = strPackages.split(MUTATORS_SEPARATOR).toSet()
+            val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
             to.userAgents.addAll(packages)
         }
 
@@ -236,7 +230,7 @@ class LegacyAndroidEventProcessor(
         }
 
         to.uid = row.getAsString(Events.UID_2445)
-        to.sequence = row.getAsInteger(COLUMN_SEQUENCE)
+        to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
         to.summary = row.getAsString(Events.TITLE)
@@ -386,17 +380,17 @@ class LegacyAndroidEventProcessor(
 
         try {
             when (name) {
-                EXTNAME_CATEGORIES ->
-                    to.categories += rawValue.split(CATEGORIES_SEPARATOR)
+                AndroidEvent2.EXTNAME_CATEGORIES ->
+                    to.categories += rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR)
 
-                EXTNAME_URL ->
+                AndroidEvent2.EXTNAME_URL ->
                     try {
                         to.url = URI(rawValue)
                     } catch(_: URISyntaxException) {
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
 
-                EXTNAME_ICAL_UID ->
+                AndroidEvent2.EXTNAME_ICAL_UID ->
                     // only consider iCalUid when there's no uid
                     if (to.uid == null)
                         to.uid = rawValue

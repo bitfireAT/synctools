@@ -31,6 +31,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
@@ -161,7 +162,7 @@ class LegacyAndroidEventProcessorTest {
         populateEvent(
             true,
             extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
             )
         ).let { result ->
             assertEquals("event1@example.com", result.uid)
@@ -182,7 +183,7 @@ class LegacyAndroidEventProcessorTest {
         populateEvent(
             true,
             extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
             )
         ) {
             put(Events.UID_2445, "event2@example.com")
@@ -195,7 +196,7 @@ class LegacyAndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Sequence_Int() {
         populateEvent(true, asSyncAdapter = true) {
-            put(AndroidEvent.COLUMN_SEQUENCE, 5)
+            put(AndroidEvent2.COLUMN_SEQUENCE, 5)
         }.let { result ->
             assertEquals(5, result.sequence)
         }
@@ -204,7 +205,7 @@ class LegacyAndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Sequence_Null() {
         populateEvent(true, asSyncAdapter = true) {
-            putNull(AndroidEvent.COLUMN_SEQUENCE)
+            putNull(AndroidEvent2.COLUMN_SEQUENCE)
         }.let { result ->
             assertNull(result.sequence)
         }
@@ -409,7 +410,7 @@ class LegacyAndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Url() {
         populateEvent(true,
-            extendedProperties = mapOf(AndroidEvent.EXTNAME_URL to "https://example.com")
+            extendedProperties = mapOf(AndroidEvent2.EXTNAME_URL to "https://example.com")
         ).let { result ->
             assertEquals(URI("https://example.com"), result.url)
         }

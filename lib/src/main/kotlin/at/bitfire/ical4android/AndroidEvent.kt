@@ -6,7 +6,6 @@
 
 package at.bitfire.ical4android
 
-import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
@@ -15,12 +14,12 @@ import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventBuilder
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 
 /**
@@ -44,19 +43,20 @@ class AndroidEvent(
     val id: Long = values.getAsLong(Events._ID)
 
     var syncId: String? = values.getAsString(Events._SYNC_ID)
-    var eTag: String? = values.getAsString(COLUMN_ETAG)
-    var scheduleTag: String? = values.getAsString(COLUMN_SCHEDULE_TAG)
-    var flags: Int = values.getAsInteger(COLUMN_FLAGS) ?: 0
+    var eTag: String? = values.getAsString(AndroidEvent2.COLUMN_ETAG)
+    var scheduleTag: String? = values.getAsString(AndroidEvent2.COLUMN_SCHEDULE_TAG)
+    var flags: Int = values.getAsInteger(AndroidEvent2.COLUMN_FLAGS) ?: 0
 
     /**
      * Updates an already existing event in the calendar storage with the values
      * from the instance.
      *
+     * **Does not update the [event] of this object (only calendar storage)!**
+     *
      * @throws LocalStorageException when the calendar provider doesn't return a result row
      * @throws RemoteException on calendar provider errors
      */
     fun update(event: Event): Uri {
-        //this.event = event
         val existingId = requireNotNull(id)
 
         // There are cases where the event cannot be updated, but must be completely re-created.
@@ -91,9 +91,9 @@ class AndroidEvent(
                     "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
                     arrayOf(
                         existingId.toString(),
-                        EXTNAME_CATEGORIES,
-                        EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                        EXTNAME_URL,
+                        AndroidEvent2.EXTNAME_CATEGORIES,
+                        AndroidEvent2.EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                        AndroidEvent2.EXTNAME_URL,
                         UnknownProperty.CONTENT_ITEM_TYPE
                     )
                 )
@@ -142,58 +142,5 @@ class AndroidEvent(
     }
 
     override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id)"
-
-
-    companion object {
-
-        const val MUTATORS_SEPARATOR = ','
-
-        /**
-         * Custom sync column to store the last known ETag of an event.
-         */
-        const val COLUMN_ETAG = Events.SYNC_DATA1
-
-        /**
-         * Custom sync column to store sync flags of an event.
-         */
-        const val COLUMN_FLAGS = Events.SYNC_DATA2
-
-        /**
-         * Custom sync column to store the SEQUENCE of an event.
-         */
-        const val COLUMN_SEQUENCE = Events.SYNC_DATA3
-
-        /**
-         * Custom sync column to store the Schedule-Tag of an event.
-         */
-        const val COLUMN_SCHEDULE_TAG = Events.SYNC_DATA4
-
-        /**
-         * VEVENT CATEGORIES are stored as an extended property with this [ExtendedProperties.NAME].
-         *
-         * The [ExtendedProperties.VALUE] format is the same as used by the AOSP Exchange ActiveSync adapter:
-         * the category values are stored as list, separated by [CATEGORIES_SEPARATOR]. (If a category
-         * value contains [CATEGORIES_SEPARATOR], [CATEGORIES_SEPARATOR] will be dropped.)
-         *
-         * Example: `Cat1\Cat2`
-         */
-        const val EXTNAME_CATEGORIES = "categories"
-        const val CATEGORIES_SEPARATOR = '\\'
-
-        /**
-         * Google Calendar uses an extended property called `iCalUid` for storing the event's UID, instead of the
-         * standard [Events.UID_2445].
-         *
-         * @see <a href="https://github.com/bitfireAT/ical4android/issues/125">GitHub Issue</a>
-         */
-        const val EXTNAME_ICAL_UID = "iCalUid"
-
-        /**
-         * VEVENT URL is stored as an extended property with this [ExtendedProperties.NAME].
-         * The URL is directly put into [ExtendedProperties.VALUE].
-         */
-        const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
-
-    }
 
 }

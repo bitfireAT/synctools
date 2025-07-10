@@ -17,13 +17,15 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
+
+
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_CATEGORIES
+import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_ICAL_UID
+import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_URL
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 import at.bitfire.ical4android.AndroidEvent as LegacyAndroidEvent
