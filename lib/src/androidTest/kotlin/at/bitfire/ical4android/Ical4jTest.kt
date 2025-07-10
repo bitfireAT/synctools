@@ -28,7 +28,7 @@ class Ical4jTest {
     @Test
     fun testEmailParameter() {
         // https://github.com/ical4j/ical4j/issues/418
-        val e = Event.eventsFromReader(
+        val e = EventReader().readEvents(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
                         "VERSION:2.0\n" +
