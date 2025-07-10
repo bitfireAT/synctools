@@ -16,8 +16,8 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
@@ -134,7 +134,7 @@ class LegacyAndroidEventBuilderTest {
             eventBuilder()
         }
         // write event with random file name/sync_id
-        val uri = AndroidEvent(calendar, event, syncId = UUID.randomUUID().toString()).add()
+        val uri = LegacyAndroidCalendar(calendar).add(event, syncId = UUID.randomUUID().toString())
         client.query(uri, null, null, null, null)!!.use { cursor ->
             cursor.moveToNext()
             return cursor.toContentValues()

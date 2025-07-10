@@ -35,53 +35,22 @@ import java.io.FileNotFoundException
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ *
+ * @param calendar  calendar this event is assigned to
+ * @param values    content values of this event row, as read from the [Events] table
  */
-@Deprecated("Use storage.calendar.AndroidEvent instead")
+@Deprecated("Use AndroidEvent2 instead")
 class AndroidEvent(
-    val calendar: AndroidCalendar
+    val calendar: AndroidCalendar,
+    values: ContentValues
 ) {
 
-    var id: Long? = null
-        private set
+    val id: Long = values.getAsLong(Events._ID)
 
-    var syncId: String? = null
-
-    var eTag: String? = null
-    var scheduleTag: String? = null
-    var flags: Int = 0
-
-    /**
-     * Creates a new object from an event which already exists in the calendar storage.
-     *
-     * @param values database row with all columns, as returned by the calendar provider
-     */
-    constructor(calendar: AndroidCalendar, values: ContentValues) : this(calendar) {
-        this.id = values.getAsLong(Events._ID)
-        this.syncId = values.getAsString(Events._SYNC_ID)
-        this.eTag = values.getAsString(COLUMN_ETAG)
-        this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
-        this.flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
-    }
-
-    /**
-     * Creates a new object from an event which doesn't exist in the calendar storage yet.
-     *
-     * @param event event that can be saved into the calendar storage
-     */
-    constructor(
-        calendar: AndroidCalendar,
-        event: Event,
-        syncId: String?,
-        eTag: String? = null,
-        scheduleTag: String? = null,
-        flags: Int = 0
-    ) : this(calendar) {
-        this.event = event
-        this.syncId = syncId
-        this.eTag = eTag
-        this.scheduleTag = scheduleTag
-        this.flags = flags
-    }
+    var syncId: String? = values.getAsString(Events._SYNC_ID)
+    var eTag: String? = values.getAsString(COLUMN_ETAG)
+    var scheduleTag: String? = values.getAsString(COLUMN_SCHEDULE_TAG)
+    var flags: Int = values.getAsInteger(COLUMN_FLAGS) ?: 0
 
     private var _event: Event? = null
 
@@ -134,28 +103,6 @@ class AndroidEvent(
         }
 
     /**
-     * Saves the unsaved [event] into the calendar storage.
-     *
-     * @return content URI of the created event
-     *
-     * @throws LocalStorageException when the calendar provider doesn't return a result row
-     * @throws RemoteException on calendar provider errors
-     */
-    fun add(): Uri {
-        val batch = CalendarBatchOperation(calendar.client)
-
-        val requiredEvent = requireNotNull(event)
-        val builder = LegacyAndroidEventBuilder(calendar, requiredEvent, id, syncId, eTag, scheduleTag, flags)
-        val idxEvent = builder.addOrUpdateRows(requiredEvent, batch) ?: throw AssertionError("Expected Events._ID backref")
-        batch.commit()
-
-        val resultUri = batch.getResult(idxEvent)?.uri
-            ?: throw LocalStorageException("Empty result from content provider when adding event")
-        id = ContentUris.parseId(resultUri)
-        return resultUri
-    }
-
-    /**
      * Updates an already existing event in the calendar storage with the values
      * from the instance.
      * @throws LocalStorageException when the calendar provider doesn't return a result row
@@ -179,7 +126,7 @@ class AndroidEvent(
 
         if (rebuild) {  // delete whole event and insert updated event
             delete()
-            return add()
+            return LegacyAndroidCalendar(calendar).add(event, syncId, eTag, scheduleTag, flags)
 
         } else {        // update event
             // remove associated rows which are added later again
@@ -231,7 +178,6 @@ class AndroidEvent(
 
         // remove event and unset known id
         batch += CpoBuilder.newDelete(eventSyncURI())
-        id = null
 
         return batch.commit()
     }

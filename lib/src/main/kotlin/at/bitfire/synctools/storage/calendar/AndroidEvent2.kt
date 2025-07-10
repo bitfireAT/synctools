@@ -10,7 +10,7 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.CATEGORIES_SEPARATOR
+import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_SEPARATOR
 
 /**
  * Stores and retrieves events to/from the Android calendar provider.
@@ -19,12 +19,12 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent.Companion.CATEGORIES_S
  * plus associated data rows (like alarms and reminders).
  *
  * Exceptions (of recurring events) have their own entries in the [Events] table and thus
- * are separate [AndroidEvent]s.
+ * are separate [AndroidEvent2]s.
  *
  * @param calendar  calendar where the event is stored
  * @param values    entity with all columns, as returned by the calendar provider; [Events._ID] must be set to a non-null value
  */
-class AndroidEvent(
+class AndroidEvent2(
     val calendar: AndroidCalendar,
     private val values: Entity
 ) {

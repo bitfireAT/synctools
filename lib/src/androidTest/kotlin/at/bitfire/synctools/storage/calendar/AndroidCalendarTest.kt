@@ -9,12 +9,13 @@ package at.bitfire.synctools.storage.calendar
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
+import android.content.ContentUris
 import android.os.Build
 import android.provider.CalendarContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import net.fortuna.ical4j.model.Date
@@ -71,10 +72,9 @@ class AndroidCalendarTest {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 1 instance"
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertEquals(1, calendar.numDirectInstances(localEvent.id!!))
+        assertEquals(1, calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -84,10 +84,9 @@ class AndroidCalendarTest {
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertEquals(5, calendar.numDirectInstances(localEvent.id!!))
+        assertEquals(5, calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -97,10 +96,9 @@ class AndroidCalendarTest {
             summary = "Event without end"
             rRules.add(RRule("FREQ=DAILY"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertNull(calendar.numDirectInstances(localEvent.id!!))
+        assertNull(calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -110,13 +108,12 @@ class AndroidCalendarTest {
             summary = "Event with 53 years"
             rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 is not supported by Android <11 Calendar Storage
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, calendar.numDirectInstances(localEvent.id!!))
+            assertEquals(52, calendar.numDirectInstances(ContentUris.parseId(uri)))
         else
-            assertNull(calendar.numDirectInstances(localEvent.id!!))
+            assertNull(calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -126,9 +123,8 @@ class AndroidCalendarTest {
             summary = "Event with 2 years"
             rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
-        val number = calendar.numDirectInstances(localEvent.id!!)
+        val uri = LegacyAndroidCalendar(calendar).add(event)
+        val number = calendar.numDirectInstances(ContentUris.parseId(uri))
 
         // Some android versions (i.e. <=Q and S) return 365*2 instances (wrong, 365*2+1 => correct),
         // but we are satisfied with either result for now
@@ -143,10 +139,9 @@ class AndroidCalendarTest {
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
             exDates.add(ExDate(DateList("20220121T010203Z", Value.DATE_TIME)))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertEquals(4, calendar.numDirectInstances(localEvent.id!!))
+        assertEquals(4, calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -166,10 +161,9 @@ class AndroidCalendarTest {
                 summary = "Exception on 5th day"
             })
         }
-        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event, syncId = "filename.ics")
 
-        assertEquals(5 - 2, calendar.numDirectInstances(localEvent.id!!))
+        assertEquals(5 - 2, calendar.numDirectInstances(ContentUris.parseId(uri)))
     }
 
 
@@ -179,10 +173,9 @@ class AndroidCalendarTest {
             dtStart = DtStart("20220120T010203Z")
             summary = "Event with 1 instance"
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertEquals(1, calendar.numInstances(localEvent.id!!))
+        assertEquals(1, calendar.numInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -192,10 +185,9 @@ class AndroidCalendarTest {
             summary = "Event with 5 instances"
             rRules.add(RRule("FREQ=DAILY;COUNT=5"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertEquals(5, calendar.numInstances(localEvent.id!!))
+        assertEquals(5, calendar.numInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -205,10 +197,9 @@ class AndroidCalendarTest {
             summary = "Event with infinite instances"
             rRules.add(RRule("FREQ=YEARLY"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
-        assertNull(calendar.numInstances(localEvent.id!!))
+        assertNull(calendar.numInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -218,13 +209,12 @@ class AndroidCalendarTest {
             summary = "Event over 22 years"
             rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, calendar.numInstances(localEvent.id!!))
+            assertEquals(52, calendar.numInstances(ContentUris.parseId(uri)))
         else
-            assertNull(calendar.numInstances(localEvent.id!!))
+            assertNull(calendar.numInstances(ContentUris.parseId(uri)))
     }
 
     @Test
@@ -234,15 +224,14 @@ class AndroidCalendarTest {
             summary = "Event over two years"
             rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
         }
-        val localEvent = AndroidEvent(calendar, event, null, null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         assertEquals(
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
                 365 * 2       // Android <9: does not include UNTIL (incorrect!)
             else
                 365 * 2 + 1,  // Android ≥9: includes UNTIL (correct)
-            calendar.numInstances(localEvent.id!!)
+            calendar.numInstances(ContentUris.parseId(uri))
         )
     }
 
@@ -263,12 +252,11 @@ class AndroidCalendarTest {
                 summary = "Exception on 5th day"
             })
         }
-        val localEvent = AndroidEvent(calendar, event, "filename.ics", null, null, 0)
-        localEvent.add()
+        val uri = LegacyAndroidCalendar(calendar).add(event, syncId = "filename.ics")
 
-        calendar.getEvent(localEvent.id!!)!!
+        calendar.getEvent(ContentUris.parseId(uri))!!
 
-        assertEquals(6, calendar.numInstances(localEvent.id!!))
+        assertEquals(6, calendar.numInstances(ContentUris.parseId(uri)))
     }
 
 }

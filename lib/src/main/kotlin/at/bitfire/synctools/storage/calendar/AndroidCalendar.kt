@@ -105,13 +105,13 @@ class AndroidCalendar(
      * @return events from this calendar which match the selection
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun findEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent> {
-        val events = LinkedList<AndroidEvent>()
+    fun findEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent2> {
+        val events = LinkedList<AndroidEvent2>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
                 for (entity in CalendarEntity.newEntityIterator(cursor))
-                    events += AndroidEvent(this, entity)
+                    events += AndroidEvent2(this, entity)
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
@@ -125,9 +125,9 @@ class AndroidCalendar(
      * @param id    event ID
      * @return event (or `null` if not found)
      */
-    fun getEvent(id: Long): AndroidEvent? {
+    fun getEvent(id: Long): AndroidEvent2? {
         val values = getEventEntity(id) ?: return null
-        return AndroidEvent(this, values)
+        return AndroidEvent2(this, values)
     }
 
     fun getEventEntity(id: Long, where: String? = null, whereArgs: Array<String>? = null): Entity? {

@@ -90,7 +90,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.organizer = Organizer(URI("mailto:organizer@example.com"))
-        val uri = AndroidEvent(calendar, event, "update-event").add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         // update test event in calendar
         val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
@@ -124,7 +124,7 @@ class AndroidEventTest {
             dtStart = DtStart(DateTime())
             color = Css3Color.silver
         }
-        val uri = AndroidEvent(calendar, event, "reset-color").add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
         val id = ContentUris.parseId(uri)
 
         // verify that it has color
@@ -147,7 +147,7 @@ class AndroidEventTest {
         event.summary = "Sample event with STATUS"
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
-        val uri = AndroidEvent(calendar, event, "update-status-from-null").add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         // update test event in calendar
         val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
@@ -177,7 +177,7 @@ class AndroidEventTest {
         event.dtStart = DtStart("20150502T120000Z")
         event.dtEnd = DtEnd("20150502T130000Z")
         event.status = Status.VEVENT_CONFIRMED
-        val uri = AndroidEvent(calendar, event, "update-status-to-null").add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         // update test event in calendar
         val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
@@ -209,7 +209,7 @@ class AndroidEventTest {
         event.dtEnd = DtEnd("20150502T130000Z")
         for (i in 0 until 20)
             event.attendees += Attendee(URI("mailto:att$i@example.com"))
-        val uri = AndroidEvent(calendar, event, "transaction").add()
+        val uri = LegacyAndroidCalendar(calendar).add(event)
 
         val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
         try {
