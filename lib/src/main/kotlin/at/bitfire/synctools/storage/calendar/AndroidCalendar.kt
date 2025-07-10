@@ -17,18 +17,12 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-
-
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
-import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_CATEGORIES
-import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_ICAL_UID
-import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.EXTNAME_URL
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
-import at.bitfire.ical4android.AndroidEvent as LegacyAndroidEvent
 
 /**
  * Represents a locally stored calendar, containing [at.bitfire.ical4android.AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
@@ -165,17 +159,6 @@ class AndroidCalendar(
     }
 
     /**
-     * Gets a specific event, identified by its ID, from this calendar.
-     *
-     * @param id    event ID
-     * @return event (or `null` if not found)
-     */
-    fun getLegacyEvent(id: Long): LegacyAndroidEvent? {
-        val values = getEventValues(id, null) ?: return null
-        return LegacyAndroidEvent(this, values)
-    }
-
-    /**
      * Iterates event main rows from this calendar.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
@@ -291,9 +274,9 @@ class AndroidCalendar(
                 "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
                 arrayOf(
                     eventId.toString(),
-                    EXTNAME_CATEGORIES,
-                    EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                    EXTNAME_URL,
+                    AndroidEvent2.EXTNAME_CATEGORIES,
+                    AndroidEvent2.EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                    AndroidEvent2.EXTNAME_URL,
                     UnknownProperty.CONTENT_ITEM_TYPE
                 )
             )

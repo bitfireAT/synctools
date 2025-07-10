@@ -17,6 +17,7 @@ import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 /**
  * Provides legacy features (read/write of legacy [Event]s), based on the new [AndroidCalendar].
  */
+@Deprecated("Use AndroidCalendar instead")
 class LegacyAndroidCalendar(
     private val calendar: AndroidCalendar
 ) {
@@ -47,6 +48,17 @@ class LegacyAndroidCalendar(
         val resultUri = batch.getResult(idxEvent)?.uri
             ?: throw LocalStorageException("Empty result from content provider when adding event")
         return resultUri
+    }
+
+    /**
+     * Gets a specific legacy [AndroidEvent], identified by the event ID, from this calendar.
+     *
+     * @param id    event ID
+     * @return event (or `null` if not found)
+     */
+    fun getAndroidEvent(androidCalendar: AndroidCalendar, id: Long): AndroidEvent? {
+        val values = androidCalendar.getEventValues(id, null) ?: return null
+        return AndroidEvent(androidCalendar, values)
     }
 
     /**

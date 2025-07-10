@@ -10,11 +10,9 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
-import android.net.Uri
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
@@ -77,8 +75,8 @@ class LegacyAndroidEventProcessorTest {
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
 
-    private lateinit var calendarUri: Uri
     private lateinit var calendar: AndroidCalendar
+    lateinit var legacyCalendar: LegacyAndroidCalendar
     lateinit var client: ContentProviderClient
 
     @Before
@@ -87,7 +85,7 @@ class LegacyAndroidEventProcessorTest {
         client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
 
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        calendarUri = ContentUris.withAppendedId(Calendars.CONTENT_URI, calendar.id)
+        legacyCalendar = LegacyAndroidCalendar(calendar)
     }
 
     @After
@@ -135,7 +133,7 @@ class LegacyAndroidEventProcessorTest {
             client.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
         }
 
-        return destinationCalendar.getLegacyEvent(id)!!
+        return legacyCalendar.getAndroidEvent(destinationCalendar, id)!!
     }
 
     private fun populateEvent(

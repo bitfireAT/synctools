@@ -96,7 +96,7 @@ class AndroidEventTest {
         val uri = legacyCalendar.add(event)
 
         // update test event in calendar
-        val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
+        val testEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri))!!
         val event2 = legacyCalendar.getEvent(testEvent.id)!!
         event2.summary = "Updated event"
         // add data rows
@@ -108,7 +108,7 @@ class AndroidEventTest {
         assertEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.getLegacyEvent(ContentUris.parseId(uri2))!!
+        val updatedEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri2))!!
         try {
             val event3 = legacyCalendar.getEvent(updatedEvent.id)!!
             assertEquals(event2.summary, event3.summary)
@@ -131,7 +131,7 @@ class AndroidEventTest {
         val id = ContentUris.parseId(uri)
 
         // verify that it has color
-        val beforeUpdate = calendar.getLegacyEvent(id)!!
+        val beforeUpdate = legacyCalendar.getAndroidEvent(calendar, id)!!
         assertNotNull(legacyCalendar.getEvent(beforeUpdate.id)!!.color)
 
         // update: reset color
@@ -139,7 +139,7 @@ class AndroidEventTest {
         beforeUpdate.update(event)
 
         // verify that it doesn't have color anymore
-        val afterUpdate = calendar.getLegacyEvent(id)!!
+        val afterUpdate = legacyCalendar.getAndroidEvent(calendar, id)!!
         assertNull(legacyCalendar.getEvent(afterUpdate.id)!!.color)
     }
 
@@ -153,7 +153,7 @@ class AndroidEventTest {
         val uri = legacyCalendar.add(event)
 
         // update test event in calendar
-        val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
+        val testEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri))!!
         val event2 = legacyCalendar.getEvent(testEvent.id)!!
         event2.summary = "Sample event without STATUS"
         event2.status = Status.VEVENT_CONFIRMED
@@ -163,7 +163,7 @@ class AndroidEventTest {
         assertEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.getLegacyEvent(ContentUris.parseId(uri2))!!
+        val updatedEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri2))!!
         try {
             val event3 = legacyCalendar.getEvent(updatedEvent.id)!!
             assertEquals(Status.VEVENT_CONFIRMED, event3.status)
@@ -183,7 +183,7 @@ class AndroidEventTest {
         val uri = legacyCalendar.add(event)
 
         // update test event in calendar
-        val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
+        val testEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri))!!
         val event2 = legacyCalendar.getEvent(testEvent.id)!!
         event2.summary = "Sample event without STATUS"
         event2.status = null
@@ -193,7 +193,7 @@ class AndroidEventTest {
         assertNotEquals(ContentUris.parseId(uri), ContentUris.parseId(uri2))
 
         // read again and verify result
-        val updatedEvent = calendar.getLegacyEvent(ContentUris.parseId(uri2))!!
+        val updatedEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri2))!!
         try {
             val event3 = legacyCalendar.getEvent(updatedEvent.id)!!
             assertNull(event3.status)
@@ -214,7 +214,7 @@ class AndroidEventTest {
             event.attendees += Attendee(URI("mailto:att$i@example.com"))
         val uri = legacyCalendar.add(event)
 
-        val testEvent = calendar.getLegacyEvent(ContentUris.parseId(uri))!!
+        val testEvent = legacyCalendar.getAndroidEvent(calendar, ContentUris.parseId(uri))!!
         try {
             assertEquals(20, legacyCalendar.getEvent(testEvent.id)!!.attendees.size)
         } finally {
