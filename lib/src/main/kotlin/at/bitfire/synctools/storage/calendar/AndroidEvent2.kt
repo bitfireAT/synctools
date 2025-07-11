@@ -9,7 +9,9 @@ package at.bitfire.synctools.storage.calendar
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Entity
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_SEPARATOR
 
@@ -76,6 +78,16 @@ class AndroidEvent2(
 
 
     // data rows
+
+    val attendees: List<ContentValues>
+        get() = values.subValues.mapNotNull { dataRow ->
+            dataRow.values.takeIf { dataRow.uri == Attendees.CONTENT_URI }
+        }
+
+    val extendedProperties: List<ContentValues>
+        get() = values.subValues.mapNotNull { dataRow ->
+            dataRow.values.takeIf { dataRow.uri == ExtendedProperties.CONTENT_URI }
+        }
 
     val reminders: List<ContentValues>
         get() = values.subValues.mapNotNull { dataRow ->
@@ -144,6 +156,13 @@ class AndroidEvent2(
          * The URL is directly put into [ExtendedProperties.VALUE].
          */
         const val EXTNAME_URL = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.ical4android.url"
+
+        /**
+         * Name of the data row field that references the main row ID.
+         *
+         * Equals to [Attendees.EVENT_ID], [Reminders.EVENT_ID] etc.
+         */
+        const val DATA_ROW_EVENT_ID = "event_id"
 
     }
 

@@ -94,7 +94,7 @@ class AndroidCalendar(
             for (row in entity.subValues)
                 batch += CpoBuilder.newInsert(row.uri)
                     .withValues(row.values)
-                    .withValueBackReference(DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
+                    .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
 
             batch.commit()
 
@@ -269,7 +269,7 @@ class AndroidCalendar(
             for (row in entity.subValues)
                 batch += CpoBuilder.newInsert(row.uri)
                     .withValues(ContentValues(row.values).apply {
-                        put(DATA_ROW_EVENT_ID, id)      // never update reference to main row ID
+                        put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // never update reference to main row ID
                     })
 
             batch.commit()
@@ -447,18 +447,6 @@ class AndroidCalendar(
         val protectedWhere = "(${where ?: "1"}) AND " + Events.CALENDAR_ID + "=?"
         val protectedWhereArgs = (whereArgs ?: arrayOf()) + id.toString()
         return Pair(protectedWhere, protectedWhereArgs)
-    }
-
-
-    companion object {
-
-        /**
-         * Name of the data row field that references the main row ID.
-         *
-         * Equals to [Attendees.EVENT_ID], [Reminders.EVENT_ID] etc.
-         */
-        const val DATA_ROW_EVENT_ID = "event_id"
-
     }
 
 }

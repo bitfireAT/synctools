@@ -21,11 +21,11 @@ Then make the changes in your own repository and send a pull request.
 
 # Packages
 
-- `at.bitfire.ical4android`: legacy [ical4android](https://github.com/bitfireAT/ical4android)
 - `at.bitfire.synctools`: new package where everything shall be refactored into
   - `.icalendar`: high-level operations on iCalendar objects
   - `.mapping`: mappers between low-level (database rows) and high-level (iCalendar/vCard) objects
   - `.storage`: low-level operations on content-provider storage (`ContentValues` / `Entity` to store data)
+- `at.bitfire.ical4android`: legacy [ical4android](https://github.com/bitfireAT/ical4android)
 - `at.bitfire.vcard4android`: legacy [vcard4android](https://github.com/bitfireAT/vcard4android)
 
 
