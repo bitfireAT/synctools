@@ -16,6 +16,7 @@ import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
+import android.provider.CalendarContract.Instances
 import android.provider.CalendarContract.Reminders
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -342,24 +343,25 @@ class AndroidCalendar(
 
 
 
-    // event instances (these methods operate directly with event IDs and without the events themselves and thus belong to the calendar class)
+    // event instances (these methods operate directly with event IDs and without the events
+    // themselves and thus belong to the calendar class)
 
     /**
-     * Finds the amount of direct instances this event has (without exceptions); used by [numInstances]
-     * to find the number of instances of exceptions.
+     * Finds the amount of direct instances this event has. Exceptions have their own instances
+     * and are not taken into account by this value.
      *
-     * The number of returned instances may vary with the Android version.
+     * Use [numInstances] to find the total number of instances (including exceptions) of this event.
      *
      * @return number of direct event instances (not counting instances of exceptions); *null* if
      * the number can't be determined or if the event has no last date (recurring event without last instance)
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun numDirectInstances(eventId: Long): Int? {
+    fun numInstances(eventId: Long): Int? {
         // query event to get first and last instance
         var first: Long? = null
         var last: Long? = null
-        getEventRow(id, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { values ->
+        getEventRow(eventId, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { values ->
             first = values.getAsLong(Events.DTSTART)
             last = values.getAsLong(Events.LAST_DATE)
         }
@@ -370,7 +372,7 @@ class AndroidCalendar(
         /* We can't use Long.MIN_VALUE and Long.MAX_VALUE because Android generates the instances
          on the fly and it doesn't accept those values. So we use the first/last actual occurrence
          of the event (as calculated by Android). */
-        val instancesUri = CalendarContract.Instances.CONTENT_URI.asSyncAdapter(account)
+        val instancesUri = Instances.CONTENT_URI.asSyncAdapter(account)
             .buildUpon()
             .appendPath(first.toString())       // begin timestamp
             .appendPath(last.toString())        // end timestamp
@@ -379,8 +381,8 @@ class AndroidCalendar(
         var numInstances: Int? = null
         try {
             client.query(
-                instancesUri, null,
-                "${CalendarContract.Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
+                instancesUri, arrayOf(/* we're only interested in the number of results */),
+                "${Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
                 null
             )?.use { cursor ->
                 numInstances = cursor.count
@@ -389,34 +391,6 @@ class AndroidCalendar(
             throw LocalStorageException("Couldn't query number of instances for event $eventId", e)
         }
         return numInstances
-    }
-
-    /**
-     * Finds the total number of instances this event has (including instances of exceptions)
-     *
-     * The number of returned instances may vary with the Android version.
-     *
-     * @return number of event instances (including instances of exceptions); *null* if
-     * the number can't be determined or if the event has no last date (recurring event without last instance)
-     */
-    fun numInstances(eventId: Long): Int? {
-        // num instances of the main event
-        val numDirectInstances = numDirectInstances(eventId) ?: return null
-
-        // add the number of instances of every main event's exception
-        var numExInstances = 0
-        iterateEventRows(
-            arrayOf(Events._ID),
-            "${Events.ORIGINAL_ID}=?",  // get exception events of the main event
-            arrayOf(eventId.toString())
-        ) { values ->
-            val exceptionEventId = values.getAsLong(Events._ID)
-            val exceptionInstances = numDirectInstances(exceptionEventId)
-
-            if (exceptionInstances != null)
-                numExInstances += exceptionInstances
-        }
-        return numDirectInstances - numExInstances
     }
 
 
