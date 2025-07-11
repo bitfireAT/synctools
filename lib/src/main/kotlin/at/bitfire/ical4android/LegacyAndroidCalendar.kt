@@ -57,7 +57,7 @@ class LegacyAndroidCalendar(
      * @return event (or `null` if not found)
      */
     fun getAndroidEvent(androidCalendar: AndroidCalendar, id: Long): AndroidEvent? {
-        val values = androidCalendar.getEventValues(id, null) ?: return null
+        val values = androidCalendar.getEventRow(id, null) ?: return null
         return AndroidEvent(androidCalendar, values)
     }
 

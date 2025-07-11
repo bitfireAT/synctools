@@ -10,6 +10,7 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.Reminders
 import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_SEPARATOR
 
 /**
@@ -23,18 +24,25 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_
  *
  * @param calendar  calendar where the event is stored
  * @param values    entity with all columns, as returned by the calendar provider; [Events._ID] must be set to a non-null value
+ *
+ * @throws IllegalArgumentException when [Events._ID] is not set
  */
 class AndroidEvent2(
     val calendar: AndroidCalendar,
-    private val values: Entity
+    val values: Entity
 ) {
 
     private val mainValues
         get() = values.entityValues
 
-    val id: Long
-        get() = mainValues.getAsLong(Events._ID)
+    /** see [Events._ID] */
+    val id: Long = mainValues.getAsLong(Events._ID)
+        ?: throw IllegalArgumentException("Events._ID must be available")
 
+
+    // sync fields
+
+    /** see [Events._SYNC_ID] */
     val syncId: String?
         get() = mainValues.getAsString(Events._SYNC_ID)
 
@@ -48,9 +56,36 @@ class AndroidEvent2(
         get() = mainValues.getAsInteger(COLUMN_FLAGS) ?: 0
 
 
+    // data fields
+
+    /** see [Events.DTSTART] */
+    val dtStart: Long?
+        get() = mainValues.getAsLong(Events.DTSTART)
+
+    /** see [Events.DTEND] */
+    val dtEnd: Long?
+        get() = mainValues.getAsLong(Events.DTEND)
+
+    /** see [Events.STATUS] */
+    val status: Int?
+        get() = mainValues.getAsInteger(Events.STATUS)
+
+    /** see [Events.TITLE] */
+    val title: String?
+        get() = mainValues.getAsString(Events.TITLE)
+
+
+    // data rows
+
+    val reminders: List<ContentValues>
+        get() = values.subValues.mapNotNull { dataRow ->
+            dataRow.values.takeIf { dataRow.uri == Reminders.CONTENT_URI }
+        }
+
+
     // shortcuts to upper level
 
-    fun update(values: ContentValues) = calendar.updateEvent(id, values)
+    fun update(values: ContentValues) = calendar.updateEventRow(id, values)
     fun update(entity: Entity) = calendar.updateEvent(id, entity)
     fun delete() = calendar.deleteEvent(id)
 

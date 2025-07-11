@@ -25,23 +25,29 @@ import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**
- * Represents a locally stored calendar, containing [at.bitfire.ical4android.AndroidEvent]s (whose data objects are [at.bitfire.ical4android.Event]s).
- * Communicates with the Android Contacts Provider which uses an SQLite
- * database to store the events.
+ * Represents a locally stored calendar, containing [AndroidEvent2] objects.  Communicates with
+ * the Android Contacts Provider which uses an SQLite database to store the events.
  *
- * @param client  calendar provider
+ * Methods that use [ContentValues] operate directly on rows of the [Events] table.
+ * Methods that use [Entity] operate on [EventsEntity] URIs to access the [Events] rows together with
+ * associated data rows (reminders, attendees etc.)
+ *
+ * @param client    calendar provider
  * @param values    content values as read from the calendar provider; [android.provider.BaseColumns._ID] must be set
  *
- * @throws IllegalArgumentException when [android.provider.BaseColumns._ID] is not set
+ * @throws IllegalArgumentException when [Calendars._ID] is not set
  */
 class AndroidCalendar(
-    val provider: AndroidCalendarProvider,
+    internal val provider: AndroidCalendarProvider,
     val values: ContentValues
 ) {
 
     /** see [Calendars._ID] */
     val id: Long = values.getAsLong(Calendars._ID)
-        ?: throw IllegalArgumentException("${Calendars._ID} must be set")
+        ?: throw IllegalArgumentException("Calendars._ID must be available")
+
+
+    // data fields
 
     /** see [Calendars.CALENDAR_ACCESS_LEVEL] */
     val accessLevel: Int
@@ -76,7 +82,7 @@ class AndroidCalendar(
 
             // insert data rows (with reference to main row ID)
             for (row in entity.subValues)
-                batch += CpoBuilder.newInsert(eventsUri)
+                batch += CpoBuilder.newInsert(row.uri)
                     .withValues(row.values)
                     .withValueBackReference(DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
 
@@ -139,14 +145,15 @@ class AndroidCalendar(
     }
 
     /**
-     * Gets the main event row of a specific event, identified by its ID, from this calendar.
+     * Gets the event row of a specific event, identified by its ID, from this calendar.
      *
      * @param id    event ID
      *
      * @return event row (or `null` if not found)
+     *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun getEventValues(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): ContentValues? {
+    fun getEventRow(id: Long, projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): ContentValues? {
         try {
             client.query(eventUri(id), projection, where, whereArgs, null)?.use { cursor ->
                 if (cursor.moveToNext())
@@ -159,7 +166,7 @@ class AndroidCalendar(
     }
 
     /**
-     * Iterates event main rows from this calendar.
+     * Iterates event rows from this calendar.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
      *
@@ -170,7 +177,7 @@ class AndroidCalendar(
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun iterateEvents(projection: Array<String>, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
+    fun iterateEventRows(projection: Array<String>, where: String?, whereArgs: Array<String>?, body: (ContentValues) -> Unit) {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
@@ -211,12 +218,16 @@ class AndroidCalendar(
     /**
      * Updates a specific event's main row with the given values. Doesn't influence data rows.
      *
+     * This method always uses the update method of the content provider and does not
+     * re-create rows, as it is required for some operations (see [updateEvent] and [eventUpdateNeedsRebuild]
+     * for more information).
+     *
      * @param id        event ID
      * @param values    new values
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun updateEvent(id: Long, values: ContentValues) {
+    fun updateEventRow(id: Long, values: ContentValues) {
         try {
             client.update(eventUri(id), values, null, null)
         } catch (e: RemoteException) {
@@ -224,18 +235,13 @@ class AndroidCalendar(
         }
     }
 
-    fun updateEvent(id: Long, entity: Entity) {
+    fun updateEvent(id: Long, entity: Entity): Long {
         try {
-            /* TODO:
-            There are cases where the event cannot be updated, but must be completely re-created.
-            Case 1: Events.STATUS shall be updated from a non-null value (like STATUS_CONFIRMED) to null.
-            */
-            /*val rebuild = false
+            val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
             if (rebuild) {
                 deleteEvent(id)
-                addEvent(entity)
-                return
-            }*/
+                return addEvent(entity)
+            }
 
             val batch = CalendarBatchOperation(client)
 
@@ -256,6 +262,7 @@ class AndroidCalendar(
                     })
 
             batch.commit()
+            return id
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update event $id", e)
         }
@@ -283,7 +290,23 @@ class AndroidCalendar(
     }
 
     /**
-     * Updates event (main) rows in this calendar.
+     * There is a bug in the calendar provider that prevent events from being updated from a non-null STATUS value
+     * to STATUS=null (see AndroidCalendarProviderBehaviorTest.testUpdateEventStatusToNull).
+     *
+     * In that case we can't update the event, so we completely re-create it.
+     *
+     * @param id            event of existing ID
+     * @param newValues     new values that the event shall be updated to
+     *
+     * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
+     */
+    private fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
+        val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null
+        return existingValues.getAsInteger(Events.STATUS) != null && newValues.getAsInteger(Events.STATUS) == null
+    }
+
+    /**
+     * Updates event rows in this calendar.
      *
      * @param values        values to update
      * @param where         selection
@@ -293,7 +316,7 @@ class AndroidCalendar(
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun updateEvents(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
+    fun updateEventRows(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
         try {
             client.update(eventsUri, values, where, whereArgs)
         } catch (e: RemoteException) {

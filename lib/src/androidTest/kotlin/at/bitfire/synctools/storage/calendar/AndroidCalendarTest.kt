@@ -9,26 +9,22 @@ package at.bitfire.synctools.storage.calendar
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Entity
 import android.os.Build
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.Reminders
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
+import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,6 +37,7 @@ class AndroidCalendarTest {
         Manifest.permission.WRITE_CALENDAR
     )
 
+    private val now = System.currentTimeMillis()
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
     lateinit var client: ContentProviderClient
@@ -64,199 +61,436 @@ class AndroidCalendarTest {
     }
 
 
+    // CRUD AndroidEvent
+
+    @Test
+    fun testAddEvent_and_GetEvent() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        )
+        val entity = Entity(values)
+        val reminder = contentValuesOf(
+            Reminders.MINUTES to 123
+        )
+        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        val id = calendar.addEvent(entity)
+
+        // verify that event has been inserted
+        val result = calendar.getEvent(id)!!
+        assertEquals(id, result.id)
+        assertEquals(now, result.dtStart)
+        assertEquals(now + 3600000, result.dtEnd)
+        assertEquals("Some Event", result.title)
+        assertEquals(1, result.reminders.size)
+        assertEquals(123, result.reminders[0].getAsInteger(Reminders.MINUTES))
+    }
+
+    @Test
+    fun testFindEvents() {
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        )))
+        val id2 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now + 3600000,
+            Events.DTEND to now + 3600000*2,
+            Events.TITLE to "Some Other Event 1"
+        )))
+        val id3 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now + 3600000,
+            Events.DTEND to now + 3600000*2,
+            Events.TITLE to "Some Other Event 2"
+        )))
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((now + 3600000).toString()))
+        assertEquals(2, result.size)
+        assertEquals(setOf(id2, id3), result.map { it.id }.toSet())
+        assertEquals(setOf("Some Other Event 1", "Some Other Event 2"), result.map { it.title }.toSet())
+    }
+
+
+    // getEvent and getEventEntity are implicitly tested by testAddEvent_and_GetEvent
+
+    @Test
+    fun testGetEventRow() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        val result = calendar.getEventRow(id, arrayOf(
+            Events.CALENDAR_ID, Events.DTSTART, Events.DTEND, Events.TITLE
+        ))!!
+        assertContentValuesEqual(values, result)
+    }
+
+    @Test
+    fun testIterateEventRows() {
+        val id1 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+        val id2 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 2"
+        )))
+
+        val result = mutableListOf<ContentValues>()
+        calendar.iterateEventRows(arrayOf(Events._ID, Events.TITLE), null, null) { row ->
+            result += row
+        }
+        assertEquals(
+            setOf(id1, id2),
+            result.map { it.getAsLong(Events._ID) }.toSet()
+        )
+        assertEquals(
+            setOf("Some Event 1", "Some Event 2"),
+            result.map { it.getAsString(Events.TITLE) }.toSet()
+        )
+    }
+
+    @Test
+    fun testIterateEvents() {
+        val id1 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+        val id2 = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 2"
+        )))
+
+        val result = mutableListOf<Entity>()
+        calendar.iterateEvents(null, null) { entity ->
+            result += entity
+        }
+        assertEquals(
+            setOf(id1, id2),
+            result.map { it.entityValues.getAsLong(Events._ID) }.toSet()
+        )
+        assertEquals(
+            setOf("Some Event 1", "Some Event 2"),
+            result.map { it.entityValues.getAsString(Events.TITLE) }.toSet()
+        )
+    }
+
+    @Test
+    fun testUpdateEventRow() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"))
+
+        assertEquals("New Title", calendar.getEvent(id)!!.title)
+    }
+
+    @Test
+    fun testUpdateEvent_NoRebuild() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        values.put(Events.TITLE, "New Title")
+        assertEquals(id, calendar.updateEvent(id, Entity(values)))
+
+        assertEquals("New Title", calendar.getEvent(id)!!.title)
+    }
+
+    @Test
+    fun testUpdateEvent_Rebuild() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1",
+            Events.STATUS to Events.STATUS_CONFIRMED
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        values.put(Events.TITLE, "New Title")
+        values.putNull(Events.STATUS)
+        val newId = calendar.updateEvent(id, Entity(values))
+        assertNotEquals(newId, id)
+
+        // old event is deleted
+        assertNull(calendar.getEvent(id))
+
+        // new event doesn't have status
+        val newEvent = calendar.getEvent(newId)!!
+        assertEquals("New Title", newEvent.title)
+        assertNull(newEvent.status)
+    }
+
+    @Test
+    fun testUpdateEventRows() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        calendar.updateEventRows(
+            contentValuesOf(Events.TITLE to "New Title"),
+            "${Events.DTSTART}=?",
+            arrayOf(now.toString())
+        )
+
+        assertEquals("New Title", calendar.getEvent(id)!!.title)
+    }
+
+    @Test
+    fun testDeleteEvent() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        calendar.deleteEvent(id)
+
+        assertNull(calendar.getEvent(id))
+    }
+
+
     // event instances
 
     @Test
     fun testNumDirectInstances_SingleInstance() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 1 instance"
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertEquals(1, calendar.numDirectInstances(ContentUris.parseId(uri)))
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Event with 1 instance"
+        )))
+        assertEquals(1, calendar.numDirectInstances(id))
     }
 
     @Test
     fun testNumDirectInstances_Recurring() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 5 instances"
-            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertEquals(5, calendar.numDirectInstances(ContentUris.parseId(uri)))
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances",
+            Events.RRULE to "FREQ=DAILY;COUNT=5"
+        )))
+        assertEquals(5, calendar.numDirectInstances(id))
     }
 
     @Test
     fun testNumDirectInstances_Recurring_Endless() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event without end"
-            rRules.add(RRule("FREQ=DAILY"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertNull(calendar.numDirectInstances(ContentUris.parseId(uri)))
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event without end",
+            Events.RRULE to "FREQ=DAILY"
+        )))
+        assertNull(calendar.numDirectInstances(id))
     }
 
     @Test
     fun testNumDirectInstances_Recurring_LateEnd() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 53 years"
-            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 is not supported by Android <11 Calendar Storage
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event until 2074",
+            Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
+        )))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, calendar.numDirectInstances(ContentUris.parseId(uri)))
-        else
-            assertNull(calendar.numDirectInstances(ContentUris.parseId(uri)))
+            assertEquals(52, calendar.numDirectInstances(id))
+        else    // year 2074 is not supported by Android <11 Calendar Storage
+            assertNull(calendar.numDirectInstances(id))
     }
 
     @Test
     fun testNumDirectInstances_Recurring_ManyInstances() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 2 years"
-            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-        val number = calendar.numDirectInstances(ContentUris.parseId(uri))
-
-        // Some android versions (i.e. <=Q and S) return 365*2 instances (wrong, 365*2+1 => correct),
-        // but we are satisfied with either result for now
-        assertTrue(number == 365 * 2 || number == 365 * 2 + 1)
-    }
-
-    @Test
-    fun testNumDirectInstances_RecurringWithExdate() {
-        val event = Event().apply {
-            dtStart = DtStart(Date("20220120T010203Z"))
-            summary = "Event with 5 instances"
-            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-            exDates.add(ExDate(DateList("20220121T010203Z", Value.DATE_TIME)))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertEquals(4, calendar.numDirectInstances(ContentUris.parseId(uri)))
-    }
-
-    @Test
-    fun testNumDirectInstances_RecurringWithExceptions() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 5 instances"
-            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-            exceptions.add(Event().apply {
-                recurrenceId = RecurrenceId("20220122T010203Z")
-                dtStart = DtStart("20220122T130203Z")
-                summary = "Exception on 3rd day"
-            })
-            exceptions.add(Event().apply {
-                recurrenceId = RecurrenceId("20220124T010203Z")
-                dtStart = DtStart("20220122T160203Z")
-                summary = "Exception on 5th day"
-            })
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event, syncId = "filename.ics")
-
-        assertEquals(5 - 2, calendar.numDirectInstances(ContentUris.parseId(uri)))
-    }
-
-
-    @Test
-    fun testNumInstances_SingleInstance() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 1 instance"
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertEquals(1, calendar.numInstances(ContentUris.parseId(uri)))
-    }
-
-    @Test
-    fun testNumInstances_Recurring() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 5 instances"
-            rRules.add(RRule("FREQ=DAILY;COUNT=5"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertEquals(5, calendar.numInstances(ContentUris.parseId(uri)))
-    }
-
-    @Test
-    fun testNumInstances_Recurring_Endless() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with infinite instances"
-            rRules.add(RRule("FREQ=YEARLY"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        assertNull(calendar.numInstances(ContentUris.parseId(uri)))
-    }
-
-    @Test
-    fun testNumInstances_Recurring_LateEnd() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event over 22 years"
-            rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year 2074 not supported by Android <11 Calendar Storage
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            assertEquals(52, calendar.numInstances(ContentUris.parseId(uri)))
-        else
-            assertNull(calendar.numInstances(ContentUris.parseId(uri)))
-    }
-
-    @Test
-    fun testNumInstances_Recurring_ManyInstances() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event over two years"
-            rRules.add(RRule("FREQ=DAILY;UNTIL=20240120T010203Z"))
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event)
-
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 2 years",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20240120T010203Z"
+        )))
         assertEquals(
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
                 365 * 2       // Android <9: does not include UNTIL (incorrect!)
             else
                 365 * 2 + 1,  // Android ≥9: includes UNTIL (correct)
-            calendar.numInstances(ContentUris.parseId(uri))
+            calendar.numDirectInstances(id)
+        )
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExdate() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances, one of them excluded",
+            Events.RRULE to "FREQ=DAILY;COUNT=5",
+            Events.EXDATE to "20220121T010203Z"
+        )))
+        assertEquals(4, calendar.numDirectInstances(id))
+    }
+
+    @Test
+    fun testNumDirectInstances_RecurringWithExceptions() {
+        val syncId = "recurring-with-exceptions"
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to syncId,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances, two of them excluded",
+            Events.RRULE to "FREQ=DAILY;COUNT=5"
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ORIGINAL_SYNC_ID to syncId,
+            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+            Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Exception on 3rd day",
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ORIGINAL_SYNC_ID to syncId,
+            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
+            Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Exception on 5th day",
+        )))
+        assertEquals(5 - 2, calendar.numDirectInstances(id))
+    }
+
+    @Test
+    fun testNumInstances_SingleInstance() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Event with 1 instance"
+        )))
+        assertEquals(1, calendar.numInstances(id))
+    }
+
+    @Test
+    fun testNumInstances_Recurring() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances",
+            Events.RRULE to "FREQ=DAILY;COUNT=5"
+        )))
+        assertEquals(5, calendar.numInstances(id))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_Endless() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event without end",
+            Events.RRULE to "FREQ=DAILY"
+        )))
+        assertNull(calendar.numInstances(id))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_LateEnd() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event until 2074",
+            Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
+        )))
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            assertEquals(52, calendar.numInstances(id))
+        else
+            assertNull(calendar.numInstances(id))
+    }
+
+    @Test
+    fun testNumInstances_Recurring_ManyInstances() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 2 years",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20240120T010203Z"
+        )))
+        assertEquals(
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+                365 * 2       // Android <9: does not include UNTIL (incorrect!)
+            else
+                365 * 2 + 1,  // Android ≥9: includes UNTIL (correct)
+            calendar.numInstances(id)
         )
     }
 
     @Test
     fun testNumInstances_RecurringWithExceptions() {
-        val event = Event().apply {
-            dtStart = DtStart("20220120T010203Z")
-            summary = "Event with 6 instances"
-            rRules.add(RRule("FREQ=DAILY;COUNT=6"))
-            exceptions.add(Event().apply {
-                recurrenceId = RecurrenceId("20220122T010203Z")
-                dtStart = DtStart("20220122T130203Z")
-                summary = "Exception on 3rd day"
-            })
-            exceptions.add(Event().apply {
-                recurrenceId = RecurrenceId("20220124T010203Z")
-                dtStart = DtStart("20220122T160203Z")
-                summary = "Exception on 5th day"
-            })
-        }
-        val uri = LegacyAndroidCalendar(calendar).add(event, syncId = "filename.ics")
+        val syncId = "recurring-with-exceptions"
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to syncId,
+            Events.DTSTART to 1642640523000,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 6 instances",
+            Events.RRULE to "FREQ=DAILY;COUNT=6"
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ORIGINAL_SYNC_ID to syncId,
+            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+            Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Exception on 3rd day",
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ORIGINAL_SYNC_ID to syncId,
+            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
+            Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Exception on 5th day",
+        )))
 
-        calendar.getEvent(ContentUris.parseId(uri))!!
-
-        assertEquals(6, calendar.numInstances(ContentUris.parseId(uri)))
+        assertEquals(6, calendar.numInstances(id))
     }
 
 }
