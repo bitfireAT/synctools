@@ -39,7 +39,7 @@ import java.util.LinkedList
  */
 class AndroidCalendar(
     internal val provider: AndroidCalendarProvider,
-    val values: ContentValues
+    private val values: ContentValues
 ) {
 
     /** see [Calendars._ID] */
@@ -359,41 +359,36 @@ class AndroidCalendar(
         // query event to get first and last instance
         var first: Long? = null
         var last: Long? = null
-        client.query(
-            eventUri(eventId),
-            arrayOf(Events.DTSTART, Events.LAST_DATE), null, null, null
-        )?.use { cursor ->
-            cursor.moveToNext()
-            if (!cursor.isNull(0))
-                first = cursor.getLong(0)
-            if (!cursor.isNull(1))
-                last = cursor.getLong(1)
+        getEventRow(id, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { values ->
+            first = values.getAsLong(Events.DTSTART)
+            last = values.getAsLong(Events.LAST_DATE)
         }
         // if this event doesn't have a last occurrence, it's endless and always has instances
         if (first == null || last == null)
             return null
 
         /* We can't use Long.MIN_VALUE and Long.MAX_VALUE because Android generates the instances
-         on the fly and it doesn't accept those values. So we use the first/last actual occurence
-         of the event (calculated by Android). */
+         on the fly and it doesn't accept those values. So we use the first/last actual occurrence
+         of the event (as calculated by Android). */
         val instancesUri = CalendarContract.Instances.CONTENT_URI.asSyncAdapter(account)
             .buildUpon()
             .appendPath(first.toString())       // begin timestamp
             .appendPath(last.toString())        // end timestamp
             .build()
 
+        var numInstances: Int? = null
         try {
             client.query(
                 instancesUri, null,
                 "${CalendarContract.Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
                 null
             )?.use { cursor ->
-                return cursor.count
+                numInstances = cursor.count
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query number of instances for event $eventId", e)
         }
-        return null
+        return numInstances
     }
 
     /**
@@ -406,30 +401,22 @@ class AndroidCalendar(
      */
     fun numInstances(eventId: Long): Int? {
         // num instances of the main event
-        var numInstances = numDirectInstances(eventId) ?: return null
+        val numDirectInstances = numDirectInstances(eventId) ?: return null
 
         // add the number of instances of every main event's exception
-        try {
-            client.query(
-                Events.CONTENT_URI,
-                arrayOf(Events._ID),
-                "${Events.ORIGINAL_ID}=?", // get exception events of the main event
-                arrayOf(eventId.toString()), null
-            )?.use { exceptionsEventCursor ->
-                while (exceptionsEventCursor.moveToNext()) {
-                    val exceptionEventId = exceptionsEventCursor.getLong(0)
-                    val exceptionInstances = numDirectInstances(exceptionEventId)
+        var numExInstances = 0
+        iterateEventRows(
+            arrayOf(Events._ID),
+            "${Events.ORIGINAL_ID}=?",  // get exception events of the main event
+            arrayOf(eventId.toString())
+        ) { values ->
+            val exceptionEventId = values.getAsLong(Events._ID)
+            val exceptionInstances = numDirectInstances(exceptionEventId)
 
-                    if (exceptionInstances == null)
-                        return null   // number of instances of exception can't be determined; so the total number of instances is also unclear
-
-                    numInstances += exceptionInstances
-                }
-            }
-        } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't query number of exception instances for event $eventId", e)
+            if (exceptionInstances != null)
+                numExInstances += exceptionInstances
         }
-        return numInstances
+        return numDirectInstances - numExInstances
     }
 
 

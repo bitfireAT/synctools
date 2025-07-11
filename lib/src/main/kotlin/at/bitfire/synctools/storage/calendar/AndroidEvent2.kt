@@ -29,7 +29,7 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_
  */
 class AndroidEvent2(
     val calendar: AndroidCalendar,
-    val values: Entity
+    private val values: Entity
 ) {
 
     private val mainValues
