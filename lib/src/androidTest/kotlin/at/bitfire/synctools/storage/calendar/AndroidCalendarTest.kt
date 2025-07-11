@@ -369,6 +369,11 @@ class AndroidCalendarTest {
 
     @Test
     fun testNumInstances_RecurringWithExceptions_MatchingOrigInstanceTime() {
+        // TODO: Fails when
+        // 1) Force-stop calendar storage
+        // 2) Clear calendar storage
+        // 3) Run this this class
+
         val syncId = "recurring-with-exceptions"
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -383,7 +388,7 @@ class AndroidCalendarTest {
             Events.ORIGINAL_SYNC_ID to syncId,
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
             Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-            Events.DURATION to "PT1H",
+            Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
             Events.TITLE to "Exception on 3rd day",
         )))
         calendar.addEvent(Entity(contentValuesOf(
@@ -391,7 +396,7 @@ class AndroidCalendarTest {
             Events.ORIGINAL_SYNC_ID to syncId,
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
             Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-            Events.DURATION to "PT1H",
+            Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
             Events.TITLE to "Exception on 5th day",
         )))
         assertEquals(5 - 2, calendar.numInstances(id))

@@ -125,7 +125,7 @@ open class BatchOperation internal constructor(
 
         try {
             val ops = toCPO(start, end)
-            logger.fine("Running ${ops.size} operations ($start .. ${end - 1})")
+            logger.fine("Running ${ops.size} operation(s) idx $start..${end - 1}")
             val partResults = providerClient.applyBatch(ops)
 
             val n = end - start
