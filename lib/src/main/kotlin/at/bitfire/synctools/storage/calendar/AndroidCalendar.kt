@@ -72,6 +72,15 @@ class AndroidCalendar(
 
     // CRUD AndroidEvent
 
+    /**
+     * Inserts an event to the calendar provider.
+     *
+     * @param entity    event to insert
+     *
+     * @return ID of the new event
+     *
+     * @throws LocalStorageException when the content provider returns an error
+     */
     fun addEvent(entity: Entity): Long {
         try {
             val batch = CalendarBatchOperation(client)
@@ -104,6 +113,7 @@ class AndroidCalendar(
      * @param whereArgs arguments for selection
      *
      * @return events from this calendar which match the selection
+     *
      * @throws LocalStorageException when the content provider returns an error
      */
     fun findEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent2> {
@@ -256,7 +266,7 @@ class AndroidCalendar(
 
             // insert data rows (with reference to main row ID)
             for (row in entity.subValues)
-                batch += CpoBuilder.newInsert(eventsUri)
+                batch += CpoBuilder.newInsert(row.uri)
                     .withValues(ContentValues(row.values).apply {
                         put(DATA_ROW_EVENT_ID, id)      // never update reference to main row ID
                     })

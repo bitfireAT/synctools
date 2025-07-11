@@ -85,7 +85,7 @@ class AndroidCalendarTest {
         assertEquals(now + 3600000, result.dtEnd)
         assertEquals("Some Event", result.title)
         assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders[0].getAsInteger(Reminders.MINUTES))
+        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
     }
 
     @Test
@@ -211,14 +211,22 @@ class AndroidCalendarTest {
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
-            Events.TITLE to "Some Event 1"
+            Events.TITLE to "Some Event"
         )
-        val id = calendar.addEvent(Entity(values))
+        val entity = Entity(values)
+        val reminder = contentValuesOf(
+            Reminders.MINUTES to 123
+        )
+        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        val id = calendar.addEvent(entity)
 
         values.put(Events.TITLE, "New Title")
-        assertEquals(id, calendar.updateEvent(id, Entity(values)))
+        assertEquals(id, calendar.updateEvent(id, entity))
 
-        assertEquals("New Title", calendar.getEvent(id)!!.title)
+        val result = calendar.getEvent(id)!!
+        assertEquals("New Title", result.title)
+        assertEquals(1, result.reminders.size)
+        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
     }
 
     @Test

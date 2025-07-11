@@ -92,7 +92,7 @@ class AndroidEvent2(
 
     // helpers
 
-    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id, values=$values)"
+    override fun toString(): String = "AndroidEvent2(calendar=$calendar, id=$id, values=$values)"
 
 
     companion object {
