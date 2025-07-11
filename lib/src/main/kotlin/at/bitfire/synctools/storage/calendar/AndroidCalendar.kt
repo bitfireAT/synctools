@@ -372,19 +372,18 @@ class AndroidCalendar(
             .appendPath(last.toString())        // end timestamp
             .build()
 
-        var numInstances = 0
         try {
             client.query(
                 instancesUri, null,
                 "${CalendarContract.Instances.EVENT_ID}=?", arrayOf(eventId.toString()),
                 null
             )?.use { cursor ->
-                numInstances += cursor.count
+                return cursor.count
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query number of instances for event $eventId", e)
         }
-        return numInstances
+        return null
     }
 
     /**
