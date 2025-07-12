@@ -11,13 +11,6 @@ import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_ETAG
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_FLAGS
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SCHEDULE_TAG
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SEQUENCE
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.UnknownProperty
@@ -34,6 +27,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -64,7 +58,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-class AndroidEventBuilder(
+class LegacyAndroidEventBuilder(
     private val calendar: AndroidCalendar,
     private val event: Event,
 
@@ -115,7 +109,7 @@ class AndroidEventBuilder(
         retainClassification()
         // URL
         event.url?.let { url ->
-            insertExtendedProperty(batch, idxEvent, EXTNAME_URL, url.toString())
+            insertExtendedProperty(batch, idxEvent, AndroidEvent2.EXTNAME_URL, url.toString())
         }
         // unknown properties
         event.unknownProperties.forEach {
@@ -220,18 +214,18 @@ class AndroidEventBuilder(
         builder .withValue(Events.CALENDAR_ID, calendar.id)
             .withValue(Events.DIRTY, 0)     // newly created event rows shall not be marked as dirty
             .withValue(Events.DELETED, 0)   // or deleted
-            .withValue(COLUMN_FLAGS, flags)
+            .withValue(AndroidEvent2.COLUMN_FLAGS, flags)
 
         if (recurrence == null)
             builder.withValue(Events._SYNC_ID, syncId)
-                .withValue(COLUMN_ETAG, eTag)
-                .withValue(COLUMN_SCHEDULE_TAG, scheduleTag)
+                .withValue(AndroidEvent2.COLUMN_ETAG, eTag)
+                .withValue(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
         else
             builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
 
         // UID, sequence
         builder .withValue(Events.UID_2445, event.uid)
-            .withValue(COLUMN_SEQUENCE, event.sequence)
+            .withValue(AndroidEvent2.COLUMN_SEQUENCE, event.sequence)
 
         // time fields
         builder .withValue(Events.DTSTART, dtStart.date.time)
@@ -501,11 +495,11 @@ class AndroidEventBuilder(
 
     private fun insertCategories(batch: CalendarBatchOperation, idxEvent: Int?) {
         val rawCategories = event.categories      // concatenate, separate by backslash
-            .joinToString(CATEGORIES_SEPARATOR.toString()) { category ->
+            .joinToString(AndroidEvent2.CATEGORIES_SEPARATOR.toString()) { category ->
                 // drop occurrences of CATEGORIES_SEPARATOR in category names
-                category.filter { it != CATEGORIES_SEPARATOR }
+                category.filter { it != AndroidEvent2.CATEGORIES_SEPARATOR }
             }
-        insertExtendedProperty(batch, idxEvent, EXTNAME_CATEGORIES, rawCategories)
+        insertExtendedProperty(batch, idxEvent, AndroidEvent2.EXTNAME_CATEGORIES, rawCategories)
     }
 
     private fun insertUnknownProperty(batch: CalendarBatchOperation, idxEvent: Int?, property: Property) {

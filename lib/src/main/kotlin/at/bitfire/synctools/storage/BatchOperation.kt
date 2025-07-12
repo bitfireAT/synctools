@@ -10,6 +10,7 @@ import android.content.ContentProviderClient
 import android.content.ContentProviderOperation
 import android.content.ContentProviderResult
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.OperationApplicationException
 import android.net.Uri
 import android.os.RemoteException
@@ -124,7 +125,7 @@ open class BatchOperation internal constructor(
 
         try {
             val ops = toCPO(start, end)
-            logger.fine("Running ${ops.size} operations ($start .. ${end - 1})")
+            logger.fine("Running ${ops.size} operation(s) idx $start..${end - 1}")
             val partResults = providerClient.applyBatch(ops)
 
             val n = end - start
@@ -262,6 +263,12 @@ open class BatchOperation internal constructor(
 
         fun withValue(key: String, value: Any?): CpoBuilder {
             _values[key] = value
+            return this
+        }
+
+        fun withValues(values: ContentValues): CpoBuilder {
+            for ((key, value) in values.valueSet())
+                _values[key] = value
             return this
         }
 
