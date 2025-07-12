@@ -110,6 +110,25 @@ class AndroidCalendarTest {
         assertEquals(setOf("Some Other Event 1", "Some Other Event 2"), result.map { it.title }.toSet())
     }
 
+    @Test
+    fun testFindEventRow() {
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        )))
+        val result = calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(now.toString()))
+        assertContentValuesEqual(
+            contentValuesOf(Events.TITLE to "Some Event"),
+            result!!
+        )
+    }
+
+    @Test
+    fun testFindEventRow_NotExisting() {
+        assertNull(calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(now.toString())))
+    }
 
     // getEvent and getEventEntity are implicitly tested by testAddEvent_and_GetEvent
 

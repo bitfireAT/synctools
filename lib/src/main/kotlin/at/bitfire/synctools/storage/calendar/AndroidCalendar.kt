@@ -132,6 +132,25 @@ class AndroidCalendar(
     }
 
     /**
+     * Gets the first event row that matches the given query.
+     *
+     * @return first event row that matches [where]/[whereArgs] (or `null` if not found)
+     *
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun findEventRow(projection: Array<String>? = null, where: String? = null, whereArgs: Array<String>? = null): ContentValues? {
+        try {
+            client.query(eventsUri, projection, where, whereArgs, null)?.use { cursor ->
+                if (cursor.moveToNext())
+                    return cursor.toContentValues()
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query event rows", e)
+        }
+        return null
+    }
+
+    /**
      * Gets a specific event, identified by its ID, from this calendar.
      *
      * @param id    event ID
@@ -171,7 +190,7 @@ class AndroidCalendar(
                     return cursor.toContentValues()
             }
         } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't query event", e)
+            throw LocalStorageException("Couldn't query event row", e)
         }
         return null
     }
@@ -197,7 +216,7 @@ class AndroidCalendar(
                 }
             }
         } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't iterate events", e)
+            throw LocalStorageException("Couldn't iterate event rows", e)
         }
     }
 
@@ -222,7 +241,7 @@ class AndroidCalendar(
                     body(entity)
             }
         } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't iterate event entities", e)
+            throw LocalStorageException("Couldn't iterate events", e)
         }
     }
 
@@ -242,7 +261,7 @@ class AndroidCalendar(
         try {
             client.update(eventUri(id), values, null, null)
         } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't update event $id", e)
+            throw LocalStorageException("Couldn't update event row $id", e)
         }
     }
 
