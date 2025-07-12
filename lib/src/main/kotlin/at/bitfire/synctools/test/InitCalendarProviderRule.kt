@@ -10,7 +10,6 @@ import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.Entity
-import android.os.Build
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
@@ -124,10 +123,10 @@ class InitCalendarProviderRule private constructor() : TestRule {
                     Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
                     Events.TITLE to "Exception on 5th day",
                 )))
-                calendar.numInstances(id) == 3
+                calendar.numDirectInstances(id) == 3
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)     // year 2074 is not supported by Android <11 Calendar Storage
+            if (AndroidCalendarProvider.supportsYear2074)
                 tryUntilTrue {
                     val id = calendar.addEvent(Entity(contentValuesOf(
                         Events.CALENDAR_ID to calendar.id,
@@ -136,7 +135,7 @@ class InitCalendarProviderRule private constructor() : TestRule {
                         Events.TITLE to "Event until 2074",
                         Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
                     )))
-                    calendar.numInstances(id) == 52
+                    calendar.numDirectInstances(id) == 52
                 }
         } finally {
             calendar.delete()

@@ -10,7 +10,6 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
 import android.content.Entity
-import android.os.Build
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
@@ -43,7 +42,8 @@ class AndroidCalendarTest {
 
     @Before
     fun prepare() {
-        client = InstrumentationRegistry.getInstrumentation().targetContext.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
 
         // make sure there are no colors for testAccount
         provider = AndroidCalendarProvider(testAccount, client)
@@ -283,7 +283,7 @@ class AndroidCalendarTest {
     }
 
 
-    // event instances
+    // event instances (we always test numDirectInstances + numInstances together)
 
     @Test
     fun testNumInstances_SingleInstance() {
@@ -293,6 +293,7 @@ class AndroidCalendarTest {
             Events.DTEND to now + 3600000,
             Events.TITLE to "Event with 1 instance"
         )))
+        assertEquals(1, calendar.numDirectInstances(id))
         assertEquals(1, calendar.numInstances(id))
     }
 
@@ -305,6 +306,7 @@ class AndroidCalendarTest {
             Events.TITLE to "Event with 5 instances",
             Events.RRULE to "FREQ=DAILY;COUNT=5"
         )))
+        assertEquals(5, calendar.numDirectInstances(id))
         assertEquals(5, calendar.numInstances(id))
     }
 
@@ -317,6 +319,7 @@ class AndroidCalendarTest {
             Events.TITLE to "Event without end",
             Events.RRULE to "FREQ=DAILY"
         )))
+        assertNull(calendar.numDirectInstances(id))
         assertNull(calendar.numInstances(id))
     }
 
@@ -330,10 +333,13 @@ class AndroidCalendarTest {
             Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
         )))
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        if (AndroidCalendarProvider.supportsYear2074) {
+            assertEquals(52, calendar.numDirectInstances(id))
             assertEquals(52, calendar.numInstances(id))
-        else    // year 2074 is not supported by Android <11 Calendar Storage
+        } else {
+            assertNull(calendar.numDirectInstances(id))
             assertNull(calendar.numInstances(id))
+        }
     }
 
     @Test
@@ -346,11 +352,11 @@ class AndroidCalendarTest {
             Events.RRULE to "FREQ=DAILY;UNTIL=20240120T010203Z"
         )))
         assertEquals(
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
-                365 * 2       // Android <9: does not include UNTIL (incorrect!)
+            if (AndroidCalendarProvider.instancesIncludeUntil)
+                365 * 2 + 1 // Android ≥9: includes UNTIL (correct)
             else
-                365 * 2 + 1,  // Android ≥9: includes UNTIL (correct)
-            calendar.numInstances(id)
+                365 * 2,    // Android <9: does not include UNTIL (incorrect!)
+            calendar.numDirectInstances(id)
         )
     }
 
@@ -364,16 +370,12 @@ class AndroidCalendarTest {
             Events.RRULE to "FREQ=DAILY;COUNT=5",
             Events.EXDATE to "20220121T010203Z"
         )))
+        assertEquals(4, calendar.numDirectInstances(id))
         assertEquals(4, calendar.numInstances(id))
     }
 
     @Test
     fun testNumInstances_RecurringWithExceptions_MatchingOrigInstanceTime() {
-        // TODO: Fails when
-        // 1) Force-stop calendar storage
-        // 2) Clear calendar storage
-        // 3) Run this this class
-
         val syncId = "recurring-with-exceptions"
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -389,7 +391,7 @@ class AndroidCalendarTest {
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
             Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
             Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
-            Events.TITLE to "Exception on 3rd day",
+            Events.TITLE to "Exception on 3rd day"
         )))
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -398,8 +400,10 @@ class AndroidCalendarTest {
             Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
             Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
             Events.TITLE to "Exception on 5th day",
+            Events.STATUS to Events.STATUS_CANCELED
         )))
-        assertEquals(5 - 2, calendar.numInstances(id))
+        assertEquals(5 - 2, calendar.numDirectInstances(id))
+        assertEquals(5 - /* one cancelled */ 1, calendar.numInstances(id))
     }
 
     @Test
@@ -419,7 +423,7 @@ class AndroidCalendarTest {
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
             Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
             Events.DURATION to "PT1H",
-            Events.TITLE to "Exception on 3rd day",
+            Events.TITLE to "Exception on 3rd day"
         )))
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -427,9 +431,10 @@ class AndroidCalendarTest {
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000 + 100,  // doesn't match original instance time!
             Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
             Events.DURATION to "PT1H",
-            Events.TITLE to "Exception on 5th day (wrong instance time)",
+            Events.TITLE to "Exception on 5th day (wrong instance time)"
         )))
-        assertEquals(5 - 1, calendar.numInstances(id))
+        assertEquals(5 - 1, calendar.numDirectInstances(id))
+        assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
     }
 
 }
