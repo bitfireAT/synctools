@@ -16,6 +16,8 @@ import java.util.logging.LogRecord
 /**
  * Logging handler that logs to Android logcat.
  *
+ * Log level mapping: https://source.android.com/docs/core/tests/debug/understanding-logging#log-standards
+ *
  * @param fallbackTag   adb tag to use if class name can't be determined
  */
 class LogcatHandler(
@@ -47,11 +49,20 @@ class LogcatHandler(
             tag
 
         when {
-            level >= Level.SEVERE.intValue()  -> Log.e(tagOrTruncated, text, r.thrown)
-            level >= Level.WARNING.intValue() -> Log.w(tagOrTruncated, text, r.thrown)
-            level >= Level.CONFIG.intValue()  -> Log.i(tagOrTruncated, text, r.thrown)
-            level >= Level.FINER.intValue()   -> Log.d(tagOrTruncated, text, r.thrown)
-            else                              -> Log.v(tagOrTruncated, text, r.thrown)
+            level >= Level.SEVERE.intValue() ->
+                Log.e(tagOrTruncated, text, r.thrown)
+
+            level >= Level.WARNING.intValue() ->
+                Log.w(tagOrTruncated, text, r.thrown)
+
+            level >= Level.INFO.intValue() ->
+                Log.i(tagOrTruncated, text, r.thrown)
+
+            level >= Level.FINE.intValue() ->   // CONFIG, FINE
+                Log.d(tagOrTruncated, text, r.thrown)
+
+            else ->                             // FINER, FINEST
+                Log.v(tagOrTruncated, text, r.thrown)
         }
     }
 
