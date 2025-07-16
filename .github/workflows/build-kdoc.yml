@@ -21,7 +21,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build KDoc
-        run: ./gradlew --no-configuration-cache dokkaHtml
+        run: ./gradlew --build-cache --configuration-cache dokkaGenerate
 
       - uses: actions/upload-pages-artifact@v3
         with:
