@@ -10,11 +10,9 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
-import android.net.Uri
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
@@ -22,6 +20,7 @@ import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
@@ -30,6 +29,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
@@ -65,7 +65,7 @@ import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 
-class AndroidEventProcessorTest {
+class LegacyAndroidEventProcessorTest {
 
     @get:Rule
     val initCalendarProviderRule: TestRule = InitCalendarProviderRule.initialize()
@@ -75,8 +75,8 @@ class AndroidEventProcessorTest {
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
 
-    private lateinit var calendarUri: Uri
     private lateinit var calendar: AndroidCalendar
+    lateinit var legacyCalendar: LegacyAndroidCalendar
     lateinit var client: ContentProviderClient
 
     @Before
@@ -85,8 +85,7 @@ class AndroidEventProcessorTest {
         client = context.contentResolver.acquireContentProviderClient(AUTHORITY)!!
 
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        assertNotNull(calendar)
-        calendarUri = ContentUris.withAppendedId(Calendars.CONTENT_URI, calendar.id)
+        legacyCalendar = LegacyAndroidCalendar(calendar)
     }
 
     @After
@@ -134,7 +133,7 @@ class AndroidEventProcessorTest {
             client.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
         }
 
-        return destinationCalendar.getEvent(id)!!
+        return legacyCalendar.getAndroidEvent(destinationCalendar, id)!!
     }
 
     private fun populateEvent(
@@ -145,14 +144,15 @@ class AndroidEventProcessorTest {
         extendedProperties: Map<String, String> = emptyMap(),
         valuesBuilder: ContentValues.() -> Unit = {}
     ): Event {
-        return populateAndroidEvent(
+        val androidEvent = populateAndroidEvent(
             automaticDates,
             destinationCalendar,
             asSyncAdapter,
             insertCallback,
             extendedProperties,
             valuesBuilder
-        ).event!!
+        )
+        return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 
     @Test
@@ -160,7 +160,7 @@ class AndroidEventProcessorTest {
         populateEvent(
             true,
             extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
             )
         ).let { result ->
             assertEquals("event1@example.com", result.uid)
@@ -181,7 +181,7 @@ class AndroidEventProcessorTest {
         populateEvent(
             true,
             extendedProperties = mapOf(
-                AndroidEvent.EXTNAME_ICAL_UID to "event1@example.com"
+                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
             )
         ) {
             put(Events.UID_2445, "event2@example.com")
@@ -194,7 +194,7 @@ class AndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Sequence_Int() {
         populateEvent(true, asSyncAdapter = true) {
-            put(AndroidEvent.COLUMN_SEQUENCE, 5)
+            put(AndroidEvent2.COLUMN_SEQUENCE, 5)
         }.let { result ->
             assertEquals(5, result.sequence)
         }
@@ -203,7 +203,7 @@ class AndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Sequence_Null() {
         populateEvent(true, asSyncAdapter = true) {
-            putNull(AndroidEvent.COLUMN_SEQUENCE)
+            putNull(AndroidEvent2.COLUMN_SEQUENCE)
         }.let { result ->
             assertNull(result.sequence)
         }
@@ -408,7 +408,7 @@ class AndroidEventProcessorTest {
     @Test
     fun testPopulateEvent_Url() {
         populateEvent(true,
-            extendedProperties = mapOf(AndroidEvent.EXTNAME_URL to "https://example.com")
+            extendedProperties = mapOf(AndroidEvent2.EXTNAME_URL to "https://example.com")
         ).let { result ->
             assertEquals(URI("https://example.com"), result.url)
         }

@@ -9,39 +9,42 @@ package at.bitfire.synctools.test
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.os.Build
+import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.AndroidEvent
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert
-import org.junit.rules.ExternalResource
 import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
+import org.junit.runner.Description
+import org.junit.runners.model.Statement
 import java.util.logging.Logger
 
 /**
- * JUnit ClassRule which initializes the AOSP CalendarProvider.
+ * JUnit ClassRule which initializes the AOSP calendar provider so that queries work as they should.
  *
- * It seems that the calendar provider unfortunately forgets the very first requests when it is used the very first time,
- * maybe by some wrongly synchronized database initialization. So things like querying the instances
- * fails in this case.
+ * It seems that the calendar provider unfortunately forgets the very first requests when it is used the very first time
+ * (like in a fresh emulator in CI tests or directly after clearing the calendar provider storage), so things like querying
+ * the instances fails in that case.
  *
- * So this rule is needed to allow tests which need the calendar provider to succeed even when the calendar provider
- * is used the very first time (especially in CI tests / a fresh emulator).
+ * Android-internal `CalendarProvider2Tests` use a `CalendarProvider2ForTesting` that disables the asynchronous code
+ * which causes the problems (like `updateTimezoneDependentFields()`). Unfortunately, we can't do that because we have
+ * to use the real calendar provider.
+ *
+ * So this rule brings the calendar provider into its "normal working state" by creating an event and querying
+ * its instances as long until the result is correct. This works for now, but may fail in the future because
+ * it's only a trial-and-error workaround.
  */
-class InitCalendarProviderRule private constructor() : ExternalResource() {
+class InitCalendarProviderRule private constructor() : TestRule {
 
     companion object {
 
         private var isInitialized = false
-        private val logger = Logger.getLogger(InitCalendarProviderRule::javaClass.name)
 
         fun initialize(): RuleChain = RuleChain
             .outerRule(GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
@@ -49,14 +52,28 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
 
     }
 
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
+
     val account = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
 
-    override fun before() {
+    // TestRule implementation
+
+    override fun apply(base: Statement?, description: Description?) = object: Statement() {
+        override fun evaluate() {
+            before()
+            base?.evaluate()
+            // after() not needed
+        }
+    }
+
+
+    // custom wrappers
+
+    fun before() {
         if (!isInitialized) {
-            logger.info("Initializing calendar provider")
-            if (Build.VERSION.SDK_INT < 31)
-                logger.warning("Calendar provider initialization may or may not work. See InitCalendarProviderRule")
+            logger.warning("Calendar provider initialization may or may not work. See InitCalendarProviderRule KDoc.")
 
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)
@@ -72,34 +89,54 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
     private fun initCalendarProvider(provider: ContentProviderClient) {
         // Sometimes, the calendar provider returns an ID for the created calendar, but then fails to find it.
         var calendarOrNull: AndroidCalendar? = null
-        for (i in 0..50) {
+        tryUntilTrue {
             calendarOrNull = createAndVerifyCalendar(provider)
-            if (calendarOrNull != null)
-                break
-            else
-                Thread.sleep(100)
+            calendarOrNull != null
         }
-        val calendar = calendarOrNull ?: throw IllegalStateException("Couldn't create calendar")
+        val calendar = calendarOrNull!!
 
         try {
-            // single event init
-            val normalEvent = Event().apply {
-                dtStart = DtStart("20220120T010203Z")
-                summary = "Event with 1 instance"
+            // insert recurring event and query instances until the result is correct (max 50 times)
+            tryUntilTrue {
+                val syncId = "test-sync-id"
+                val id = calendar.addEvent(Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events._SYNC_ID to syncId,
+                    Events.DTSTART to 1642640523000,
+                    Events.DURATION to "PT1H",
+                    Events.TITLE to "Event with 5 instances, two of them are exceptions",
+                    Events.RRULE to "FREQ=DAILY;COUNT=5"
+                )))
+                calendar.addEvent(Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to syncId,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 3rd day",
+                )))
+                calendar.addEvent(Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to syncId,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
+                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 5th day",
+                )))
+                calendar.numDirectInstances(id) == 3
             }
-            val normalLocalEvent = AndroidEvent(calendar, normalEvent, null, null, null, 0)
-            normalLocalEvent.add()
-            calendar.numInstances(normalLocalEvent.id!!)
 
-            // recurring event init
-            val recurringEvent = Event().apply {
-                dtStart = DtStart("20220120T010203Z")
-                summary = "Event over 22 years"
-                rRules.add(RRule("FREQ=YEARLY;UNTIL=20740119T010203Z"))     // year needs to be  >2074 (not supported by Android <11 Calendar Storage)
-            }
-            val localRecurringEvent = AndroidEvent(calendar, recurringEvent, null, null, null, 0)
-            localRecurringEvent.add()
-            calendar.numInstances(localRecurringEvent.id!!)
+            if (AndroidCalendarProvider.supportsYear2074)
+                tryUntilTrue {
+                    val id = calendar.addEvent(Entity(contentValuesOf(
+                        Events.CALENDAR_ID to calendar.id,
+                        Events.DTSTART to 1642640523000,
+                        Events.DURATION to "PT1H",
+                        Events.TITLE to "Event until 2074",
+                        Events.RRULE to "FREQ=YEARLY;UNTIL=20740119T010203Z"
+                    )))
+                    calendar.numDirectInstances(id) == 52
+                }
         } finally {
             calendar.delete()
         }
@@ -118,6 +155,16 @@ class InitCalendarProviderRule private constructor() : ExternalResource() {
             logger.warning("Couldn't find calendar after creation: $e")
             null
         }
+    }
+
+    private fun tryUntilTrue(block: () -> Boolean) {
+        for (i in 1..100) {     // wait up to 100*100 ms = 10 seconds
+            val resultOk = block()
+            if (resultOk)
+                return
+            Thread.sleep(100)
+        }
+        throw IllegalStateException("Couldn't initialize calendar provider to get desired result")
     }
 
 }
