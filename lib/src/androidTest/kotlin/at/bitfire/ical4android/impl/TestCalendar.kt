@@ -9,7 +9,6 @@ package at.bitfire.ical4android.impl
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.provider.CalendarContract.Calendars
-import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
@@ -30,7 +29,7 @@ object TestCalendar {
             ?: provider.createAndGetCalendar(contentValuesOf(
                 Calendars.NAME to UUID.randomUUID().toString(),
                 Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
-                Calendars.ALLOWED_REMINDERS to Reminders.METHOD_DEFAULT)
+                Calendars.CALENDAR_ACCESS_LEVEL to Calendars.CAL_ACCESS_ROOT)
             )
     }
 

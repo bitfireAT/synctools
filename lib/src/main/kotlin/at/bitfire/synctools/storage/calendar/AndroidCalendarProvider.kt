@@ -10,6 +10,7 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
+import android.os.Build
 import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Calendars
@@ -314,6 +315,18 @@ class AndroidCalendarProvider(
          * (which is per account, not per calendar)._
          */
         const val COLUMN_CALENDAR_SYNC_STATE = Calendars.CAL_SYNC1
+
+        /**
+         * When calculating instances of recurring events with an `RRULE:...;UNTIL=xxx`,
+         * old calendar provider versions don't include the instance exactly at UNTIL
+         * as they should.
+         */
+        val instancesIncludeUntil = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+
+        /**
+         * Not all calendar provider versions support recurring events up to the year 2074.
+          */
+        val supportsYear2074 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
     }
 

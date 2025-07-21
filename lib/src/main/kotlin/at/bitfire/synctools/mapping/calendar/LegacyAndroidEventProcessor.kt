@@ -13,24 +13,17 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
-import at.bitfire.ical4android.AndroidEvent
-import at.bitfire.ical4android.AndroidEvent.Companion.CATEGORIES_SEPARATOR
-import at.bitfire.ical4android.AndroidEvent.Companion.COLUMN_SEQUENCE
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_CATEGORIES
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_ICAL_UID
-import at.bitfire.ical4android.AndroidEvent.Companion.EXTNAME_URL
-import at.bitfire.ical4android.AndroidEvent.Companion.MUTATORS_SEPARATOR
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.toContentValues
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -73,7 +66,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-class AndroidEventProcessor(
+class LegacyAndroidEventProcessor(
     private val calendar: AndroidCalendar,
     private val id: Long,
     private val entity: Entity
@@ -119,7 +112,7 @@ class AndroidEventProcessor(
         logger.log(Level.FINE, "Read event entity from calender provider", row)
 
         row.getAsString(Events.MUTATORS)?.let { strPackages ->
-            val packages = strPackages.split(MUTATORS_SEPARATOR).toSet()
+            val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
             to.userAgents.addAll(packages)
         }
 
@@ -237,7 +230,7 @@ class AndroidEventProcessor(
         }
 
         to.uid = row.getAsString(Events.UID_2445)
-        to.sequence = row.getAsInteger(COLUMN_SEQUENCE)
+        to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
         to.summary = row.getAsString(Events.TITLE)
@@ -387,17 +380,17 @@ class AndroidEventProcessor(
 
         try {
             when (name) {
-                EXTNAME_CATEGORIES ->
-                    to.categories += rawValue.split(CATEGORIES_SEPARATOR)
+                AndroidEvent2.EXTNAME_CATEGORIES ->
+                    to.categories += rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR)
 
-                EXTNAME_URL ->
+                AndroidEvent2.EXTNAME_URL ->
                     try {
                         to.url = URI(rawValue)
                     } catch(_: URISyntaxException) {
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
 
-                EXTNAME_ICAL_UID ->
+                AndroidEvent2.EXTNAME_ICAL_UID ->
                     // only consider iCalUid when there's no uid
                     if (to.uid == null)
                         to.uid = rawValue
@@ -411,42 +404,38 @@ class AndroidEventProcessor(
     }
 
     private fun populateExceptions(to: Event) {
-        calendar.client.query(Events.CONTENT_URI.asSyncAdapter(calendar.account),
-            null,
-            Events.ORIGINAL_ID + "=?", arrayOf(id.toString()), null)?.use { c ->
-            while (c.moveToNext()) {
-                val values = c.toContentValues()
-                try {
-                    val exception = AndroidEvent(calendar, values)
-                    val exceptionEvent = exception.event!!
-                    val recurrenceId = exceptionEvent.recurrenceId!!
+        val legacyCalendar = LegacyAndroidCalendar(calendar)
+        calendar.iterateEvents(Events.ORIGINAL_ID + "=?", arrayOf(id.toString())) { entity ->
+            val exception = AndroidEvent2(calendar, entity)
 
-                    // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-                    if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
-                        val list = DateList(
-                            if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
-                            recurrenceId.timeZone
-                        )
-                        list.add(recurrenceId.date)
-                        to.exDates += ExDate(list).apply {
-                            if (DateUtils.isDateTime(recurrenceId)) {
-                                if (recurrenceId.isUtc)
-                                    setUtc(true)
-                                else
-                                    timeZone = recurrenceId.timeZone
-                            }
-                        }
+            val exceptionEvent = legacyCalendar.getEvent(exception.id)
+            if (exceptionEvent == null)
+                return@iterateEvents
 
-                    } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                        // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-                        exceptionEvent.organizer = to.organizer
+            val recurrenceId = exceptionEvent.recurrenceId!!
 
-                        // add exception to list of exceptions
-                        to.exceptions += exceptionEvent
+            // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
+            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
+                val list = DateList(
+                    if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
+                    recurrenceId.timeZone
+                )
+                list.add(recurrenceId.date)
+                to.exDates += ExDate(list).apply {
+                    if (DateUtils.isDateTime(recurrenceId)) {
+                        if (recurrenceId.isUtc)
+                            setUtc(true)
+                        else
+                            timeZone = recurrenceId.timeZone
                     }
-                } catch (e: Exception) {
-                    logger.log(Level.WARNING, "Couldn't find exception details", e)
                 }
+
+            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
+                // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
+                exceptionEvent.organizer = to.organizer
+
+                // add exception to list of exceptions
+                to.exceptions += exceptionEvent
             }
         }
     }
