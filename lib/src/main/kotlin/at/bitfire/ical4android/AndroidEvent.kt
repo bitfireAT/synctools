@@ -21,6 +21,7 @@ import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
+import com.google.common.base.MoreObjects
 
 /**
  * Stores and retrieves VEVENT iCalendar objects (represented as [Event]s) to/from the
@@ -141,6 +142,14 @@ class AndroidEvent(
         return ContentUris.withAppendedId(Events.CONTENT_URI, id).asSyncAdapter(calendar.account)
     }
 
-    override fun toString(): String = "AndroidEvent(calendar=$calendar, id=$id)"
+    override fun toString(): String {
+        return MoreObjects.toStringHelper(this)
+            .add("calendar", calendar)
+            .add("id", id)
+            .add("eTag", eTag)
+            .add("scheduleTag", scheduleTag)
+            .add("flags", flags)
+            .toString()
+    }
 
 }

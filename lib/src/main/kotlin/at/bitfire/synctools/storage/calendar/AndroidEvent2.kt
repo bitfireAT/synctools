@@ -18,7 +18,7 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_
 /**
  * Stores and retrieves events to/from the Android calendar provider.
  *
- * An event in the context of this class one row in the [Events] table,
+ * An event in the context of this class is one row in the [Events] table,
  * plus associated data rows (like alarms and reminders).
  *
  * Exceptions (of recurring events) have their own entries in the [Events] table and thus
