@@ -6,50 +6,36 @@
 
 package at.bitfire.synctools.mapping.calendar
 
-import android.provider.CalendarContract.Attendees
+import android.content.ContentValues
+import android.content.Entity
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.ICalendar
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
-import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.Status
 import java.time.Duration
 import java.time.Period
-import java.time.ZonedDateTime
-import java.util.Locale
+import java.util.LinkedList
 import java.util.logging.Logger
 
 /**
@@ -78,26 +64,27 @@ class LegacyAndroidEventBuilder2(
 
 
     fun build(): EventAndExceptions {
-        TODO()
+        // main row
+        val mainRow = buildEventRow(recurrence = null)
+        val main = Entity(mainRow)
+        // TODO: add reminders, attendees, extended properties, unknown properties
+
+        // (optional) exceptions
+        val exceptions = LinkedList<Entity>()
+        for (exception in event.exceptions) {
+            val exceptionRow = buildEventRow(recurrence = exception)
+            exceptions += Entity(exceptionRow)
+            // TODO: add reminders, attendees, extended properties, unknown properties
+        }
+
+        return EventAndExceptions(
+            main = main,
+            exceptions = exceptions
+        )
     }
 
 
-    fun addOrUpdateRows(event: Event, batch: CalendarBatchOperation): Int? {
-        val builder =
-            if (id == null)
-                CpoBuilder.newInsert(calendar.eventsUri)
-            else
-                CpoBuilder.newUpdate(calendar.eventUri(id))
-
-        // return the index of the row containing the event ID in the results (only when adding an event)
-        val idxEvent = if (id == null)
-            batch.nextBackrefIdx()
-        else
-            null
-
-        buildEvent(null, builder)
-        batch += builder
-
+    /*fun addOrUpdateRows(event: Event, batch: CalendarBatchOperation): Int? {
         // add reminders
         event.alarms.forEach { insertReminder(batch, idxEvent, it) }
 
@@ -124,21 +111,6 @@ class LegacyAndroidEventBuilder2(
 
         // add exceptions
         for (exception in event.exceptions) {
-            /* I guess exceptions should be inserted using Events.CONTENT_EXCEPTION_URI so that we could
-               benefit from some provider logic (for recurring exceptions e.g.). However, this method
-               has some caveats:
-               - For instance, only Events.SYNC_DATA1, SYNC_DATA3 and SYNC_DATA7 can be used
-               in exception events (that's hardcoded in the CalendarProvider, don't ask me why).
-               - Also, CONTENT_EXCEPTIONS_URI doesn't deal with exceptions for recurring events defined by RDATE
-               (it checks for RRULE and aborts if no RRULE is found).
-               So I have chosen the method of inserting the exception event manually.
-
-               It's also noteworthy that linking the main event to the exception only works using _SYNC_ID
-               and ORIGINAL_SYNC_ID (and not ID and ORIGINAL_ID, as one could assume). So, if you don't
-               set _SYNC_ID in the main event and ORIGINAL_SYNC_ID in the exception, the exception will
-               appear additionally (and not *instead* of the instance).
-             */
-
             val recurrenceId = exception.recurrenceId
             if (recurrenceId == null) {
                 logger.warning("Ignoring exception of event ${event.uid} without recurrenceId")
@@ -149,7 +121,7 @@ class LegacyAndroidEventBuilder2(
                 .newInsert(Events.CONTENT_URI.asSyncAdapter(calendar.account))
                 .withEventId(Events.ORIGINAL_ID, idxEvent)
 
-            buildEvent(exception, exBuilder)
+            buildEventRow(exception, exBuilder)
             if (exBuilder.values[Events.ORIGINAL_SYNC_ID] == null && exBuilder.valueBackrefs[Events.ORIGINAL_SYNC_ID] == null)
                 throw AssertionError("buildEvent(exception) must set ORIGINAL_SYNC_ID")
 
@@ -185,7 +157,7 @@ class LegacyAndroidEventBuilder2(
         }
 
         return idxEvent
-    }
+    }*/
 
     /**
      * Builds an Android [Events] row for a given event. Takes information from
@@ -194,18 +166,24 @@ class LegacyAndroidEventBuilder2(
      * - the [event]: all other fields.
      *
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
-     * @param builder      data row builder to be used
      */
-    private fun buildEvent(recurrence: Event?, builder: CpoBuilder) {
-        val event = recurrence ?: event
+    private fun buildEventRow(recurrence: Event?): ContentValues {
+        // start with object-level (AndroidEvent) fields
+        val row = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DIRTY to 0,      // newly created event rows shall not be marked as dirty (relevant for update)
+            Events.DELETED to 0,    // see above
+            AndroidEvent2.COLUMN_FLAGS to flags
+        )
 
-        val dtStart = event.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
+        val from = recurrence ?: event
+        val dtStart = from.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android
         AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
 
-        val recurring = event.rRules.isNotEmpty() || event.rDates.isNotEmpty()
+        val recurring = from.rRules.isNotEmpty() || from.rDates.isNotEmpty()
 
         /* [CalendarContract.Events SDK documentation]
            When inserting a new event the following fields must be included:
@@ -216,34 +194,32 @@ class LegacyAndroidEventBuilder2(
            - eventTimezone
            - a calendar_id */
 
-        // object-level (AndroidEvent) fields
-        builder .withValue(Events.CALENDAR_ID, calendar.id)
-            .withValue(Events.DIRTY, 0)     // newly created event rows shall not be marked as dirty
-            .withValue(Events.DELETED, 0)   // or deleted
-            .withValue(AndroidEvent2.COLUMN_FLAGS, flags)
-
-        if (recurrence == null)
-            builder.withValue(Events._SYNC_ID, syncId)
-                .withValue(AndroidEvent2.COLUMN_ETAG, eTag)
-                .withValue(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
-        else
-            builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
+        if (recurrence == null) {
+            // main event
+            row.put(Events._SYNC_ID, syncId)
+            row.put(AndroidEvent2.COLUMN_ETAG, eTag)
+            row.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
+        } else {
+            // exception
+            row.put(Events.ORIGINAL_SYNC_ID, syncId)
+            row.put(Events.ORIGINAL_ALL_DAY, DateUtils.isDate(event.dtStart))
+        }
 
         // UID, sequence
-        builder .withValue(Events.UID_2445, event.uid)
-            .withValue(AndroidEvent2.COLUMN_SEQUENCE, event.sequence)
+        row.put(Events.UID_2445, from.uid)
+        row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
 
         // time fields
-        builder .withValue(Events.DTSTART, dtStart.date.time)
-            .withValue(Events.ALL_DAY, if (allDay) 1 else 0)
-            .withValue(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
+        row.put(Events.DTSTART, dtStart.date.time)
+        row.put(Events.ALL_DAY, if (allDay) 1 else 0)
+        row.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
-        var dtEnd = event.dtEnd
+        var dtEnd = from.dtEnd
         AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
 
         var duration =
             if (dtEnd == null)
-                event.duration?.duration
+                from.duration?.duration
             else
                 null
         if (allDay && duration is Duration)
@@ -279,19 +255,18 @@ class LegacyAndroidEventBuilder2(
             }
 
             // iCalendar doesn't permit years and months, only PwWdDThHmMsS
-            builder .withValue(Events.DURATION, duration?.toRfc5545Duration(dtStart.date.toInstant()))
-                .withValue(Events.DTEND, null)
+            row.put(Events.DURATION, duration?.toRfc5545Duration(dtStart.date.toInstant()))
+            row.putNull(Events.DTEND)
 
             // add RRULEs
-            if (event.rRules.isNotEmpty()) {
-                builder.withValue(Events.RRULE, event.rRules
-                    .joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            } else
-                builder.withValue(Events.RRULE, null)
+            if (from.rRules.isNotEmpty())
+                row.put(Events.RRULE, from.rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+            else
+                row.putNull(Events.RRULE)
 
-            if (event.rDates.isNotEmpty()) {
+            if (from.rDates.isNotEmpty()) {
                 // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
-                val infiniteRrule = event.rRules.any { rRule ->
+                val infiniteRrule = from.rRules.any { rRule ->
                     rRule.recur.count == -1 &&  // no COUNT AND
                             rRule.recur.until == null   // no UNTIL
                 }
@@ -299,30 +274,30 @@ class LegacyAndroidEventBuilder2(
                 if (infiniteRrule)
                     logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
                 else {
-                    for (rDate in event.rDates)
+                    for (rDate in from.rDates)
                         AndroidTimeUtils.androidifyTimeZone(rDate)
 
                     // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
                     val listWithDtStart = DateList()
                     listWithDtStart.add(dtStart.date)
-                    event.rDates.addFirst(RDate(listWithDtStart))
+                    from.rDates.addFirst(RDate(listWithDtStart))
 
-                    builder.withValue(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(event.rDates, dtStart.date))
+                    row.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.rDates, dtStart.date))
                 }
             } else
-                builder.withValue(Events.RDATE, null)
+                row.putNull(Events.RDATE)
 
-            if (event.exRules.isNotEmpty())
-                builder.withValue(Events.EXRULE, event.exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+            if (from.exRules.isNotEmpty())
+                row.put(Events.EXRULE, from.exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
             else
-                builder.withValue(Events.EXRULE, null)
+                row.putNull(Events.EXRULE)
 
-            if (event.exDates.isNotEmpty()) {
-                for (exDate in event.exDates)
+            if (from.exDates.isNotEmpty()) {
+                for (exDate in from.exDates)
                     AndroidTimeUtils.androidifyTimeZone(exDate)
-                builder.withValue(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(event.exDates, dtStart.date))
+                row.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.exDates, dtStart.date))
             } else
-                builder.withValue(Events.EXDATE, null)
+                row.putNull(Events.EXDATE)
 
         } else /* !recurring */ {
             // dtend must be set
@@ -359,42 +334,42 @@ class LegacyAndroidEventBuilder2(
             }
 
             AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
-            builder .withValue(Events.DTEND, dtEnd.date.time)
-                .withValue(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
-                .withValue(Events.DURATION, null)
-                .withValue(Events.RRULE, null)
-                .withValue(Events.RDATE, null)
-                .withValue(Events.EXRULE, null)
-                .withValue(Events.EXDATE, null)
+            row.put(Events.DTEND, dtEnd.date.time)
+            row.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
+            row.putNull(Events.DURATION)
+            row.putNull(Events.RRULE)
+            row.putNull(Events.RDATE)
+            row.putNull(Events.EXRULE)
+            row.putNull(Events.EXDATE)
         }
 
         // text fields
-        builder.withValue(Events.TITLE, event.summary)
-            .withValue(Events.EVENT_LOCATION, event.location)
-            .withValue(Events.DESCRIPTION, event.description)
+        row.put(Events.TITLE, from.summary)
+        row.put(Events.EVENT_LOCATION, from.location)
+        row.put(Events.DESCRIPTION, from.description)
 
         // color
-        val color = event.color
+        val color = from.color
         if (color != null) {
             // set event color (if it's available for this account)
             calendar.client.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
                 "${Colors.COLOR_KEY}=? AND ${Colors.COLOR_TYPE}=${Colors.TYPE_EVENT}", arrayOf(color.name), null)?.use { cursor ->
                 if (cursor.moveToNext())
-                    builder.withValue(Events.EVENT_COLOR_KEY, color.name)
+                    row.put(Events.EVENT_COLOR_KEY, color.name)
                 else
                     logger.fine("Ignoring event color \"${color.name}\" (not available for this account)")
             }
         } else {
             // reset color index and value
-            builder .withValue(Events.EVENT_COLOR_KEY, null)
-                .withValue(Events.EVENT_COLOR, null)
+            row.putNull(Events.EVENT_COLOR_KEY)
+            row.putNull(Events.EVENT_COLOR)
         }
 
         // scheduling
-        val groupScheduled = event.attendees.isNotEmpty()
+        val groupScheduled = from.attendees.isNotEmpty()
         if (groupScheduled) {
-            builder .withValue(Events.HAS_ATTENDEE_DATA, 1)
-                .withValue(Events.ORGANIZER, event.organizer?.let { organizer ->
+            row.put(Events.HAS_ATTENDEE_DATA, 1)
+            row.put(Events.ORGANIZER, from.organizer?.let { organizer ->
                     val uri = organizer.calAddress
                     val email = if (uri.scheme.equals("mailto", true))
                         uri.schemeSpecificPart
@@ -408,30 +383,33 @@ class LegacyAndroidEventBuilder2(
                     null
                 } ?: calendar.ownerAccount)
 
-        } else /* !groupScheduled */
-            builder .withValue(Events.HAS_ATTENDEE_DATA, 0)
-                .withValue(Events.ORGANIZER, calendar.ownerAccount)
+        } else { /* !groupScheduled */
+            row.put(Events.HAS_ATTENDEE_DATA, 0)
+            row.put(Events.ORGANIZER, calendar.ownerAccount)
+        }
 
         // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
         // In this case, the whole event must be deleted and inserted again.
-        if (/* insert, not an update */ id == null || /* update, but we're not updating to null */ event.status != null)
-            builder.withValue(Events.STATUS, when (event.status) {
+        if (/* insert, not an update */ id == null || /* update, but we're not updating to null */ from.status != null)
+            row.put(Events.STATUS, when (from.status) {
                 null /* not possible by if statement */ -> null
                 Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
                 Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED
                 else -> Events.STATUS_TENTATIVE
             })
 
-        builder .withValue(Events.AVAILABILITY, if (event.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
-            .withValue(Events.ACCESS_LEVEL, when (event.classification) {
+        row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
+        row.put(Events.ACCESS_LEVEL, when (from.classification) {
                 null -> Events.ACCESS_DEFAULT
                 Clazz.PUBLIC -> Events.ACCESS_PUBLIC
                 Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
                 else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
             })
+
+        return row
     }
 
-    private fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
+    /*private fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
         val builder = CpoBuilder
             .newInsert(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
             .withEventId(Reminders.EVENT_ID, idxEvent)
@@ -530,15 +508,6 @@ class LegacyAndroidEventBuilder2(
             if (it != Clazz.PUBLIC && it != Clazz.PRIVATE)
                 event.unknownProperties += it
         }
-    }
-
-
-    private fun CpoBuilder.withEventId(column: String, idxEvent: Int?): CpoBuilder {
-        if (idxEvent != null)
-            withValueBackReference(column, idxEvent)
-        else
-            withValue(column, requireNotNull(id))
-        return this
-    }
+    }*/
 
 }
