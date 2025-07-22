@@ -29,6 +29,7 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.CalendarBatchOperation
+import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -58,7 +59,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-class LegacyAndroidEventBuilder(
+class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
     private val event: Event,
 
@@ -74,6 +75,11 @@ class LegacyAndroidEventBuilder(
         get() = Logger.getLogger(javaClass.name)
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+
+
+    fun build(): EventAndExceptions {
+        TODO()
+    }
 
 
     fun addOrUpdateRows(event: Event, batch: CalendarBatchOperation): Int? {

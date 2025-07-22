@@ -85,17 +85,7 @@ class AndroidCalendar(
     fun addEvent(entity: Entity): Long {
         try {
             val batch = CalendarBatchOperation(client)
-
-            // insert main row
-            batch += CpoBuilder.newInsert(eventsUri)
-                .withValues(entity.entityValues)
-
-            // insert data rows (with reference to main row ID)
-            for (row in entity.subValues)
-                batch += CpoBuilder.newInsert(row.uri)
-                    .withValues(row.values)
-                    .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
-
+            addEvent(entity, batch)
             batch.commit()
 
             val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
@@ -103,6 +93,38 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't insert event", e)
         }
+    }
+
+    /**
+     * Adds an event and all its exceptions.
+     */
+    fun addEventAndExceptions(eventAndExceptions: EventAndExceptions) {
+        try {
+            val batch = CalendarBatchOperation(client)
+            addEvent(eventAndExceptions.main, batch)
+
+            /* Add exceptions. We don't have to set ORIGINAL_ID of each exception to the ID of
+            the main event because the content provider associates events with their exceptions
+            using _SYNC_ID / ORIGINAL_SYNC_ID. */
+            for (exception in eventAndExceptions.exceptions)
+                addEvent(exception, batch)
+
+            batch.commit()
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't insert event/exceptions", e)
+        }
+    }
+
+    private fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
+        // insert main row
+        batch += CpoBuilder.newInsert(eventsUri)
+            .withValues(entity.entityValues)
+
+        // insert data rows (with reference to main row ID)
+        for (row in entity.subValues)
+            batch += CpoBuilder.newInsert(row.uri)
+                .withValues(row.values)
+                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
     }
 
     /**
