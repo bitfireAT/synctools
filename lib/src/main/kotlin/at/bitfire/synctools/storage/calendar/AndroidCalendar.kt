@@ -291,7 +291,7 @@ class AndroidCalendar(
         try {
             val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
             if (rebuild) {
-                deleteEvent(id)
+                deleteEventAndExceptions(id)
                 return addEvent(entity)
             }
 
@@ -375,12 +375,28 @@ class AndroidCalendar(
             throw LocalStorageException("Couldn't update events", e)
         }
 
-    fun deleteEvent(id: Long): Int =
+    /**
+     * Deletes an event and all its potential exceptions.
+     *
+     * @param id    ID of the event
+     */
+    fun deleteEventAndExceptions(id: Long) {
         try {
-            client.delete(eventUri(id), null, null)
+            val batch = CalendarBatchOperation(client)
+
+            // delete main event
+            batch += CpoBuilder.newDelete(eventUri(id))
+
+            // delete exceptions, too (not automatically done by provider)
+            batch += CpoBuilder
+                .newDelete(eventsUri)
+                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
+
+            batch.commit()
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete event $id", e)
         }
+    }
 
 
 

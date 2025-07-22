@@ -99,7 +99,7 @@ class AndroidEvent2(
 
     fun update(values: ContentValues) = calendar.updateEventRow(id, values)
     fun update(entity: Entity) = calendar.updateEvent(id, entity)
-    fun delete() = calendar.deleteEvent(id)
+    fun delete() = calendar.deleteEventAndExceptions(id)
 
 
     // helpers

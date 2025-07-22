@@ -8,34 +8,49 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
+import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.ICalendar
+import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
+import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
+import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
+import net.fortuna.ical4j.model.parameter.PartStat
+import net.fortuna.ical4j.model.property.Action
+import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.Status
 import java.time.Duration
 import java.time.Period
-import java.util.LinkedList
+import java.time.ZonedDateTime
+import java.util.Locale
 import java.util.logging.Logger
 
 /**
@@ -63,101 +78,48 @@ class LegacyAndroidEventBuilder2(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
 
-    fun build(): EventAndExceptions {
-        // main row
-        val mainRow = buildEventRow(recurrence = null)
-        val main = Entity(mainRow)
-        // TODO: add reminders, attendees, extended properties, unknown properties
-
-        // (optional) exceptions
-        val exceptions = LinkedList<Entity>()
-        for (exception in event.exceptions) {
-            val exceptionRow = buildEventRow(recurrence = exception)
-            exceptions += Entity(exceptionRow)
-            // TODO: add reminders, attendees, extended properties, unknown properties
-        }
-
-        return EventAndExceptions(
-            main = main,
-            exceptions = exceptions
+    fun build() =
+        EventAndExceptions(
+            main = buildEvent(null),
+            exceptions = event.exceptions.map { exception ->
+                buildEvent(exception)
+            }
         )
-    }
 
+    fun buildEvent(recurrence: Event?): Entity {
+        val row = buildEventRow(recurrence)
 
-    /*fun addOrUpdateRows(event: Event, batch: CalendarBatchOperation): Int? {
-        // add reminders
-        event.alarms.forEach { insertReminder(batch, idxEvent, it) }
+        val entity = Entity(row)
+        val from = recurrence ?: event
 
-        // add attendees
-        val organizer = event.organizerEmail ?:
-        /* no ORGANIZER, use current account owner as ORGANIZER */
-        calendar.ownerAccount ?: calendar.account.name
-        event.attendees.forEach { insertAttendee(batch, idxEvent, it, organizer) }
+        for (reminder in from.alarms)
+            entity.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder))
 
-        // add extended properties
-        // CATEGORIES
+        for (attendee in from.attendees)
+            entity.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee))
+
+        // extended properties
         if (event.categories.isNotEmpty())
-            insertCategories(batch, idxEvent)
-        // CLASS
-        retainClassification()
-        // URL
+            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildCategories(event.categories))
+
+        event.classification?.let { classification ->
+            val values = buildRetainedClassification(classification)
+            if (values != null)
+                entity.addSubValue(ExtendedProperties.CONTENT_URI, values)
+        }
+
         event.url?.let { url ->
-            insertExtendedProperty(batch, idxEvent, AndroidEvent2.EXTNAME_URL, url.toString())
-        }
-        // unknown properties
-        event.unknownProperties.forEach {
-            insertUnknownProperty(batch, idxEvent, it)
+            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildUrl(url.toString()))
         }
 
-        // add exceptions
-        for (exception in event.exceptions) {
-            val recurrenceId = exception.recurrenceId
-            if (recurrenceId == null) {
-                logger.warning("Ignoring exception of event ${event.uid} without recurrenceId")
-                continue
-            }
-
-            val exBuilder = CpoBuilder
-                .newInsert(Events.CONTENT_URI.asSyncAdapter(calendar.account))
-                .withEventId(Events.ORIGINAL_ID, idxEvent)
-
-            buildEventRow(exception, exBuilder)
-            if (exBuilder.values[Events.ORIGINAL_SYNC_ID] == null && exBuilder.valueBackrefs[Events.ORIGINAL_SYNC_ID] == null)
-                throw AssertionError("buildEvent(exception) must set ORIGINAL_SYNC_ID")
-
-            var recurrenceDate = recurrenceId.date
-            val dtStartDate = event.dtStart!!.date
-            if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
-
-            } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
-                // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    dtStartDate.toLocalTime(),
-                    dtStartDate.requireZoneId()
-                )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
-            }
-            exBuilder   .withValue(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
-                .withValue(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
-
-            val idxException = batch.nextBackrefIdx()
-            batch += exBuilder
-
-            // add exception reminders
-            exception.alarms.forEach { insertReminder(batch, idxException, it) }
-
-            // add exception attendees
-            exception.attendees.forEach { insertAttendee(batch, idxException, it, organizer) }
+        for (unknownProperty in event.unknownProperties) {
+            val values = buildUnknownProperty(unknownProperty)
+            if (values != null)
+                entity.addSubValue(ExtendedProperties.CONTENT_URI, values)
         }
 
-        return idxEvent
-    }*/
+        return entity
+    }
 
     /**
      * Builds an Android [Events] row for a given event. Takes information from
@@ -176,7 +138,9 @@ class LegacyAndroidEventBuilder2(
             AndroidEvent2.COLUMN_FLAGS to flags
         )
 
+        val isException = recurrence != null
         val from = recurrence ?: event
+
         val dtStart = from.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
@@ -194,7 +158,7 @@ class LegacyAndroidEventBuilder2(
            - eventTimezone
            - a calendar_id */
 
-        if (recurrence == null) {
+        if (!isException) {
             // main event
             row.put(Events._SYNC_ID, syncId)
             row.put(AndroidEvent2.COLUMN_ETAG, eTag)
@@ -202,7 +166,27 @@ class LegacyAndroidEventBuilder2(
         } else {
             // exception
             row.put(Events.ORIGINAL_SYNC_ID, syncId)
-            row.put(Events.ORIGINAL_ALL_DAY, DateUtils.isDate(event.dtStart))
+            row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
+
+            var recurrenceDate = from.recurrenceId!!.date
+            val dtStartDate = event.dtStart!!.date
+            if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
+                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
+                val localDate = recurrenceDate.toLocalDate()
+                recurrenceDate = Date(localDate.toIcal4jDate())
+
+            } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
+                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
+                val localDate = recurrenceDate.toLocalDate()
+                // guess time and time zone from DTSTART
+                val zonedTime = ZonedDateTime.of(
+                    localDate,
+                    dtStartDate.toLocalTime(),
+                    dtStartDate.requireZoneId()
+                )
+                recurrenceDate = zonedTime.toIcal4jDateTime()
+            }
+            row.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
         }
 
         // UID, sequence
@@ -225,7 +209,7 @@ class LegacyAndroidEventBuilder2(
         if (allDay && duration is Duration)
             duration = Period.ofDays(duration.toDays().toInt())
 
-        if (recurring) {
+        if (recurring && !isException) {
             // duration must be set
             if (duration == null) {
                 if (dtEnd != null) {
@@ -409,11 +393,45 @@ class LegacyAndroidEventBuilder2(
         return row
     }
 
-    /*private fun insertReminder(batch: CalendarBatchOperation, idxEvent: Int?, alarm: VAlarm) {
-        val builder = CpoBuilder
-            .newInsert(Reminders.CONTENT_URI.asSyncAdapter(calendar.account))
-            .withEventId(Reminders.EVENT_ID, idxEvent)
+    private fun buildAttendee(attendee: Attendee): ContentValues {
+        val values = ContentValues()
+        val organizer = event.organizerEmail ?:
+            /* no ORGANIZER, use current account owner as ORGANIZER */
+            calendar.ownerAccount ?: calendar.account.name
 
+        val member = attendee.calAddress
+        if (member.scheme.equals("mailto", true))   // attendee identified by email
+            values.put(Attendees.ATTENDEE_EMAIL, member.schemeSpecificPart)
+        else {
+            // attendee identified by other URI
+            values.put(Attendees.ATTENDEE_ID_NAMESPACE, member.scheme)
+            values.put(Attendees.ATTENDEE_IDENTITY, member.schemeSpecificPart)
+
+            attendee.getParameter<Email>(Parameter.EMAIL)?.let { email ->
+                values.put(Attendees.ATTENDEE_EMAIL, email.value)
+            }
+        }
+
+        attendee.getParameter<Cn>(Parameter.CN)?.let { cn ->
+            values.put(Attendees.ATTENDEE_NAME, cn.value)
+        }
+
+        // type/relation mapping is complex and thus outsourced to AttendeeMappings
+        AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
+
+        val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
+            PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
+            PartStat.DECLINED     -> Attendees.ATTENDEE_STATUS_DECLINED
+            PartStat.TENTATIVE    -> Attendees.ATTENDEE_STATUS_TENTATIVE
+            PartStat.DELEGATED    -> Attendees.ATTENDEE_STATUS_NONE
+            else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
+        }
+        values.put(Attendees.ATTENDEE_STATUS, status)
+
+        return values
+    }
+
+    private fun buildReminder(alarm: VAlarm): ContentValues {
         val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
             Action.DISPLAY.value,
             Action.AUDIO.value -> Reminders.METHOD_ALERT    // will trigger an alarm on the Android device
@@ -426,88 +444,58 @@ class LegacyAndroidEventBuilder2(
 
         val minutes = ICalendar.vAlarmToMin(alarm, event, false)?.second ?: Reminders.MINUTES_DEFAULT
 
-        builder .withValue(Reminders.METHOD, method)
-            .withValue(Reminders.MINUTES, minutes)
-        batch += builder
+        return contentValuesOf(
+            Reminders.METHOD to method,
+            Reminders.MINUTES to minutes
+        )
     }
 
-    private fun insertAttendee(batch: CalendarBatchOperation, idxEvent: Int?, attendee: Attendee, organizer: String) {
-        val builder = CpoBuilder
-            .newInsert(Attendees.CONTENT_URI.asSyncAdapter(calendar.account))
-            .withEventId(Attendees.EVENT_ID, idxEvent)
-
-        val member = attendee.calAddress
-        if (member.scheme.equals("mailto", true))
-        // attendee identified by email
-            builder .withValue(Attendees.ATTENDEE_EMAIL, member.schemeSpecificPart)
-        else {
-            // attendee identified by other URI
-            builder .withValue(Attendees.ATTENDEE_ID_NAMESPACE, member.scheme)
-                .withValue(Attendees.ATTENDEE_IDENTITY, member.schemeSpecificPart)
-
-            attendee.getParameter<Email>(Parameter.EMAIL)?.let { email ->
-                builder.withValue(Attendees.ATTENDEE_EMAIL, email.value)
-            }
+    private fun buildCategories(categories: List<String>): ContentValues {
+        // concatenate, separate by backslash
+        val rawCategories = categories.joinToString(AndroidEvent2.CATEGORIES_SEPARATOR.toString()) { category ->
+            // drop occurrences of CATEGORIES_SEPARATOR in category names
+            category.filter { it != AndroidEvent2.CATEGORIES_SEPARATOR }
         }
-
-        attendee.getParameter<Cn>(Parameter.CN)?.let { cn ->
-            builder.withValue(Attendees.ATTENDEE_NAME, cn.value)
-        }
-
-        // type/relation mapping is complex and thus outsourced to AttendeeMappings
-        AttendeeMappings.iCalendarToAndroid(attendee, builder, organizer)
-
-        val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
-            PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
-            PartStat.DECLINED     -> Attendees.ATTENDEE_STATUS_DECLINED
-            PartStat.TENTATIVE    -> Attendees.ATTENDEE_STATUS_TENTATIVE
-            PartStat.DELEGATED    -> Attendees.ATTENDEE_STATUS_NONE
-            else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
-        }
-        builder.withValue(Attendees.ATTENDEE_STATUS, status)
-        batch += builder
-    }
-
-    private fun insertExtendedProperty(batch: CalendarBatchOperation, idxEvent: Int?, name: String, value: String) {
-        val builder = CpoBuilder
-            .newInsert(ExtendedProperties.CONTENT_URI.asSyncAdapter(calendar.account))
-            .withEventId(ExtendedProperties.EVENT_ID, idxEvent)
-            .withValue(ExtendedProperties.NAME, name)
-            .withValue(ExtendedProperties.VALUE, value)
-        batch += builder
-    }
-
-    private fun insertCategories(batch: CalendarBatchOperation, idxEvent: Int?) {
-        val rawCategories = event.categories      // concatenate, separate by backslash
-            .joinToString(AndroidEvent2.CATEGORIES_SEPARATOR.toString()) { category ->
-                // drop occurrences of CATEGORIES_SEPARATOR in category names
-                category.filter { it != AndroidEvent2.CATEGORIES_SEPARATOR }
-            }
-        insertExtendedProperty(batch, idxEvent, AndroidEvent2.EXTNAME_CATEGORIES, rawCategories)
-    }
-
-    private fun insertUnknownProperty(batch: CalendarBatchOperation, idxEvent: Int?, property: Property) {
-        if (property.value == null) {
-            logger.warning("Ignoring unknown property with null value")
-            return
-        }
-        if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
-            logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
-            return
-        }
-
-        insertExtendedProperty(batch, idxEvent, UnknownProperty.CONTENT_ITEM_TYPE, UnknownProperty.toJsonString(property))
+        return contentValuesOf(
+            ExtendedProperties.NAME to AndroidEvent2.EXTNAME_CATEGORIES,
+            ExtendedProperties.VALUE to rawCategories
+        )
     }
 
     /**
      * Retain classification other than PUBLIC and PRIVATE as unknown property so
      * that it can be reused when "server default" is selected.
+     *
+     * Should not be returned as an unknown property in the future, but as explicit extended property.
      */
-    private fun retainClassification() {
-        event.classification?.let {
-            if (it != Clazz.PUBLIC && it != Clazz.PRIVATE)
-                event.unknownProperties += it
+    private fun buildRetainedClassification(classification: Clazz): ContentValues? {
+        if (classification != Clazz.PUBLIC && classification != Clazz.PRIVATE)
+            return contentValuesOf(
+                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
+            )
+        return null
+    }
+
+    private fun buildUnknownProperty(property: Property): ContentValues? {
+        if (property.value == null) {
+            logger.warning("Ignoring unknown property with null value")
+            return null
         }
-    }*/
+        if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
+            logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
+            return null
+        }
+
+        return contentValuesOf(
+            ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+            ExtendedProperties.VALUE to UnknownProperty.toJsonString(property)
+        )
+    }
+
+    private fun buildUrl(url: String) = contentValuesOf(
+        ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
+        ExtendedProperties.VALUE to url
+    )
 
 }
