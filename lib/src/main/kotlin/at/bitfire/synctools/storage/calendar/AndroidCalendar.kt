@@ -122,7 +122,7 @@ class AndroidCalendar(
 
         // insert data rows (with reference to main row ID)
         for (row in entity.subValues)
-            batch += CpoBuilder.newInsert(row.uri)
+            batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(row.values)
                 .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
     }
