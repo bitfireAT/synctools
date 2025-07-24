@@ -7,9 +7,7 @@
 package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
-import android.net.Uri
 import android.provider.CalendarContract.Attendees
-import at.bitfire.synctools.storage.BatchOperation
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Role
@@ -391,11 +389,11 @@ class AttendeeMappingsTest {
         testICalendarToAndroid(Attendee("mailto:attendee@example.com")) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -409,11 +407,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_SPEAKER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -427,11 +425,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -445,11 +443,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -463,11 +461,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_NONE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -481,11 +479,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -500,11 +498,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -519,11 +517,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_SPEAKER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -538,11 +536,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -557,11 +555,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -576,11 +574,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_NONE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -595,11 +593,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_ATTENDEE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -614,11 +612,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -633,11 +631,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_SPEAKER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -652,11 +650,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -671,11 +669,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -690,11 +688,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_NONE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -709,11 +707,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -728,11 +726,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -747,11 +745,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_SPEAKER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -766,11 +764,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -785,11 +783,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -804,11 +802,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_NONE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -823,11 +821,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -842,11 +840,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -861,11 +859,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_SPEAKER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -880,11 +878,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -899,11 +897,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -918,11 +916,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -937,11 +935,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_NONE,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -956,11 +954,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -975,11 +973,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -994,11 +992,11 @@ class AttendeeMappingsTest {
         }) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
-                values[Attendees.ATTENDEE_TYPE]
+                getAsInteger(Attendees.ATTENDEE_TYPE)
             )
             assertEquals(
                 Attendees.RELATIONSHIP_PERFORMER,
-                values[Attendees.ATTENDEE_RELATIONSHIP]
+                getAsInteger(Attendees.ATTENDEE_RELATIONSHIP)
             )
         }
     }
@@ -1011,8 +1009,8 @@ class AttendeeMappingsTest {
             parameters.add(CuType.ROOM)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1022,8 +1020,8 @@ class AttendeeMappingsTest {
             parameters.add(CuType.ROOM)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1033,8 +1031,8 @@ class AttendeeMappingsTest {
             parameters.add(CuType.ROOM)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_RESOURCE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_PERFORMER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1044,8 +1042,8 @@ class AttendeeMappingsTest {
         testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
             parameters.add(CuTypeFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1055,8 +1053,8 @@ class AttendeeMappingsTest {
             parameters.add(CuTypeFancy)
             parameters.add(Role.CHAIR)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_SPEAKER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_SPEAKER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1066,8 +1064,8 @@ class AttendeeMappingsTest {
             parameters.add(CuTypeFancy)
             parameters.add(Role.REQ_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1077,8 +1075,8 @@ class AttendeeMappingsTest {
             parameters.add(CuTypeFancy)
             parameters.add(Role.OPT_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_OPTIONAL, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_OPTIONAL, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1088,8 +1086,8 @@ class AttendeeMappingsTest {
             parameters.add(CuTypeFancy)
             parameters.add(Role.NON_PARTICIPANT)
         }) {
-            assertEquals(Attendees.TYPE_NONE, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_NONE, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1099,8 +1097,8 @@ class AttendeeMappingsTest {
             parameters.add(CuTypeFancy)
             parameters.add(RoleFancy)
         }) {
-            assertEquals(Attendees.TYPE_REQUIRED, values[Attendees.ATTENDEE_TYPE])
-            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
+            assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1108,7 +1106,7 @@ class AttendeeMappingsTest {
     @Test
     fun testICalendarToAndroid_Organizer() {
         testICalendarToAndroid(Attendee("mailto:$DEFAULT_ORGANIZER")) {
-            assertEquals(Attendees.RELATIONSHIP_ORGANIZER, values[Attendees.ATTENDEE_RELATIONSHIP])
+            assertEquals(Attendees.RELATIONSHIP_ORGANIZER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
     }
 
@@ -1116,10 +1114,10 @@ class AttendeeMappingsTest {
 
     // helpers
 
-    private fun testICalendarToAndroid(attendee: Attendee, organizer: String = DEFAULT_ORGANIZER, test: (BatchOperation.CpoBuilder).() -> Unit) {
-        val row = BatchOperation.CpoBuilder.newInsert(Uri.EMPTY)
-        AttendeeMappings.iCalendarToAndroid(attendee, row, organizer)
-        test(row)
+    private fun testICalendarToAndroid(attendee: Attendee, organizer: String = DEFAULT_ORGANIZER, test: (ContentValues).() -> Unit) {
+        val values = ContentValues()
+        AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
+        test(values)
     }
 
     private fun testAndroidToICalendar(values: ContentValues, test: (Attendee).() -> Unit) {

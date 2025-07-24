@@ -46,7 +46,7 @@ data class EventAndExceptions(
                     throw IllegalArgumentException("ORIGINAL_ALL_DAY of exceptions must match ALL_DAY of main event")
 
                 for (field in arrayOf(Events.RRULE, Events.RDATE, Events.EXRULE, Events.EXDATE))
-                    if (exception.entityValues.containsKey(field))
+                    if (exception.entityValues.get(field) != null)
                         throw IllegalArgumentException("Exceptions must not be recurring")
             }
         }
