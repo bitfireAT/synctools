@@ -22,7 +22,7 @@ import android.provider.CalendarContract.Events
  *   the calendar provider can associate the event with its exceptions.
  * - All [exceptions] (if any) must have an [Events.ORIGINAL_SYNC_ID] that matches the [Events._SYNC_ID] of [main].
  * - All [exceptions] (if any) must have an [Events.ORIGINAL_ALL_DAY] that matches the [Events.ALL_DAY] of [main].
- * - Exceptions must not be recurring, i.e. they must hot have [Events.RRULE], [Events.RDATE], [Events.EXRULE] or [Events.EXDATE].
+ * - Exceptions must not be recurring, i.e. they must not have [Events.RRULE], [Events.RDATE], [Events.EXRULE] or [Events.EXDATE].
  *
  * @throws IllegalArgumentException if above constraints are not met
  */
