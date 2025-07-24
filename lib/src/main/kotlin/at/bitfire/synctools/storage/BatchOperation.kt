@@ -78,12 +78,11 @@ open class BatchOperation internal constructor(
     fun commit(): Int {
         var affected = 0
         if (!queue.isEmpty()) {
-            if (logger.isLoggable(Level.FINE)) {
+            if (logger.isLoggable(Level.FINE))
                 logger.log(Level.FINE, "Committing ${queue.size} operation(s)",
                     queue.mapIndexed { idx, op ->
                         "[$idx] ${op.build()}"
-                    })
-            }
+                    }.toTypedArray())
 
             results = arrayOfNulls(queue.size)
             runBatch(0, queue.size)

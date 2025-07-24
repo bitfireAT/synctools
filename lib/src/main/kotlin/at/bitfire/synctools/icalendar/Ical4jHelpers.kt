@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.icalendar
 
+import at.bitfire.synctools.BuildConfig
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
@@ -14,6 +15,14 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
 
+/**
+ * The used version of ical4j.
+ */
+@Suppress("unused")
+const val ical4jVersion = BuildConfig.version_ical4j
+
+
+// component access helpers
 
 fun<T: CalendarComponent> componentListOf(vararg components: T) =
     ComponentList<CalendarComponent>().apply {
@@ -24,7 +33,6 @@ fun propertyListOf(vararg properties: Property) =
     PropertyList<Property>().apply {
         addAll(properties)
     }
-
 
 val CalendarComponent.uid: Uid?
     get() = getProperty(Property.UID)

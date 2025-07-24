@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Attendees
-import at.bitfire.synctools.storage.BatchOperation
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
@@ -106,10 +105,10 @@ object AttendeeMappings {
      *  is replaced by [CalendarContract.Attendees.RELATIONSHIP_ORGANIZER].
      *
      * @param attendee   iCalendar attendee to map
-     * @param row        builder for the Android attendee row
+     * @param to         where to mapped values should be put into
      * @param organizer  email address of iCalendar ORGANIZER; used to determine whether [attendee] is the organizer
      */
-    fun iCalendarToAndroid(attendee: Attendee, row: BatchOperation.CpoBuilder, organizer: String) {
+    fun iCalendarToAndroid(attendee: Attendee, to: ContentValues, organizer: String) {
         val type: Int
         var relationship: Int
 
@@ -167,8 +166,8 @@ object AttendeeMappings {
                 relationship = Attendees.RELATIONSHIP_ORGANIZER
         }
 
-        row     .withValue(Attendees.ATTENDEE_TYPE, type)
-                .withValue(Attendees.ATTENDEE_RELATIONSHIP, relationship)
+        to.put(Attendees.ATTENDEE_TYPE, type)
+        to.put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
     }
 
 }

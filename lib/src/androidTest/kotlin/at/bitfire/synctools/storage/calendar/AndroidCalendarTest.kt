@@ -288,7 +288,7 @@ class AndroidCalendarTest {
     }
 
     @Test
-    fun testDeleteEvent() {
+    fun testDeleteEventAndExceptions() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,

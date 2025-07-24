@@ -85,17 +85,7 @@ class AndroidCalendar(
     fun addEvent(entity: Entity): Long {
         try {
             val batch = CalendarBatchOperation(client)
-
-            // insert main row
-            batch += CpoBuilder.newInsert(eventsUri)
-                .withValues(entity.entityValues)
-
-            // insert data rows (with reference to main row ID)
-            for (row in entity.subValues)
-                batch += CpoBuilder.newInsert(row.uri)
-                    .withValues(row.values)
-                    .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
-
+            addEvent(entity, batch)
             batch.commit()
 
             val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
@@ -103,6 +93,18 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't insert event", e)
         }
+    }
+
+    fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
+        // insert main row
+        batch += CpoBuilder.newInsert(eventsUri)
+            .withValues(entity.entityValues)
+
+        // insert data rows (with reference to main row ID)
+        for (row in entity.subValues)
+            batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
+                .withValues(row.values)
+                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
     }
 
     /**
@@ -225,7 +227,6 @@ class AndroidCalendar(
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
      *
-     * @param projection    requested fields
      * @param where         selection
      * @param whereArgs     arguments for selection
      * @param body          callback that is called for each entity
@@ -273,31 +274,39 @@ class AndroidCalendar(
                 return addEvent(entity)
             }
 
-            val batch = CalendarBatchOperation(client)
-
             // remove existing data rows which are created by us (don't touch 3rd-party calendar apps rows)
-            deleteDataRows(id, batch)
-
-            // update main row
-            batch += CpoBuilder.newUpdate(eventUri(id))
-                .withValues(ContentValues(entity.entityValues).apply {
-                    remove(Events._ID)  // don't update ID
-                })
-
-            // insert data rows (with reference to main row ID)
-            for (row in entity.subValues)
-                batch += CpoBuilder.newInsert(row.uri)
-                    .withValues(ContentValues(row.values).apply {
-                        put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // never update reference to main row ID
-                    })
-
+            val batch = CalendarBatchOperation(client)
+            updateEvent(id, entity, batch)
             batch.commit()
+
             return id
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update event $id", e)
         }
     }
 
+    fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
+        deleteDataRows(id, batch)
+
+        // update main row
+        batch += CpoBuilder.newUpdate(eventUri(id))
+            .withValues(ContentValues(entity.entityValues).apply {
+                remove(Events._ID)  // don't update ID
+            })
+
+        // insert data rows (with reference to main row ID)
+        for (row in entity.subValues)
+            batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
+                .withValues(ContentValues(row.values).apply {
+                    put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // always keep reference to main row ID
+                })
+    }
+
+    /**
+     * Deletes data rows from events, but only those with a known CONTENT_URI that we are also able to
+     * build. This should prevent accidental deletion of unknown data rows like they may be used by calendar
+     * apps to for instance tag events in the UI.
+     */
     private fun deleteDataRows(eventId: Long, batch: CalendarBatchOperation) {
         batch += CpoBuilder
             .newDelete(Reminders.CONTENT_URI.asSyncAdapter(account))
@@ -330,7 +339,7 @@ class AndroidCalendar(
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
-    private fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
+    internal fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
         val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null
         return existingValues.getAsInteger(Events.STATUS) != null && newValues.getAsInteger(Events.STATUS) == null
     }
@@ -353,12 +362,20 @@ class AndroidCalendar(
             throw LocalStorageException("Couldn't update events", e)
         }
 
-    fun deleteEvent(id: Long): Int =
+    /**
+     * Deletes an event row.
+     *
+     * The content provider automatically deletes associated data rows, but doesn't touch exceptions.
+     *
+     * @param id    ID of the event
+     */
+    fun deleteEvent(id: Long) {
         try {
             client.delete(eventUri(id), null, null)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete event $id", e)
         }
+    }
 
 
 

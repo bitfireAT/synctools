@@ -9,19 +9,17 @@ package at.bitfire.synctools.storage.calendar
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
+import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.Calendars
+import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.icalendar.Css3Color
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -86,16 +84,16 @@ class AndroidCalendarProviderTest {
         provider.provideCss3ColorIndices()
 
         // insert an event with that color
-        val cal = TestCalendar.findOrCreate(testAccount, client)
+        val cal = TestCalendar.findOrCreate(testAccount, client, withColors = true)
         try {
             // add event with color
-            val event = Event().apply {
-                dtStart = DtStart("20210314T204200Z")
-                dtEnd = DtEnd("20210314T204230Z")
-                color = Css3Color.limegreen
-                summary = "Test event with color"
-            }
-            LegacyAndroidCalendar(cal).add(event)
+            cal.addEvent(Entity(contentValuesOf(
+                Events.CALENDAR_ID to cal.id,
+                Events.DTSTART to System.currentTimeMillis(),
+                Events.DTEND to System.currentTimeMillis() + 1000,
+                Events.EVENT_COLOR_KEY to Css3Color.limegreen.name,
+                Events.TITLE to "Test event with color"
+            )))
 
             provider.removeColorIndices()
             assertEquals(0, countColors())
