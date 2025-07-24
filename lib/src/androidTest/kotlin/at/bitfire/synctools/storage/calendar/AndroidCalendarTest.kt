@@ -296,7 +296,7 @@ class AndroidCalendarTest {
             Events.TITLE to "Some Event 1"
         )))
 
-        calendar.deleteEventAndExceptions(id)
+        calendar.deleteEvent(id)
 
         assertNull(calendar.getEvent(id))
     }

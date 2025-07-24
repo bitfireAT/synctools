@@ -95,27 +95,7 @@ class AndroidCalendar(
         }
     }
 
-    /**
-     * Adds an event and all its exceptions.
-     */
-    fun addEventAndExceptions(eventAndExceptions: EventAndExceptions) {
-        try {
-            val batch = CalendarBatchOperation(client)
-            addEvent(eventAndExceptions.main, batch)
-
-            /* Add exceptions. We don't have to set ORIGINAL_ID of each exception to the ID of
-            the main event because the content provider associates events with their exceptions
-            using _SYNC_ID / ORIGINAL_SYNC_ID. */
-            for (exception in eventAndExceptions.exceptions)
-                addEvent(exception, batch)
-
-            batch.commit()
-        } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't insert event/exceptions", e)
-        }
-    }
-
-    private fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
+    fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
         // insert main row
         batch += CpoBuilder.newInsert(eventsUri)
             .withValues(entity.entityValues)
@@ -290,7 +270,7 @@ class AndroidCalendar(
         try {
             val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
             if (rebuild) {
-                deleteEventAndExceptions(id)
+                deleteEvent(id)
                 return addEvent(entity)
             }
 
@@ -305,7 +285,7 @@ class AndroidCalendar(
         }
     }
 
-    private fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
+    fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
         deleteDataRows(id, batch)
 
         // update main row
@@ -320,33 +300,6 @@ class AndroidCalendar(
                 .withValues(ContentValues(row.values).apply {
                     put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // always keep reference to main row ID
                 })
-    }
-
-    /**
-     * Adds an event and all its exceptions.
-     */
-    fun updateEventAndExceptions(id: Long, eventAndExceptions: EventAndExceptions) {
-        try {
-            val rebuild = eventUpdateNeedsRebuild(id, eventAndExceptions.main.entityValues) ?: true
-            if (rebuild) {
-                deleteEventAndExceptions(id)
-                addEventAndExceptions(eventAndExceptions)
-                return
-            }
-
-            // update main event
-            val batch = CalendarBatchOperation(client)
-            updateEvent(id, eventAndExceptions.main, batch)
-
-            // remove and add exceptions again
-            batch += CpoBuilder.newDelete(eventsUri).withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
-            for (exception in eventAndExceptions.exceptions)
-                addEvent(exception, batch)
-
-            batch.commit()
-        } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't update event/exceptions", e)
-        }
     }
 
     /**
@@ -386,7 +339,7 @@ class AndroidCalendar(
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
-    private fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
+    internal fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
         val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null
         return existingValues.getAsInteger(Events.STATUS) != null && newValues.getAsInteger(Events.STATUS) == null
     }
@@ -410,23 +363,15 @@ class AndroidCalendar(
         }
 
     /**
-     * Deletes an event and all its potential exceptions.
+     * Deletes an event row.
+     *
+     * The content provider automatically deletes associated data rows, but doesn't touch exceptions.
      *
      * @param id    ID of the event
      */
-    fun deleteEventAndExceptions(id: Long) {
+    fun deleteEvent(id: Long) {
         try {
-            val batch = CalendarBatchOperation(client)
-
-            // delete main event
-            batch += CpoBuilder.newDelete(eventUri(id))
-
-            // delete exceptions, too (not automatically done by provider)
-            batch += CpoBuilder
-                .newDelete(eventsUri)
-                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
-
-            batch.commit()
+            client.delete(eventUri(id), null, null)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete event $id", e)
         }
