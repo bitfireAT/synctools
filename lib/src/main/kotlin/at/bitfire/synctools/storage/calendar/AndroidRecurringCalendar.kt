@@ -16,7 +16,7 @@ import at.bitfire.synctools.storage.LocalStorageException
  * data objects.
  */
 class AndroidRecurringCalendar(
-    private val calendar: AndroidCalendar
+    val calendar: AndroidCalendar
 ) {
 
     /**
