@@ -9,12 +9,21 @@ package at.bitfire.synctools.storage.calendar
 import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
+import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
+import android.provider.CalendarContract.Events
+import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.assertEventAndExceptionsEqual
+import at.bitfire.synctools.test.withId
+import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -28,33 +37,196 @@ class AndroidRecurringCalendarTest {
 
     lateinit var client: ContentProviderClient
     lateinit var provider: AndroidCalendarProvider
+    lateinit var calendar: AndroidCalendar
+    lateinit var recurringCalendar: AndroidRecurringCalendar
 
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
         provider = AndroidCalendarProvider(testAccount, client)
+        calendar = TestCalendar.findOrCreate(testAccount, client)
+        recurringCalendar = AndroidRecurringCalendar(calendar)
     }
 
     @After
     fun tearDown() {
+        calendar.delete()
         client.closeCompat()
     }
 
 
     @Test
     fun testAddEventAndExceptions() {
-        // TODO
+        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
+        val mainEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to "recur1",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Main Event",
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val event = EventAndExceptions(
+            main = mainEvent,
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to "recur1",
+                    Events.DTSTART to now + 86400000,
+                    Events.DTEND to now + 86400000 + 2*3600000,
+                    Events.TITLE to "Exception"
+                ))
+            )
+        )
+
+        // add event and exceptions
+        val mainEventId = recurringCalendar.addEventAndExceptions(event)
+        val addedWithId = event.withId(mainEventId)
+
+        // verify
+        val event2 = recurringCalendar.getById(mainEventId)
+        assertEventAndExceptionsEqual(addedWithId, event2!!, onlyFieldsInExpected = true)
     }
 
     @Test
-    fun testUpdateEventAndExceptions() {
-        // TODO
+    fun testUpdateEventAndExceptions_NoRebuild() {
+        // Create initial event
+        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
+        val initialEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to "recur2",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Initial Event",
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val initialExceptions = listOf(
+            Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.ORIGINAL_SYNC_ID to "recur2",
+                Events.DTSTART to now + 86400000,
+                Events.DTEND to now + 86400000 + 2*3600000,
+                Events.TITLE to "Initial Exception"
+            ))
+        )
+        val initialEventAndExceptions = EventAndExceptions(main = initialEvent, exceptions = initialExceptions)
+
+        // Add initial event
+        val addedEventId = recurringCalendar.addEventAndExceptions(initialEventAndExceptions)
+
+        // Create updated event (no rebuild needed)
+        val updatedEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to "recur2",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Updated Event",
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val updatedExceptions = listOf(
+            Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.ORIGINAL_SYNC_ID to "recur2",
+                Events.DTSTART to now + 86400000,
+                Events.DTEND to now + 86400000 + 2*3600000,
+                Events.TITLE to "Updated Exception"
+            ))
+        )
+        val updatedEventAndExceptions = EventAndExceptions(main = updatedEvent, exceptions = updatedExceptions)
+
+        // Update event
+        val updatedEventId = recurringCalendar.updateEventAndExceptions(addedEventId, updatedEventAndExceptions)
+        assertEquals(updatedEventId, addedEventId)
+
+        // Verify update
+        val event2 = recurringCalendar.getById(addedEventId)
+        assertEventAndExceptionsEqual(
+            updatedEventAndExceptions.withId(addedEventId),
+            event2!!,
+            onlyFieldsInExpected = true
+        )
+    }
+
+    @Test
+    fun testUpdateEventAndExceptions_RebuildNeeded() {
+        // Add initial event with STATUS
+        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
+        val initialEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to "recur3",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Initial Event",
+            Events.STATUS to Events.STATUS_CONFIRMED,
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val initialExceptions = listOf(
+            Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.ORIGINAL_SYNC_ID to "recur3",
+                Events.DTSTART to now + 86400000,
+                Events.DTEND to now + 86400000 + 2*3600000,
+                Events.TITLE to "Initial Exception"
+            ))
+        )
+        val initialEventAndExceptions = EventAndExceptions(main = initialEvent, exceptions = initialExceptions)
+        val mainEventId = recurringCalendar.addEventAndExceptions(initialEventAndExceptions)
+
+        // Create updated event with null STATUS (requires rebuild)
+        val updatedEvent = Entity(initialEvent.entityValues.apply {
+            put(Events.TITLE, "Updated Event")
+            remove(Events.STATUS)
+        })
+        val updatedEventAndExceptions = EventAndExceptions(main = updatedEvent, exceptions = initialExceptions)
+
+        // Update event (should trigger rebuild)
+        val updatedEventId = recurringCalendar.updateEventAndExceptions(mainEventId, updatedEventAndExceptions)
+
+        // Verify update = deletion + re-creation
+        assertNull(recurringCalendar.getById(mainEventId))
+        val updatedEvent2 = recurringCalendar.getById(updatedEventId)
+        assertEventAndExceptionsEqual(
+            updatedEventAndExceptions.withId(updatedEventId),
+            updatedEvent2!!,
+            onlyFieldsInExpected = true
+        )
     }
 
     @Test
     fun testDeleteEventAndExceptions() {
-        // TODO
+        // Add event with exceptions
+        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
+        val mainEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to "recur4",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Main Event",
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val exceptions = listOf(
+            Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events.ORIGINAL_SYNC_ID to "recur4",
+                Events.DTSTART to now + 86400000,
+                Events.DTEND to now + 86400000 + 2*3600000,
+                Events.TITLE to "Exception"
+            ))
+        )
+        val mainEventId = recurringCalendar.addEventAndExceptions(EventAndExceptions(main = mainEvent, exceptions = exceptions))
+
+        // Delete event and exceptions
+        recurringCalendar.deleteEventAndExceptions(mainEventId)
+
+        // Verify deletion
+        val deletedEvent = recurringCalendar.getById(mainEventId)
+        assertNull(deletedEvent)
     }
 
 }

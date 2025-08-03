@@ -42,7 +42,7 @@ data class EventAndExceptions(
                 if (exception.entityValues.getAsString(Events.ORIGINAL_SYNC_ID) != mainSyncId)
                     throw IllegalArgumentException("ORIGINAL_SYNC_ID of exceptions must match _SYNC_ID of main event")
 
-                if (exception.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) != mainAllDay)
+                if ((exception.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != mainAllDay)
                     throw IllegalArgumentException("ORIGINAL_ALL_DAY of exceptions must match ALL_DAY of main event")
 
                 for (field in arrayOf(Events.RRULE, Events.RDATE, Events.EXRULE, Events.EXDATE))

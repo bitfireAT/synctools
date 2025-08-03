@@ -119,18 +119,35 @@ class AndroidCalendar(
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun findEvents(where: String?, whereArgs: Array<String>?): List<AndroidEvent2> {
-        val events = LinkedList<AndroidEvent2>()
+    fun findEvents(where: String?, whereArgs: Array<String>?) =
+        findEventEntities(where, whereArgs).map { entity ->
+            AndroidEvent2(this, entity)
+        }
+
+    /**
+     * Queries events from this calendar.
+     *
+     * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
+     *
+     * @param where selection
+     * @param whereArgs arguments for selection
+     *
+     * @return events from this calendar which match the selection
+     *
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun findEventEntities(where: String?, whereArgs: Array<String>?): List<Entity> {
+        val entities = LinkedList<Entity>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
                 for (entity in EventsEntity.newEntityIterator(cursor, client))
-                    events += AndroidEvent2(this, entity)
+                    entities += entity
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
         }
-        return events
+        return entities
     }
 
     /**
