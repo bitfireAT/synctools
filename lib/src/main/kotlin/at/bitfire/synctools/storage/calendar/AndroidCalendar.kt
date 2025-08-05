@@ -95,7 +95,7 @@ class AndroidCalendar(
         }
     }
 
-    fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
+    internal fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
         // insert main row
         batch += CpoBuilder.newInsert(eventsUri).withValues(entity.entityValues)
 
@@ -107,11 +107,38 @@ class AndroidCalendar(
     }
 
     /**
+     * Gets the first event from this calendar that matches the given query.
+     *
+     * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
+     *
+     * @param where     selection
+     * @param whereArgs arguments for selection
+     * @param sortOrder sort oder
+     *
+     * @return first event from this calendar that matches the selection, or `null` if none found
+     *
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun findEvent(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): AndroidEvent2? {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, sortOrder)?.use { cursor ->
+                val iter = EventsEntity.newEntityIterator(cursor, client)
+                if (iter.hasNext())
+                    return AndroidEvent2(this, iter.next())
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query events", e)
+        }
+        return null
+    }
+
+    /**
      * Queries events from this calendar.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
      *
-     * @param where selection
+     * @param where     selection
      * @param whereArgs arguments for selection
      *
      * @return events from this calendar which match the selection
@@ -128,7 +155,7 @@ class AndroidCalendar(
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
      *
-     * @param where selection
+     * @param where     selection
      * @param whereArgs arguments for selection
      *
      * @return events from this calendar which match the selection
@@ -172,6 +199,7 @@ class AndroidCalendar(
      * Gets a specific event, identified by its ID, from this calendar.
      *
      * @param id    event ID
+     *
      * @return event (or `null` if not found)
      */
     fun getEvent(id: Long): AndroidEvent2? {
@@ -301,7 +329,7 @@ class AndroidCalendar(
         }
     }
 
-    fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
+    internal fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
         deleteDataRows(id, batch)
 
         // update main row
