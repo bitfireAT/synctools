@@ -64,6 +64,9 @@ import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 
+/**
+ * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
+ */
 class LegacyAndroidEventProcessorTest {
 
     @get:Rule
@@ -151,6 +154,8 @@ class LegacyAndroidEventProcessorTest {
             extendedProperties,
             valuesBuilder
         )
+
+        // LegacyAndroidEventProcessor.populate() is called here:
         return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 

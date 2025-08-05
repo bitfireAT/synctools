@@ -8,6 +8,7 @@ package at.bitfire.ical4android
 
 import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import at.bitfire.synctools.storage.calendar.AndroidRecurringCalendar
 
 /**
  * Provides legacy features (read/write of legacy [Event]s), based on the new [AndroidCalendar].
@@ -25,10 +26,11 @@ class LegacyAndroidCalendar(
      * @return event data object
      */
     fun getEvent(id: Long): Event? {
-        val entity = calendar.getEventEntity(id) ?: return null
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        val eventAndExceptions = recurringCalendar.getById(id) ?: return null
         return Event().also { event ->
-            val processor = LegacyAndroidEventProcessor(calendar, id, entity)
-            processor.populate(to = event)
+            val processor = LegacyAndroidEventProcessor(calendar.account.name)
+            processor.populate(eventAndExceptions, to = event)
         }
 
     }
