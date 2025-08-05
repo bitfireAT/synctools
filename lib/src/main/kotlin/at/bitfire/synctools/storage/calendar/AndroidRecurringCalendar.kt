@@ -39,11 +39,9 @@ class AndroidRecurringCalendar(
     /**
      * Inserts an event and all its exceptions. Input data is first cleaned up using [cleanUp].
      *
-     * @param eventAndExceptions    event and exceptions to insert)
+     * @param eventAndExceptions    event and exceptions to insert
      *
      * @return ID of the resulting main event
-     *
-     * @throws IllegalArgumentException if [eventAndExceptions] has exceptions, but doesn't have a [Events._SYNC_ID]
      */
     fun addEventAndExceptions(eventAndExceptions: EventAndExceptions): Long {
         try {
@@ -69,6 +67,13 @@ class AndroidRecurringCalendar(
         }
     }
 
+    /**
+     * Retrieves an event and its exceptions from the content provider (associated by [Events.ORIGINAL_ID]).
+     *
+     * @param mainEventId   [Events._ID] of the main event
+     *
+     * @return event and exceptions
+     */
     fun getById(mainEventId: Long): EventAndExceptions? {
         val mainEvent = calendar.getEventEntity(mainEventId) ?: return null
         return EventAndExceptions(
@@ -145,6 +150,17 @@ class AndroidRecurringCalendar(
 
     // validation / clean-up logic
 
+    /**
+     * Prepares an event and exceptions so that it can be inserted into the calendar provider:
+     *
+     * - If the main event is not recurring or doesn't have a [Events._SYNC_ID], exceptions are ignored.
+     * - Cleans up the main event with [cleanMainEvent].
+     * - Cleans up exceptions with [cleanException].
+     *
+     * @param original  original event and exceptions
+     *
+     * @return event and exceptions that can actually be inserted
+     */
     @VisibleForTesting
     internal fun cleanUp(original: EventAndExceptions): EventAndExceptions {
         val main = cleanMainEvent(original.main)
@@ -154,7 +170,8 @@ class AndroidRecurringCalendar(
         val recurring = mainValues.containsNotNull(Events.RRULE) || mainValues.containsNotNull(Events.RDATE)
 
         if (syncId == null || !recurring) {
-            // no sync id or main event not recurring → we can't / need to insert exceptions, so ignore them
+            // 1. main event doesn't have sync id → exceptions wouldn't be associated to main event by calendar provider, so ignore them
+            // 2. main event not recurring → exceptions are useless, ignore them
             return EventAndExceptions(main = main, exceptions = emptyList())
         }
 
