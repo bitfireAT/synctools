@@ -97,8 +97,7 @@ class AndroidCalendar(
 
     fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
         // insert main row
-        batch += CpoBuilder.newInsert(eventsUri)
-            .withValues(entity.entityValues)
+        batch += CpoBuilder.newInsert(eventsUri).withValues(entity.entityValues)
 
         // insert data rows (with reference to main row ID)
         for (row in entity.subValues)

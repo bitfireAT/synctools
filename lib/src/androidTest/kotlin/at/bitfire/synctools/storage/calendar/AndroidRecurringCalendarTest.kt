@@ -18,17 +18,25 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
 import at.bitfire.synctools.test.withId
+import io.mockk.junit4.MockKRule
+import io.mockk.spyk
+import io.mockk.verify
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
 class AndroidRecurringCalendarTest {
+
+    @get:Rule
+    val mockkRule = MockKRule(this)
 
     @get:Rule
     val permissonRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
@@ -38,6 +46,7 @@ class AndroidRecurringCalendarTest {
     lateinit var client: ContentProviderClient
     lateinit var provider: AndroidCalendarProvider
     lateinit var calendar: AndroidCalendar
+
     lateinit var recurringCalendar: AndroidRecurringCalendar
 
     @Before
@@ -46,7 +55,7 @@ class AndroidRecurringCalendarTest {
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
         provider = AndroidCalendarProvider(testAccount, client)
         calendar = TestCalendar.findOrCreate(testAccount, client)
-        recurringCalendar = AndroidRecurringCalendar(calendar)
+        recurringCalendar = spyk(AndroidRecurringCalendar(calendar))
     }
 
     @After
@@ -84,6 +93,11 @@ class AndroidRecurringCalendarTest {
         // add event and exceptions
         val mainEventId = recurringCalendar.addEventAndExceptions(event)
         val addedWithId = event.withId(mainEventId)
+
+        // verify that cleanUp was called
+        verify(exactly = 1) {
+            recurringCalendar.cleanUp(event)
+        }
 
         // verify
         val event2 = recurringCalendar.getById(mainEventId)
@@ -141,6 +155,11 @@ class AndroidRecurringCalendarTest {
         // Update event
         val updatedEventId = recurringCalendar.updateEventAndExceptions(addedEventId, updatedEventAndExceptions)
         assertEquals(updatedEventId, addedEventId)
+
+        // verify that cleanUp was called
+        verify(exactly = 1) {
+            recurringCalendar.cleanUp(updatedEventAndExceptions)
+        }
 
         // Verify update
         val event2 = recurringCalendar.getById(addedEventId)
@@ -227,6 +246,91 @@ class AndroidRecurringCalendarTest {
         // Verify deletion
         val deletedEvent = recurringCalendar.getById(mainEventId)
         assertNull(deletedEvent)
+    }
+
+
+    @Test
+    fun testCleanUp_Recurring_Exceptions_NoSyncId() {
+        val cleaned = recurringCalendar.cleanUp(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events.TITLE to "Recurring Main Event",
+                Events.RRULE to "Some RRULE"
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.TITLE to "Exception"
+                ))
+            )
+        ))
+
+        // verify that exceptions were dropped (because the provider wouldn't be able to associate them without SYNC_ID)
+        assertTrue(cleaned.exceptions.isEmpty())
+    }
+
+    @Test
+    fun testCleanUp_Recurring_Exceptions_WithSyncId() {
+        val original = EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events._SYNC_ID to "SomeSyncId",
+                Events.TITLE to "Recurring Main Event",
+                Events.RRULE to "Some RRULE"
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.TITLE to "Exception",
+                    Events.ORIGINAL_SYNC_ID to "SomeSyncId"
+                ))
+            )
+        )
+        val cleaned = recurringCalendar.cleanUp(original)
+
+        // verify that cleanUp didn't modify anything
+        assertEventAndExceptionsEqual(original, cleaned)
+    }
+
+    @Test
+    fun testCleanUp_NotRecurring_Exceptions() {
+        val cleaned = recurringCalendar.cleanUp(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events._SYNC_ID to "SomeSyncID",
+                Events.TITLE to "Non-Recurring Main Event"
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.TITLE to "Exception"
+                ))
+            )
+        ))
+
+        // verify that exceptions were dropped (because the main event is not recurring)
+        assertTrue(cleaned.exceptions.isEmpty())
+    }
+
+    @Test
+    fun testCleanMainEvent_RemovesOriginalFields() {
+        val result = recurringCalendar.cleanMainEvent(Entity(contentValuesOf(
+            Events.ORIGINAL_ID to "SomeValue",
+            Events.ORIGINAL_SYNC_ID to "SomeValue",
+            Events.ORIGINAL_INSTANCE_TIME to "SomeValue",
+            Events.ORIGINAL_ALL_DAY to "SomeValue"
+        )))
+        assertTrue(result.entityValues.isEmpty)
+    }
+
+    @Test
+    fun testCleanException_RemovesRecurrenceFields_AddsSyncId() {
+        val result = recurringCalendar.cleanException(Entity(contentValuesOf(
+            Events.RRULE to "SomeValue",
+            Events.RDATE to "SomeValue",
+            Events.EXRULE to "SomeValue",
+            Events.EXDATE to "SomeValue"
+        )), "SomeSyncID")
+
+        // all fields should have been dropped, but ORIGINAL_SYNC_ID should have been added
+        assertContentValuesEqual(
+            contentValuesOf(Events.ORIGINAL_SYNC_ID to "SomeSyncID"),
+            result.entityValues
+        )
     }
 
 }

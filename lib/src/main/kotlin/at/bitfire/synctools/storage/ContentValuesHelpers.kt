@@ -14,6 +14,9 @@ operator fun ContentValues.plusAssign(other: ContentValues) {
     putAll(other)
 }
 
+fun ContentValues.containsNotNull(field: String): Boolean =
+    getAsString(field) != null
+
 /**
  * Removes blank (empty or only white-space) [String] values from [ContentValues].
  *

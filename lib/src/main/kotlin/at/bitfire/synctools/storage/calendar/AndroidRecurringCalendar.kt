@@ -7,37 +7,61 @@
 package at.bitfire.synctools.storage.calendar
 
 import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract.Events
+import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.containsNotNull
 
 /**
- * Decorator for [AndroidCalendar] that adds support for [EventAndExceptions]
- * data objects.
+ * Adds support for [EventAndExceptions] data objects to [AndroidCalendar].
+ *
+ * There are basically two methods for inserting an exception event:
+ *
+ * 1. Insert it using [Events.CONTENT_EXCEPTION_URI] – then the calendar provider will take care
+ * of validating and cleaning up various fields, however it's then not possible to set some
+ * sync fields (all sync fields but [Events.SYNC_DATA1], [Events.SYNC_DATA3] and [Events.SYNC_DATA7] are filtered
+ * for some reason.) It also supports splitting the main event ("exception from this date"). Usually this method
+ * is used by calendar apps.
+ * 2. Insert it directly as normal event (using [Events.CONTENT_URI]). In this case [Events.ORIGINAL_SYNC_ID]
+ * must be set to the [Events._SYNC_ID] of the original event so that the calendar provider can associate the
+ * exception with the main event. It's not enough to set [Events.ORIGINAL_ID]!
+ *
+ * This class only uses the second method because it needs to support all sync fields.
  */
 class AndroidRecurringCalendar(
     val calendar: AndroidCalendar
 ) {
 
     /**
-     * Adds an event and all its exceptions.
+     * Inserts an event and all its exceptions. Input data is first cleaned up using [cleanUp].
+     *
+     * @param eventAndExceptions    event and exceptions to insert)
      *
      * @return ID of the resulting main event
+     *
+     * @throws IllegalArgumentException if [eventAndExceptions] has exceptions, but doesn't have a [Events._SYNC_ID]
      */
     fun addEventAndExceptions(eventAndExceptions: EventAndExceptions): Long {
         try {
             val batch = CalendarBatchOperation(calendar.client)
-            calendar.addEvent(eventAndExceptions.main, batch)
 
-            /* Add exceptions. We don't have to set ORIGINAL_ID of each exception to the ID of
-            the main event because the content provider associates events with their exceptions
-            using _SYNC_ID / ORIGINAL_SYNC_ID. */
-            for (exception in eventAndExceptions.exceptions)
+            // validate / clean up input
+            val cleaned = cleanUp(eventAndExceptions)
+
+            // add main event
+            calendar.addEvent(cleaned.main, batch)
+
+            // add exceptions
+            for (exception in cleaned.exceptions)
                 calendar.addEvent(exception, batch)
 
             batch.commit()
 
+            // main event was created as first row (index 0), return its insert result (= ID)
             val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
             return ContentUris.parseId(uri)
         } catch (e: RemoteException) {
@@ -54,7 +78,8 @@ class AndroidRecurringCalendar(
     }
 
     /**
-     * Updates an event and all its exceptions.
+     * Updates an event and all its exceptions. Input data is first cleaned up using
+     * [cleanMainEvent] and [cleanException].
      *
      * @param id                    ID of the main event row
      * @param eventAndExceptions    new event (including exceptions)
@@ -69,13 +94,20 @@ class AndroidRecurringCalendar(
                 return addEventAndExceptions(eventAndExceptions)
             }
 
-            // update main event
-            val batch = CalendarBatchOperation(calendar.client)
-            calendar.updateEvent(id, eventAndExceptions.main, batch)
+            // validate / clean up input
+            val cleaned = cleanUp(eventAndExceptions)
 
-            // remove and add exceptions again
-            batch += CpoBuilder.newDelete(calendar.eventsUri).withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
-            for (exception in eventAndExceptions.exceptions)
+            val batch = CalendarBatchOperation(calendar.client)
+
+            // remove old exceptions (because they may be invalid for the updated event)
+            batch += CpoBuilder.newDelete(calendar.eventsUri)
+                .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
+
+            // update main event
+            calendar.updateEvent(id, cleaned.main, batch)
+
+            // add updated exceptions
+            for (exception in cleaned.exceptions)
                 calendar.addEvent(exception, batch)
 
             batch.commit()
@@ -108,6 +140,89 @@ class AndroidRecurringCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete event $id", e)
         }
+    }
+
+
+    // validation / clean-up logic
+
+    @VisibleForTesting
+    internal fun cleanUp(original: EventAndExceptions): EventAndExceptions {
+        val main = cleanMainEvent(original.main)
+
+        val mainValues = main.entityValues
+        val syncId = mainValues.getAsString(Events._SYNC_ID)
+        val recurring = mainValues.containsNotNull(Events.RRULE) || mainValues.containsNotNull(Events.RDATE)
+
+        if (syncId == null || !recurring) {
+            // no sync id or main event not recurring → we can't / need to insert exceptions, so ignore them
+            return EventAndExceptions(main = main, exceptions = emptyList())
+        }
+
+        return EventAndExceptions(
+            main = main,
+            exceptions = original.exceptions.map { originalException ->
+                cleanException(originalException, syncId)
+            }
+        )
+    }
+
+    /**
+     * Prepares a main event for insertion into the calendar provider by making sure it
+     * doesn't have fields that a main event shouldn't have (original_...).
+     *
+     * @param original  original event to insert
+     *
+     * @return cleaned event that can actually be inserted
+     */
+    @VisibleForTesting
+    internal fun cleanMainEvent(original: Entity): Entity {
+        // make a copy (don't modify original entity / values)
+        val values = ContentValues(original.entityValues)
+
+        // remove values that a main event shouldn't have
+        val originalFields = arrayOf(
+            Events.ORIGINAL_ID, Events.ORIGINAL_SYNC_ID,
+            Events.ORIGINAL_INSTANCE_TIME, Events.ORIGINAL_ALL_DAY
+        )
+        for (field in originalFields)
+            values.remove(field)
+
+        // create new result with subvalues
+        val result = Entity(values)
+        for (subValue in original.subValues)
+            result.addSubValue(subValue.uri, subValue.values)
+        return result
+    }
+
+    /**
+     * Prepares an exception for insertion into the calendar provider:
+     *
+     * - Removes values that an exception shouldn't have (`RRULE`, `RDATE`, `EXRULE`, `EXDATE`).
+     * - Makes sure that the `ORIGINAL_SYNC_ID` is set to [syncId].
+     *
+     * @param original  original exception
+     * @param syncId    [Events._SYNC_ID] of the main event
+     *
+     * @return cleaned exception that can actually be inserted
+     */
+    @VisibleForTesting
+    internal fun cleanException(original: Entity, syncId: String): Entity {
+        // make a copy (don't modify original entity / values)
+        val values = ContentValues(original.entityValues)
+
+        // remove values that an exception shouldn't have
+        val recurrenceFields = arrayOf(Events.RRULE, Events.RDATE, Events.EXRULE, Events.EXDATE)
+        for (field in recurrenceFields)
+            values.remove(field)
+
+        // make sure that ORIGINAL_SYNC_ID is set so that the exception can be associated to the main event
+        values.put(Events.ORIGINAL_SYNC_ID, syncId)
+
+        // create new result with subvalues
+        val result = Entity(values)
+        for (subValue in original.subValues)
+            result.addSubValue(subValue.uri, subValue.values)
+        return result
     }
 
 }
