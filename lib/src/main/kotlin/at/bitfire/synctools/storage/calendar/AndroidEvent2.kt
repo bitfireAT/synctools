@@ -97,8 +97,13 @@ class AndroidEvent2(
 
     // shortcuts to upper level
 
+    /** See [AndroidCalendar.updateEventRow] */
     fun update(values: ContentValues) = calendar.updateEventRow(id, values)
+
+    /** See [AndroidCalendar.updateEvent] */
     fun update(entity: Entity) = calendar.updateEvent(id, entity)
+
+    /** See [AndroidCalendar.deleteEvent] */
     fun delete() = calendar.deleteEvent(id)
 
 

@@ -18,7 +18,6 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import at.bitfire.ical4android.AndroidEvent
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
@@ -65,6 +64,9 @@ import org.junit.rules.TestRule
 import java.net.URI
 import java.time.Duration
 
+/**
+ * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
+ */
 class LegacyAndroidEventProcessorTest {
 
     @get:Rule
@@ -102,7 +104,7 @@ class LegacyAndroidEventProcessorTest {
         insertCallback: (id: Long) -> Unit = {},
         extendedProperties: Map<String, String> = emptyMap(),
         valuesBuilder: ContentValues.() -> Unit = {}
-    ): AndroidEvent {
+    ): AndroidEvent2 {
         val values = ContentValues()
         values.put(Events.CALENDAR_ID, destinationCalendar.id)
         if (automaticDates) {
@@ -133,7 +135,7 @@ class LegacyAndroidEventProcessorTest {
             client.insert(ExtendedProperties.CONTENT_URI.asSyncAdapter(testAccount), extendedValues)
         }
 
-        return legacyCalendar.getAndroidEvent(destinationCalendar, id)!!
+        return calendar.getEvent(id)!!
     }
 
     private fun populateEvent(
@@ -152,6 +154,8 @@ class LegacyAndroidEventProcessorTest {
             extendedProperties,
             valuesBuilder
         )
+
+        // LegacyAndroidEventProcessor.populate() is called here:
         return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 

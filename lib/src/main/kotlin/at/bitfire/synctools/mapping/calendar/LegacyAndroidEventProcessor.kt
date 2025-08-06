@@ -14,7 +14,6 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.LegacyAndroidCalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
@@ -22,8 +21,8 @@ import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
-import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -65,11 +64,11 @@ import java.util.logging.Logger
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ *
+ * @param accountName   account name (used to generate self-attendee)
  */
 class LegacyAndroidEventProcessor(
-    private val calendar: AndroidCalendar,
-    private val id: Long,
-    private val entity: Entity
+    private val accountName: String
 ) {
 
     private val logger
@@ -78,12 +77,28 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
 
-    fun populate(to: Event) {
+    fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
+        populateEvent(eventAndExceptions.main, to = to)
+        populateExceptions(eventAndExceptions.exceptions, to = to)
+
+        // post-processing
+        useRetainedClassification(to)
+    }
+
+    /**
+     * Reads data of an event from the calendar provider, i.e. converts the [entity] values into
+     * an [Event] data object.
+     *
+     * @param entity            event row as returned by the calendar provider
+     * @param groupScheduled    whether the event is group-scheduled (= the main event has attendees)
+     * @param to                destination data object
+     */
+    private fun populateEvent(entity: Entity, to: Event) {
         // calculate some scheduling properties
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
 
         // main row
-        populateEvent(entity.entityValues, groupScheduled = hasAttendees, to = to)
+        populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
 
         // data rows
         for (subValue in entity.subValues) {
@@ -94,21 +109,9 @@ class LegacyAndroidEventProcessor(
                 ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
             }
         }
-
-        // exceptions
-        populateExceptions(to = to)
-
-        // post-processing
-        useRetainedClassification(to)
     }
 
-    /**
-     * Reads event data from the calendar provider = maps the [entity] values to
-     * the [to] data object.
-     *
-     * @param row values of an [Events] row, as returned by the calendar provider
-     */
-    private fun populateEvent(row: ContentValues, groupScheduled: Boolean, to: Event) {
+    private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
 
         row.getAsString(Events.MUTATORS)?.let { strPackages ->
@@ -348,7 +351,6 @@ class LegacyAndroidEventProcessor(
         val props = alarm.properties
         when (row.getAsInteger(Reminders.METHOD)) {
             Reminders.METHOD_EMAIL -> {
-                val accountName = calendar.account.name
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
                     props += Action.EMAIL
                     // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
@@ -356,7 +358,7 @@ class LegacyAndroidEventProcessor(
                     props += Description(to.description ?: to.summary)
                     // Android doesn't allow to save email reminder recipients, so we always use the
                     // account name (should be account owner's email address)
-                    props += Attendee(URI("mailto", calendar.account.name, null))
+                    props += Attendee(URI("mailto", accountName, null))
                 } else {
                     logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
                     props += Action.DISPLAY
@@ -403,18 +405,15 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateExceptions(to: Event) {
-        val legacyCalendar = LegacyAndroidCalendar(calendar)
-        calendar.iterateEvents(Events.ORIGINAL_ID + "=?", arrayOf(id.toString())) { entity ->
-            val exception = AndroidEvent2(calendar, entity)
+    private fun populateExceptions(exceptions: List<Entity>, to: Event) {
+        for (exception in exceptions) {
+            val exceptionEvent = Event()
 
-            val exceptionEvent = legacyCalendar.getEvent(exception.id)
-            if (exceptionEvent == null)
-                return@iterateEvents
-
-            val recurrenceId = exceptionEvent.recurrenceId!!
+            // convert exception row to Event
+            populateEvent(exception, to = exceptionEvent)
 
             // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
+            val recurrenceId = exceptionEvent.recurrenceId!!
             if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
                 val list = DateList(
                     if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
