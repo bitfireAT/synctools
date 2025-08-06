@@ -10,7 +10,7 @@ import android.content.Entity
 
 /**
  * Represents a set of local events (like [at.bitfire.synctools.storage.calendar.AndroidEvent2] values)
- * that are stored together in one iCalendar object on the server. It consists of
+ * and associated exception events that are stored together in one iCalendar object on the server. It consists of
  *
  * - a main component (like a main event),
  * - optional exceptions of this main component (exception instances).
