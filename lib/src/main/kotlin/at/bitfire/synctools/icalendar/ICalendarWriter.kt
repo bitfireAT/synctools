@@ -13,6 +13,7 @@ import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.Version
 import java.io.Writer
@@ -56,12 +57,13 @@ class ICalendarWriter(
         val usedTimeZones = mutableSetOf<TimeZone>()
         var firstTs: Long? = null
         for (component in components)
-            for (dateProperty in component.properties.filterIsInstance<DateTime>()) {
-                usedTimeZones += dateProperty.timeZone
+            for (dateProperty in component.properties.filterIsInstance<DateProperty>()) {
+                if (dateProperty.timeZone != null)
+                    usedTimeZones += dateProperty.timeZone
                 firstTs = if (firstTs == null)
-                    dateProperty.time
+                    dateProperty.date.time
                 else
-                    min(firstTs, dateProperty.time)
+                    min(firstTs, dateProperty.date.time)
             }
         return TimeZoneInfo(
             usedTimeZones = usedTimeZones,

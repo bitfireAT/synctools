@@ -23,7 +23,7 @@ class AttendeeMappingsTest {
     companion object {
         const val DEFAULT_ORGANIZER = "organizer@example.com"
 
-        val CuTypeFancy = net.fortuna.ical4j.model.parameter.CuType("X-FANCY")
+        val CuTypeFancy = CuType("X-FANCY")
         val RoleFancy = Role("X-FANCY")
     }
 
@@ -65,7 +65,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                CuType.GROUP,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -101,7 +101,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                CuType.UNKNOWN,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -156,7 +156,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                CuType.GROUP,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
@@ -191,7 +191,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                CuType.UNKNOWN,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
@@ -247,7 +247,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                CuType.GROUP,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -283,7 +283,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                CuType.UNKNOWN,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -302,7 +302,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                CuType.RESOURCE,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -320,7 +320,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                CuType.RESOURCE,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -338,7 +338,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.ROOM,
+                CuType.ROOM,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -356,7 +356,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                CuType.RESOURCE,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
@@ -373,7 +373,7 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                CuType.RESOURCE,
                 getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
@@ -496,7 +496,7 @@ class AttendeeMappingsTest {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
                 .apply {
-            parameters.add(net.fortuna.ical4j.model.parameter.CuType.INDIVIDUAL)
+            parameters.add(CuType.INDIVIDUAL)
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
