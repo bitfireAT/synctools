@@ -27,6 +27,7 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
@@ -37,6 +38,7 @@ import net.fortuna.ical4j.model.parameter.Rsvp
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.Categories
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.Description
@@ -54,6 +56,7 @@ import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.model.property.Transp
 import net.fortuna.ical4j.model.property.Uid
+import net.fortuna.ical4j.model.property.Url
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
@@ -85,10 +88,11 @@ class LegacyAndroidEventProcessor(
 
 
     fun populate(eventAndExceptions: EventAndExceptions): AssociatedEvents {
+        val mainEvent = buildVEvent(eventAndExceptions.main)
         val result = AssociatedEvents(
-            main = buildVEvent(eventAndExceptions.main),
-            exceptions = eventAndExceptions.exceptions.map { exception ->
-                populateException(exception)
+            main = mainEvent,
+            exceptions = eventAndExceptions.exceptions.mapNotNull { exception ->
+                populateException(exception, mainEvent)
             }
         )
         return result
@@ -297,7 +301,7 @@ class LegacyAndroidEventProcessor(
             // ORGANIZER must only be set for group-scheduled events (= events with attendees)
             if (row.containsKey(Events.ORGANIZER))
                 try {
-                    to.organizer = Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
+                    to.properties += Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
                 } catch (e: URISyntaxException) {
                     logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
                 }
@@ -305,9 +309,9 @@ class LegacyAndroidEventProcessor(
 
         // classification
         when (row.getAsInteger(Events.ACCESS_LEVEL)) {
-            Events.ACCESS_PUBLIC -> to.classification = Clazz.PUBLIC
-            Events.ACCESS_PRIVATE -> to.classification = Clazz.PRIVATE
-            Events.ACCESS_CONFIDENTIAL -> to.classification = Clazz.CONFIDENTIAL
+            Events.ACCESS_PUBLIC -> to.properties += Clazz.PUBLIC
+            Events.ACCESS_PRIVATE -> to.properties += Clazz.PRIVATE
+            Events.ACCESS_CONFIDENTIAL -> to.properties += Clazz.CONFIDENTIAL
         }
 
         // exceptions from recurring events
@@ -319,18 +323,18 @@ class LegacyAndroidEventProcessor(
                 else
                     DateTime(originalInstanceTime)
             if (originalDate is DateTime) {
-                to.dtStart?.let { dtStart ->
+                to.startDate?.let { dtStart ->
                     if (dtStart.isUtc)
                         originalDate.isUtc = true
                     else if (dtStart.timeZone != null)
                         originalDate.timeZone = dtStart.timeZone
                 }
             }
-            to.recurrenceId = RecurrenceId(originalDate)
+            to.properties += RecurrenceId(originalDate)
         }
     }
 
-    private fun populateAttendee(row: ContentValues, to: Event) {
+    private fun populateAttendee(row: ContentValues, to: VEvent) {
         logger.log(Level.FINE, "Read event attendee from calender provider", row)
 
         try {
@@ -365,16 +369,17 @@ class LegacyAndroidEventProcessor(
                 Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
             }
 
-            to.attendees.add(attendee)
+            to.properties += attendee
         } catch (e: URISyntaxException) {
             logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
         }
     }
 
-    private fun populateReminder(row: ContentValues, to: Event) {
+    private fun populateReminder(row: ContentValues, to: VEvent) {
         logger.log(Level.FINE, "Read event reminder from calender provider", row)
 
         val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
+        to.components += alarm
 
         val props = alarm.properties
         when (row.getAsInteger(Reminders.METHOD)) {
@@ -382,28 +387,27 @@ class LegacyAndroidEventProcessor(
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
                     props += Action.EMAIL
                     // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
-                    props += Summary(to.summary)
-                    props += Description(to.description ?: to.summary)
+                    props += Summary(to.summary?.value ?: "Reminder")   // email subject
+                    props += Description(to.description?.value ?: "Reminder")   // email text
                     // Android doesn't allow to save email reminder recipients, so we always use the
                     // account name (should be account owner's email address)
                     props += Attendee(URI("mailto", accountName, null))
                 } else {
                     logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
                     props += Action.DISPLAY
-                    props += Description(to.summary)
+                    props += Description(to.summary?.value ?: "Reminder")
                 }
             }
 
             // default: set ACTION:DISPLAY (requires DESCRIPTION)
             else -> {
                 props += Action.DISPLAY
-                props += Description(to.summary)
+                props += Description(to.summary?.value ?: "Reminder")   // text to be displayed
             }
         }
-        to.alarms += alarm
     }
 
-    private fun populateExtended(row: ContentValues, to: Event) {
+    private fun populateExtended(row: ContentValues, to: VEvent) {
         val name = row.getAsString(ExtendedProperties.NAME)
         val rawValue = row.getAsString(ExtendedProperties.VALUE)
         logger.log(Level.FINE, "Read extended property from calender provider", arrayOf(name, rawValue))
@@ -411,11 +415,13 @@ class LegacyAndroidEventProcessor(
         try {
             when (name) {
                 AndroidEvent2.EXTNAME_CATEGORIES ->
-                    to.categories += rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR)
+                    to.properties += Categories(TextList(
+                        rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR).toTypedArray()
+                    ))
 
                 AndroidEvent2.EXTNAME_URL ->
                     try {
-                        to.url = URI(rawValue)
+                        to.properties += Url(URI(rawValue))
                     } catch(_: URISyntaxException) {
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
@@ -423,64 +429,63 @@ class LegacyAndroidEventProcessor(
                 AndroidEvent2.EXTNAME_ICAL_UID ->
                     // only consider iCalUid when there's no uid
                     if (to.uid == null)
-                        to.uid = rawValue
+                        to.properties += Uid(rawValue)
 
                 UnknownProperty.CONTENT_ITEM_TYPE ->
-                    to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
+                    to.properties += UnknownProperty.fromJsonString(rawValue)
             }
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't parse extended property", e)
         }
     }
 
-    private fun populateException(exception: Entity): VEvent {
-        for (exception in exceptions) {
-            val exceptionEvent = Event()
+    private fun populateException(exception: Entity, mainEvent: VEvent): VEvent? {
+        // convert exception row to Event
+        val exceptionEvent = buildVEvent(exception)
 
-            // convert exception row to Event
-            buildVEvent(exception, to = exceptionEvent)
-
-            // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-            val recurrenceId = exceptionEvent.recurrenceId!!
-            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
-                val list = DateList(
-                    if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
-                    recurrenceId.timeZone
-                )
-                list.add(recurrenceId.date)
-                to.exDates += ExDate(list).apply {
-                    if (DateUtils.isDateTime(recurrenceId)) {
-                        if (recurrenceId.isUtc)
-                            setUtc(true)
-                        else
-                            timeZone = recurrenceId.timeZone
-                    }
+        // TODO: only for non-group-scheduled?
+        // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
+        val recurrenceId = exceptionEvent.recurrenceId!!
+        if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
+            val list = DateList(
+                if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
+                recurrenceId.timeZone
+            )
+            list.add(recurrenceId.date)
+            mainEvent.properties += ExDate(list).apply {
+                if (DateUtils.isDateTime(recurrenceId)) {
+                    if (recurrenceId.isUtc)
+                        setUtc(true)
+                    else
+                        timeZone = recurrenceId.timeZone
                 }
-
-            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-                exceptionEvent.organizer = to.organizer
-
-                // add exception to list of exceptions
-                to.exceptions += exceptionEvent
             }
+            return null
+
+        } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
+            // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
+            exceptionEvent.properties.removeIf { it is Organizer }
+            exceptionEvent.properties += mainEvent.organizer
+
+            return exceptionEvent
         }
     }
 
     private fun useRetainedClassification(from: Entity, to: VEvent) {
-        var retainedClazz: Clazz? = null
-        val it = event.unknownProperties.iterator()
-        while (it.hasNext()) {
-            val prop = it.next()
-            if (prop is Clazz) {
-                retainedClazz = prop
-                it.remove()
-            }
+        val extendedProperties = from.subValues
+            .filter { it.uri == ExtendedProperties.CONTENT_URI }
+            .map { it.values }
+        val unknownProperties = extendedProperties.filter {
+            it.getAsString(ExtendedProperties.NAME) == UnknownProperty.CONTENT_ITEM_TYPE
+        }.map {
+            UnknownProperty.fromJsonString(it.getAsString(ExtendedProperties.VALUE))
         }
 
-        if (event.classification == null)
+        unknownProperties.filterIsInstance<Clazz>().firstOrNull()?.let { retainedClassification ->
             // no classification, use retained one if possible
-            event.classification = retainedClazz
+            if (to.classification == null)
+                to.properties += retainedClassification
+        }
     }
 
 }
