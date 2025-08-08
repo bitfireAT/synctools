@@ -37,6 +37,7 @@ import java.util.logging.Logger
  *
  * @param prodId    PRODID to use in iCalendar
  */
+@Deprecated("Use ICalendarWriter instead")
 class EventWriter(
     private val prodId: ProdId
 ) {

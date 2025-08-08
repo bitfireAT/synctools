@@ -461,14 +461,19 @@ class LegacyAndroidEventProcessor(
                 }
             }
             return null
-
-        } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-            // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-            exceptionEvent.properties.removeIf { it is Organizer }
-            exceptionEvent.properties += mainEvent.organizer
-
-            return exceptionEvent
         }
+        // exceptionEvent.status != Status.VEVENT_CANCELLED
+
+        // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
+        exceptionEvent.properties.removeIf { it is Organizer }
+        exceptionEvent.properties += mainEvent.organizer
+
+        // TODO validations that were in EventWriter:
+        // - EventValidator
+        // - exception RECUR-ID has same value type as main DTSTART
+        // - exception RECUR-ID has same time zone as main DTSTART (if date-time)
+
+        return exceptionEvent
     }
 
     private fun useRetainedClassification(from: Entity, to: VEvent) {
