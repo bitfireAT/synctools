@@ -20,6 +20,7 @@ import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -28,6 +29,7 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
@@ -36,17 +38,22 @@ import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
+import net.fortuna.ical4j.model.property.Location
 import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.Summary
+import net.fortuna.ical4j.model.property.Transp
+import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
@@ -77,12 +84,14 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
 
-    fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
-        populateEvent(eventAndExceptions.main, to = to)
-        populateExceptions(eventAndExceptions.exceptions, to = to)
-
-        // post-processing
-        useRetainedClassification(to)
+    fun populate(eventAndExceptions: EventAndExceptions): AssociatedEvents {
+        val result = AssociatedEvents(
+            main = buildVEvent(eventAndExceptions.main),
+            exceptions = eventAndExceptions.exceptions.map { exception ->
+                populateException(exception)
+            }
+        )
+        return result
     }
 
     /**
@@ -93,31 +102,37 @@ class LegacyAndroidEventProcessor(
      * @param groupScheduled    whether the event is group-scheduled (= the main event has attendees)
      * @param to                destination data object
      */
-    private fun populateEvent(entity: Entity, to: Event) {
+    private fun buildVEvent(entity: Entity): VEvent {
         // calculate some scheduling properties
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
 
         // main row
-        populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
+        val vEvent = VEvent()
+        populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = vEvent)
 
         // data rows
         for (subValue in entity.subValues) {
             val subValues = subValue.values
             when (subValue.uri) {
-                Attendees.CONTENT_URI -> populateAttendee(subValues, to = to)
-                Reminders.CONTENT_URI -> populateReminder(subValues, to = to)
-                ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
+                Attendees.CONTENT_URI -> populateAttendee(subValues, to = vEvent)
+                Reminders.CONTENT_URI -> populateReminder(subValues, to = vEvent)
+                ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = vEvent)
             }
         }
+
+        // TODO useRetainedClass
+
+        return vEvent
     }
 
-    private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
+    private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: VEvent) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
 
-        row.getAsString(Events.MUTATORS)?.let { strPackages ->
+        // TODO
+        /*row.getAsString(Events.MUTATORS)?.let { strPackages ->
             val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
             to.userAgents.addAll(packages)
-        }
+        }*/
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = row.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
@@ -130,7 +145,7 @@ class LegacyAndroidEventProcessor(
                 null
 
         if (allDay) {
-            to.dtStart = DtStart(Date(tsStart))
+            to.properties += DtStart(Date(tsStart))
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 day if missing (should never occur, but occurs).
@@ -155,7 +170,7 @@ class LegacyAndroidEventProcessor(
                         logger.fine("dtEnd $tsEnd (allDay) = dtStart, won't generate DTEND property")
 
                     else /* tsEnd > tsStart */ ->
-                        to.dtEnd = DtEnd(Date(tsEnd))
+                        to.properties += DtEnd(Date(tsEnd))
                 }
             }
 
@@ -173,7 +188,7 @@ class LegacyAndroidEventProcessor(
                         timeZone = startTz
                 }
             }
-            to.dtStart = DtStart(dtStartDateTime)
+            to.properties += DtStart(dtStartDateTime)
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 hour if missing (should never occur, but occurs).
@@ -196,7 +211,7 @@ class LegacyAndroidEventProcessor(
                     val endTz = row.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
                         tzRegistry.getTimeZone(tzId)
                     } ?: startTz
-                    to.dtEnd = DtEnd(DateTime(tsEnd).apply {
+                    to.properties += DtEnd(DateTime(tsEnd).apply {
                         if (endTz != null) {
                             if (TimeZones.isUtc(endTz))
                                 isUtc = true
@@ -213,35 +228,45 @@ class LegacyAndroidEventProcessor(
         try {
             row.getAsString(Events.RRULE)?.let { rulesStr ->
                 for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.rRules += RRule(rule)
+                    to.properties += RRule(rule)
             }
             row.getAsString(Events.RDATE)?.let { datesStr ->
                 val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay, tsStart) { RDate(it) }
-                to.rDates += rDate
+                to.properties += rDate
             }
 
             row.getAsString(Events.EXRULE)?.let { rulesStr ->
                 for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.exRules += ExRule(null, rule)
+                    to.properties += ExRule(null, rule)
             }
             row.getAsString(Events.EXDATE)?.let { datesStr ->
                 val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay) { ExDate(it) }
-                to.exDates += exDate
+                to.properties += exDate
             }
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
 
-        to.uid = row.getAsString(Events.UID_2445)
-        to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
-        to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
+        row.getAsString(Events.UID_2445)?.let {
+            to.properties += Uid(it)
+        }
+        row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)?.let {
+            to.properties += Sequence(it)
+        }
+        //to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
-        to.summary = row.getAsString(Events.TITLE)
-        to.location = row.getAsString(Events.EVENT_LOCATION)
-        to.description = row.getAsString(Events.DESCRIPTION)
+        row.getAsString(Events.TITLE)?.let {
+            to.properties += Summary(it)
+        }
+        row.getAsString(Events.EVENT_LOCATION)?.let {
+            to.properties += Location(it)
+        }
+        row.getAsString(Events.DESCRIPTION)?.let {
+            to.properties += Description(it)
+        }
 
         // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
-        to.color =
+        val color =
             row.getAsString(Events.EVENT_COLOR_KEY)?.let { name ->      // try color key first
                 try {
                     Css3Color.valueOf(name)
@@ -249,20 +274,23 @@ class LegacyAndroidEventProcessor(
                     logger.warning("Ignoring unknown color name \"$name\"")
                     null
                 }
-            } ?:
-                    row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
-                        Css3Color.entries.firstOrNull { it.argb == color }
-                    }
+            } ?: row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
+                Css3Color.entries.firstOrNull { it.argb == color }
+            }
+        if (color != null)
+            to.properties += Color(null, color.name)
 
         // status
         when (row.getAsInteger(Events.STATUS)) {
-            Events.STATUS_CONFIRMED -> to.status = Status.VEVENT_CONFIRMED
-            Events.STATUS_TENTATIVE -> to.status = Status.VEVENT_TENTATIVE
-            Events.STATUS_CANCELED -> to.status = Status.VEVENT_CANCELLED
+            Events.STATUS_CONFIRMED -> to.properties += Status.VEVENT_CONFIRMED
+            Events.STATUS_TENTATIVE -> to.properties += Status.VEVENT_TENTATIVE
+            Events.STATUS_CANCELED -> to.properties += Status.VEVENT_CANCELLED
         }
 
         // availability
-        to.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
+        if (row.getAsInteger(Events.AVAILABILITY) == Events.AVAILABILITY_FREE)
+            to.properties += Transp.TRANSPARENT
+        // Transp.OPAQUE is the default and used in all other cases
 
         // scheduling
         if (groupScheduled) {
@@ -405,12 +433,12 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateExceptions(exceptions: List<Entity>, to: Event) {
+    private fun populateException(exception: Entity): VEvent {
         for (exception in exceptions) {
             val exceptionEvent = Event()
 
             // convert exception row to Event
-            populateEvent(exception, to = exceptionEvent)
+            buildVEvent(exception, to = exceptionEvent)
 
             // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
             val recurrenceId = exceptionEvent.recurrenceId!!
@@ -439,7 +467,7 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun useRetainedClassification(event: Event) {
+    private fun useRetainedClassification(from: Entity, to: VEvent) {
         var retainedClazz: Clazz? = null
         val it = event.unknownProperties.iterator()
         while (it.hasNext()) {
