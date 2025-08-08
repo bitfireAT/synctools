@@ -28,6 +28,8 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -36,17 +38,25 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.Categories
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DtEnd
+import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.Transp
 import java.time.Duration
 import java.time.Period
 import java.time.ZonedDateTime
@@ -62,7 +72,7 @@ import java.util.logging.Logger
  */
 class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
-    private val event: Event,
+    private val event: AssociatedEvents,
 
     // AndroidEvent-level fields
     private val id: Long?,
@@ -78,41 +88,47 @@ class LegacyAndroidEventBuilder2(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
 
-    fun build() =
-        EventAndExceptions(
-            main = buildEvent(null),
+    fun build(): EventAndExceptions {
+        val mainEvent = event.main ?: fakeMainEvent()
+        return EventAndExceptions(
+            main = buildEvent(from = mainEvent, main = mainEvent),
             exceptions = event.exceptions.map { exception ->
-                buildEvent(exception)
+                buildEvent(from = exception, main = mainEvent)
             }
         )
+    }
 
-    fun buildEvent(recurrence: Event?): Entity {
-        val row = buildEventRow(recurrence)
+    fun fakeMainEvent(): VEvent = TODO()
 
-        val entity = Entity(row)
-        val from = recurrence ?: event
+    fun buildEvent(from: VEvent, main: VEvent): Entity {
+        // main row
+        val entity = Entity(buildEventRow(from, main))
 
+        // add reminders (data rows)
         for (reminder in from.alarms)
-            entity.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder))
+            entity.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder, from))
 
-        for (attendee in from.attendees)
-            entity.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee))
+        // add attendees (data rows)
+        for (attendee in from.getProperties<Attendee>(Property.ATTENDEE))
+            entity.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee, main))
 
-        // extended properties
-        if (event.categories.isNotEmpty())
-            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildCategories(event.categories))
+        // add extended properties (data rows)
+        val categories = from.getProperty<Categories>(Property.CATEGORIES)?.categories
+        if (categories != null && !categories.isEmpty)
+            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildCategories(categories))
 
-        event.classification?.let { classification ->
+        from.classification?.let { classification ->
             val values = buildRetainedClassification(classification)
             if (values != null)
                 entity.addSubValue(ExtendedProperties.CONTENT_URI, values)
         }
 
-        event.url?.let { url ->
+        from.url?.let { url ->
             entity.addSubValue(ExtendedProperties.CONTENT_URI, buildUrl(url.toString()))
         }
 
-        for (unknownProperty in event.unknownProperties) {
+        // TODO: unknown properties
+        for (unknownProperty in getUnknownProperties(from)) {
             val values = buildUnknownProperty(unknownProperty)
             if (values != null)
                 entity.addSubValue(ExtendedProperties.CONTENT_URI, values)
@@ -127,9 +143,9 @@ class LegacyAndroidEventBuilder2(
      * - `this` object: fields like calendar ID, sync ID, eTag etc,
      * - the [event]: all other fields.
      *
-     * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
+     * @param from   event to be used as data source
      */
-    private fun buildEventRow(recurrence: Event?): ContentValues {
+    private fun buildEventRow(from: VEvent, main: VEvent): ContentValues {
         // start with object-level (AndroidEvent) fields
         val row = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -138,16 +154,13 @@ class LegacyAndroidEventBuilder2(
             AndroidEvent2.COLUMN_FLAGS to flags
         )
 
-        val isException = recurrence != null
-        val from = recurrence ?: event
+        val recurrenceId = from.recurrenceId
 
-        val dtStart = from.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
+        val dtStart = from.startDate ?: throw InvalidLocalResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android
         AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-
-        val recurring = from.rRules.isNotEmpty() || from.rDates.isNotEmpty()
 
         /* [CalendarContract.Events SDK documentation]
            When inserting a new event the following fields must be included:
@@ -158,18 +171,19 @@ class LegacyAndroidEventBuilder2(
            - eventTimezone
            - a calendar_id */
 
-        if (!isException) {
+        if (recurrenceId == null) {
             // main event
             row.put(Events._SYNC_ID, syncId)
             row.put(AndroidEvent2.COLUMN_ETAG, eTag)
             row.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
+
         } else {
             // exception
             row.put(Events.ORIGINAL_SYNC_ID, syncId)
-            row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
+            row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(main.startDate)) 1 else 0)
 
-            var recurrenceDate = from.recurrenceId!!.date
-            val dtStartDate = event.dtStart!!.date
+            var recurrenceDate = recurrenceId.date
+            val dtStartDate = dtStart.date
             if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
                 // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
                 val localDate = recurrenceDate.toLocalDate()
@@ -190,15 +204,15 @@ class LegacyAndroidEventBuilder2(
         }
 
         // UID, sequence
-        row.put(Events.UID_2445, from.uid)
-        row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
+        row.put(Events.UID_2445, from.uid?.value)
+        row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence?.sequenceNo ?: 0)
 
         // time fields
         row.put(Events.DTSTART, dtStart.date.time)
         row.put(Events.ALL_DAY, if (allDay) 1 else 0)
         row.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
-        var dtEnd = from.dtEnd
+        var dtEnd = from.endDate
         AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
 
         var duration =
@@ -209,7 +223,11 @@ class LegacyAndroidEventBuilder2(
         if (allDay && duration is Duration)
             duration = Period.ofDays(duration.toDays().toInt())
 
-        if (recurring && !isException) {
+        val rRules = from.getProperties<RRule>(Property.RRULE)
+        val rDates = from.getProperties<RDate>(Property.RDATE).toMutableList()
+        if ((rRules.isNotEmpty() || rDates.isNotEmpty()) && recurrenceId == null) {
+            /* RECURRING (MAIN) EVENT */
+
             // duration must be set
             if (duration == null) {
                 if (dtEnd != null) {
@@ -221,19 +239,19 @@ class LegacyAndroidEventBuilder2(
                 } else {
                     // no dtEnd and no duration
                     duration = if (allDay)
-                    /* [RFC 5545 3.6.1 Event Component]
-                       For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE value type but no
-                       "DTEND" nor "DURATION" property, the event's duration is taken to
-                       be one day. */
+                        /* [RFC 5545 3.6.1 Event Component]
+                           For cases where a "VEVENT" calendar component
+                           specifies a "DTSTART" property with a DATE value type but no
+                           "DTEND" nor "DURATION" property, the event's duration is taken to
+                           be one day. */
                         Period.ofDays(1)
                     else
-                    /* For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE-TIME value type but no
-                       "DTEND" property, the event ends on the same calendar date and
-                       time of day specified by the "DTSTART" property. */
+                        /* For cases where a "VEVENT" calendar component
+                           specifies a "DTSTART" property with a DATE-TIME value type but no
+                           "DTEND" property, the event ends on the same calendar date and
+                           time of day specified by the "DTSTART" property. */
 
-                    // Duration.ofSeconds(0) causes the calendar provider to crash
+                        // Duration.ofSeconds(0) causes the calendar provider to crash
                         Period.ofDays(0)
                 }
             }
@@ -243,47 +261,51 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.DTEND)
 
             // add RRULEs
-            if (from.rRules.isNotEmpty())
-                row.put(Events.RRULE, from.rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+            if (rRules.isNotEmpty())
+                row.put(Events.RRULE, rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
             else
                 row.putNull(Events.RRULE)
 
-            if (from.rDates.isNotEmpty()) {
+            if (rDates.isNotEmpty()) {
                 // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
-                val infiniteRrule = from.rRules.any { rRule ->
+                val infiniteRrule = rRules.any { rRule ->
                     rRule.recur.count == -1 &&  // no COUNT AND
-                            rRule.recur.until == null   // no UNTIL
+                    rRule.recur.until == null   // no UNTIL
                 }
 
                 if (infiniteRrule)
                     logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
                 else {
-                    for (rDate in from.rDates)
+                    for (rDate in rDates)
                         AndroidTimeUtils.androidifyTimeZone(rDate)
 
                     // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
                     val listWithDtStart = DateList()
                     listWithDtStart.add(dtStart.date)
-                    from.rDates.addFirst(RDate(listWithDtStart))
+                    rDates.add(0, RDate(listWithDtStart))
 
-                    row.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.rDates, dtStart.date))
+                    row.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(rDates, dtStart.date))
                 }
             } else
                 row.putNull(Events.RDATE)
 
-            if (from.exRules.isNotEmpty())
-                row.put(Events.EXRULE, from.exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+            val exRules = from.getProperties<ExRule>(Property.EXRULE)
+            if (exRules.isNotEmpty())
+                row.put(Events.EXRULE, exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
             else
                 row.putNull(Events.EXRULE)
 
-            if (from.exDates.isNotEmpty()) {
-                for (exDate in from.exDates)
+            val exDates = from.getProperties<ExDate>(Property.EXDATE)
+            if (exDates.isNotEmpty()) {
+                for (exDate in exDates)
                     AndroidTimeUtils.androidifyTimeZone(exDate)
-                row.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.exDates, dtStart.date))
+                row.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(exDates, dtStart.date))
             } else
                 row.putNull(Events.EXDATE)
 
-        } else /* !recurring */ {
+        } else {
+            /* NOT RECURRING (MAIN) EVENT */
+
             // dtend must be set
             if (dtEnd == null) {
                 if (duration != null) {
@@ -309,10 +331,10 @@ class LegacyAndroidEventBuilder2(
                         val calcDtEnd = dtStart.date.toLocalDate() + Period.ofDays(1)
                         DtEnd(calcDtEnd.toIcal4jDate())
                     } else
-                    /* For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE-TIME value type but no
-                       "DTEND" property, the event ends on the same calendar date and
-                       time of day specified by the "DTSTART" property. */
+                        /* For cases where a "VEVENT" calendar component
+                           specifies a "DTSTART" property with a DATE-TIME value type but no
+                           "DTEND" property, the event ends on the same calendar date and
+                           time of day specified by the "DTSTART" property. */
                         DtEnd(dtStart.value, dtStart.timeZone)
                 }
             }
@@ -328,12 +350,13 @@ class LegacyAndroidEventBuilder2(
         }
 
         // text fields
-        row.put(Events.TITLE, from.summary)
-        row.put(Events.EVENT_LOCATION, from.location)
-        row.put(Events.DESCRIPTION, from.description)
+        row.put(Events.TITLE, from.summary?.value)
+        row.put(Events.EVENT_LOCATION, from.location?.value)
+        row.put(Events.DESCRIPTION, from.description?.value)
 
         // color
-        val color = from.color
+        val colorName = from.getProperty<Color>(Color.PROPERTY_NAME)?.value
+        val color = colorName?.let { Css3Color.fromString(it) }
         if (color != null) {
             // set event color (if it's available for this account)
             calendar.client.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
@@ -350,7 +373,8 @@ class LegacyAndroidEventBuilder2(
         }
 
         // scheduling
-        val groupScheduled = from.attendees.isNotEmpty()
+        val attendees = from.getProperties<Attendee>(Property.ATTENDEE)
+        val groupScheduled = attendees.isNotEmpty()
         if (groupScheduled) {
             row.put(Events.HAS_ATTENDEE_DATA, 1)
             row.put(Events.ORGANIZER, from.organizer?.let { organizer ->
@@ -382,22 +406,20 @@ class LegacyAndroidEventBuilder2(
                 else -> Events.STATUS_TENTATIVE
             })
 
-        row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
+        val opaque = from.transparency == Transp.OPAQUE
+        row.put(Events.AVAILABILITY, if (opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
         row.put(Events.ACCESS_LEVEL, when (from.classification) {
-                null -> Events.ACCESS_DEFAULT
-                Clazz.PUBLIC -> Events.ACCESS_PUBLIC
-                Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
-                else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
-            })
+            null -> Events.ACCESS_DEFAULT
+            Clazz.PUBLIC -> Events.ACCESS_PUBLIC
+            Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
+            else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
+        })
 
         return row
     }
 
-    private fun buildAttendee(attendee: Attendee): ContentValues {
+    private fun buildAttendee(attendee: Attendee, main: VEvent): ContentValues {
         val values = ContentValues()
-        val organizer = event.organizerEmail ?:
-            /* no ORGANIZER, use current account owner as ORGANIZER */
-            calendar.ownerAccount ?: calendar.account.name
 
         val member = attendee.calAddress
         if (member.scheme.equals("mailto", true))   // attendee identified by email
@@ -416,8 +438,14 @@ class LegacyAndroidEventBuilder2(
             values.put(Attendees.ATTENDEE_NAME, cn.value)
         }
 
+        val organizerEmail =
+            main.organizer?.calAddress?.takeIf { it.scheme.equals("mailto", true) }?.schemeSpecificPart
+            /* no ORGANIZER, use current account owner as ORGANIZER */
+            ?: calendar.ownerAccount
+            ?: calendar.account.name
+
         // type/relation mapping is complex and thus outsourced to AttendeeMappings
-        AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
+        AttendeeMappings.iCalendarToAndroid(attendee, values, organizerEmail)
 
         val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
             PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
@@ -431,7 +459,7 @@ class LegacyAndroidEventBuilder2(
         return values
     }
 
-    private fun buildReminder(alarm: VAlarm): ContentValues {
+    private fun buildReminder(alarm: VAlarm, reference: VEvent): ContentValues {
         val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
             Action.DISPLAY.value,
             Action.AUDIO.value -> Reminders.METHOD_ALERT    // will trigger an alarm on the Android device
@@ -442,7 +470,7 @@ class LegacyAndroidEventBuilder2(
             else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
         }
 
-        val minutes = ICalendar.vAlarmToMin(alarm, event, false)?.second ?: Reminders.MINUTES_DEFAULT
+        val minutes = ICalendar.vAlarmToMin(alarm, reference, false)?.second ?: Reminders.MINUTES_DEFAULT
 
         return contentValuesOf(
             Reminders.METHOD to method,
@@ -450,7 +478,7 @@ class LegacyAndroidEventBuilder2(
         )
     }
 
-    private fun buildCategories(categories: List<String>): ContentValues {
+    private fun buildCategories(categories: TextList): ContentValues {
         // concatenate, separate by backslash
         val rawCategories = categories.joinToString(AndroidEvent2.CATEGORIES_SEPARATOR.toString()) { category ->
             // drop occurrences of CATEGORIES_SEPARATOR in category names
@@ -475,6 +503,38 @@ class LegacyAndroidEventBuilder2(
                 ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
             )
         return null
+    }
+
+    private fun getUnknownProperties(event: VEvent): List<Property> {
+        val unknown = mutableListOf<Property>()
+
+        val knownPropertyNames = hashSetOf(
+            Property.UID, Property.RECURRENCE_ID, Property.SEQUENCE,
+            Property.SUMMARY,
+            Property.LOCATION,
+            Property.URL,
+            Property.DESCRIPTION,
+            Property.CATEGORIES,
+            Color.PROPERTY_NAME,
+            Property.DTSTART, Property.DTEND, Property.DURATION,
+            Property.RRULE, Property.RDATE,
+            Property.EXRULE, Property.EXDATE,
+            Property.CLASS,
+            Property.STATUS,
+            Property.TRANSP,
+            Property.ORGANIZER, Property.ATTENDEE,
+
+            // properties we don't store but we're also not interested in
+            Property.PRODID,
+            Property.DTSTAMP, Property.LAST_MODIFIED
+        )
+
+        // iterate through all properties and filter unknown ones
+        for (property in event.properties)
+            if (!knownPropertyNames.contains(property.name))
+                unknown += property
+
+        return unknown
     }
 
     private fun buildUnknownProperty(property: Property): ContentValues? {

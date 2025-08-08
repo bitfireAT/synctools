@@ -33,7 +33,7 @@ import java.util.LinkedList
  * - as it is extracted from an iCalendar or
  * - as it should be generated into an iCalendar.
  */
-@Deprecated("Use net.fortuna.ical4j.model.Calendar instead")
+@Deprecated("Use at.bitfire.synctools.icalendar.AssociatedEvents instead")
 data class Event(
     override var uid: String? = null,
     override var sequence: Int? = null,

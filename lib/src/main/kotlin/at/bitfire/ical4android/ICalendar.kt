@@ -19,6 +19,7 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
+import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.Daylight
 import net.fortuna.ical4j.model.component.Observance
 import net.fortuna.ical4j.model.component.Standard
@@ -276,45 +277,39 @@ open class ICalendar {
          *
          * May be *null* if there's not enough information to calculate the number of minutes.
          */
-        fun vAlarmToMin(alarm: VAlarm, reference: ICalendar, allowRelEnd: Boolean): Pair<Related, Int>? {
+        fun vAlarmToMin(alarm: VAlarm, reference: CalendarComponent, allowRelEnd: Boolean): Pair<Related, Int>? {
             val trigger = alarm.trigger ?: return null
 
             val minutes: Int    // minutes before/after the event
             var related = trigger.getParameter<Related>(Parameter.RELATED) ?: Related.START
 
-            // event/task start time
+            // event/task start and end time
             val start: java.util.Date?
             var end: java.util.Date?
             when (reference) {
-                is Event -> {
-                    start = reference.dtStart?.date
-                    end = reference.dtEnd?.date
+                is VEvent -> {
+                    start = reference.startDate?.date
+                    end = reference.endDate?.date
                 }
-                is Task -> {
-                    start = reference.dtStart?.date
+                is VToDo -> {
+                    start = reference.startDate?.date
                     end = reference.due?.date
                 }
-                else -> throw IllegalArgumentException("reference must be Event or Task")
+                else -> throw IllegalArgumentException("reference must be VEvent or VTodo")
             }
 
-            // event/task end time
+            // calculate event/task end time from duration, if required
             if (end == null && start != null) {
                 val duration = when (reference) {
-                    is Event -> reference.duration?.duration
-                    is Task -> reference.duration?.duration
+                    is VEvent -> reference.duration?.duration
+                    is VToDo -> reference.duration?.duration
                     else -> throw IllegalArgumentException("reference must be Event or Task")
                 }
                 if (duration != null)
                     end = java.util.Date.from(start.toInstant() + duration)
             }
 
-            // event/task duration
-            val duration: Duration? =
-                    if (start != null && end != null)
-                        Duration.between(start.toInstant(), end.toInstant())
-                    else
-                        null
-
+            // process trigger
             val triggerDur = trigger.duration
             val triggerTime = trigger.dateTime
 
@@ -325,14 +320,24 @@ open class ICalendar {
                 // 3) DURATION can be a Duration (time-based) or a Period (date-based), which have to be treated differently.
                 var millisBefore =
                     when (triggerDur) {
-                        is Duration -> -triggerDur.toMillis()
-                        is Period -> // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
+                        is Duration ->
+                            -triggerDur.toMillis()
+                        is Period ->
+                            // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
                             // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
                             -triggerDur.days.toLong()*24*3600000     // months and years are not used in DURATION values; weeks are calculated to days
-                        else -> throw AssertionError("triggerDur must be Duration or Period")
+                        else ->
+                            throw AssertionError("triggerDur must be Duration or Period")
                     }
 
                 if (related == Related.END && !allowRelEnd) {
+                    // event/task duration for calculation
+                    val duration: Duration? =
+                        if (start != null && end != null)
+                            Duration.between(start.toInstant(), end.toInstant())
+                        else
+                            null
+
                     if (duration == null) {
                         logger.warning("Event/task without duration; can't calculate END-related alarm")
                         return null
