@@ -56,6 +56,7 @@ import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
 
+@Deprecated("Use net.fortuna.ical4j.model.component.VToDo instead")
 data class Task(
     var createdAt: Long? = null,
     var lastModified: Long? = null,

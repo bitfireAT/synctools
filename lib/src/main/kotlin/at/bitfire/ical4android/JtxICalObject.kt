@@ -102,6 +102,7 @@ import java.util.UUID
 import java.util.logging.Level
 import java.util.logging.Logger
 
+@Deprecated("Use net.fortuna.ical4j.model.component.VToDo/VJournal instead")
 open class JtxICalObject(
     val collection: JtxCollection<JtxICalObject>
 ) {

@@ -34,6 +34,7 @@ import java.util.logging.Logger
  * - once to every event after completely reading an iCalendar, and
  * - to every event when writing an iCalendar.
  */
+@Deprecated("Use one validator per mapping direction (or do directly in mapper)")
 object EventValidator {
 
     private val logger

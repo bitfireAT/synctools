@@ -16,11 +16,11 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
@@ -35,6 +35,7 @@ import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
@@ -46,25 +47,34 @@ import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.Color
+import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.Location
 import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.Summary
+import net.fortuna.ical4j.model.property.Transp
+import net.fortuna.ical4j.model.property.Uid
+import net.fortuna.ical4j.model.property.Url
 import net.fortuna.ical4j.model.property.XProperty
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import java.net.URI
 import java.time.Period
+import java.util.TimeZone
 
 class LegacyAndroidEventBuilder2Test {
 
@@ -74,7 +84,7 @@ class LegacyAndroidEventBuilder2Test {
     private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzIdDefault = java.util.TimeZone.getDefault().id
+    private val tzIdDefault = TimeZone.getDefault().id
     private val tzDefault = tzRegistry.getTimeZone(tzIdDefault)
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")
@@ -100,16 +110,16 @@ class LegacyAndroidEventBuilder2Test {
      * buildEvent() BASIC TEST MATRIX:
      *
      * all-day event | hasDtEnd | hasDuration | recurring event | notes
-     *        0            0            0              0          dtEnd = dtStart
-     *        0            0            0              1          duration = 0s, rRule/rDate set
+     *        0            0            0              0          properties += dtStart
+     *        0            0            0              1          properties += 0s, rRule/rDate set
      *        0            0            1              0          dtEnd calulcated from duration
      *        0            0            1              1
      *        0            1            0              0
      *        0            1            0              1          dtEnd calulcated from duration
      *        0            1            1              0          duration ignored
      *        0            1            1              1          duration ignored
-     *        1            0            0              0          duration = 1d
-     *        1            0            0              1          duration = 1d
+     *        1            0            0              0          properties += 1d
+     *        1            0            0              1          properties += 1d
      *        1            0            1              0          dtEnd calculated from duration
      *        1            0            1              1
      *        1            1            0              0
@@ -124,12 +134,23 @@ class LegacyAndroidEventBuilder2Test {
      *  - UTC times
      */
 
-    private fun buildEventAndExceptions(automaticDates: Boolean, eventBuilder: Event.() -> Unit): EventAndExceptions {
-        val event = Event().apply {
-            if (automaticDates)
-                dtStart = DtStart(DateTime())
-            eventBuilder()
-        }
+    private fun buildEventAndExceptions(
+        automaticDates: Boolean,
+        buildExceptions: () -> List<VEvent> = { emptyList() },
+        buildMainEvent: VEvent.() -> Unit
+    ): EventAndExceptions {
+        val event = AssociatedEvents(
+            main = VEvent(/* initialise = */ false).apply {
+                if (automaticDates) {
+                    val now = System.currentTimeMillis()
+                    properties += DtStart(DateTime(now))
+                    properties += DtEnd(DateTime(now + 3600000))
+                }
+
+                buildMainEvent()
+            },
+            exceptions = buildExceptions()
+        )
 
         return LegacyAndroidEventBuilder2(
             calendar = calendar,
@@ -142,10 +163,10 @@ class LegacyAndroidEventBuilder2Test {
         ).build()
     }
 
-    private fun buildEvent(automaticDates: Boolean, eventBuilder: Event.() -> Unit) =
-        buildEventAndExceptions(automaticDates, eventBuilder).main
+    private fun buildEvent(automaticDates: Boolean, buildMainEvent: VEvent.() -> Unit) =
+        buildEventAndExceptions(automaticDates, buildMainEvent = buildMainEvent).main
 
-    private fun firstExtendedProperty(entity: Entity) =
+    private fun firstExtendedProperty(entity: Entity): String? =
         entity.subValues.firstOrNull { it.uri == ExtendedProperties.CONTENT_URI }?.values?.getAsString(ExtendedProperties.VALUE)
 
     private fun firstUnknownProperty(entity: Entity): Property? {
@@ -158,8 +179,8 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_NoDtEnd_NoDuration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -171,12 +192,13 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
+    @Ignore("Should be done by and tested in validator class")
     fun testBuildEvent_NonAllDay_NoDtEnd_NoDuration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=5")
-            rRules += RRule("FREQ=WEEKLY;COUNT=10")
-            rDates += RDate(DateList("20210601T123000", Value.DATE_TIME, tzVienna))
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += RRule("FREQ=DAILY;COUNT=5")
+            properties += RRule("FREQ=WEEKLY;COUNT=10")
+            properties += RDate(DateList("20210601T123000", Value.DATE_TIME, tzVienna))
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -193,9 +215,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_NoDtEnd_Duration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            duration = Duration(null, "PT1H30M")
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += Duration(null, "PT1H30M")
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -209,9 +231,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDayUtc_NoDtEnd_Duration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(DateTime("20200601T103000Z").apply { isUtc = true })
-            duration = Duration(null, "PT1H30M")
+        val entity = buildEvent(false) {
+            properties += DtStart(DateTime("20200601T103000Z").apply { isUtc = true })
+            properties += Duration(null, "PT1H30M")
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -225,10 +247,10 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_NoDtEnd_Duration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            duration = Duration(null, "PT1H30M")
-            rDates += RDate(DateList("20200602T113000", Value.DATE_TIME, tzVienna))
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += Duration(null, "PT1H30M")
+            properties += RDate(DateList("20200602T113000", Value.DATE_TIME, tzVienna))
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -244,9 +266,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_DtEnd_NoDuration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            dtEnd = DtEnd("20200602T143000", tzShanghai)
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += DtEnd("20200602T143000", tzShanghai)
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -260,11 +282,11 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_DtEnd_NoDuration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzShanghai)
-            dtEnd = DtEnd("20200601T123000", tzVienna)
-            rDates += RDate(DateList("20200701T123000,20200702T123000", Value.DATE_TIME, tzVienna))
-            rDates += RDate(DateList("20200801T123000,20200802T123000", Value.DATE_TIME, tzShanghai))
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzShanghai)
+            properties += DtEnd("20200601T123000", tzVienna)
+            properties += RDate(DateList("20200701T123000,20200702T123000", Value.DATE_TIME, tzVienna))
+            properties += RDate(DateList("20200801T123000,20200802T123000", Value.DATE_TIME, tzShanghai))
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -280,13 +302,13 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_DtEnd_NoDuration_Recurring_InfiniteRruleAndRdate() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzShanghai)
-            dtEnd = DtEnd("20200601T123000", tzVienna)
-            rRules += RRule(
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzShanghai)
+            properties += DtEnd("20200601T123000", tzVienna)
+            properties += RRule(
                 Recur("FREQ=DAILY;INTERVAL=2")
             )
-            rDates += RDate(DateList("20200701T123000,20200702T123000", Value.DATE_TIME, tzVienna))
+            properties += RDate(DateList("20200701T123000,20200702T123000", Value.DATE_TIME, tzVienna))
         }
 
         assertNull(entity.entityValues.get(Events.RDATE))
@@ -295,10 +317,10 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_DtEnd_Duration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            dtEnd = DtEnd("20200601T143000", tzVienna)
-            duration = Duration(null, "PT1S")
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += DtEnd("20200601T143000", tzVienna)
+            properties += Duration(null, "PT1S")
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -312,11 +334,11 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_NonAllDay_DtEnd_Duration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzVienna)
-            dtEnd = DtEnd("20200601T143000", tzVienna)
-            duration = Duration(null, "PT10S")
-            rRules += RRule("FREQ=MONTHLY;COUNT=1")
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzVienna)
+            properties += DtEnd("20200601T143000", tzVienna)
+            properties += Duration(null, "PT10S")
+            properties += RRule("FREQ=MONTHLY;COUNT=1")
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -332,8 +354,8 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_NoDtEnd_NoDuration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -347,9 +369,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_NoDtEnd_NoDuration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            rRules += RRule("FREQ=MONTHLY;COUNT=3")
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += RRule("FREQ=MONTHLY;COUNT=3")
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -365,9 +387,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_NoDtEnd_Duration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            duration = Duration(null, "P2W1D")
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += Duration(null, "P2W1D")
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -381,10 +403,10 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_NoDtEnd_Duration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            duration = Duration(null, "P2D")
-            rRules += RRule("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU")
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += Duration(null, "P2D")
+            properties += RRule("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU")
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -400,9 +422,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_DtEnd_NoDuration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            dtEnd = DtEnd(Date("20200701"))
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += DtEnd(Date("20200701"))
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -416,11 +438,11 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_DtEnd_NoDuration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            dtEnd = DtEnd(Date("20200701"))
-            rDates += RDate(DateList("20210601", Value.DATE))
-            rDates += RDate(DateList("20220601T120030", Value.DATE_TIME))
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += DtEnd(Date("20200701"))
+            properties += RDate(DateList("20210601", Value.DATE))
+            properties += RDate(DateList("20220601T120030", Value.DATE_TIME))
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -436,10 +458,10 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_DtEnd_Duration_NonRecurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            dtEnd = DtEnd(Date("20200701"))
-            duration = Duration(null, "PT5M")
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += DtEnd(Date("20200701"))
+            properties += Duration(null, "PT5M")
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -453,11 +475,11 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_AllDay_DtEnd_Duration_Recurring() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(Date("20200601"))
-            dtEnd = DtEnd(Date("20200701"))
-            duration = Duration(null, "PT1M")
-            rRules += RRule("FREQ=DAILY;COUNT=1")
+        val entity = buildEvent(false) {
+            properties += DtStart(Date("20200601"))
+            properties += DtEnd(Date("20200701"))
+            properties += Duration(null, "PT1M")
+            properties += RRule("FREQ=DAILY;COUNT=1")
         }
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -473,9 +495,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_FloatingTimes() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000")
-            dtEnd = DtEnd("20200601T123001")
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000")
+            properties += DtEnd("20200601T123001")
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -488,11 +510,11 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_FloatingTimesInRecurrenceDates() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart("20200601T123000", tzShanghai)
-            duration = Duration(null, "PT5M30S")
-            rDates += RDate(DateList("20200602T113000", Value.DATE_TIME))
-            exDates += ExDate(DateList("20200602T113000", Value.DATE_TIME))
+        val entity = buildEvent(false) {
+            properties += DtStart("20200601T123000", tzShanghai)
+            properties += Duration(null, "PT5M30S")
+            properties += RDate(DateList("20200602T113000", Value.DATE_TIME))
+            properties += ExDate(DateList("20200602T113000", Value.DATE_TIME))
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -510,9 +532,9 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildEvent_UTC() {
-        val entity  = buildEvent(false) {
-            dtStart = DtStart(DateTime(1591014600000L), true)
-            dtEnd = DtEnd(DateTime(1591021801000L), true)
+        val entity = buildEvent(false) {
+            properties += DtStart(DateTime(1591014600000L), true)
+            properties += DtEnd(DateTime(1591021801000L), true)
         }
         assertEquals(0, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
@@ -526,7 +548,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Summary() {
         buildEvent(true) {
-            summary = "Sample Summary"
+            properties += Summary("Sample Summary")
         }.let { result ->
             assertEquals("Sample Summary", result.entityValues.getAsString(Events.TITLE))
         }
@@ -535,7 +557,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Location() {
         buildEvent(true) {
-            location = "Sample Location"
+            properties += Location("Sample Location")
         }.let { result ->
             assertEquals("Sample Location", result.entityValues.getAsString(Events.EVENT_LOCATION))
         }
@@ -544,7 +566,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Url() {
         buildEvent(true) {
-            url = URI("https://example.com")
+            properties += Url(URI("https://example.com"))
         }.let { result ->
             assertEquals("https://example.com", firstExtendedProperty(result))
         }
@@ -553,7 +575,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Description() {
         buildEvent(true) {
-            description = "Sample Description"
+            properties += Description("Sample Description")
         }.let { result ->
             assertEquals("Sample Description", result.entityValues.getAsString(Events.DESCRIPTION))
         }
@@ -562,7 +584,9 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Color_WhenNotAvailable() {
         buildEvent(true) {
-            color = Css3Color.darkseagreen
+            properties += Color().apply { 
+                value = Css3Color.darkseagreen.name
+            }
         }.let { result ->
             assertNull(result.entityValues.getAsString(Events.CALENDAR_COLOR_KEY))
         }
@@ -573,7 +597,9 @@ class LegacyAndroidEventBuilder2Test {
         val provider = AndroidCalendarProvider(testAccount, client)
         provider.provideCss3ColorIndices()
         buildEvent(true) {
-            color = Css3Color.darkseagreen
+            properties += Color().apply {
+                value = Css3Color.darkseagreen.name
+            }
         }.let { result ->
             assertEquals(Css3Color.darkseagreen.name, result.entityValues.getAsString(Events.EVENT_COLOR_KEY))
         }
@@ -582,7 +608,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Organizer_NotGroupScheduled() {
         buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
+            properties += Organizer("mailto:organizer@example.com")
         }.let { result ->
             assertNull(result.entityValues.getAsString(Events.ORGANIZER))
         }
@@ -591,8 +617,8 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Organizer_MailTo() {
         buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
-            attendees += Attendee("mailto:attendee@example.com")
+            properties += Organizer("mailto:organizer@example.com")
+            properties += Attendee("mailto:attendee@example.com")
         }.let { result ->
             assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
         }
@@ -601,10 +627,10 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Organizer_EmailParameter() {
         buildEvent(true) {
-            organizer = Organizer("local-id:user").apply {
+            properties += Organizer("local-id:user").apply {
                 parameters.add(Email("organizer@example.com"))
             }
-            attendees += Attendee("mailto:attendee@example.com")
+            properties += Attendee("mailto:attendee@example.com")
         }.let { result ->
             assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
         }
@@ -613,8 +639,8 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Organizer_NotEmail() {
         buildEvent(true) {
-            organizer = Organizer("local-id:user")
-            attendees += Attendee("mailto:attendee@example.com")
+            properties += Organizer("local-id:user")
+            properties += Attendee("mailto:attendee@example.com")
         }.let { result ->
             assertNull(result.entityValues.getAsString(Events.ORGANIZER))
         }
@@ -623,7 +649,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Status_Confirmed() {
         buildEvent(true) {
-            status = Status.VEVENT_CONFIRMED
+            properties += Status.VEVENT_CONFIRMED
         }.let { result ->
             assertEquals(Events.STATUS_CONFIRMED, result.entityValues.getAsInteger(Events.STATUS))
         }
@@ -632,7 +658,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Status_Cancelled() {
         buildEvent(true) {
-            status = Status.VEVENT_CANCELLED
+            properties += Status.VEVENT_CANCELLED
         }.let { result ->
             assertEquals(Events.STATUS_CANCELED, result.entityValues.getAsInteger(Events.STATUS))
         }
@@ -641,7 +667,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Status_Tentative() {
         buildEvent(true) {
-            status = Status.VEVENT_TENTATIVE
+            properties += Status.VEVENT_TENTATIVE
         }.let { result ->
             assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
         }
@@ -650,7 +676,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Status_Invalid() {
         buildEvent(true) {
-            status = Status.VTODO_IN_PROCESS
+            properties += Status.VTODO_IN_PROCESS
         }.let { result ->
             assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
         }
@@ -667,7 +693,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Opaque_True() {
         buildEvent(true) {
-            opaque = true
+            properties += Transp.OPAQUE
         }.let { result ->
             assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.getAsInteger(Events.AVAILABILITY))
         }
@@ -676,7 +702,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Opaque_False() {
         buildEvent(true) {
-            opaque = false
+            properties += Transp.TRANSPARENT
         }.let { result ->
             assertEquals(Events.AVAILABILITY_FREE, result.entityValues.getAsInteger(Events.AVAILABILITY))
         }
@@ -685,7 +711,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Classification_Public() {
         buildEvent(true) {
-            classification = Clazz.PUBLIC
+            properties += Clazz.PUBLIC
         }.let { result ->
             assertEquals(Events.ACCESS_PUBLIC, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
             assertNull(firstUnknownProperty(result))
@@ -695,7 +721,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Classification_Private() {
         buildEvent(true) {
-            classification = Clazz.PRIVATE
+            properties += Clazz.PRIVATE
         }.let { result ->
             assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
             assertNull(firstUnknownProperty(result))
@@ -705,7 +731,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Classification_Confidential() {
         buildEvent(true) {
-            classification = Clazz.CONFIDENTIAL
+            properties += Clazz.CONFIDENTIAL
         }.let { result ->
             assertEquals(Events.ACCESS_CONFIDENTIAL, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
             assertEquals(Clazz.CONFIDENTIAL, firstUnknownProperty(result))
@@ -715,7 +741,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_Classification_Custom() {
         buildEvent(true) {
-            classification = Clazz("TOP-SECRET")
+            properties += Clazz("TOP-SECRET")
         }.let { result ->
             assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
             assertEquals(Clazz("TOP-SECRET"), firstUnknownProperty(result))
@@ -734,7 +760,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildEvent_UID2445() {
         buildEvent(true) {
-            uid = "event1@example.com"
+            properties += Uid("event1@example.com")
         }.let { result ->
             assertEquals("event1@example.com", result.entityValues.getAsString(Events.UID_2445))
         }
@@ -747,7 +773,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_None() {
         buildEvent(true) {
-            alarms += VAlarm()
+            components += VAlarm()
         }.let { result ->
             firstReminder(result)!!.let { reminder ->
                 assertEquals(Reminders.METHOD_DEFAULT, reminder.getAsInteger(Reminders.METHOD))
@@ -759,7 +785,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Type_Audio() {
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
+            components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
                 properties += Action.AUDIO
             }
         }.let { result ->
@@ -773,7 +799,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Type_Display() {
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
+            components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
                 properties += Action.DISPLAY
             }
         }.let { result ->
@@ -787,7 +813,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Type_Email() {
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
+            components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
                 properties += Action.EMAIL
             }
         }.let { result ->
@@ -801,7 +827,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Type_Custom() {
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
+            components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
                 properties += Action("X-CUSTOM")
             }
         }.let { result ->
@@ -815,7 +841,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_RelStart_Duration() {
         buildEvent(true) {
-            alarms += VAlarm(Period.ofDays(-1))
+            components += VAlarm(Period.ofDays(-1))
         }.let { result ->
             assertEquals(1440, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
@@ -824,7 +850,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_RelStart_Duration_LessThanOneMinute() {
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofSeconds(-10))
+            components += VAlarm(java.time.Duration.ofSeconds(-10))
         }.let { result ->
             assertEquals(0, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
@@ -834,7 +860,7 @@ class LegacyAndroidEventBuilder2Test {
     fun testBuildReminder_Trigger_RelStart_Duration_Positive() {
         // positive duration -> reminder is AFTER reference time -> negative minutes field
         buildEvent(true) {
-            alarms += VAlarm(java.time.Duration.ofMinutes(10))
+            components += VAlarm(java.time.Duration.ofMinutes(10))
         }.let { result ->
             assertEquals(-10, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
@@ -843,9 +869,9 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_RelEnd_Duration() {
         buildEvent(false) {
-            dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-            dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-            alarms += VAlarm(Period.ofDays(-1)).apply {
+            properties += DtStart(DateTime("20200621T120000", tzVienna))
+            properties += DtEnd(DateTime("20200621T140000", tzVienna))
+            components += VAlarm(Period.ofDays(-1)).apply {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
@@ -856,9 +882,9 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_RelEnd_Duration_LessThanOneMinute() {
         buildEvent(false) {
-            dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-            dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-            alarms += VAlarm(java.time.Duration.ofSeconds(-7240)).apply {
+            properties += DtStart(DateTime("20200621T120000", tzVienna))
+            properties += DtEnd(DateTime("20200621T140000", tzVienna))
+            components += VAlarm(java.time.Duration.ofSeconds(-7240)).apply {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
@@ -870,9 +896,9 @@ class LegacyAndroidEventBuilder2Test {
     fun testBuildReminder_Trigger_RelEnd_Duration_Positive() {
         // positive duration -> reminder is AFTER reference time -> negative minutes field
         buildEvent(false) {
-            dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-            dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-            alarms += VAlarm(java.time.Duration.ofMinutes(10)).apply {
+            properties += DtStart(DateTime("20200621T120000", tzVienna))
+            properties += DtEnd(DateTime("20200621T140000", tzVienna))
+            components += VAlarm(java.time.Duration.ofMinutes(10)).apply {
                 trigger.parameters.add(Related.END)
             }
         }.let { result ->
@@ -883,8 +909,8 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Absolute() {
         buildEvent(false) {
-            dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-            alarms += VAlarm(DateTime("20200621T110000", tzVienna))
+            properties += DtStart(DateTime("20200621T120000", tzVienna))
+            components += VAlarm(DateTime("20200621T110000", tzVienna))
         }.let { result ->
             assertEquals(60, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
@@ -893,8 +919,8 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildReminder_Trigger_Absolute_OtherTimeZone() {
         buildEvent(false) {
-            dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-            alarms += VAlarm(DateTime("20200621T110000", tzShanghai))
+            properties += DtStart(DateTime("20200621T120000", tzVienna))
+            components += VAlarm(DateTime("20200621T110000", tzShanghai))
         }.let { result ->
             assertEquals(420, firstReminder(result)!!.getAsInteger(Reminders.MINUTES))
         }
@@ -907,7 +933,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_MailTo() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee1@example.com")
+            properties += Attendee("mailto:attendee1@example.com")
         }.let { result ->
             assertEquals("attendee1@example.com", firstAttendee(result)!!.getAsString(Attendees.ATTENDEE_EMAIL))
         }
@@ -916,7 +942,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_OtherUri() {
         buildEvent(true) {
-            attendees += Attendee("https://example.com/principals/attendee")
+            properties += Attendee("https://example.com/principals/attendee")
         }.let { result ->
             firstAttendee(result)!!.let { attendee ->
                 assertEquals("https", attendee.getAsString(Attendees.ATTENDEE_ID_NAMESPACE))
@@ -928,7 +954,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_CustomUri_EmailParam() {
         buildEvent(true) {
-            attendees += Attendee("sample:uri").apply {
+            properties += Attendee("sample:uri").apply {
                 parameters.add(Email("attendee1@example.com"))
             }
         }.let { result ->
@@ -943,7 +969,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_Cn() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(Cn("Sample Attendee"))
             }
         }.let { result ->
@@ -957,7 +983,7 @@ class LegacyAndroidEventBuilder2Test {
             // REQ-PARTICIPANT (default, includes unknown values)
             for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
                 buildEvent(true) {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
                             parameters.add(cuType)
                         if (role != null)
@@ -972,7 +998,7 @@ class LegacyAndroidEventBuilder2Test {
             }
             // OPT-PARTICIPANT
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     if (cuType != null)
                         parameters.add(cuType)
                     parameters.add(Role.OPT_PARTICIPANT)
@@ -985,7 +1011,7 @@ class LegacyAndroidEventBuilder2Test {
             }
             // NON-PARTICIPANT
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     if (cuType != null)
                         parameters.add(cuType)
                     parameters.add(Role.NON_PARTICIPANT)
@@ -1004,7 +1030,7 @@ class LegacyAndroidEventBuilder2Test {
         // REQ-PARTICIPANT (default, includes unknown values)
         for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.UNKNOWN)
                     if (role != null)
                         parameters.add(role)
@@ -1018,7 +1044,7 @@ class LegacyAndroidEventBuilder2Test {
         }
         // OPT-PARTICIPANT
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(CuType.UNKNOWN)
                 parameters.add(Role.OPT_PARTICIPANT)
             }
@@ -1030,7 +1056,7 @@ class LegacyAndroidEventBuilder2Test {
         }
         // NON-PARTICIPANT
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(CuType.UNKNOWN)
                 parameters.add(Role.NON_PARTICIPANT)
             }
@@ -1047,7 +1073,7 @@ class LegacyAndroidEventBuilder2Test {
         // REQ-PARTICIPANT (default, includes unknown values)
         for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.GROUP)
                     if (role != null)
                         parameters.add(role)
@@ -1061,7 +1087,7 @@ class LegacyAndroidEventBuilder2Test {
         }
         // OPT-PARTICIPANT
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(CuType.GROUP)
                 parameters.add(Role.OPT_PARTICIPANT)
             }
@@ -1073,7 +1099,7 @@ class LegacyAndroidEventBuilder2Test {
         }
         // NON-PARTICIPANT
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(CuType.GROUP)
                 parameters.add(Role.NON_PARTICIPANT)
             }
@@ -1089,7 +1115,7 @@ class LegacyAndroidEventBuilder2Test {
     fun testBuildAttendee_Resource() {
         for (role in arrayOf(null, Role.REQ_PARTICIPANT, Role.OPT_PARTICIPANT, Role.NON_PARTICIPANT, Role("X-CUSTOM-ROLE")))
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.RESOURCE)
                     if (role != null)
                         parameters.add(role)
@@ -1102,7 +1128,7 @@ class LegacyAndroidEventBuilder2Test {
             }
         // CHAIR
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(CuType.RESOURCE)
                 parameters.add(Role.CHAIR)
             }
@@ -1118,7 +1144,7 @@ class LegacyAndroidEventBuilder2Test {
     fun testBuildAttendee_Chair() {
         for (cuType in arrayOf(null, CuType.INDIVIDUAL, CuType.UNKNOWN, CuType.GROUP, CuType("x-custom-cutype")))
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     if (cuType != null)
                         parameters.add(cuType)
                     parameters.add(Role.CHAIR)
@@ -1135,7 +1161,7 @@ class LegacyAndroidEventBuilder2Test {
     fun testBuildAttendee_Room() {
         for (role in arrayOf(null, Role.CHAIR, Role.REQ_PARTICIPANT, Role.OPT_PARTICIPANT, Role.NON_PARTICIPANT, Role("X-CUSTOM-ROLE")))
             buildEvent(true) {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.ROOM)
                     if (role != null)
                         parameters.add(role)
@@ -1151,7 +1177,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_Organizer() {
         buildEvent(true) {
-            attendees += Attendee(URI("mailto", testAccount.name, null))
+            properties += Attendee(URI("mailto", testAccount.name, null))
         }.let { result ->
             firstAttendee(result)!!.let { attendee ->
                 assertEquals(testAccount.name, attendee.getAsString(Attendees.ATTENDEE_EMAIL))
@@ -1163,7 +1189,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_None() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com")
+            properties += Attendee("mailto:attendee@example.com")
         }.let { result ->
             assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
         }
@@ -1172,7 +1198,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_NeedsAction() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat.NEEDS_ACTION)
             }
         }.let { result ->
@@ -1183,7 +1209,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_Accepted() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat.ACCEPTED)
             }
         }.let { result ->
@@ -1194,7 +1220,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_Declined() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat.DECLINED)
             }
         }.let { result ->
@@ -1205,7 +1231,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_Tentative() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat.TENTATIVE)
             }
         }.let { result ->
@@ -1216,7 +1242,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_Delegated() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat.DELEGATED)
             }
         }.let { result ->
@@ -1227,7 +1253,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildAttendee_PartStat_Custom() {
         buildEvent(true) {
-            attendees += Attendee("mailto:attendee@example.com").apply {
+            properties += Attendee("mailto:attendee@example.com").apply {
                 parameters.add(PartStat("X-WILL-ASK"))
             }
         }.let { result ->
@@ -1241,7 +1267,7 @@ class LegacyAndroidEventBuilder2Test {
         buildEvent(true) {
             val params = ParameterList()
             params.add(Language("en"))
-            unknownProperties += XProperty("X-NAME", params, "Custom Value")
+            properties += XProperty("X-NAME", params, "Custom Value")
         }.let { result ->
             firstUnknownProperty(result)!!.let { property ->
                 assertEquals("X-NAME", property.name)
@@ -1254,7 +1280,7 @@ class LegacyAndroidEventBuilder2Test {
     @Test
     fun testBuildUnknownProperty_NoValue() {
         buildEvent(true) {
-            unknownProperties += XProperty("ATTACH", ParameterList(), null)
+            properties += XProperty("ATTACH", ParameterList(), null)
         }.let { result ->
             // The property should not have been added, so the first unknown property should be null
             assertNull(firstUnknownProperty(result))
@@ -1269,14 +1295,18 @@ class LegacyAndroidEventBuilder2Test {
 
     @Test
     fun testBuildException_NonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
+        buildEventAndExceptions(
+            automaticDates = false,
+            buildExceptions = {
+                listOf(VEvent().apply {
+                    properties += RecurrenceId("20200707T193000", tzVienna)
+                    properties += DtStart("20200706T203000", tzShanghai)
+                    properties += Summary("Event moved to one hour later")
+                })
             }
+        ) {
+            properties += DtStart("20200706T193000", tzVienna)
+            properties += RRule("FREQ=DAILY;COUNT=10")
         }.let { result ->
             val values = result.main.entityValues
             assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
@@ -1296,15 +1326,20 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
+    @Ignore("Should be done by and tested in validator class")
     fun testBuildException_NonAllDay_RecurrenceIdAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))   // illegal! should be rewritten to DateTime("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
+        buildEventAndExceptions(
+            automaticDates = false,
+            buildExceptions = {
+                listOf(VEvent().apply {
+                    properties += RecurrenceId(Date("20200707"))   // illegal! should be rewritten to DateTime("20200707T193000", tzVienna)
+                    properties += DtStart("20200706T203000", tzShanghai)
+                    properties += Summary("Event moved to one hour later")
+                })
             }
+        ) {
+            properties += DtStart("20200706T193000", tzVienna)
+            properties += RRule("FREQ=DAILY;COUNT=10")
         }.let { result ->
             val values = result.main.entityValues
             assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
@@ -1324,15 +1359,19 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
+    @Ignore("Should be done by and tested in validator class")
     fun testBuildException_AllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
+        buildEventAndExceptions(
+            automaticDates = false,
+            buildExceptions = {
+                listOf(VEvent().apply {
+                    properties += RecurrenceId(Date("20200707"))
+                    properties += DtStart("20200706T123000", tzVienna)
+                    properties += Summary("Today not an all-day event")                })
             }
+        ) {
+            properties += DtStart(Date("20200706"))
+            properties += RRule("FREQ=WEEKLY;COUNT=3")
         }.let { result ->
             val values = result.main.entityValues
             assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))
@@ -1351,15 +1390,20 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
+    @Ignore("Should be done by and tested in validator class")
     fun testBuildException_AllDay_RecurrenceIdNonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T000000", tzVienna)     // illegal! should be rewritten to Date("20200707")
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
+        buildEventAndExceptions(
+            automaticDates = false,
+            buildExceptions = {
+                listOf(VEvent().apply {
+                    properties += RecurrenceId("20200707T000000", tzVienna)     // illegal! should be rewritten to Date("20200707")
+                    properties += DtStart("20200706T123000", tzVienna)
+                    properties += Summary("Today not an all-day event")
+                })
             }
+        ) {
+            properties += DtStart(Date("20200706"))
+            properties += RRule("FREQ=WEEKLY;COUNT=3")
         }.let { result ->
             val values = result.main.entityValues
             assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))

@@ -15,7 +15,6 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
@@ -124,7 +123,7 @@ class LegacyAndroidEventBuilder2(
         }
 
         from.url?.let { url ->
-            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildUrl(url.toString()))
+            entity.addSubValue(ExtendedProperties.CONTENT_URI, buildUrl(url.value))
         }
 
         // TODO: unknown properties
@@ -470,7 +469,7 @@ class LegacyAndroidEventBuilder2(
             else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
         }
 
-        val minutes = ICalendar.vAlarmToMin(alarm, reference, false)?.second ?: Reminders.MINUTES_DEFAULT
+        val minutes = ReminderCalculator().vAlarmToMin(alarm, reference, false)?.second ?: Reminders.MINUTES_DEFAULT
 
         return contentValuesOf(
             Reminders.METHOD to method,
