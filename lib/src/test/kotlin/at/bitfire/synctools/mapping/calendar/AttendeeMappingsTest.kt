@@ -13,9 +13,9 @@ import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import kotlin.test.Test
 
 @RunWith(RobolectricTestRunner::class)
 class AttendeeMappingsTest {
@@ -28,7 +28,7 @@ class AttendeeMappingsTest {
     }
 
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -43,7 +43,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -58,7 +58,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -76,7 +76,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -94,7 +94,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -113,7 +113,7 @@ class AttendeeMappingsTest {
     }
 
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeOptional_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -131,7 +131,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeOptional_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -149,7 +149,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeOptional_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -166,7 +166,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeOptional_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -184,7 +184,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeOptional_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -202,7 +202,7 @@ class AttendeeMappingsTest {
     }
 
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeNone_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -221,7 +221,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeNone_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -240,7 +240,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeNone_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -258,7 +258,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeNone_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -276,7 +276,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeNone_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -295,7 +295,7 @@ class AttendeeMappingsTest {
     }
 
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeResource_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
@@ -313,7 +313,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeResource_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
@@ -331,7 +331,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeResource_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
@@ -349,7 +349,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeResource_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
@@ -366,7 +366,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testAndroidToICalendar_TypeResource_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
@@ -386,7 +386,7 @@ class AttendeeMappingsTest {
 
 
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleNone() {
         testICalendarToAndroid(Attendee("mailto:attendee@example.com")) {
             assertEquals(
@@ -400,7 +400,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -418,7 +418,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -436,7 +436,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -454,7 +454,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -472,7 +472,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeNone_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -491,7 +491,7 @@ class AttendeeMappingsTest {
     }
 
 
-    @org.junit.Test
+    @Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")

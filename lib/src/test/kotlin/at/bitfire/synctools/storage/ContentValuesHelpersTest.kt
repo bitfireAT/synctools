@@ -8,7 +8,8 @@ package at.bitfire.synctools.storage
 
 import android.content.ContentValues
 import android.database.MatrixCursor
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -23,8 +24,8 @@ class ContentValuesHelpersTest {
         c.addRow(arrayOf("row1_val1", "row1_val2"))
         c.moveToFirst()
         val values = c.toContentValues()
-        Assert.assertEquals("row1_val1", values.getAsString("col1"))
-        Assert.assertEquals("row1_val2", values.getAsString("col2"))
+        assertEquals("row1_val1", values.getAsString("col1"))
+        assertEquals("row1_val2", values.getAsString("col2"))
     }
 
     @Test
@@ -37,12 +38,12 @@ class ContentValuesHelpersTest {
         values.put("key5", " \n ")
         values.put("key6", " ")
         values.removeBlank()
-        Assert.assertEquals("value", values.getAsString("key1"))
-        Assert.assertEquals(1L, values.getAsLong("key2"))
-        Assert.assertNull(values.get("key3"))
-        Assert.assertNull(values.get("key4"))
-        Assert.assertNull(values.get("key5"))
-        Assert.assertNull(values.get("key6"))
+        assertEquals("value", values.getAsString("key1"))
+        assertEquals(1L, values.getAsLong("key2"))
+        assertNull(values.get("key3"))
+        assertNull(values.get("key4"))
+        assertNull(values.get("key5"))
+        assertNull(values.get("key6"))
     }
 
 }

@@ -137,7 +137,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
 
     // unit tests
-    testImplementation(kotlin("test"))
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.roboelectric)

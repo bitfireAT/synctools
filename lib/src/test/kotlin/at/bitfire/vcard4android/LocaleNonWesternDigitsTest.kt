@@ -47,7 +47,7 @@ class LocaleNonWesternDigitsTest {
 
     @Test
     fun testLocale_StringFormat_Root() {
-        assertEquals("2020", String.Companion.format(Locale.ROOT, "%d", 2020))
+        assertEquals("2020", String.format(Locale.ROOT, "%d", 2020))
     }
 
     @Test(expected = ComparisonFailure::class)

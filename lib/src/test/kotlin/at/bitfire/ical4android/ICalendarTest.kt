@@ -20,6 +20,9 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.StringReader
 import java.time.Duration
@@ -68,16 +71,16 @@ class ICalendarTest {
                         "END:VCALENDAR"
             )
 		)
-        Assert.assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).value)
-        Assert.assertEquals("darkred", calendar.getProperty<Property>(Color.PROPERTY_NAME).value)
-        Assert.assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)
+        assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).value)
+        assertEquals("darkred", calendar.getProperty<Property>(Color.PROPERTY_NAME).value)
+        assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)
 	}
 
 	@Test
 	fun testFromReader_invalidProperty() {
 		// The GEO property is invalid and should be ignored.
 		// The calendar is however parsed without exception.
-        Assert.assertNotNull(
+        assertNotNull(
             ICalendar.fromReader(
                 StringReader(
                     "BEGIN:VCALENDAR\n" +
@@ -100,23 +103,23 @@ class ICalendarTest {
 		// Keep the only observance for UTC.
 		// DATE-TIME values in UTC are usually noted with ...Z and don't have a VTIMEZONE,
 		// but it is allowed to write them as TZID=Etc/UTC.
-        Assert.assertEquals(1, vtzUTC.observances.size)
+        assertEquals(1, vtzUTC.observances.size)
 		ICalendar.minifyVTimeZone(vtzUTC, net.fortuna.ical4j.model.Date("20200612")).let { minified ->
-            Assert.assertEquals(1, minified.observances.size)
+            assertEquals(1, minified.observances.size)
 		}
 	}
 
 	@Test
 	fun testMinifyVTimezone_removeObsoleteDstObservances() {
 		// Remove obsolete observances when DST is used.
-        Assert.assertEquals(6, vtzVienna.observances.size)
+        assertEquals(6, vtzVienna.observances.size)
 		// By default, the earliest observance is in 1893. We can drop that for events in 2020.
-        Assert.assertEquals(DateTime("18930401T000000"), vtzVienna.observances.sortedBy { it.startDate.date }.first().startDate.date)
+        assertEquals(DateTime("18930401T000000"), vtzVienna.observances.sortedBy { it.startDate.date }.first().startDate.date)
 		ICalendar.minifyVTimeZone(vtzVienna, net.fortuna.ical4j.model.Date("20200101")).let { minified ->
 			Assert.assertEquals(2, minified.observances.size)
 			// now earliest observance for DAYLIGHT/STANDARD is 1981/1996
-            Assert.assertEquals(DateTime("19961027T030000"), minified.observances[0].startDate.date)
-            Assert.assertEquals(DateTime("19810329T020000"), minified.observances[1].startDate.date)
+            assertEquals(DateTime("19961027T030000"), minified.observances[0].startDate.date)
+            assertEquals(DateTime("19810329T020000"), minified.observances[1].startDate.date)
 		}
 
 	}
@@ -125,9 +128,9 @@ class ICalendarTest {
 	fun testMinifyVTimezone_removeObsoleteObservances() {
 		// Remove obsolete observances when DST is not used. Mogadishu had several time zone changes,
 		// but now there is a simple offest without DST.
-        Assert.assertEquals(4, vtzMogadishu.observances.size)
+        assertEquals(4, vtzMogadishu.observances.size)
 		ICalendar.minifyVTimeZone(vtzMogadishu, net.fortuna.ical4j.model.Date("19611001")).let { minified ->
-            Assert.assertEquals(1, minified.observances.size)
+            assertEquals(1, minified.observances.size)
 		}
 	}
 
@@ -136,17 +139,17 @@ class ICalendarTest {
 		// Keep future observances.
 		ICalendar.minifyVTimeZone(vtzVienna, net.fortuna.ical4j.model.Date("19751001")).let { minified ->
 			Assert.assertEquals(4, minified.observances.size)
-            Assert.assertEquals(DateTime("19161001T010000"), minified.observances[2].startDate.date)
-            Assert.assertEquals(DateTime("19160430T230000"), minified.observances[3].startDate.date)
+            assertEquals(DateTime("19161001T010000"), minified.observances[2].startDate.date)
+            assertEquals(DateTime("19160430T230000"), minified.observances[3].startDate.date)
 		}
 		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("19611001")).let { minified ->
-            Assert.assertEquals(4, minified.observances.size)
+            assertEquals(4, minified.observances.size)
 		}
 		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("19751001")).let { minified ->
-            Assert.assertEquals(3, minified.observances.size)
+            assertEquals(3, minified.observances.size)
 		}
 		ICalendar.minifyVTimeZone(vtzMogadishu, net.fortuna.ical4j.model.Date("19311001")).let { minified ->
-            Assert.assertEquals(3, minified.observances.size)
+            assertEquals(3, minified.observances.size)
 		}
 	}
 
@@ -154,7 +157,7 @@ class ICalendarTest {
 	fun testMinifyVTimezone_keepDstWhenStartInDst() {
 		// Keep DST when there are no obsolete observances, but start time is in DST.
 		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("20091031")).let { minified ->
-            Assert.assertEquals(2, minified.observances.size)
+            assertEquals(2, minified.observances.size)
 		}
 	}
 
@@ -162,14 +165,14 @@ class ICalendarTest {
 	fun testMinifyVTimezone_removeDstWhenNotUsedAnymore() {
 		// Remove obsolete observances (including DST) when DST is not used anymore.
 		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("201001001")).let { minified ->
-            Assert.assertEquals(1, minified.observances.size)
+            assertEquals(1, minified.observances.size)
 		}
 	}
 
 
     @Test
     fun testTimezoneDefToTzId_Valid() {
-        Assert.assertEquals(
+        assertEquals(
             "US-Eastern", ICalendar.timezoneDefToTzId(
                 "BEGIN:VCALENDAR\n" +
                         "PRODID:-//Example Corp.//CalDAV Client//EN\n" +
@@ -200,10 +203,10 @@ class ICalendarTest {
 	@Test
 	fun testTimezoneDefToTzId_Invalid() {
 		// invalid time zone
-        Assert.assertNull(ICalendar.timezoneDefToTzId("/* invalid content */"))
+        assertNull(ICalendar.timezoneDefToTzId("/* invalid content */"))
 
         // time zone without TZID
-        Assert.assertNull(
+        assertNull(
             ICalendar.timezoneDefToTzId(
                 "BEGIN:VCALENDAR\n" +
                         "PRODID:-//Inverse inc./SOGo 2.2.10//EN\n" +
@@ -221,8 +224,8 @@ class ICalendarTest {
             VAlarm(Duration.parse("-P1DT1H1M29S")),
 			Event(), false
 		)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(60 * 24 + 60 + 1, min)
+        assertEquals(Related.START, ref)
+        assertEquals(60 * 24 + 60 + 1, min)
 	}
 
 	@Test
@@ -232,8 +235,8 @@ class ICalendarTest {
             VAlarm(Duration.parse("-PT3600S")),
 			Event(), false
 		)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(60, min)
+        assertEquals(Related.START, ref)
+        assertEquals(60, min)
 	}
 
 	@Test
@@ -243,8 +246,8 @@ class ICalendarTest {
             VAlarm(Duration.parse("P1DT1H1M30S")),
 			Event(), false
 		)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(-(60 * 24 + 60 + 1), min)
+        assertEquals(Related.START, ref)
+        assertEquals(-(60 * 24 + 60 + 1), min)
 	}
 
 	@Test
@@ -253,8 +256,8 @@ class ICalendarTest {
 		val alarm = VAlarm(Duration.parse("-P1DT1H1M30S"))
 		alarm.trigger.parameters.add(Related.END)
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, Event(), true)!!
-        Assert.assertEquals(Related.END, ref)
-        Assert.assertEquals(60 * 24 + 60 + 1, min)
+        assertEquals(Related.END, ref)
+        assertEquals(60 * 24 + 60 + 1, min)
 	}
 
 	@Test
@@ -266,9 +269,9 @@ class ICalendarTest {
 		event.dtStart = DtStart(DateTime(currentTime))
 		event.dtEnd = DtEnd(DateTime(currentTime + 180 * 1000))    // 180 sec later
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, event, false)!!
-        Assert.assertEquals(Related.START, ref)
+        assertEquals(Related.START, ref)
 		// duration of event: 180 s (3 min), 65 s before that -> alarm 1:55 min before start
-        Assert.assertEquals(-1, min)
+        assertEquals(-1, min)
 	}
 
 	@Test
@@ -278,7 +281,7 @@ class ICalendarTest {
 		alarm.trigger.parameters.add(Related.END)
 		val event = Event()
 		event.dtEnd = DtEnd(DateTime(currentTime))
-        Assert.assertNull(ICalendar.vAlarmToMin(alarm, event, false))
+        assertNull(ICalendar.vAlarmToMin(alarm, event, false))
 	}
 
 	@Test
@@ -288,7 +291,7 @@ class ICalendarTest {
 		alarm.trigger.parameters.add(Related.END)
 		val event = Event()
 		event.dtStart = DtStart(DateTime(currentTime))
-        Assert.assertNull(ICalendar.vAlarmToMin(alarm, event, false))
+        assertNull(ICalendar.vAlarmToMin(alarm, event, false))
 	}
 
 	@Test
@@ -300,8 +303,8 @@ class ICalendarTest {
 		task.dtStart = DtStart(DateTime(currentTime))
 		task.due = Due(DateTime(currentTime + 90 * 1000))    // 90 sec (should be rounded down to 1 min) later
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, task, false)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(-(60 * 24 + 60 + 1 + 1) /* duration of event: */ - 1, min)
+        assertEquals(Related.START, ref)
+        assertEquals(-(60 * 24 + 60 + 1 + 1) /* duration of event: */ - 1, min)
 	}
 
 	@Test
@@ -312,8 +315,8 @@ class ICalendarTest {
             VAlarm(Period.parse("-P1W1D")),
 			event, false
 		)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(8 * 24 * 60, min)
+        assertEquals(Related.START, ref)
+        assertEquals(8 * 24 * 60, min)
 	}
 
 	@Test
@@ -324,8 +327,8 @@ class ICalendarTest {
 		val alarm = VAlarm(DateTime(currentTime - 89 * 1000))    // 89 sec (should be cut off to 1 min) before event
 		alarm.trigger.parameters.add(Related.END)	// not useful for DATE-TIME values, should be ignored
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, event, false)!!
-        Assert.assertEquals(Related.START, ref)
-        Assert.assertEquals(1, min)
+        assertEquals(Related.START, ref)
+        assertEquals(1, min)
 	}
 
 	/*

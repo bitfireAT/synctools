@@ -7,7 +7,8 @@
 package at.bitfire.ical4android
 
 import at.bitfire.synctools.icalendar.Css3Color
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -18,38 +19,38 @@ class Css3ColorTest {
     @Test
     fun testColorFromString() {
         // color name
-        Assert.assertEquals(0xffffff00.toInt(), Css3Color.Companion.colorFromString("yellow"))
+        assertEquals(0xffffff00.toInt(), Css3Color.colorFromString("yellow"))
 
         // RGB value
-        Assert.assertEquals(0xffffff00.toInt(), Css3Color.Companion.colorFromString("#ffff00"))
+        assertEquals(0xffffff00.toInt(), Css3Color.colorFromString("#ffff00"))
 
         // ARGB value
-        Assert.assertEquals(0xffffff00.toInt(), Css3Color.Companion.colorFromString("#ffffff00"))
+        assertEquals(0xffffff00.toInt(), Css3Color.colorFromString("#ffffff00"))
 
         // empty value
-        Assert.assertNull(Css3Color.Companion.colorFromString(""))
+        assertNull(Css3Color.colorFromString(""))
 
         // invalid value
-        Assert.assertNull(Css3Color.Companion.colorFromString("DoesNotExist"))
+        assertNull(Css3Color.colorFromString("DoesNotExist"))
     }
 
     @Test
     fun testFromString() {
         // lower case
-        Assert.assertEquals(0xffffff00.toInt(), Css3Color.Companion.fromString("yellow")?.argb)
+        assertEquals(0xffffff00.toInt(), Css3Color.fromString("yellow")?.argb)
 
         // capitalized
-        Assert.assertEquals(0xffffff00.toInt(), Css3Color.Companion.fromString("Yellow")?.argb)
+        assertEquals(0xffffff00.toInt(), Css3Color.fromString("Yellow")?.argb)
 
         // not-existing color
-        Assert.assertNull(Css3Color.Companion.fromString("DoesNotExist"))
+        assertNull(Css3Color.fromString("DoesNotExist"))
     }
 
     @Test
     fun testNearestMatch() {
         // every color is its own nearest match
         Css3Color.entries.forEach {
-            Assert.assertEquals(it.argb, Css3Color.Companion.nearestMatch(it.argb).argb)
+            assertEquals(it.argb, Css3Color.nearestMatch(it.argb).argb)
         }
     }
 
