@@ -14,7 +14,10 @@ import ezvcard.parameter.ImppType
 import ezvcard.property.Impp
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ImBuilderTest {
 
     @Test

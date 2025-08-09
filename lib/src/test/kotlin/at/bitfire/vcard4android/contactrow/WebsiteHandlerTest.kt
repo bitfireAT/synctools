@@ -10,9 +10,14 @@ import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Website
 import at.bitfire.vcard4android.Contact
 import at.bitfire.vcard4android.property.CustomType
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class WebsiteHandlerTest {
 
     @Test

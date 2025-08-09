@@ -11,8 +11,11 @@ import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.vcard4android.Contact
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.util.*
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.util.LinkedList
 
+@RunWith(RobolectricTestRunner::class)
 class DataRowBuilderTest {
 
     @Test

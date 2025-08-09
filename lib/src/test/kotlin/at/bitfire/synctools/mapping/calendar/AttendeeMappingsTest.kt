@@ -8,73 +8,75 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.provider.CalendarContract.Attendees
-import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import kotlin.test.Test
 
+@RunWith(RobolectricTestRunner::class)
 class AttendeeMappingsTest {
 
     companion object {
         const val DEFAULT_ORGANIZER = "organizer@example.com"
 
-        val CuTypeFancy = CuType("X-FANCY")
+        val CuTypeFancy = net.fortuna.ical4j.model.parameter.CuType("X-FANCY")
         val RoleFancy = Role("X-FANCY")
     }
 
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeRequired_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
             assertNull(
-                getParameter(Parameter.CUTYPE)
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeRequired_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
             assertNull(
-                getParameter(Parameter.CUTYPE)
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeRequired_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                CuType.GROUP,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeRequired_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
@@ -82,36 +84,36 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertEquals(
                 Role.CHAIR,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeRequired_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                CuType.UNKNOWN,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeOptional_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -119,17 +121,17 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertEquals(
                 Role.OPT_PARTICIPANT,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeOptional_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -137,34 +139,34 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertEquals(
                 Role.OPT_PARTICIPANT,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeOptional_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                CuType.GROUP,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
                 Role.OPT_PARTICIPANT,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeOptional_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
@@ -172,35 +174,35 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertEquals(
                 Role.CHAIR,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeOptional_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                CuType.UNKNOWN,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
                 Role.OPT_PARTICIPANT,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeNone_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -208,18 +210,18 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeNone_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -227,36 +229,36 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeNone_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                CuType.GROUP,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.GROUP,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeNone_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
@@ -264,119 +266,119 @@ class AttendeeMappingsTest {
         }) {
             assertNull(
                 getParameter(
-                    Parameter.CUTYPE
+                    net.fortuna.ical4j.model.Parameter.CUTYPE
                 )
             )
             assertEquals(
                 Role.CHAIR,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeNone_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                CuType.UNKNOWN,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeResource_RelationshipAttendee() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
             assertEquals(
-                CuType.RESOURCE,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeResource_RelationshipOrganizer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
             assertEquals(
-                CuType.RESOURCE,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeResource_RelationshipPerformer() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
             assertEquals(
-                CuType.ROOM,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.ROOM,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeResource_RelationshipSpeaker() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
             assertEquals(
-                CuType.RESOURCE,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertEquals(
                 Role.CHAIR,
-                getParameter(Parameter.ROLE)
+                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
             )
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testAndroidToICalendar_TypeResource_RelationshipNone() {
         testAndroidToICalendar(ContentValues().apply {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
             assertEquals(
-                CuType.RESOURCE,
-                getParameter(Parameter.CUTYPE)
+                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
+                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
             )
             assertNull(
                 getParameter(
-                    Parameter.ROLE
+                    net.fortuna.ical4j.model.Parameter.ROLE
                 )
             )
         }
@@ -384,7 +386,7 @@ class AttendeeMappingsTest {
 
 
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleNone() {
         testICalendarToAndroid(Attendee("mailto:attendee@example.com")) {
             assertEquals(
@@ -398,7 +400,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -416,7 +418,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -434,7 +436,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -452,7 +454,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -470,7 +472,7 @@ class AttendeeMappingsTest {
         }
     }
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeNone_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
@@ -489,12 +491,12 @@ class AttendeeMappingsTest {
     }
 
 
-    @Test
+    @org.junit.Test
     fun testICalendarToAndroid_CuTypeIndividual_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
                 .apply {
-            parameters.add(CuType.INDIVIDUAL)
+            parameters.add(net.fortuna.ical4j.model.parameter.CuType.INDIVIDUAL)
         }) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,

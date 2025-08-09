@@ -13,6 +13,7 @@ ical4j = "3.2.19"   # final version; update to 4.x will require much work
 junit = "4.13.2"
 kotlin = "2.2.0"
 mockk = "1.14.5"
+roboelectric = "4.15.1"
 slf4j = "2.0.17"
 
 [libraries]
@@ -28,6 +29,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
+roboelectric = { module = "org.robolectric:robolectric", version.ref = "roboelectric" }
 slf4j-jdk = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
 
 [plugins]

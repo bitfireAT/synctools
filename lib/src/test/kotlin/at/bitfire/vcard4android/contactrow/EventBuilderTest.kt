@@ -15,15 +15,16 @@ import ezvcard.property.Anniversary
 import ezvcard.property.Birthday
 import ezvcard.util.PartialDate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
+@RunWith(RobolectricTestRunner::class)
 class EventBuilderTest {
 
     @Test

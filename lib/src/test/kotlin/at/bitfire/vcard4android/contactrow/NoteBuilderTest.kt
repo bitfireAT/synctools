@@ -11,7 +11,10 @@ import android.provider.ContactsContract.CommonDataKinds
 import at.bitfire.vcard4android.Contact
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class NoteBuilderTest {
 
     @Test

@@ -15,7 +15,10 @@ import ezvcard.parameter.TelephoneType
 import ezvcard.property.Telephone
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class PhoneBuilderTest {
 
     @Test

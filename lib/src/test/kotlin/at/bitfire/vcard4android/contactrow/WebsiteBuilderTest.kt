@@ -14,7 +14,10 @@ import at.bitfire.vcard4android.property.CustomType
 import ezvcard.property.Url
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class WebsiteBuilderTest {
 
     @Test

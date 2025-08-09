@@ -11,9 +11,15 @@ import android.provider.ContactsContract.CommonDataKinds.Email
 import at.bitfire.vcard4android.Contact
 import at.bitfire.vcard4android.property.CustomType
 import ezvcard.parameter.EmailType
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class EmailHandlerTest {
 
     @Test

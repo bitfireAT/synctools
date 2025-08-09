@@ -15,7 +15,10 @@ import ezvcard.parameter.EmailType
 import ezvcard.property.Email
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class EmailBuilderTest {
 
     @Test

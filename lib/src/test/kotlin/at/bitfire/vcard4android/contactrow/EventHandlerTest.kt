@@ -10,10 +10,17 @@ import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Event
 import at.bitfire.vcard4android.Contact
 import ezvcard.util.PartialDate
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
 
+@RunWith(RobolectricTestRunner::class)
 class EventHandlerTest {
 
     @Test

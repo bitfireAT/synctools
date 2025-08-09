@@ -14,7 +14,10 @@ import ezvcard.parameter.RelatedType
 import ezvcard.property.Related
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class RelationBuilderTest {
 
     @Test
