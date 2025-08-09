@@ -12,11 +12,13 @@ import ezvcard.VCardVersion
 import ezvcard.property.Birthday
 import ezvcard.property.Geo
 import ezvcard.util.PartialDate
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assume
 import org.junit.Before
 import org.junit.ComparisonFailure
 import org.junit.Test
-import java.util.*
+import java.util.Locale
 
 class LocaleNonWesternDigitsTest {
 
@@ -24,11 +26,19 @@ class LocaleNonWesternDigitsTest {
         val locale = Locale("fa", "ir", "u-un-arabext")
     }
 
+    val defaultLocale = Locale.getDefault()
+
     @Before
     fun verifyLocale() {
-        assertEquals("Persian (Iran) locale not available", "fa", locale.language)
         Locale.setDefault(locale)
+        Assume.assumeTrue("Persian (Iran) locale not available", locale.language == "fa")
     }
+
+    @After
+    fun resetLocale() {
+        Locale.setDefault(defaultLocale)
+    }
+
 
     @Test
     fun testLocale_StringFormat() {
@@ -37,7 +47,7 @@ class LocaleNonWesternDigitsTest {
 
     @Test
     fun testLocale_StringFormat_Root() {
-        assertEquals("2020", String.format(Locale.ROOT, "%d", 2020))
+        assertEquals("2020", String.Companion.format(Locale.ROOT, "%d", 2020))
     }
 
     @Test(expected = ComparisonFailure::class)
@@ -47,12 +57,14 @@ class LocaleNonWesternDigitsTest {
             geo = Geo(1.0, 2.0)
             birthday = Birthday(PartialDate.parse("--0820"))
         }
-        assertEquals("BEGIN:VCARD\r\n" +
-                "VERSION:4.0\r\n" +
-                "PRODID:ez-vcard 0.11.2\r\n" +
-                "GEO:geo:1.0,2.0\r\n" +     // failed before 0.11.2: was "GEO:geo:۱.۰,۲.۰\r\n" instead
-                "BDAY:--08-20\r\n" +        // currently fails
-                "END:VCARD\r\n", Ezvcard.write(vCard).go())
+        assertEquals(
+            "BEGIN:VCARD\r\n" +
+                    "VERSION:4.0\r\n" +
+                    "PRODID:ez-vcard 0.11.2\r\n" +
+                    "GEO:geo:1.0,2.0\r\n" +     // failed before 0.11.2: was "GEO:geo:۱.۰,۲.۰\r\n" instead
+                    "BDAY:--08-20\r\n" +        // currently fails
+                    "END:VCARD\r\n", Ezvcard.write(vCard).go()
+        )
     }
 
 }

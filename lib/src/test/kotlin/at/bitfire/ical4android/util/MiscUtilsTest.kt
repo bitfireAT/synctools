@@ -11,7 +11,10 @@ import android.net.Uri
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class MiscUtilsTest {
 
     @Test

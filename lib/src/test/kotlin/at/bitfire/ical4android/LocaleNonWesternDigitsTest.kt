@@ -8,7 +8,8 @@ package at.bitfire.ical4android
 
 import net.fortuna.ical4j.model.property.TzOffsetFrom
 import org.junit.AfterClass
-import org.junit.Assert.assertEquals
+import org.junit.Assert
+import org.junit.Assume
 import org.junit.BeforeClass
 import org.junit.Test
 import java.time.ZoneOffset
@@ -23,7 +24,7 @@ class LocaleNonWesternDigitsTest {
         @BeforeClass
         @JvmStatic
         fun setFaIrArabLocale() {
-            assertEquals("Persian (Iran) locale not available", "fa", testLocale.language)
+            Assume.assumeTrue("Persian (Iran) locale not available", testLocale.language == "fa")
             Locale.setDefault(testLocale)
         }
 
@@ -38,19 +39,19 @@ class LocaleNonWesternDigitsTest {
     @Test
     fun testLocale_StringFormat() {
         // does not fail if the Locale with Persian digits is available
-        assertEquals("۲۰۲۰", String.format("%d", 2020))
+        Assert.assertEquals("۲۰۲۰", String.format("%d", 2020))
     }
 
     @Test
     fun testLocale_StringFormat_Root() {
-        assertEquals("2020", String.format(Locale.ROOT, "%d", 2020))
+        Assert.assertEquals("2020", String.Companion.format(Locale.ROOT, "%d", 2020))
     }
 
     @Test()
     fun testLocale_ical4j() {
         val offset = TzOffsetFrom(ZoneOffset.ofHours(1))
         val iCal = offset.toString()
-        assertEquals("TZOFFSETFROM:+0100\r\n", iCal)        // fails: is "TZOFFSETFROM:+۰۱۰۰\r\n" instead
+        Assert.assertEquals("TZOFFSETFROM:+0100\r\n", iCal)        // fails: is "TZOFFSETFROM:+۰۱۰۰\r\n" instead
     }
 
 }

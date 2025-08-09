@@ -8,7 +8,6 @@
 
 package at.bitfire.ical4android.util
 
-import android.text.format.Time
 import at.bitfire.ical4android.util.AndroidTimeUtils.androidifyTimeZone
 import at.bitfire.ical4android.util.AndroidTimeUtils.storageTzId
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
@@ -43,8 +42,7 @@ object AndroidTimeUtils {
     /**
      * Timezone ID to store for all-day events, according to CalendarContract.Events SDK documentation.
      */
-    @Suppress("DEPRECATION")
-    val TZID_ALLDAY = Time.TIMEZONE_UTC
+    val TZID_ALLDAY = "UTC"
 
     private const val RECURRENCE_LIST_TZID_SEPARATOR = ';'
     private const val RECURRENCE_LIST_VALUE_SEPARATOR = ","
