@@ -81,6 +81,9 @@ android {
                 }
             }
         }
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 
     publishing {
@@ -136,5 +139,5 @@ dependencies {
     // unit tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
-    testImplementation(kotlin("test"))
+    testImplementation(libs.roboelectric)
 }
