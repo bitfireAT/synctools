@@ -12,6 +12,7 @@ import net.fortuna.ical4j.model.component.VEvent
 class AttendeesBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        // TODO
         return true
     }
 

@@ -24,6 +24,7 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
+import java.util.logging.Logger
 
 /**
  * Represents a locally stored calendar, containing [AndroidEvent2] objects.  Communicates with
@@ -71,6 +72,10 @@ class AndroidCalendar(
         get() = values.getAsString(Calendars._SYNC_ID)
 
 
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
+
+
     // CRUD AndroidEvent
 
     /**
@@ -97,13 +102,14 @@ class AndroidCalendar(
 
     internal fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
         // insert main row
+        val idxEventId = batch.nextBackrefIdx()
         batch += CpoBuilder.newInsert(eventsUri).withValues(entity.entityValues)
 
         // insert data rows (with reference to main row ID)
         for (row in entity.subValues)
             batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(row.values)
-                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
+                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, idxEventId)
     }
 
     /**
@@ -314,6 +320,7 @@ class AndroidCalendar(
         try {
             val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
             if (rebuild) {
+                logger.info("Re-build needed: will delete and insert instead of update")
                 deleteEvent(id)
                 return addEvent(entity)
             }

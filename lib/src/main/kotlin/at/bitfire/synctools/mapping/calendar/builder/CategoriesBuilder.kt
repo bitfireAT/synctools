@@ -7,11 +7,32 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
+import android.provider.CalendarContract.ExtendedProperties
+import androidx.core.content.contentValuesOf
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Categories
 
 class CategoriesBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        val categories = from.getProperty<Categories>(Property.CATEGORIES)?.categories
+
+        if (categories != null && !categories.isEmpty) {
+            val rawCategories = categories.joinToString(AndroidEvent2.CATEGORIES_SEPARATOR.toString()) { category ->
+                // drop occurrences of CATEGORIES_SEPARATOR in category names
+                category.filter { it != AndroidEvent2.CATEGORIES_SEPARATOR }
+            }
+
+            to.addSubValue(
+                ExtendedProperties.CONTENT_URI,
+                contentValuesOf(
+                    ExtendedProperties.NAME to rawCategories
+                )
+            )
+        }
+
         return true
     }
 

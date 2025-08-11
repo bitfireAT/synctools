@@ -23,8 +23,8 @@ import at.bitfire.synctools.mapping.calendar.builder.DurationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.EventEndTimeZoneBuilder
 import at.bitfire.synctools.mapping.calendar.builder.EventLocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.EventTimeZoneBuilder
+import at.bitfire.synctools.mapping.calendar.builder.ExDateBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ExRuleBuilder
-import at.bitfire.synctools.mapping.calendar.builder.HasAttendeeDataBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalReferenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RDateBuilder
@@ -91,12 +91,12 @@ class AndroidEventBuilder(
         DtEndBuilder(),
         DtStartBuilder(),
         DurationBuilder(),
+        ExDateBuilder(),
         EventEndTimeZoneBuilder(),
         EventLocationBuilder(),
         EventTimeZoneBuilder(),
         OriginalReferenceBuilder(syncId = syncId),
         ExRuleBuilder(),
-        HasAttendeeDataBuilder(),
         OrganizerBuilder(),
         RDateBuilder(),
         RRuleBuilder(),

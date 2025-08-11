@@ -12,6 +12,7 @@ import net.fortuna.ical4j.model.component.VEvent
 class UnknownPropertiesBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        // TODO
         return true
     }
 

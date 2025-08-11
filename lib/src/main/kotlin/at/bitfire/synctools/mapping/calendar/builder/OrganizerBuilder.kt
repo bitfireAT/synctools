@@ -7,11 +7,14 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
+import android.provider.CalendarContract.Events
 import net.fortuna.ical4j.model.component.VEvent
 
 class OrganizerBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        val organizer = from.organizer?.value
+        to.entityValues.put(Events.ORGANIZER, organizer)
         return true
     }
 

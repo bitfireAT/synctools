@@ -13,7 +13,8 @@ import net.fortuna.ical4j.model.component.VEvent
 class UidBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
-        to.entityValues.put(CalendarContract.Events.UID_2445, from.uid?.value)
+        val uid = from.uid?.value
+        to.entityValues.put(CalendarContract.Events.UID_2445, uid)
         return true
     }
 

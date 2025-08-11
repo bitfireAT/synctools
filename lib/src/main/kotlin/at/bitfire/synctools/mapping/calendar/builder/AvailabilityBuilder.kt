@@ -7,11 +7,21 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
+import android.provider.CalendarContract.Events
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Transp
 
 class AvailabilityBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        val availability = when (from.transparency) {
+            Transp.TRANSPARENT ->
+                Events.AVAILABILITY_FREE
+
+            else /* including Transp.OPAQUE */ ->
+                Events.AVAILABILITY_BUSY
+        }
+        to.entityValues.put(Events.AVAILABILITY, availability)
         return true
     }
 

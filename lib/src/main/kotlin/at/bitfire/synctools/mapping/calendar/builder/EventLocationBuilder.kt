@@ -7,11 +7,15 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
+import android.provider.CalendarContract
+import at.bitfire.vcard4android.Utils.trimToNull
 import net.fortuna.ical4j.model.component.VEvent
 
 class EventLocationBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        val location = from.location?.value
+        to.entityValues.put(CalendarContract.Events.EVENT_LOCATION, location.trimToNull())
         return true
     }
 

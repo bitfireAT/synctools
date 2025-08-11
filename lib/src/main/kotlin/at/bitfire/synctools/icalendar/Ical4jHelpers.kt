@@ -13,6 +13,7 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -55,6 +56,9 @@ fun Date.isAllDay(): Boolean =
 
 
 // recurrence helpers
+
+fun CalendarComponent.isGroupScheduled(): Boolean =
+    properties.any { it is Attendee }
 
 fun CalendarComponent.isRecurring(): Boolean =
     properties.any { it is RRule || it is RDate }
