@@ -15,6 +15,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.synctools.icalendar.isAllDay
+import at.bitfire.synctools.icalendar.isRecurring
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
@@ -38,9 +39,10 @@ class OriginalReferenceBuilder(
         }
 
         /*
-        Mark resulting entity as invalid if
+        Discard resulting entity as invalid if
         - the exception doesn't have a RECURRENCE-ID, or
-        - the main event doesn't have a DTSTART.
+        - the main event doesn't have a DTSTART, or
+        - the main event is not recurring.
         */
         val recurrenceDate = from.recurrenceId?.date
         if (recurrenceDate == null) {
@@ -51,6 +53,11 @@ class OriginalReferenceBuilder(
         val mainStartDate = main.startDate?.date
         if (mainStartDate == null) {
             logger.warning("Ignoring exception because main event doesn't have DTSTART")
+            return false
+        }
+
+        if (!from.isRecurring()) {
+            logger.warning("Ignoring exception because main event is not recurring")
             return false
         }
 

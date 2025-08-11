@@ -21,11 +21,11 @@ class AccessLevelBuilder: AndroidEventFieldBuilder {
             Clazz.CONFIDENTIAL ->
                 Events.ACCESS_CONFIDENTIAL
 
-            Clazz.PRIVATE ->
-                Events.ACCESS_PRIVATE
-
-            else /* including Events.ACCESS_PRIVATE */  ->
+            null /* no CLASSIFICATION */ ->
                 Events.ACCESS_DEFAULT
+
+            else /* including Clazz.PRIVATE */  ->
+                Events.ACCESS_PRIVATE
         }
 
         to.entityValues.put(Events.ACCESS_LEVEL, accessLevel)

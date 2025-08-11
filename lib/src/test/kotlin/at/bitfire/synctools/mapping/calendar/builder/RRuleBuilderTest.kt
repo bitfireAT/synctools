@@ -50,7 +50,9 @@ class RRuleBuilderTest {
     fun `No RRULE for exception`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = VEvent(),
+            from = VEvent(propertyListOf(
+                RRule("FREQ=DAILY;COUNT=3")
+            )),
             main = VEvent(),
             to = result
         ))
