@@ -79,7 +79,11 @@ class LegacyAndroidEventProcessor(
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
         populateEvent(eventAndExceptions.main, to = to)
-        populateExceptions(eventAndExceptions.exceptions, to = to)
+        populateExceptions(
+            exceptions = eventAndExceptions.exceptions,
+            originalAllDay = DateUtils.isDate(to.dtStart),
+            to = to
+        )
 
         // post-processing
         useRetainedClassification(to)
@@ -405,25 +409,26 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateExceptions(exceptions: List<Entity>, to: Event) {
+    private fun populateExceptions(exceptions: List<Entity>, originalAllDay: Boolean, to: Event) {
         for (exception in exceptions) {
             val exceptionEvent = Event()
-
-            // exceptions are required to have a RECURRENCE-ID
-            val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
             // convert exception row to Event
             populateEvent(exception, to = exceptionEvent)
 
+            // exceptions are required to have a RECURRENCE-ID
+            val recurrenceId = exceptionEvent.recurrenceId ?: continue
+
             // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
             if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
                 val list = DateList(
-                    if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
+                    if (originalAllDay) Value.DATE else Value.DATE_TIME,
                     recurrenceId.timeZone
                 )
                 list.add(recurrenceId.date)
                 to.exDates += ExDate(list).apply {
-                    if (DateUtils.isDateTime(recurrenceId)) {
+                    // also set TZ properties of ExDate (not only the list)
+                    if (!originalAllDay) {
                         if (recurrenceId.isUtc)
                             setUtc(true)
                         else
