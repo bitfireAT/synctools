@@ -1023,4 +1023,30 @@ class LegacyAndroidEventProcessorTest {
         }
     }
 
+    @Test
+    fun testPopulateException_Exdate_NoRecurrenceId() {
+        populateException({
+            put(Events._SYNC_ID, "testPopulateException_AllDay")
+            put(Events.TITLE, "Recurring all-day event with cancelled exception and no RECURRENCE-ID")
+            put(Events.DTSTART, 1594056600000L)
+            put(Events.EVENT_TIMEZONE, tzVienna.id)
+            put(Events.ALL_DAY, 0)
+            put(Events.RRULE, "FREQ=DAILY;COUNT=10")
+        }, {
+            put(Events.ORIGINAL_SYNC_ID, "testPopulateException_AllDay")
+            //put(Events.ORIGINAL_INSTANCE_TIME, 1594143000000L)
+            put(Events.ORIGINAL_ALL_DAY, 0)
+            put(Events.DTSTART, 1594143000000L)
+            put(Events.ALL_DAY, 0)
+            put(Events.EVENT_TIMEZONE, tzShanghai.id)
+            put(Events.STATUS, Events.STATUS_CANCELED)
+        }).let { event ->
+            assertEquals("Recurring all-day event with cancelled exception and no RECURRENCE-ID", event.summary)
+            assertEquals(DtStart("20200706T193000", tzVienna), event.dtStart)
+            assertEquals("FREQ=DAILY;COUNT=10", event.rRules.first().value)
+            assertTrue(event.exDates.isEmpty())
+            assertTrue(event.exceptions.isEmpty())
+        }
+    }
+
 }
