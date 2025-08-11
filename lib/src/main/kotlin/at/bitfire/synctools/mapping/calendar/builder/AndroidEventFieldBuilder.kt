@@ -26,7 +26,9 @@ interface AndroidEventFieldBuilder {
      * @param from  event to map to
      * @param main  main event
      * @param to    destination object where built values are put into
+     *
+     * @return whether the resulting entity may be used; `false`: resulting entity should be discarded
      */
-    fun build(from: VEvent, main: VEvent, to: Entity)
+    fun build(from: VEvent, main: VEvent, to: Entity): Boolean
 
 }

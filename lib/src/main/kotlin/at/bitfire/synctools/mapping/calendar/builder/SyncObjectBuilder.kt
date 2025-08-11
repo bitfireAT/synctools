@@ -20,7 +20,7 @@ class SyncObjectBuilder(
     private val flags: Int
 ): AndroidEventFieldBuilder {
 
-    override fun build(from: VEvent, main: VEvent, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendarId,
             AndroidEvent2.COLUMN_FLAGS to flags,
@@ -40,6 +40,7 @@ class SyncObjectBuilder(
         }
 
         to.entityValues.putAll(values)
+        return true
     }
 
 }

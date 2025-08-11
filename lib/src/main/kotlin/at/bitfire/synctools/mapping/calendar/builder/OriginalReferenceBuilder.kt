@@ -19,25 +19,44 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
 import java.time.ZonedDateTime
+import java.util.logging.Logger
 
-class ExceptionMainReferenceBuilder(
+class OriginalReferenceBuilder(
     private val syncId: String
 ): AndroidEventFieldBuilder {
 
-    override fun build(from: VEvent, main: VEvent, to: Entity) {
-        // skip if this builder isn't building an exception
-        if (from === main)
-            return
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
-        // skip if the exception doesn't have a RECURRENCE-ID
-        val recurrenceId = from.recurrenceId ?: return
+    override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
+        // Skip if this builder isn't building an exception.
+        if (from === main) {
+            to.entityValues.putNull(Events.ORIGINAL_SYNC_ID)
+            to.entityValues.putNull(Events.ORIGINAL_ALL_DAY)
+            to.entityValues.putNull(Events.ORIGINAL_INSTANCE_TIME)
+            return true
+        }
 
-        // skip if main event doesn't have a DTSTART
-        val mainStartDate = main.startDate?.date ?: return
+        /*
+        Mark resulting entity as invalid if
+        - the exception doesn't have a RECURRENCE-ID, or
+        - the main event doesn't have a DTSTART.
+        */
+        val recurrenceDate = from.recurrenceId?.date
+        if (recurrenceDate == null) {
+            logger.warning("Ignoring exception without RECURRENCE-ID")
+            return false
+        }
+
+        val mainStartDate = main.startDate?.date
+        if (mainStartDate == null) {
+            logger.warning("Ignoring exception because main event doesn't have DTSTART")
+            return false
+        }
 
         // align RECURRENCE-ID with value type (date/date-time) of main event's DTSTART
         val alignedRecurrenceDate = alignRecurrenceId(
-            recurrenceDate = recurrenceId.date ?: return,
+            recurrenceDate = recurrenceDate,
             mainStartDate = mainStartDate
         )
 
@@ -49,6 +68,7 @@ class ExceptionMainReferenceBuilder(
         )
 
         to.entityValues.putAll(values)
+        return true
     }
 
     private fun alignRecurrenceId(recurrenceDate: Date, mainStartDate: Date): Date {

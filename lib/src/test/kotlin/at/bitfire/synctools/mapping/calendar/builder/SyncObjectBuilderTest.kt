@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SyncObjectBuilderTest {
 
-    val builder = SyncObjectBuilder(
+    private val builder = SyncObjectBuilder(
         calendarId = 123,
         syncId = "sync-id",
         eTag = "etag",
@@ -32,7 +32,7 @@ class SyncObjectBuilderTest {
     fun `sets fields`() {
         val event = VEvent()
         val result = emptyEntity()
-        builder.build(from = event, main = event, to = result)
+        assertTrue(builder.build(from = event, main = event, to = result))
         assertEquals(123, result.entityValues.getAsInteger(Events.CALENDAR_ID))
         assertEquals(0, result.entityValues.getAsInteger(Events.DIRTY))
         assertEquals(0, result.entityValues.getAsInteger(Events.DELETED))
@@ -42,7 +42,7 @@ class SyncObjectBuilderTest {
     fun `sets main fields (main event)`() {
         val event = VEvent()
         val result = emptyEntity()
-        builder.build(from = event, main = event, to = result)
+        assertTrue(builder.build(from = event, main = event, to = result))
 
         // always set
         assertEquals(123, result.entityValues.getAsInteger(Events.CALENDAR_ID))
@@ -56,7 +56,7 @@ class SyncObjectBuilderTest {
     @Test
     fun `sets null main fields (non-main event)`() {
         val result = emptyEntity()
-        builder.build(from = VEvent(), main = VEvent(), to = result)
+        assertTrue(builder.build(from = VEvent(), main = VEvent(), to = result))
 
         // always set
         assertEquals(123, result.entityValues.getAsInteger(Events.CALENDAR_ID))
