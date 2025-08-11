@@ -413,8 +413,8 @@ class LegacyAndroidEventProcessor(
             populateEvent(exception, to = exceptionEvent)
 
             // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-            val recurrenceId = exceptionEvent.recurrenceId!!
-            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
+            val recurrenceId = exceptionEvent.recurrenceId
+            if (exceptionEvent.status == Status.VEVENT_CANCELLED && recurrenceId != null) {
                 val list = DateList(
                     if (DateUtils.isDate(recurrenceId)) Value.DATE else Value.DATE_TIME,
                     recurrenceId.timeZone
