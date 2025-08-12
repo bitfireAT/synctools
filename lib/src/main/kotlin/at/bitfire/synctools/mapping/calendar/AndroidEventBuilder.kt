@@ -8,10 +8,12 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
+import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.icalendar.isRecurring
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -81,7 +83,8 @@ class AndroidEventBuilder(
         )
     }
 
-    private fun buildEvent(from: VEvent, main: VEvent): Entity? {
+    @VisibleForTesting
+    internal fun buildEvent(from: VEvent, main: VEvent): Entity? {
         val result = Entity(ContentValues())
         for (builder in getBuilders())
             if (!builder.build(from = from, main = main, to = result)) {
@@ -92,6 +95,7 @@ class AndroidEventBuilder(
     }
 
     fun getBuilders(): List<AndroidEventFieldBuilder> = listOf(
+        OriginalInstanceTimeBuilder(),
         TitleBuilder()
     )
 

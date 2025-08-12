@@ -13,6 +13,7 @@ import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
+import androidx.annotation.OpenForTesting
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.ICalendar
@@ -130,7 +131,8 @@ class LegacyAndroidEventBuilder2(
      *
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
      */
-    private fun buildEventRow(recurrence: Event?): ContentValues {
+    @OpenForTesting
+    internal fun buildEventRow(recurrence: Event?): ContentValues {
         // start with object-level (AndroidEvent) fields
         val row = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -169,25 +171,27 @@ class LegacyAndroidEventBuilder2(
             row.put(Events.ORIGINAL_SYNC_ID, syncId)
             row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
 
-            var recurrenceDate = from.recurrenceId!!.date
-            val dtStartDate = event.dtStart!!.date
-            if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
+            from.recurrenceId?.date?.let { recurrenceDate ->
+                var alignedRecurrenceDate = recurrenceDate
+                val dtStartDate = event.dtStart?.date
+                if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
+                    // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
+                    val localDate = recurrenceDate.toLocalDate()
+                    alignedRecurrenceDate = Date(localDate.toIcal4jDate())
 
-            } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
-                // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    dtStartDate.toLocalTime(),
-                    dtStartDate.requireZoneId()
-                )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
+                } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
+                    // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
+                    val localDate = recurrenceDate.toLocalDate()
+                    // guess time and time zone from DTSTART
+                    val zonedTime = ZonedDateTime.of(
+                        localDate,
+                        dtStartDate.toLocalTime(),
+                        dtStartDate.requireZoneId()
+                    )
+                    alignedRecurrenceDate = zonedTime.toIcal4jDateTime()
+                }
+                row.put(Events.ORIGINAL_INSTANCE_TIME, alignedRecurrenceDate.time)
             }
-            row.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
         }
 
         // UID, sequence
@@ -195,7 +199,7 @@ class LegacyAndroidEventBuilder2(
         row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
 
         // time fields
-        row.put(Events.DTSTART, dtStart.date.time)
+        row.put(Events.DTSTART, dtStart.date?.time)
         row.put(Events.ALL_DAY, if (allDay) 1 else 0)
         row.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
@@ -319,7 +323,7 @@ class LegacyAndroidEventBuilder2(
             }
 
             AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
-            row.put(Events.DTEND, dtEnd.date.time)
+            row.put(Events.DTEND, dtEnd.date?.time)
             row.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
             row.putNull(Events.DURATION)
             row.putNull(Events.RRULE)

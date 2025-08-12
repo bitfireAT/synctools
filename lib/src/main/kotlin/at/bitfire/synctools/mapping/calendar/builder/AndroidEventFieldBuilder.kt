@@ -17,7 +17,7 @@ interface AndroidEventFieldBuilder {
      * If [from] references the same object as [main], this method is called for a main event (not an exception).
      * If [from] references another object as [main], this method is called for an exception (not a main event).
      *
-     * So you can use (note the referential equality operator):
+     * So the referential equality operator can be used to see if a main event or an exception is built:
      *
      * ```
      * val buildsMainEvent = from === main
