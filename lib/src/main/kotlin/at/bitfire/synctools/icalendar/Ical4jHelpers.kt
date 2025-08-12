@@ -11,6 +11,8 @@ import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
@@ -42,3 +44,6 @@ val CalendarComponent.recurrenceId: RecurrenceId?
 
 val CalendarComponent.sequence: Sequence?
     get() = getProperty(Property.SEQUENCE)
+
+fun CalendarComponent.isRecurring() =
+    getProperties<RRule>(Property.RRULE).isNotEmpty() || getProperties<RDate>(Property.RDATE).isNotEmpty()
