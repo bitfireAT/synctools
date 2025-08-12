@@ -329,7 +329,7 @@ class LegacyAndroidEventBuilder2(
         }
 
         // text fields
-        // row.put(Events.TITLE, from.summary)
+        // Events.TITLE done by TitleBuilder
         row.put(Events.EVENT_LOCATION, from.location)
         row.put(Events.DESCRIPTION, from.description)
 

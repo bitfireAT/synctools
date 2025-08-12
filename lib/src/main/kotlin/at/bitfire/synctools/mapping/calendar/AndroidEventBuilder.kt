@@ -12,6 +12,7 @@ import at.bitfire.ical4android.Event
 import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.icalendar.isRecurring
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
+import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.component.VEvent
@@ -44,24 +45,22 @@ class AndroidEventBuilder(
 ) {
 
     fun build(): EventAndExceptions? {
-        // start with legacy EventAndExceptions
-        val eventAndExceptions = LegacyAndroidEventBuilder2(
+        // start with values from new builders
+        val eventAndExceptions = buildNew()
+        if (eventAndExceptions == null) {
+            // builder has returned null to indicate that the main Entity must be discarded.
+            // Without a main Entity, EventAndExceptions can't be generated, so return null here.
+            return null
+        }
+
+        // merge with legacy EventAndExceptions
+        val legacyEventAndExceptions = LegacyAndroidEventBuilder2(
             androidCalendar, event, id, syncId, eTag, scheduleTag, flags
         ).build()
 
-        // merge with values from new builders
-        val newEventAndExceptions = buildNew()
-        if (newEventAndExceptions != null) {
-            // merge main values
-            eventAndExceptions.main.entityValues.putAll(newEventAndExceptions.main.entityValues)
-
-            // merge sub-values
-            // implement as soon as first sub-values are done by new builders
-
-        } else {
-            // Implement as soon as we have builders that return false to indicate that the Entity must be discarded
-            // (for instance when there is no DTSTART).
-        }
+        // ORIGINAL_INSTANCE_TIME must be set and the same for exceptions to be merged!
+        // So ORIGINAL_INSTANCE_TIME must always be provided by both the old and the new builder.
+        eventAndExceptions.mergeFrom(legacyEventAndExceptions)
 
         return eventAndExceptions
     }

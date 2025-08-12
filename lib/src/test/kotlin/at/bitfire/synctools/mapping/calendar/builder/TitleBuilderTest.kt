@@ -6,9 +6,10 @@
 
 package at.bitfire.synctools.mapping.calendar.builder
 
+import android.content.ContentValues
+import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.propertyListOf
-import at.bitfire.synctools.storage.emptyEntity
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Summary
 import org.junit.Assert.assertEquals
@@ -25,7 +26,7 @@ class TitleBuilderTest {
 
     @Test
     fun `SUMMARY is blank`() {
-        val result = emptyEntity()
+        val result = Entity(ContentValues())
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
                 Summary("  ")
@@ -39,7 +40,7 @@ class TitleBuilderTest {
 
     @Test
     fun `SUMMARY is text`() {
-        val result = emptyEntity()
+        val result = Entity(ContentValues())
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
                 Summary("Some Text  ")
@@ -52,7 +53,7 @@ class TitleBuilderTest {
 
     @Test
     fun `No SUMMARY`() {
-        val result = emptyEntity()
+        val result = Entity(ContentValues())
         assertTrue(builder.build(
             from = VEvent(),
             main = VEvent(),
