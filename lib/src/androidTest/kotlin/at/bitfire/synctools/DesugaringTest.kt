@@ -10,16 +10,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Duration
 
+/**
+ * These tests are especially interesting for Android 7, where the Time API is not part of the
+ * system and provided over "desugaring".
+ */
 class DesugaringTest {
 
-    /**
-     * There was a time where Duration.ofSeconds(0) caused problems, possibly with desugaring.
-     * So this test is especially interesting for Android 7.
-     */
     @Test
     fun test_Duration_ofSeconds() {
         val dur = Duration.ofSeconds(0)
         assertEquals(0, dur.seconds)
     }
-    
+
 }

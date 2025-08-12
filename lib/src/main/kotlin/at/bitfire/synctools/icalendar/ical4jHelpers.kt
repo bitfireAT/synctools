@@ -28,7 +28,7 @@ const val ical4jVersion = BuildConfig.version_ical4j
 // component access helpers
 
 fun<T: CalendarComponent> componentListOf(vararg components: T) =
-    ComponentList<CalendarComponent>().apply {
+    ComponentList<T>().apply {
         addAll(components)
     }
 

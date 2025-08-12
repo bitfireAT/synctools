@@ -8,26 +8,17 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.synctools.icalendar.asLocalDate
-import at.bitfire.synctools.icalendar.asZonedDateTime
+import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
+import at.bitfire.synctools.icalendar.DurationCalculator
 import at.bitfire.synctools.icalendar.isAllDay
 import at.bitfire.synctools.icalendar.isRecurring
 import at.bitfire.synctools.mapping.calendar.builder.DefaultValues.defaultDuration
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
 import java.time.Duration
 import java.time.Period
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAmount
-import java.util.logging.Level
-import java.util.logging.Logger
 
 class DurationBuilder: AndroidEventFieldBuilder {
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
         /*
@@ -58,7 +49,7 @@ class DurationBuilder: AndroidEventFieldBuilder {
         val dtEndDate = from.endDate?.date
         val calculatedDuration: TemporalAmount? =
             if (dtEndDate != null)
-                calculateFromStartAndEnd(
+                DurationCalculator.calculateDuration(
                     dtStartDate = dtStartDate,
                     dtEndDate = dtEndDate
                 )
@@ -75,37 +66,10 @@ class DurationBuilder: AndroidEventFieldBuilder {
         // fall back to default duration
         val duration = calculatedDuration ?: defaultDuration(allDay)
 
-        to.entityValues.put(Events.DURATION, duration.toString())
+        // RFC 5545 doesn't allow years and months for DURATION, so we can't use duration.toString()
+        to.entityValues.put(Events.DURATION, duration.toRfc5545Duration(dtStartDate.toInstant()))
+
         return true
-    }
-
-    fun calculateFromStartAndEnd(dtStartDate: Date, dtEndDate: Date): TemporalAmount? {
-        try {
-            if (dtStartDate.isAllDay()) {
-                val start = dtStartDate.asLocalDate()
-                val end = dtEndDate.asLocalDate()
-                // return non-exact period (like P2D) - exact time varies for instance when DST changes
-                return start.until(end)
-
-            } else if (dtStartDate is DateTime) {
-                val start = dtStartDate.asZonedDateTime()
-                val end =
-                    if (dtEndDate is DateTime)
-                        dtEndDate.asZonedDateTime()
-                    else
-                        ZonedDateTime.of(
-                            dtEndDate.asLocalDate(),    // take date from DTEND
-                            start.toLocalTime(),        // take time from DTSTART
-                            start.zone                  // take time zone from DTSTART
-                        )
-                // return exact time period (Duration)
-                return Duration.ofSeconds(start.until(end, ChronoUnit.SECONDS))
-            }
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't calculate DURATION from DTEND ($dtEndDate) - DTSTART ($dtStartDate)", e)
-        }
-
-        return null
     }
 
 }

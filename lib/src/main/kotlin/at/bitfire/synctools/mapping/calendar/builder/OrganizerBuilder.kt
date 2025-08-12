@@ -36,6 +36,7 @@ class OrganizerBuilder(
 
         // fall back to account name
         to.entityValues.put(Events.ORGANIZER, email ?: accountName)
+
         return true
     }
 

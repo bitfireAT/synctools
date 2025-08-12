@@ -8,18 +8,12 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
+import at.bitfire.synctools.icalendar.DurationCalculator
 import at.bitfire.synctools.icalendar.alignAllDay
-import at.bitfire.synctools.icalendar.asLocalDate
-import at.bitfire.synctools.icalendar.asZonedDateTime
 import at.bitfire.synctools.icalendar.isAllDay
 import at.bitfire.synctools.icalendar.isRecurring
 import at.bitfire.synctools.mapping.calendar.builder.DefaultValues.defaultDuration
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
-import java.time.temporal.TemporalAmount
 
 class DtEndBuilder: AndroidEventFieldBuilder {
 
@@ -44,7 +38,7 @@ class DtEndBuilder: AndroidEventFieldBuilder {
         val dtStartDate = from.startDate?.date ?: return false
 
         val dtEndDate = from.endDate?.date
-        val calculatedEndDate = dtEndDate?.alignAllDay(dtStartDate) ?: calculateFromDuration(
+        val calculatedEndDate = dtEndDate?.alignAllDay(dtStartDate) ?: DurationCalculator.calculateEndDate(
             dtStartDate = dtStartDate,
             duration = from.duration?.duration ?: defaultDuration(dtStartDate.isAllDay())
         )
@@ -59,14 +53,5 @@ class DtEndBuilder: AndroidEventFieldBuilder {
         to.entityValues.put(Events.DTEND, calculatedEndDate.time)
         return true
     }
-
-    fun calculateFromDuration(dtStartDate: Date, duration: TemporalAmount) =
-        if (dtStartDate is DateTime) {
-            val end = dtStartDate.asZonedDateTime() + duration
-            end.toIcal4jDateTime()
-        } else {
-            val end = dtStartDate.asLocalDate() + duration
-            end.toIcal4jDate()
-        }
 
 }

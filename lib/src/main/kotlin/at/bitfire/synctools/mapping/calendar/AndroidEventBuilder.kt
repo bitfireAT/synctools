@@ -33,6 +33,7 @@ import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalSyncIdBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RDateBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RRuleBuilder
+import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFieldsBuilder
@@ -94,7 +95,7 @@ class AndroidEventBuilder(
     private fun getBuilders(): List<AndroidEventFieldBuilder> = listOf(
         AccessLevelBuilder(),
         AllDayBuilder(),
-        AttendeesBuilder(),
+        AttendeesBuilder(accountName),
         AvailabilityBuilder(),
         CategoriesBuilder(),
         ColorBuilder(),
@@ -113,6 +114,7 @@ class AndroidEventBuilder(
         OriginalInstanceTimeBuilder(),
         OriginalSyncIdBuilder(syncId = syncId),
         RDateBuilder(),
+        RemindersBuilder(),
         RRuleBuilder(),
         SequenceBuilder(),
         StatusBuilder(),

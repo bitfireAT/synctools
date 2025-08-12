@@ -72,7 +72,7 @@ class DurationBuilderTest {
             main = VEvent(),
             to = result
         ))
-        assertEquals("PT48H", result.entityValues.getAsString(Events.DURATION))
+        assertEquals("P2D", result.entityValues.getAsString(Events.DURATION))
     }
 
 
@@ -139,7 +139,7 @@ class DurationBuilderTest {
             to = result
         ))
         assertEquals(
-            "PT48H",    // DTEND time is taken from DTSTART
+            "P2D",    // DTEND time is taken from DTSTART
             result.entityValues.getAsString(Events.DURATION)
         )
     }
