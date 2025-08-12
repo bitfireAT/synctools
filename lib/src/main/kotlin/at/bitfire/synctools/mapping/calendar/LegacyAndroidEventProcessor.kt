@@ -18,9 +18,9 @@ import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.icalendar.asZonedDateTime
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
@@ -186,7 +186,7 @@ class LegacyAndroidEventProcessor(
 
             if (duration != null) {
                 // Some servers have problems with DURATION, so we always generate DTEND.
-                val zonedStart = dtStartDateTime.toZonedDateTime()
+                val zonedStart = dtStartDateTime.asZonedDateTime()
                 tsEnd = (zonedStart + duration).toInstant().toEpochMilli()
                 duration = null
             }

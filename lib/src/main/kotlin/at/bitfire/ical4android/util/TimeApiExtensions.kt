@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android.util
 
+import at.bitfire.synctools.icalendar.asZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
@@ -55,11 +56,6 @@ object TimeApiExtensions {
 
     /***** Dates *****/
 
-    fun Date.toLocalDate(): LocalDate {
-        val utcDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC)
-        return utcDateTime.toLocalDate()
-    }
-
     fun DateTime.requireTimeZone(): TimeZone =
         if (isUtc)
             TimeZones.getUtcTimeZone()
@@ -73,13 +69,10 @@ object TimeApiExtensions {
             timeZone?.toZoneIdCompat() ?: ZoneId.systemDefault()
 
     fun DateTime.toLocalDate(): LocalDate =
-        toZonedDateTime().toLocalDate()
+        asZonedDateTime().toLocalDate()
 
     fun DateTime.toLocalTime(): LocalTime =
-        toZonedDateTime().toLocalTime()
-
-    fun DateTime.toZonedDateTime(): ZonedDateTime =
-        ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), requireZoneId())
+        asZonedDateTime().toLocalTime()
 
     fun LocalDate.toIcal4jDate(): Date {
         val cal = Calendar.getInstance(TimeZones.getDateTimeZone())
@@ -147,14 +140,14 @@ object TimeApiExtensions {
             dur-day    = 1*DIGIT "D"
          */
         val builder = StringBuilder("P")
-        if (this is Duration) {
+        if (this is Duration) {     // known number of seconds
             // TemporalAmountAdapter(Duration).toString() sometimes drops minutes: https://github.com/ical4j/ical4j/issues/420
             var secs = seconds
 
             if (secs == 0L)
-                return "P0S"
+                return "PT0S"
 
-            var weeks = secs / SECONDS_PER_WEEK
+            val weeks = secs / SECONDS_PER_WEEK
             secs -= weeks * SECONDS_PER_WEEK
 
             var days = secs / SECONDS_PER_DAY
@@ -170,7 +163,6 @@ object TimeApiExtensions {
                 return "P${weeks}W"
 
             days += weeks * DAYS_PER_WEEK
-            weeks = 0
 
             if (days != 0L)
                 builder.append("${days}D")
@@ -185,8 +177,11 @@ object TimeApiExtensions {
                     builder.append("${secs}S")
             }
 
-        } else if (this is Period) {
+        } else if (this is Period) {    // number of days/etc.; exact number of seconds may vary
             // TemporalAmountAdapter(Period).toString() returns wrong values: https://github.com/ical4j/ical4j/issues/419
+
+            // We need to calculate the number of days/months/years to the number of days. To do so, we need the
+            // actual reference time so that we know how many days the a month has etc.
             var days = this.toDuration(position).toDays().toInt()
 
             if (days < 0) {
@@ -201,6 +196,7 @@ object TimeApiExtensions {
                 builder.append("${days}D")
         } else
             throw NotImplementedError("Only Duration and Period is supported")
+
         return builder.toString()
     }
 
