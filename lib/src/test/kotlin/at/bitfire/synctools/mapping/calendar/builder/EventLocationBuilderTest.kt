@@ -7,58 +7,59 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.provider.CalendarContract.Events
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.emptyEntity
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Location
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class AllDayBuilderTest {
+class EventLocationBuilderTest {
 
-    private val builder = AllDayBuilder()
+    private val builder = EventLocationBuilder()
 
     @Test
-    fun `DTSTART is DATE`() {
+    fun `LOCATION is blank`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = VEvent(
-                /* start = */ Date(),
-                /* summary = */ "Some Event"
-            ),
+            from = VEvent(propertyListOf(
+                Location("  ")
+            )),
             main = VEvent(),
             to = result
         ))
-        assertEquals(1, result.entityValues.getAsInteger(Events.ALL_DAY))
+        assertTrue(result.entityValues.containsKey(Events.EVENT_LOCATION))
+        assertNull(result.entityValues.get(Events.EVENT_LOCATION))
     }
 
     @Test
-    fun `DTSTART is DATE-TIME`() {
+    fun `LOCATION is text`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = VEvent(
-                /* start = */ DateTime(),
-                /* summary = */ "Some Event"
-            ),
+            from = VEvent(propertyListOf(
+                Location("Some Text  ")
+            )),
             main = VEvent(),
             to = result
         ))
-        assertEquals(0, result.entityValues.getAsInteger(Events.ALL_DAY))
+        assertEquals("Some Text", result.entityValues.getAsString(Events.EVENT_LOCATION))
     }
 
     @Test
-    fun `No DTSTART`() {
+    fun `No LOCATION`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(),
             main = VEvent(),
             to = result
         ))
-        assertEquals(0, result.entityValues.getAsInteger(Events.ALL_DAY))
+        assertTrue(result.entityValues.containsKey(Events.EVENT_LOCATION))
+        assertNull(result.entityValues.get(Events.EVENT_LOCATION))
     }
 
 }

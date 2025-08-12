@@ -26,6 +26,10 @@ class ExDateBuilder: AndroidEventFieldBuilder {
 
         val exDates = from.getProperties<ExDate>(Property.EXDATE)
 
+        // make sure that RDATE time zones are available on the system
+        for (exDate in exDates)
+            AndroidTimeUtils.androidifyTimeZone(exDate)
+
         // concatenate multiple EXRULEs using RECURRENCE_RULE_SEPARATOR so that there's one rule per line
         val androidExDates = AndroidTimeUtils.recurrenceSetsToAndroidString(exDates, from.startDate?.date)
 

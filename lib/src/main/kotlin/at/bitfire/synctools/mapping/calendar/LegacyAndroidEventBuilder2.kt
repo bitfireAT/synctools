@@ -21,7 +21,6 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
@@ -38,7 +37,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
-@Deprecated("Use AndroidEventBuilder instead", level = DeprecationLevel.ERROR)
+@Deprecated("Use AndroidEventBuilder instead")
 class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
     private val event: Event,
@@ -53,8 +52,6 @@ class LegacyAndroidEventBuilder2(
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
-
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
 
     fun build() =
@@ -109,136 +106,13 @@ class LegacyAndroidEventBuilder2(
         /*
         // time fields
 
-        var duration =
-            if (dtEnd == null)
-                from.duration?.duration
-            else
-                null
-        if (allDay && duration is Duration)
-            duration = Period.ofDays(duration.toDays().toInt())
-
         if (recurring && !isException) {
-            // duration must be set
-            if (duration == null) {
-                if (dtEnd != null) {
-                    // calculate duration from dtEnd
-                    duration = if (allDay)
-                        Period.between(dtStart.date.toLocalDate(), dtEnd.date.toLocalDate())
-                    else
-                        Duration.between(dtStart.date.toInstant(), dtEnd.date.toInstant())
-                } else {
-                    // no dtEnd and no duration
-                    duration = if (allDay)
-                    /* [RFC 5545 3.6.1 Event Component]
-                       For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE value type but no
-                       "DTEND" nor "DURATION" property, the event's duration is taken to
-                       be one day. */
-                        Period.ofDays(1)
-                    else
-                    /* For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE-TIME value type but no
-                       "DTEND" property, the event ends on the same calendar date and
-                       time of day specified by the "DTSTART" property. */
-
-                    // Duration.ofSeconds(0) causes the calendar provider to crash
-                        Period.ofDays(0)
-                }
-            }
 
             // iCalendar doesn't permit years and months, only PwWdDThHmMsS
             row.put(Events.DURATION, duration?.toRfc5545Duration(dtStart.date.toInstant()))
-            row.putNull(Events.DTEND)
 
-            // add RRULEs
-            if (from.rRules.isNotEmpty())
-                row.put(Events.RRULE, from.rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                row.putNull(Events.RRULE)
-
-            if (from.rDates.isNotEmpty()) {
-                // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
-                val infiniteRrule = from.rRules.any { rRule ->
-                    rRule.recur.count == -1 &&  // no COUNT AND
-                            rRule.recur.until == null   // no UNTIL
-                }
-
-                if (infiniteRrule)
-                    logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
-                else {
-                    for (rDate in from.rDates)
-                        AndroidTimeUtils.androidifyTimeZone(rDate)
-
-                    // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
-                    val listWithDtStart = DateList()
-                    listWithDtStart.add(dtStart.date)
-                    from.rDates.addFirst(RDate(listWithDtStart))
-
-                    row.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.rDates, dtStart.date))
-                }
-            } else
-                row.putNull(Events.RDATE)
-
-            if (from.exRules.isNotEmpty())
-                row.put(Events.EXRULE, from.exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                row.putNull(Events.EXRULE)
-
-            if (from.exDates.isNotEmpty()) {
-                for (exDate in from.exDates)
-                    AndroidTimeUtils.androidifyTimeZone(exDate)
-                row.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.exDates, dtStart.date))
-            } else
-                row.putNull(Events.EXDATE)
-
-        } else /* !recurring */ {
-            // dtend must be set
-            if (dtEnd == null) {
-                if (duration != null) {
-                    // calculate dtEnd from duration
-                    if (allDay) {
-                        val calcDtEnd = dtStart.date.toLocalDate() + duration
-                        dtEnd = DtEnd(calcDtEnd.toIcal4jDate())
-                    } else {
-                        val zonedStartTime = (dtStart.date as DateTime).toZonedDateTime()
-                        val calcEnd = zonedStartTime + duration
-                        val calcDtEnd = DtEnd(calcEnd.toIcal4jDateTime())
-                        calcDtEnd.timeZone = dtStart.timeZone
-                        dtEnd = calcDtEnd
-                    }
-                } else {
-                    // no dtEnd and no duration
-                    dtEnd = if (allDay) {
-                        /* [RFC 5545 3.6.1 Event Component]
-                           For cases where a "VEVENT" calendar component
-                           specifies a "DTSTART" property with a DATE value type but no
-                           "DTEND" nor "DURATION" property, the event's duration is taken to
-                           be one day. */
-                        val calcDtEnd = dtStart.date.toLocalDate() + Period.ofDays(1)
-                        DtEnd(calcDtEnd.toIcal4jDate())
-                    } else
-                    /* For cases where a "VEVENT" calendar component
-                       specifies a "DTSTART" property with a DATE-TIME value type but no
-                       "DTEND" property, the event ends on the same calendar date and
-                       time of day specified by the "DTSTART" property. */
-                        DtEnd(dtStart.value, dtStart.timeZone)
-                }
-            }
-
-            AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
-            row.put(Events.DTEND, dtEnd.date.time)
-            row.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
-            row.putNull(Events.DURATION)
-            row.putNull(Events.RRULE)
-            row.putNull(Events.RDATE)
-            row.putNull(Events.EXRULE)
-            row.putNull(Events.EXDATE)
         }
 
-        // text fields
-        row.put(Events.TITLE, from.summary)
-        row.put(Events.EVENT_LOCATION, from.location)
-        row.put(Events.DESCRIPTION, from.description)
 
         // color
         val color = from.color
@@ -255,29 +129,6 @@ class LegacyAndroidEventBuilder2(
             // reset color index and value
             row.putNull(Events.EVENT_COLOR_KEY)
             row.putNull(Events.EVENT_COLOR)
-        }
-
-        // scheduling
-        val groupScheduled = from.attendees.isNotEmpty()
-        if (groupScheduled) {
-            row.put(Events.HAS_ATTENDEE_DATA, 1)
-            row.put(Events.ORGANIZER, from.organizer?.let { organizer ->
-                    val uri = organizer.calAddress
-                    val email = if (uri.scheme.equals("mailto", true))
-                        uri.schemeSpecificPart
-                    else
-                        organizer.getParameter<Email>(Parameter.EMAIL)?.value
-
-                    if (email != null)
-                        return@let email
-
-                    logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-                    null
-                } ?: calendar.ownerAccount)
-
-        } else { /* !groupScheduled */
-            row.put(Events.HAS_ATTENDEE_DATA, 0)
-            row.put(Events.ORGANIZER, calendar.ownerAccount)
         }
 
         return row*/

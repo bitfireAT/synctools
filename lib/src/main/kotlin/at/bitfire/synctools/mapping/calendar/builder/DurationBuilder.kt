@@ -8,15 +8,17 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.icalendar.asLocalDate
+import at.bitfire.synctools.icalendar.asZonedDateTime
 import at.bitfire.synctools.icalendar.isAllDay
 import at.bitfire.synctools.icalendar.isRecurring
+import at.bitfire.synctools.mapping.calendar.builder.DefaultValues.defaultDuration
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
 import java.time.Duration
+import java.time.Period
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAmount
 import java.util.logging.Level
@@ -46,52 +48,64 @@ class DurationBuilder: AndroidEventFieldBuilder {
         }
         // recurring
 
-        val duration: net.fortuna.ical4j.model.property.Duration? = from.duration
+        // get DURATION from VEvent
+        val durationOrNull: TemporalAmount? = from.duration?.duration
 
-        val dtStartDate = from.startDate?.date
-        val calculatedDuration: TemporalAmount = duration?.duration
-            ?: calculateFromDtEnd(
-                dtStartDate = dtStartDate,
-                dtEndDate = from.endDate?.date
-            )
-            ?: defaultDuration(DateUtils.isDate(from.startDate))
+        // if there's no VEvent DURATION, try to calculate it from DTSTART/DTEND
+        val dtStartDate = from.startDate?.date ?: return false
+        val allDay = dtStartDate.isAllDay()
 
-        // TODO
-        val alignedDuration = if (dtStartDate?.isAllDay() == true) {
-            // align to days
-            calculatedDuration.
+        val dtEndDate = from.endDate?.date
+        val calculatedDuration: TemporalAmount? =
+            if (dtEndDate != null)
+                calculateFromStartAndEnd(
+                    dtStartDate = dtStartDate,
+                    dtEndDate = dtEndDate
+                )
+            else
+                durationOrNull
+
+        // align DURATION according to DTSTART value type (DATE/DATE-TIME)
+        val alignedDuration: TemporalAmount? = if (calculatedDuration != null && allDay && calculatedDuration is Duration) {
+            // exact time period (Duration), rewrite to Period (days) whose actual length may vary
+            Period.ofDays(calculatedDuration.toDays().toInt())
         } else
             calculatedDuration
 
-        to.entityValues.put(Events.DURATION, alignedDuration.toString())
+        // fall back to default duration
+        val duration = calculatedDuration ?: defaultDuration(allDay)
+
+        to.entityValues.put(Events.DURATION, duration.toString())
         return true
     }
 
-    fun calculateFromDtEnd(dtStartDate: Date?, dtEndDate: Date?): Duration? {
-        if (dtStartDate != null && dtEndDate != null)
-            try {
-                val dtStartAllDay = dtStartDate.isAllDay()
-                if (dtStartAllDay) {
-                    val start = dtStartDate.toLocalDate()
-                    val end = dtEndDate.toLocalDate()
-                    return Duration.ofDays(start.until(end, ChronoUnit.DAYS))
+    fun calculateFromStartAndEnd(dtStartDate: Date, dtEndDate: Date): TemporalAmount? {
+        try {
+            if (dtStartDate.isAllDay()) {
+                val start = dtStartDate.asLocalDate()
+                val end = dtEndDate.asLocalDate()
+                // return non-exact period (like P2D) - exact time varies for instance when DST changes
+                return start.until(end)
 
-                } else if (dtStartDate is DateTime && dtEndDate is DateTime) {
-                    val start = dtStartDate.toZonedDateTime()
-                    val end = dtEndDate.toZonedDateTime()
-                    return Duration.ofSeconds(start.until(end, ChronoUnit.SECONDS))
-                }
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't calculate DURATION from DTEND ($dtEndDate) - DTSTART ($dtStartDate)", e)
+            } else if (dtStartDate is DateTime) {
+                val start = dtStartDate.asZonedDateTime()
+                val end =
+                    if (dtEndDate is DateTime)
+                        dtEndDate.asZonedDateTime()
+                    else
+                        ZonedDateTime.of(
+                            dtEndDate.asLocalDate(),    // take date from DTEND
+                            start.toLocalTime(),        // take time from DTSTART
+                            start.zone                  // take time zone from DTSTART
+                        )
+                // return exact time period (Duration)
+                return Duration.ofSeconds(start.until(end, ChronoUnit.SECONDS))
             }
+        } catch (e: Exception) {
+            logger.log(Level.WARNING, "Couldn't calculate DURATION from DTEND ($dtEndDate) - DTSTART ($dtStartDate)", e)
+        }
 
         return null
     }
-
-    fun defaultDuration(allDay: Boolean): Duration =
-        if (allDay)
-            Duration.ofDays(1)
-        else
-            Duration.ofSeconds(0)       // crashes??
 
 }

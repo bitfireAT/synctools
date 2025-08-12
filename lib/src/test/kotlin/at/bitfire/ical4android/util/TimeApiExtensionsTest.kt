@@ -14,7 +14,6 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZoneIdCompat
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
@@ -47,16 +46,6 @@ class TimeApiExtensionsTest {
     @Test
     fun testTimeZone_toZoneIdCompat_Utc() {
         assertEquals(ZoneOffset.UTC, TimeZones.getUtcTimeZone().toZoneIdCompat())
-    }
-
-
-    @Test
-    fun testDate_toLocalDate() {
-        val date = Date("20200620").toLocalDate()
-        assertEquals(2020, date.year)
-        assertEquals(6, date.monthValue)
-        assertEquals(20, date.dayOfMonth)
-        assertEquals(DayOfWeek.SATURDAY, date.dayOfWeek)
     }
 
 
@@ -121,31 +110,6 @@ class TimeApiExtensionsTest {
     @Test
     fun testDateTime_toLocalTime_Utc() {
         assertEquals(LocalTime.of(12, 30), DateTime("20200620T123000Z").apply { isUtc = true }.toLocalTime())
-    }
-
-
-    @Test
-    fun testDateTime_toZonedDateTime() {
-        assertEquals(
-                ZonedDateTime.of(2020, 7, 7, 10, 30, 0, 0, tzBerlin.toZoneIdCompat()),
-                DateTime("20200707T103000", tzBerlin).toZonedDateTime()
-        )
-    }
-
-    @Test
-    fun testDateTime_toZonedDateTime_Floating() {
-        assertEquals(
-                ZonedDateTime.of(2020, 7, 7, 10, 30, 0, 0, ZoneId.systemDefault()),
-                DateTime("20200707T103000").toZonedDateTime()
-        )
-    }
-
-    @Test
-    fun testDateTime_toZonedDateTime_UTC() {
-        assertEquals(
-                ZonedDateTime.of(2020, 7, 7, 10, 30, 0, 0, ZoneOffset.UTC),
-                DateTime("20200707T103000Z").apply { isUtc = true }.toZonedDateTime()
-        )
     }
 
 

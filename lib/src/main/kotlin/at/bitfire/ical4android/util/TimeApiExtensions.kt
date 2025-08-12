@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android.util
 
+import at.bitfire.synctools.icalendar.asZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
@@ -55,11 +56,6 @@ object TimeApiExtensions {
 
     /***** Dates *****/
 
-    fun Date.toLocalDate(): LocalDate {
-        val utcDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC)
-        return utcDateTime.toLocalDate()
-    }
-
     fun DateTime.requireTimeZone(): TimeZone =
         if (isUtc)
             TimeZones.getUtcTimeZone()
@@ -73,13 +69,10 @@ object TimeApiExtensions {
             timeZone?.toZoneIdCompat() ?: ZoneId.systemDefault()
 
     fun DateTime.toLocalDate(): LocalDate =
-        toZonedDateTime().toLocalDate()
+        asZonedDateTime().toLocalDate()
 
     fun DateTime.toLocalTime(): LocalTime =
-        toZonedDateTime().toLocalTime()
-
-    fun DateTime.toZonedDateTime(): ZonedDateTime =
-        ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), requireZoneId())
+        asZonedDateTime().toLocalTime()
 
     fun LocalDate.toIcal4jDate(): Date {
         val cal = Calendar.getInstance(TimeZones.getDateTimeZone())

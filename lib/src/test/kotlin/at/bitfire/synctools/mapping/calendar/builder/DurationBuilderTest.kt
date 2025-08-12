@@ -18,11 +18,13 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Period
 
 @RunWith(RobolectricTestRunner::class)
 class DurationBuilderTest {
@@ -31,17 +33,46 @@ class DurationBuilderTest {
     private val tzVienna = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone("Europe/Vienna")
 
     @Test
-    fun `Standard DURATION`() {
+    fun `Skips DURATION for non-recurring event`() {
+        val result = emptyEntity()
+        assertTrue(builder.build(
+            from = VEvent(),
+            main = VEvent(),
+            to = result
+        ))
+        assertTrue(result.entityValues.containsKey(Events.DURATION))
+        assertNull(result.entityValues.getAsLong(Events.DURATION))
+    }
+
+
+    @Test
+    fun `DURATION in days (DTSTART is DATE)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
-                Duration(java.time.Duration.ofHours(1)),
+                DtStart(Date("20250812")),
+                Duration(Period.ofDays(2)),     // actual length in seconds may vary
                 RRule("FREQ=DAILY;COUNT=5")
             )),
             main = VEvent(),
             to = result
         ))
-        assertEquals("PT1H", result.entityValues.getAsString(Events.DURATION))
+        assertEquals("P2D", result.entityValues.getAsString(Events.DURATION))
+    }
+
+    @Test
+    fun `DURATION in days (DTSTART is DATE-TIME)`() {
+        val result = emptyEntity()
+        assertTrue(builder.build(
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20250812T133712", tzVienna)),
+                Duration(Period.ofDays(2)),     // actual length in seconds may vary
+                RRule("FREQ=DAILY;COUNT=5")
+            )),
+            main = VEvent(),
+            to = result
+        ))
+        assertEquals("PT48H", result.entityValues.getAsString(Events.DURATION))
     }
 
 
@@ -57,7 +88,7 @@ class DurationBuilderTest {
             main = VEvent(),
             to = result
         ))
-        assertEquals("PT48H", result.entityValues.getAsString(Events.DURATION))
+        assertEquals("P2D", result.entityValues.getAsString(Events.DURATION))
     }
 
     @Test
@@ -108,7 +139,7 @@ class DurationBuilderTest {
             to = result
         ))
         assertEquals(
-            "PT0S",     // default fallback for non-all-day events
+            "PT48H",    // DTEND time is taken from DTSTART
             result.entityValues.getAsString(Events.DURATION)
         )
     }
@@ -148,30 +179,13 @@ class DurationBuilderTest {
     @Test
     fun `DURATION null, DTSTART is null`() {
         val result = emptyEntity()
-        assertTrue(builder.build(
+        assertFalse(builder.build(
             from = VEvent(propertyListOf(
                 RRule("FREQ=DAILY;COUNT=5")
             )),
             main = VEvent(),
             to = result
         ))
-        assertEquals(
-            "PT0S",     // default fallback for non-all-day events
-            result.entityValues.getAsString(Events.DURATION)
-        )
-    }
-
-
-    @Test
-    fun `DURATION not set for non-recurring event`() {
-        val result = emptyEntity()
-        assertTrue(builder.build(
-            from = VEvent(),
-            main = VEvent(),
-            to = result
-        ))
-        assertTrue(result.entityValues.containsKey(Events.DURATION))
-        assertNull(result.entityValues.getAsLong(Events.DURATION))
     }
 
 }

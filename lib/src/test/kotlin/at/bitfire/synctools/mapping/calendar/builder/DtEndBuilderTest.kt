@@ -31,10 +31,11 @@ class DtEndBuilderTest {
     private val tzVienna = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone("Europe/Vienna")
 
     @Test
-    fun `DTEND is DATE`() {
+    fun `DTEND is DATE (DTSTART is DATE)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
+                DtStart(Date()),
                 DtEnd(Date(1754919693000)),     // Mon Aug 11 2025 13:41:33 GMT+0000
             )),
             main = VEvent(),
@@ -46,10 +47,43 @@ class DtEndBuilderTest {
     }
 
     @Test
-    fun `DTEND is DATE-TIME`() {
+    fun `DTEND is DATE (DTSTART is DATE-TIME)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
+                DtStart(DateTime(1754919693000)),   // Mon Aug 11 2025 13:41:33 GMT+0000
+                DtEnd(Date(1754870400000)),         // Mon Aug 11 2025 00:00:00 GMT+0000
+            )),
+            main = VEvent(),
+            to = result
+        ))
+        assertEquals(
+            1754919693000,  // time is amended from DTSTART
+            result.entityValues.getAsLong(Events.DTEND))
+    }
+
+    @Test
+    fun `DTEND is DATE-TIME (DTSTART is DATE)`() {
+        val result = emptyEntity()
+        assertTrue(builder.build(
+            from = VEvent(propertyListOf(
+                DtStart(Date()),
+                DtEnd(DateTime(1754919693000),  // Mon Aug 11 2025 13:41:33 GMT+0000
+                ))),
+            main = VEvent(),
+            to = result
+        ))
+        assertEquals(
+            1754870400000,  // Mon Aug 11 2025 00:00:00 GMT+0000
+            result.entityValues.getAsLong(Events.DTEND))
+    }
+
+    @Test
+    fun `DTEND is DATE-TIME (DTSTART is DATE-TIME)`() {
+        val result = emptyEntity()
+        assertTrue(builder.build(
+            from = VEvent(propertyListOf(
+                DtStart(DateTime()),
                 DtEnd(DateTime(1754919693000),  // Mon Aug 11 2025 13:41:33 GMT+0000
             ))),
             main = VEvent(),

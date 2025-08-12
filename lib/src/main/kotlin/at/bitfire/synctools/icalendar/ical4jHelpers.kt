@@ -8,8 +8,6 @@ package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.BuildConfig
 import net.fortuna.ical4j.model.ComponentList
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
@@ -47,12 +45,6 @@ val CalendarComponent.recurrenceId: RecurrenceId?
 
 val CalendarComponent.sequence: Sequence?
     get() = getProperty(Property.SEQUENCE)
-
-
-// date-time helpers
-
-fun Date.isAllDay(): Boolean =
-    this !is DateTime
 
 
 // recurrence helpers

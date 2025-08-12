@@ -10,8 +10,8 @@ import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toZoneIdCompat
+import at.bitfire.synctools.icalendar.asLocalDate
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.property.DtStart
@@ -101,7 +101,7 @@ object EventValidator {
                     if (until is DateTime) {
                         logger.warning("DTSTART has DATE, but UNTIL has DATETIME; making UNTIL have DATE only")
 
-                        val newUntil = until.toLocalDate().toIcal4jDate()
+                        val newUntil = until.asLocalDate().toIcal4jDate()
 
                         // remove current RRULE and remember new one to be added
                         val newRRule = RRule(Recur.Builder(rRule.recur)
@@ -142,7 +142,7 @@ object EventValidator {
                         )
 
                         val newUntil = ZonedDateTime.of(
-                            until.toLocalDate(),    // date from until
+                            until.asLocalDate(),    // date from until
                             dtStartTime,       // time from dtStart
                             dtStartTimeZone.toZoneIdCompat()
                         )

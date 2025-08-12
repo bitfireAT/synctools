@@ -8,34 +8,28 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.icalendar.alignAllDay
+import at.bitfire.synctools.icalendar.asLocalDate
+import at.bitfire.synctools.icalendar.asZonedDateTime
+import at.bitfire.synctools.icalendar.isAllDay
 import at.bitfire.synctools.icalendar.isRecurring
+import at.bitfire.synctools.mapping.calendar.builder.DefaultValues.defaultDuration
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
-import java.time.Duration
 import java.time.temporal.TemporalAmount
-import java.util.logging.Level
-import java.util.logging.Logger
 
 class DtEndBuilder: AndroidEventFieldBuilder {
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
         /*
         Events.DTEND is required by Android if event is non-recurring:
         https://developer.android.com/reference/android/provider/CalendarContract.Events#operations
 
-        So if we need it (non-recurring event) and it's not available in the VEvent, we
-
-        1. try to derive it from DTSTART/DURATION,
-        2. otherwise use the start time in the default time one plus the default event duration (one hour).
+        So if we need it (non-recurring event) and it's not available in the VEvent, we try to derive
+        it from DTSTART / DURATION (using a default duration as fallback).
         */
 
         val recurring = from.isRecurring()
@@ -46,17 +40,14 @@ class DtEndBuilder: AndroidEventFieldBuilder {
         }
         // non-recurring
 
+        // we need a start date (discard result if DTSTART is not present)
+        val dtStartDate = from.startDate?.date ?: return false
+
         val dtEndDate = from.endDate?.date
-
-        val calculatedEndDate = dtEndDate ?: calculateFromDuration(
-            dtStartDate = from.startDate?.date,
-            duration = from.duration?.duration ?: defaultDuration(
-                allDay = DateUtils.isDate(from.startDate)
-            )
+        val calculatedEndDate = dtEndDate?.alignAllDay(dtStartDate) ?: calculateFromDuration(
+            dtStartDate = dtStartDate,
+            duration = from.duration?.duration ?: defaultDuration(dtStartDate.isAllDay())
         )
-
-        // last fallback: current time in default time zone
-        val endDate = calculatedEndDate ?: DateTime()
 
         /*
         ical4j uses GMT for the timestamp of all-day events because we have configured it that way
@@ -65,27 +56,17 @@ class DtEndBuilder: AndroidEventFieldBuilder {
         However, this should be verified by a test → DtStartBuilderTest.
         */
 
-        to.entityValues.put(Events.DTEND, endDate.time)
+        to.entityValues.put(Events.DTEND, calculatedEndDate.time)
         return true
     }
 
-    fun calculateFromDuration(dtStartDate: Date?, duration: TemporalAmount): Date? {
-        if (dtStartDate != null)
-            try {
-                return if (dtStartDate is DateTime)
-                    (dtStartDate.toZonedDateTime() + duration).toIcal4jDateTime()
-                else
-                    (dtStartDate.toLocalDate() + duration).toIcal4jDate()
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't calculate DTEND from DTSTART ($dtStartDate) + DURATION ($duration)", e)
-            }
-        return null
-    }
-
-    fun defaultDuration(allDay: Boolean): Duration =
-        if (allDay)
-            Duration.ofDays(1)
-        else
-            Duration.ofSeconds(0)       // TODO crashes on Android 7? See LegacyAndroidEventBuilder2 note. Check other Duration.ofSeconds() too
+    fun calculateFromDuration(dtStartDate: Date, duration: TemporalAmount) =
+        if (dtStartDate is DateTime) {
+            val end = dtStartDate.asZonedDateTime() + duration
+            end.toIcal4jDateTime()
+        } else {
+            val end = dtStartDate.asLocalDate() + duration
+            end.toIcal4jDate()
+        }
 
 }

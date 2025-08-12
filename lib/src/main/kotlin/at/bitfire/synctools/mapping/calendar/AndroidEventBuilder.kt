@@ -26,6 +26,7 @@ import at.bitfire.synctools.mapping.calendar.builder.EventLocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.EventTimeZoneBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ExDateBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ExRuleBuilder
+import at.bitfire.synctools.mapping.calendar.builder.HasAttendeeDataBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalAllDayBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
@@ -54,6 +55,7 @@ class AndroidEventBuilder(
     private val associatedEvents: AssociatedEvents,
 
     // AndroidEvent-level fields
+    private val accountName: String,
     private val calendarId: Long,
     private val syncId: String,
     private val eTag: String?,
@@ -105,7 +107,8 @@ class AndroidEventBuilder(
         EventLocationBuilder(),
         EventTimeZoneBuilder(),
         ExRuleBuilder(),
-        OrganizerBuilder(),
+        HasAttendeeDataBuilder(),
+        OrganizerBuilder(accountName),
         OriginalAllDayBuilder(),
         OriginalInstanceTimeBuilder(),
         OriginalSyncIdBuilder(syncId = syncId),

@@ -28,7 +28,8 @@ class CategoriesBuilder: AndroidEventFieldBuilder {
             to.addSubValue(
                 ExtendedProperties.CONTENT_URI,
                 contentValuesOf(
-                    ExtendedProperties.NAME to rawCategories
+                    ExtendedProperties.NAME to AndroidEvent2.EXTNAME_CATEGORIES,
+                    ExtendedProperties.VALUE to rawCategories
                 )
             )
         }

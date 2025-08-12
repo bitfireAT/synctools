@@ -6,11 +6,15 @@
 
 package at.bitfire.synctools.mapping.calendar.builder
 
+import android.provider.CalendarContract.ExtendedProperties
+import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.emptyEntity
+import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.Sequence
+import net.fortuna.ical4j.model.property.Categories
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,45 +22,42 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class SequenceBuilderTest {
+class CategoriesBuilderTest {
 
-    private val builder = SequenceBuilder()
+    private val builder = CategoriesBuilder()
 
     @Test
-    fun `SEQUENCE is 0`() {
+    fun `Two CATEGORIES (including backslash)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(propertyListOf(
-                Sequence(0)
+                Categories(TextList(arrayOf(
+                    "Cat 1",
+                    "Cat\\2"
+                )))
             )),
             main = VEvent(),
             to = result
         ))
-        assertEquals(0, result.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE))
+        assertEquals(1, result.subValues.size)
+        assertContentValuesEqual(
+            contentValuesOf(
+                ExtendedProperties.NAME to AndroidEvent2.EXTNAME_CATEGORIES,
+                ExtendedProperties.VALUE to "Cat 1\\Cat2"
+            ),
+            result.subValues.first().values
+        )
     }
 
     @Test
-    fun `SEQUENCE is 1`() {
-        val result = emptyEntity()
-        assertTrue(builder.build(
-            from = VEvent(propertyListOf(
-                Sequence(1)
-            )),
-            main = VEvent(),
-            to = result
-        ))
-        assertEquals(1, result.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE))
-    }
-
-    @Test
-    fun `No SEQUENCE`() {
+    fun `No CATEGORIES`() {
         val result = emptyEntity()
         assertTrue(builder.build(
             from = VEvent(),
             main = VEvent(),
             to = result
         ))
-        assertEquals(0, result.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE))
+        assertTrue(result.subValues.isEmpty())
     }
 
 }

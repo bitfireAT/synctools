@@ -28,7 +28,7 @@ import java.util.TimeZone
 /**
  * Some integration tests to verify Android Calendar Provider behavior that don't fit anywhere else.
  */
-class CalendarProviderTest {
+class CalendarProviderBehaviorTest {
 
     @get:Rule
     val permissonRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
@@ -54,6 +54,24 @@ class CalendarProviderTest {
     fun tearDown() {
         calendar.delete()
         client.closeCompat()
+    }
+
+
+    @Test
+    fun testDuration_PT0S() {
+        val now = System.currentTimeMillis()
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.TITLE to "Some Event",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZone.getDefault().id,
+            Events.DURATION to "PT0S",
+            Events.RRULE to "FREQ=DAILY;COUNT=1"
+        )))
+        val event = calendar.getEventRow(id)!!
+
+        // verify that provider has not crashed
+        assertEquals("PT0S", event.getAsString(Events.DURATION))
     }
 
 

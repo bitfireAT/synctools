@@ -35,12 +35,12 @@ class RDateBuilderTest {
         val result = emptyEntity()
         val main = VEvent(propertyListOf(
             DtStart(Date("20250811")),
-            RDate(DateList("20250811", Value.DATE)),
-            RDate(DateList("20250812T185504", Value.DATE_TIME, tzVienna))
+            RDate(DateList("20250812", Value.DATE)),
+            RDate(DateList("20250813T185504", Value.DATE_TIME, tzVienna))
         ))
         assertTrue(builder.build(from = main, main = main, to = result))
         assertEquals(
-            "20250811T000000Z,20250812T000000Z",
+            "20250811T000000Z,20250812T000000Z,20250813T000000Z",
             result.entityValues.getAsString(Events.RDATE)
         )
     }
@@ -50,12 +50,12 @@ class RDateBuilderTest {
         val result = emptyEntity()
         val main = VEvent(propertyListOf(
             DtStart(DateTime("20250811T022345", tzVienna)),
-            RDate(DateList("20250811", Value.DATE)),
-            RDate(DateList("20250812T185504", Value.DATE_TIME, tzVienna))
+            RDate(DateList("20250812", Value.DATE)),
+            RDate(DateList("20250813T185504", Value.DATE_TIME, tzVienna))
         ))
         assertTrue(builder.build(from = main, main = main, to = result))
         assertEquals(
-            "20250811T002345Z,20250812T165504Z",
+            "Europe/Vienna;20250811T022345,20250812T002345Z,20250813T185504",
             result.entityValues.getAsString(Events.RDATE)
         )
     }

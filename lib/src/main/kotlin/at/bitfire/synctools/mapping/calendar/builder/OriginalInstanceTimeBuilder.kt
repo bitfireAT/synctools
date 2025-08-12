@@ -12,8 +12,8 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
+import at.bitfire.synctools.icalendar.asLocalDate
 import at.bitfire.synctools.icalendar.isAllDay
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
@@ -68,12 +68,12 @@ class OriginalInstanceTimeBuilder: AndroidEventFieldBuilder {
     private fun alignRecurrenceId(recurrenceDate: Date, mainStartDate: Date): Date {
         if (mainStartDate.isAllDay() && !recurrenceDate.isAllDay()) {
             // main event is DATE, but RECURRENCE-ID is DATE-TIME → change RECURRENCE-ID to DATE
-            val localDate = recurrenceDate.toLocalDate()
+            val localDate = recurrenceDate.asLocalDate()
             return Date(localDate.toIcal4jDate())
 
         } else if (mainStartDate is DateTime && recurrenceDate.isAllDay()) {
             // main event is DATE-TIME, but RECURRENCE-ID is DATE → change RECURRENCE-ID to DATE-TIME
-            val localDate = recurrenceDate.toLocalDate()
+            val localDate = recurrenceDate.asLocalDate()
             // guess time and time zone from DTSTART
             val zonedTime = ZonedDateTime.of(
                 localDate,
