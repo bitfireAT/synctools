@@ -12,7 +12,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import net.fortuna.ical4j.model.component.VEvent
 
-class SyncObjectBuilder(
+class SyncFieldsBuilder(
     private val calendarId: Long,
     private val syncId: String?,
     private val eTag: String?,

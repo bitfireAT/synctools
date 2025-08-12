@@ -48,18 +48,26 @@ class DurationBuilder: AndroidEventFieldBuilder {
 
         val duration: net.fortuna.ical4j.model.property.Duration? = from.duration
 
+        val dtStartDate = from.startDate?.date
         val calculatedDuration: TemporalAmount = duration?.duration
             ?: calculateFromDtEnd(
-                dtStartDate = from.startDate?.date,
+                dtStartDate = dtStartDate,
                 dtEndDate = from.endDate?.date
             )
             ?: defaultDuration(DateUtils.isDate(from.startDate))
 
-        to.entityValues.put(Events.DURATION, calculatedDuration.toString())
+        // TODO
+        val alignedDuration = if (dtStartDate?.isAllDay() == true) {
+            // align to days
+            calculatedDuration.
+        } else
+            calculatedDuration
+
+        to.entityValues.put(Events.DURATION, alignedDuration.toString())
         return true
     }
 
-    fun calculateFromDtEnd(dtStartDate: Date?, dtEndDate: Date?): TemporalAmount? {
+    fun calculateFromDtEnd(dtStartDate: Date?, dtEndDate: Date?): Duration? {
         if (dtStartDate != null && dtEndDate != null)
             try {
                 val dtStartAllDay = dtStartDate.isAllDay()
@@ -84,6 +92,6 @@ class DurationBuilder: AndroidEventFieldBuilder {
         if (allDay)
             Duration.ofDays(1)
         else
-            Duration.ofDays(0)
+            Duration.ofSeconds(0)       // crashes??
 
 }

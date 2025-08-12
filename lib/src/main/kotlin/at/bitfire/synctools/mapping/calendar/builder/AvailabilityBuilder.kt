@@ -15,7 +15,7 @@ class AvailabilityBuilder: AndroidEventFieldBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
         val availability = when (from.transparency) {
-            null ->     // DEFAULT is OPAQUE, but it's not a required field in the events table, so we map to null
+            null ->     // DEFAULT is OPAQUE, but it's not a required field in the events table, so we can map it to null
                 null
 
             Transp.TRANSPARENT ->

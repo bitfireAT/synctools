@@ -7,8 +7,12 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
+import androidx.core.content.contentValuesOf
+import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.emptyEntity
+import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
 import org.junit.Assert.assertEquals
@@ -33,6 +37,13 @@ class AccessLevelBuilderTest {
             to = result
         ))
         assertEquals(Events.ACCESS_CONFIDENTIAL, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
+        assertContentValuesEqual(
+            contentValuesOf(
+                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                ExtendedProperties.VALUE to UnknownProperty.toJsonString(Clazz.CONFIDENTIAL)
+            ),
+            result.subValues.first { it.uri == ExtendedProperties.CONTENT_URI }.values
+        )
     }
 
     @Test
@@ -46,6 +57,21 @@ class AccessLevelBuilderTest {
             to = result
         ))
         assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
+        assertTrue(result.subValues.isEmpty())
+    }
+
+    @Test
+    fun `CLASSIFICATION is PUBLIC`() {
+        val result = emptyEntity()
+        assertTrue(builder.build(
+            from = VEvent(propertyListOf(
+                Clazz.PUBLIC
+            )),
+            main = VEvent(),
+            to = result
+        ))
+        assertEquals(Events.ACCESS_PUBLIC, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
+        assertTrue(result.subValues.isEmpty())
     }
 
     @Test
@@ -59,6 +85,13 @@ class AccessLevelBuilderTest {
             to = result
         ))
         assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
+        assertContentValuesEqual(
+            contentValuesOf(
+                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                ExtendedProperties.VALUE to UnknownProperty.toJsonString(Clazz("X-OTHER"))
+            ),
+            result.subValues.first { it.uri == ExtendedProperties.CONTENT_URI }.values
+        )
     }
 
     @Test
@@ -70,6 +103,7 @@ class AccessLevelBuilderTest {
             to = result
         ))
         assertEquals(Events.ACCESS_DEFAULT, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
+        assertTrue(result.subValues.isEmpty())
     }
 
 }

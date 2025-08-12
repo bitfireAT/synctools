@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Reminders
@@ -17,23 +16,9 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.UnknownProperty
-import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
@@ -43,13 +28,6 @@ import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
-import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.Status
-import java.time.Duration
-import java.time.Period
-import java.time.ZonedDateTime
 import java.util.Locale
 import java.util.logging.Logger
 
@@ -60,6 +38,7 @@ import java.util.logging.Logger
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
  */
+@Deprecated("Use AndroidEventBuilder instead", level = DeprecationLevel.ERROR)
 class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
     private val event: Event,
@@ -102,12 +81,6 @@ class LegacyAndroidEventBuilder2(
         if (event.categories.isNotEmpty())
             entity.addSubValue(ExtendedProperties.CONTENT_URI, buildCategories(event.categories))
 
-        event.classification?.let { classification ->
-            val values = buildRetainedClassification(classification)
-            if (values != null)
-                entity.addSubValue(ExtendedProperties.CONTENT_URI, values)
-        }
-
         event.url?.let { url ->
             entity.addSubValue(ExtendedProperties.CONTENT_URI, buildUrl(url.toString()))
         }
@@ -131,75 +104,10 @@ class LegacyAndroidEventBuilder2(
      */
     private fun buildEventRow(recurrence: Event?): ContentValues {
         // start with object-level (AndroidEvent) fields
-        val row = contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.DIRTY to 0,      // newly created event rows shall not be marked as dirty (relevant for update)
-            Events.DELETED to 0,    // see above
-            AndroidEvent2.COLUMN_FLAGS to flags
-        )
+        return contentValuesOf()
 
-        val isException = recurrence != null
-        val from = recurrence ?: event
-
-        val dtStart = from.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
-        val allDay = DateUtils.isDate(dtStart)
-
-        // make sure that time zone is supported by Android
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-
-        val recurring = from.rRules.isNotEmpty() || from.rDates.isNotEmpty()
-
-        /* [CalendarContract.Events SDK documentation]
-           When inserting a new event the following fields must be included:
-           - dtstart
-           - dtend if the event is non-recurring
-           - duration if the event is recurring
-           - rrule or rdate if the event is recurring
-           - eventTimezone
-           - a calendar_id */
-
-        if (!isException) {
-            // main event
-            row.put(Events._SYNC_ID, syncId)
-            row.put(AndroidEvent2.COLUMN_ETAG, eTag)
-            row.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
-        } else {
-            // exception
-            row.put(Events.ORIGINAL_SYNC_ID, syncId)
-            row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
-
-            var recurrenceDate = from.recurrenceId!!.date
-            val dtStartDate = event.dtStart!!.date
-            if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
-
-            } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
-                // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    dtStartDate.toLocalTime(),
-                    dtStartDate.requireZoneId()
-                )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
-            }
-            row.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
-        }
-
-        // UID, sequence
-        row.put(Events.UID_2445, from.uid)
-        row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
-
+        /*
         // time fields
-        row.put(Events.DTSTART, dtStart.date.time)
-        row.put(Events.ALL_DAY, if (allDay) 1 else 0)
-        row.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
-
-        var dtEnd = from.dtEnd
-        AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
 
         var duration =
             if (dtEnd == null)
@@ -372,25 +280,7 @@ class LegacyAndroidEventBuilder2(
             row.put(Events.ORGANIZER, calendar.ownerAccount)
         }
 
-        // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
-        // In this case, the whole event must be deleted and inserted again.
-        if (/* insert, not an update */ id == null || /* update, but we're not updating to null */ from.status != null)
-            row.put(Events.STATUS, when (from.status) {
-                null /* not possible by if statement */ -> null
-                Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
-                Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED
-                else -> Events.STATUS_TENTATIVE
-            })
-
-        row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
-        row.put(Events.ACCESS_LEVEL, when (from.classification) {
-                null -> Events.ACCESS_DEFAULT
-                Clazz.PUBLIC -> Events.ACCESS_PUBLIC
-                Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
-                else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
-            })
-
-        return row
+        return row*/
     }
 
     private fun buildAttendee(attendee: Attendee): ContentValues {
@@ -462,20 +352,6 @@ class LegacyAndroidEventBuilder2(
         )
     }
 
-    /**
-     * Retain classification other than PUBLIC and PRIVATE as unknown property so
-     * that it can be reused when "server default" is selected.
-     *
-     * Should not be returned as an unknown property in the future, but as explicit extended property.
-     */
-    private fun buildRetainedClassification(classification: Clazz): ContentValues? {
-        if (classification != Clazz.PUBLIC && classification != Clazz.PRIVATE)
-            return contentValuesOf(
-                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
-                ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
-            )
-        return null
-    }
 
     private fun buildUnknownProperty(property: Property): ContentValues? {
         if (property.value == null) {

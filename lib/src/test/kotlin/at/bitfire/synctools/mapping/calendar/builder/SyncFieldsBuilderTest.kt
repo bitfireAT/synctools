@@ -18,9 +18,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class SyncObjectBuilderTest {
+class SyncFieldsBuilderTest {
 
-    private val builder = SyncObjectBuilder(
+    private val builder = SyncFieldsBuilder(
         calendarId = 123,
         syncId = "sync-id",
         eTag = "etag",

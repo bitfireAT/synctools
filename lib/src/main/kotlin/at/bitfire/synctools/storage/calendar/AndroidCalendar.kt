@@ -389,6 +389,8 @@ class AndroidCalendar(
      * @param newValues     new values that the event shall be updated to
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
+     *
+     * @see `CalendarProviderTest.testStatus_UpdateStatusToNull_Crashes` for an integration test that verifies the crash
      */
     internal fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
         val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null

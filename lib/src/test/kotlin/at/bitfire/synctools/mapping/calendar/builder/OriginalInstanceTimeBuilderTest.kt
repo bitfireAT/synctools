@@ -20,51 +20,27 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class OriginalReferenceBuilderTest {
+class OriginalInstanceTimeBuilderTest {
 
-    private val builder = OriginalReferenceBuilder("main-sync-id")
+    private val builder = OriginalInstanceTimeBuilder()
 
     @Test
-    fun `skips main event`() {
-        val event = createVEvent()
+    fun `Skips main event`() {
+        val main = recurring()
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = event,
-            main = event,
+            from = main,
+            main = main,
             to = result
         ))
     }
 
-
     @Test
-    fun `sets ORIGINAL_ALL_DAY (all-day main event)`() {
+    fun `Sets ORIGINAL_INSTANCE_TIME (all-day main event, all-day exception)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = createVEvent(),
-            main = createVEvent(time = Date()),
-            to = result
-        ))
-        assertEquals(1, result.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY))
-    }
-
-    @Test
-    fun `sets ORIGINAL_ALL_DAY (non-all-day main event)`() {
-        val result = emptyEntity()
-        assertTrue(builder.build(
-            from = createVEvent(),
-            main = createVEvent(time = DateTime()),
-            to = result
-        ))
-        assertEquals(0, result.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY))
-    }
-
-
-    @Test
-    fun `sets ORIGINAL_INSTANCE_TIME (all-day main event, all-day exception)`() {
-        val result = emptyEntity()
-        assertTrue(builder.build(
-            from = createVEvent(time = Date("20250811")),
-            main = createVEvent(time = Date()),
+            from = recurring(time = Date("20250811")),
+            main = recurring(time = Date()),
             to = result
         ))
         assertEquals(
@@ -74,11 +50,11 @@ class OriginalReferenceBuilderTest {
     }
 
     @Test
-    fun `sets ORIGINAL_INSTANCE_TIME (all-day main event, non-all-day exception)`() {
+    fun `Sets ORIGINAL_INSTANCE_TIME (all-day main event, non-all-day exception)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = createVEvent(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
-            main = createVEvent(time = Date()),
+            from = recurring(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
+            main = recurring(time = Date()),
             to = result
         ))
         assertEquals(
@@ -88,11 +64,11 @@ class OriginalReferenceBuilderTest {
     }
 
     @Test
-    fun `sets ORIGINAL_INSTANCE_TIME (non-all-day main event, all-day exception)`() {
+    fun `Sets ORIGINAL_INSTANCE_TIME (non-all-day main event, all-day exception)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            main = createVEvent(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
-            from = createVEvent(time = Date("20250812")),
+            main = recurring(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
+            from = recurring(time = Date("20250812")),
             to = result
         ))
         assertEquals(
@@ -102,29 +78,18 @@ class OriginalReferenceBuilderTest {
     }
 
     @Test
-    fun `sets ORIGINAL_INSTANCE_TIME (non-all-day main event, non-all-day exception)`() {
+    fun `Sets ORIGINAL_INSTANCE_TIME (non-all-day main event, non-all-day exception)`() {
         val result = emptyEntity()
         assertTrue(builder.build(
-            from = createVEvent(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
-            main = createVEvent(time = DateTime()),
+            from = recurring(time = DateTime(1754917615000)),     // Mon Aug 11 2025 13:06:55 GMT+0000
+            main = recurring(time = DateTime()),
             to = result
         ))
         assertEquals(1754917615000, result.entityValues.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
     }
 
-    @Test
-    fun `sets ORIGINAL_SYNC_ID`() {
-        val result = emptyEntity()
-        assertTrue(builder.build(
-            from = createVEvent(),
-            main = createVEvent(),
-            to = result
-        ))
-        assertEquals("main-sync-id", result.entityValues.getAsString(Events.ORIGINAL_SYNC_ID))
-    }
 
-
-    private fun createVEvent(time: Date = Date()) = VEvent(
+    private fun recurring(time: Date = Date()) = VEvent(
         /* start = */ time,
         /* end = */ time,
         /* summary = */ "Some Event"

@@ -15,16 +15,13 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.synctools.icalendar.isAllDay
-import at.bitfire.synctools.icalendar.isRecurring
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
 import java.time.ZonedDateTime
 import java.util.logging.Logger
 
-class OriginalReferenceBuilder(
-    private val syncId: String
-): AndroidEventFieldBuilder {
+class OriginalInstanceTimeBuilder: AndroidEventFieldBuilder {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
@@ -32,8 +29,6 @@ class OriginalReferenceBuilder(
     override fun build(from: VEvent, main: VEvent, to: Entity): Boolean {
         // Skip if this builder isn't building an exception.
         if (from === main) {
-            to.entityValues.putNull(Events.ORIGINAL_SYNC_ID)
-            to.entityValues.putNull(Events.ORIGINAL_ALL_DAY)
             to.entityValues.putNull(Events.ORIGINAL_INSTANCE_TIME)
             return true
         }
@@ -56,11 +51,6 @@ class OriginalReferenceBuilder(
             return false
         }
 
-        if (!from.isRecurring()) {
-            logger.warning("Ignoring exception because main event is not recurring")
-            return false
-        }
-
         // align RECURRENCE-ID with value type (date/date-time) of main event's DTSTART
         val alignedRecurrenceDate = alignRecurrenceId(
             recurrenceDate = recurrenceDate,
@@ -68,9 +58,6 @@ class OriginalReferenceBuilder(
         )
 
         val values = contentValuesOf(
-            // never provide explicit reference to Events._ID (calendar provider doesn't process it correctly)
-            Events.ORIGINAL_SYNC_ID to syncId,
-            Events.ORIGINAL_ALL_DAY to if (mainStartDate.isAllDay()) 1 else 0,
             Events.ORIGINAL_INSTANCE_TIME to alignedRecurrenceDate.time
         )
 

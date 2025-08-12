@@ -73,7 +73,7 @@ class DurationBuilderTest {
             to = result
         ))
         assertEquals(
-            "PT48H",    // DTEND treated as DATE; then it's two days difference
+            "P2D",    // DTEND treated as DATE; then it's two days difference
             result.entityValues.getAsString(Events.DURATION)
         )
     }
@@ -90,7 +90,7 @@ class DurationBuilderTest {
             to = result
         ))
         assertEquals(
-            "PT24H",    // default period day for all-day events
+            "P1D",    // default period day for all-day events
             result.entityValues.getAsString(Events.DURATION)
         )
     }

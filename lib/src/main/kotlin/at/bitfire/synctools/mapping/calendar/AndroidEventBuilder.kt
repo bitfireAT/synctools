@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.content.Entity
 import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.icalendar.isRecurring
 import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AllDayBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
@@ -26,12 +27,14 @@ import at.bitfire.synctools.mapping.calendar.builder.EventTimeZoneBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ExDateBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ExRuleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
-import at.bitfire.synctools.mapping.calendar.builder.OriginalReferenceBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OriginalAllDayBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OriginalSyncIdBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RDateBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RRuleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
-import at.bitfire.synctools.mapping.calendar.builder.SyncObjectBuilder
+import at.bitfire.synctools.mapping.calendar.builder.SyncFieldsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UidBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
@@ -60,11 +63,17 @@ class AndroidEventBuilder(
 
     fun build(): EventAndExceptions? {
         val mainEvent = associatedEvents.main ?: fakeMainEvent()
+        val mayHaveExceptions = mainEvent.isRecurring()
+
         return EventAndExceptions(
             main = buildEvent(from = mainEvent, main = mainEvent) ?: return null,
-            exceptions = associatedEvents.exceptions.mapNotNull { exception ->
-                buildEvent(from = exception, main = mainEvent)
-            }
+            exceptions =
+                if (mayHaveExceptions)
+                    associatedEvents.exceptions.mapNotNull { exception ->
+                        buildEvent(from = exception, main = mainEvent)
+                    }
+                else
+                    emptyList()
         )
     }
 
@@ -95,14 +104,16 @@ class AndroidEventBuilder(
         EventEndTimeZoneBuilder(),
         EventLocationBuilder(),
         EventTimeZoneBuilder(),
-        OriginalReferenceBuilder(syncId = syncId),
         ExRuleBuilder(),
         OrganizerBuilder(),
+        OriginalAllDayBuilder(),
+        OriginalInstanceTimeBuilder(),
+        OriginalSyncIdBuilder(syncId = syncId),
         RDateBuilder(),
         RRuleBuilder(),
         SequenceBuilder(),
         StatusBuilder(),
-        SyncObjectBuilder(
+        SyncFieldsBuilder(
             calendarId = calendarId,
             syncId = syncId,
             eTag = eTag,
