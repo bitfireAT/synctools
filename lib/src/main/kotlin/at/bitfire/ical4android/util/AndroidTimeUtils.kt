@@ -10,8 +10,8 @@ package at.bitfire.ical4android.util
 
 import at.bitfire.ical4android.util.AndroidTimeUtils.androidifyTimeZone
 import at.bitfire.ical4android.util.AndroidTimeUtils.storageTzId
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.icalendar.asLocalDate
+import at.bitfire.synctools.icalendar.asZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
@@ -42,7 +42,7 @@ object AndroidTimeUtils {
     /**
      * Timezone ID to store for all-day events, according to CalendarContract.Events SDK documentation.
      */
-    val TZID_ALLDAY = "UTC"
+    const val TZID_ALLDAY = "UTC"
 
     private const val RECURRENCE_LIST_TZID_SEPARATOR = ';'
     private const val RECURRENCE_LIST_VALUE_SEPARATOR = ","
@@ -160,7 +160,7 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToAndroidString(dates: List<DateListProperty>, dtStart: Date): String {
+    fun recurrenceSetsToAndroidString(dates: List<DateListProperty>, dtStart: Date?): String {
         /*  rdate/exdate:       DATE                                DATE_TIME
             all-day             store as ...T000000Z                cut off time and store as ...T000000Z
             event with time     (undefined)                         store as ...ThhmmssZ
@@ -204,8 +204,8 @@ object AndroidTimeUtils {
                         // DTSTART is DATE-TIME; amend DATE-TIME with clock time from dtStart
                         dateListProp.dates.mapTo(strDates) { date ->
                             // take time (including time zone) from dtStart and date from date
-                            val dtStartTime = dtStart.toZonedDateTime()
-                            val localDate = date.toLocalDate()
+                            val dtStartTime = dtStart.asZonedDateTime()
+                            val localDate = date.asLocalDate()
                             val dtStartTimeUtc = ZonedDateTime.of(
                                 localDate,
                                 dtStartTime.toLocalTime(),

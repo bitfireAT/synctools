@@ -11,6 +11,9 @@ import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
@@ -25,7 +28,7 @@ const val ical4jVersion = BuildConfig.version_ical4j
 // component access helpers
 
 fun<T: CalendarComponent> componentListOf(vararg components: T) =
-    ComponentList<CalendarComponent>().apply {
+    ComponentList<T>().apply {
         addAll(components)
     }
 
@@ -42,3 +45,12 @@ val CalendarComponent.recurrenceId: RecurrenceId?
 
 val CalendarComponent.sequence: Sequence?
     get() = getProperty(Property.SEQUENCE)
+
+
+// recurrence helpers
+
+fun CalendarComponent.isGroupScheduled(): Boolean =
+    properties.any { it is Attendee }
+
+fun CalendarComponent.isRecurring(): Boolean =
+    properties.any { it is RRule || it is RDate }

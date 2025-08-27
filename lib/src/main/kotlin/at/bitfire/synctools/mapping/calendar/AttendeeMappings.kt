@@ -101,14 +101,14 @@ object AttendeeMappings {
      *     ¹ custom/unknown ROLE values must be treated as REQ-PARTICIPANT
      *     ² custom/unknown CUTYPE values must be treated as UNKNOWN
      *
-     *  When [attendee] is the [organizer], [CalendarContract.Attendees.ATTENDEE_RELATIONSHIP] = RELATIONSHIP_ATTENDEE
+     *  When [attendee] is the [organizerEmail], [CalendarContract.Attendees.ATTENDEE_RELATIONSHIP] = RELATIONSHIP_ATTENDEE
      *  is replaced by [CalendarContract.Attendees.RELATIONSHIP_ORGANIZER].
      *
      * @param attendee   iCalendar attendee to map
      * @param to         where to mapped values should be put into
-     * @param organizer  email address of iCalendar ORGANIZER; used to determine whether [attendee] is the organizer
+     * @param organizerEmail  email address of iCalendar ORGANIZER; used to determine whether [attendee] is the organizer
      */
-    fun iCalendarToAndroid(attendee: Attendee, to: ContentValues, organizer: String) {
+    fun iCalendarToAndroid(attendee: Attendee, to: ContentValues, organizerEmail: String) {
         val type: Int
         var relationship: Int
 
@@ -162,7 +162,7 @@ object AttendeeMappings {
             else
                 attendee.getParameter<Email>(Parameter.EMAIL)?.value
 
-            if (email == organizer)
+            if (email == organizerEmail)
                 relationship = Attendees.RELATIONSHIP_ORGANIZER
         }
 

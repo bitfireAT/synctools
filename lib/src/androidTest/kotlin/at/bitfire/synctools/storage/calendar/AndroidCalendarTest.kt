@@ -21,11 +21,14 @@ import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.TimeZone
 
 class AndroidCalendarTest {
 
@@ -454,6 +457,68 @@ class AndroidCalendarTest {
         )))
         assertEquals(5 - 1, calendar.numDirectInstances(id))
         assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
+    }
+
+
+    // event rebuilding
+
+    @Test
+    fun testEventUpdateNeedsRebuild_NoEvent() {
+        assertNull(calendar.eventUpdateNeedsRebuild(12345, contentValuesOf()))
+    }
+
+    @Test
+    fun testEventUpdateNeedsRebuild_StatusNonNull_ToNonNull() {
+        val now = System.currentTimeMillis()
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.TITLE to "Some Event",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZone.getDefault().id,
+            Events.DTEND to now + 3600000,
+            Events.STATUS to Events.STATUS_CONFIRMED
+        )))
+        assertFalse(calendar.eventUpdateNeedsRebuild(id, contentValuesOf(Events.STATUS to Events.STATUS_TENTATIVE))!!)
+    }
+
+    @Test
+    fun testEventUpdateNeedsRebuild_StatusNonNull_ToNull() {
+        val now = System.currentTimeMillis()
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.TITLE to "Some Event",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZone.getDefault().id,
+            Events.DTEND to now + 3600000,
+            Events.STATUS to Events.STATUS_CONFIRMED
+        )))
+        assertTrue(calendar.eventUpdateNeedsRebuild(id, contentValuesOf())!!)
+    }
+
+    @Test
+    fun testEventUpdateNeedsRebuild_StatusNull_ToNonNull() {
+        val now = System.currentTimeMillis()
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.TITLE to "Some Event",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZone.getDefault().id,
+            Events.DTEND to now + 3600000
+        )))
+        assertFalse(calendar.eventUpdateNeedsRebuild(id, contentValuesOf(Events.STATUS to Events.STATUS_CONFIRMED))!!)
+    }
+
+    @Test
+    fun testEventUpdateNeedsRebuild_StatusNull_ToNull() {
+        val now = System.currentTimeMillis()
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.TITLE to "Some Event",
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZone.getDefault().id,
+            Events.DTEND to now + 3600000
+        )))
+        assertFalse(calendar.eventUpdateNeedsRebuild(id, contentValuesOf())!!)
     }
 
 }
