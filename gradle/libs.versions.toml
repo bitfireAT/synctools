@@ -1,19 +1,19 @@
 [versions]
-agp = "8.12.0"
+agp = "8.12.1"
 android-desugar = "2.1.5"
 androidx-annotation = "1.9.1"
-androidx-core = "1.16.0"
+androidx-core = "1.17.0"
 androidx-test-rules = "1.7.0"
 androidx-test-runner = "1.7.0"
 dokka = "2.0.0"
 ezvcard = "0.12.1"
 guava = "33.4.8-android"
 # noinspection GradleDependency
-ical4j = "3.2.19"   # final version; update to 4.x will require much work
+ical4j = "4.1.1"   # final version; update to 4.x will require much work
 junit = "4.13.2"
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 mockk = "1.14.5"
-roboelectric = "4.15.1"
+roboelectric = "4.16"
 slf4j = "2.0.17"
 
 [libraries]
