@@ -12,12 +12,18 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "[CI] "
+    groups:
+      ci-actions:
+        patterns: ["*"]
       
   # Gradle
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      lib-dependencies:
+        patterns: ["*"]
     ignore:
       - dependency-name: "ical4j"
         versions: ["4.x"]
