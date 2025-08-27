@@ -524,15 +524,6 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
-    fun testBuildEvent_Summary() {
-        buildEvent(true) {
-            summary = "Sample Summary"
-        }.let { result ->
-            assertEquals("Sample Summary", result.entityValues.getAsString(Events.TITLE))
-        }
-    }
-
-    @Test
     fun testBuildEvent_Location() {
         buildEvent(true) {
             location = "Sample Location"
@@ -1290,7 +1281,6 @@ class LegacyAndroidEventBuilder2Test {
                 assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
                 assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
                 assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
             }
         }
     }
@@ -1318,7 +1308,6 @@ class LegacyAndroidEventBuilder2Test {
                 assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
                 assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
                 assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
             }
         }
     }
@@ -1345,7 +1334,6 @@ class LegacyAndroidEventBuilder2Test {
                 assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
                 assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
                 assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
             }
         }
     }
@@ -1372,7 +1360,6 @@ class LegacyAndroidEventBuilder2Test {
                 assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
                 assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
                 assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
             }
         }
     }
