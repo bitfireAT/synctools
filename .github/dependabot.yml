@@ -25,5 +25,5 @@ updates:
       lib-dependencies:
         patterns: ["*"]
     ignore:
-      - dependency-name: "ical4j"
+      - dependency-name: "org.mnode.ical4j:ical4j"
         versions: ["4.x"]
