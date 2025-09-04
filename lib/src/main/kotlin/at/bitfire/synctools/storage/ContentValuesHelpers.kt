@@ -7,8 +7,10 @@
 package at.bitfire.synctools.storage
 
 import android.content.ContentValues
+import android.content.Entity
 import android.database.Cursor
 import android.database.DatabaseUtils
+import androidx.core.content.contentValuesOf
 
 operator fun ContentValues.plusAssign(other: ContentValues) {
     putAll(other)
@@ -31,6 +33,8 @@ fun ContentValues.removeBlank(): ContentValues {
     }
     return this
 }
+
+fun emptyEntity() = Entity(contentValuesOf())
 
 /**
  * Returns the contents of the current row as a [android.content.ContentValues] object.
