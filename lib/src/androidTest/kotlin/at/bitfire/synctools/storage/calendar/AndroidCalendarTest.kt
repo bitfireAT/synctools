@@ -8,6 +8,7 @@ package at.bitfire.synctools.storage.calendar
 
 import android.accounts.Account
 import android.content.ContentProviderClient
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract
@@ -17,6 +18,7 @@ import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
@@ -73,6 +75,44 @@ class AndroidCalendarTest {
         )
         entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
         val id = calendar.addEvent(entity)
+
+        // verify that event has been inserted
+        val result = calendar.getEvent(id)!!
+        assertEquals(id, result.id)
+        assertEquals(now, result.dtStart)
+        assertEquals(now + 3600000, result.dtEnd)
+        assertEquals("Some Event", result.title)
+        assertEquals(1, result.reminders.size)
+        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+    }
+
+    @Test
+    fun testAddEvent_toBatch_AsSecondOperation() {
+        val batch = CalendarBatchOperation(client)
+
+        // first operation: no-op
+        batch += BatchOperation.CpoBuilder
+            .newUpdate(calendar.eventsUri)
+            .withValue(Events._SYNC_ID, "won't happen")
+            .withSelection("${Events._SYNC_ID}=?", arrayOf("testAddEvent_toBatch_AsSecondOperation"))
+
+        // second operation (event row index > 0)
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        )
+        val entity = Entity(values)
+        val reminder = contentValuesOf(
+            Reminders.MINUTES to 123
+        )
+        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        val idx = batch.nextBackrefIdx()
+        calendar.addEvent(entity, batch)
+
+        batch.commit()
+        val id = ContentUris.parseId(batch.getResult(idx)!!.uri!!)
 
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!

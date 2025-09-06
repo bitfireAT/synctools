@@ -249,6 +249,13 @@ open class BatchOperation internal constructor(
             return this
         }
 
+        /**
+         * Creates a back-reference to the result of a previous INSERT in the batch.
+         *
+         * - Only reference INSERT operations (not UPDATE)!
+         * - Don't assume an index value, especially if it's possible that previous operations could
+         *   have added operations to the batch. Instead, get the index from [at.bitfire.synctools.storage.BatchOperation.nextBackrefIdx].
+         */
         fun withValueBackReference(key: String, index: Int): CpoBuilder {
             valueBackrefs[key] = BackReference(index)
             return this

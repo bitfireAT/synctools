@@ -96,14 +96,15 @@ class AndroidCalendar(
     }
 
     internal fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
-        // insert main row
+        // insert event row
+        val eventRowIdx = batch.nextBackrefIdx()
         batch += CpoBuilder.newInsert(eventsUri).withValues(entity.entityValues)
 
-        // insert data rows (with reference to main row ID)
+        // insert data rows (with reference to event row ID)
         for (row in entity.subValues)
             batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(row.values)
-                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, /* result of first operation with index = */ 0)
+                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, eventRowIdx)
     }
 
     /**
