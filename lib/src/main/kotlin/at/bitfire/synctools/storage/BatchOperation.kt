@@ -188,7 +188,7 @@ open class BatchOperation internal constructor(
     }
 
 
-    class BackReference(
+    data class BackReference(
         /** index of the referenced row in the original, non-splitted transaction */
         val originalIndex: Int
     ) {
