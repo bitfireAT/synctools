@@ -23,9 +23,13 @@ interface AndroidEventFieldBuilder {
      * val buildsMainEvent = from === main
      * ```
      *
+     * Note: The result of the mapping is used to either create or update the event row in the content provider.
+     * For updates, explicit `null` values are required for fields that should be `null` (otherwise the value
+     * wouldn't be updated to `null` in case of an event update).
+     *
      * @param from  event to map
      * @param main  main event
-     * @param to    destination object where built values are stored
+     * @param to    destination object where built values are stored (set `null` values, see note)
      */
     fun build(from: Event, main: Event, to: Entity)
 
