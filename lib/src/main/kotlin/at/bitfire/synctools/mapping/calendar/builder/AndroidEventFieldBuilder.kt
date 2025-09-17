@@ -25,7 +25,8 @@ interface AndroidEventFieldBuilder {
      *
      * Note: The result of the mapping is used to either create or update the event row in the content provider.
      * For updates, explicit `null` values are required for fields that should be `null` (otherwise the value
-     * wouldn't be updated to `null` in case of an event update).
+     * wouldn't be updated to `null` in case of an event update). Sub-rows of the [Entity] will always be created
+     * anew, so there's no need to use `null` values in sub-rows.
      *
      * @param from  event to map
      * @param main  main event
