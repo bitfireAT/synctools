@@ -61,6 +61,9 @@ import java.util.logging.Logger
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ *
+ * Note: "Legacy" will be removed from the class name as soon as the [Event] dependency is
+ * replaced by [at.bitfire.synctools.icalendar.AssociatedEvents].
  */
 class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
