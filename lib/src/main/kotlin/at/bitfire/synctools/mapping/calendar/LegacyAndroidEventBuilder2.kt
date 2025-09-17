@@ -29,6 +29,8 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
+import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
+import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
@@ -339,10 +341,6 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.EXDATE)
         }
 
-        // text fields
-        row.put(Events.EVENT_LOCATION, from.location)
-        row.put(Events.DESCRIPTION, from.description)
-
         // color
         val color = from.color
         if (color != null) {
@@ -511,6 +509,8 @@ class LegacyAndroidEventBuilder2(
 
 
     private fun fieldBuilders(): Array<AndroidEventFieldBuilder> = arrayOf(
+        DescriptionBuilder(),
+        LocationBuilder(),
         TitleBuilder()
     )
 
