@@ -29,8 +29,6 @@ import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
@@ -38,7 +36,6 @@ import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.Language
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.parameter.Role
@@ -55,7 +52,6 @@ import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.XProperty
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -521,42 +517,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-    @Test
-    fun testBuildEvent_Summary() {
-        buildEvent(true) {
-            summary = "Sample Summary"
-        }.let { result ->
-            assertEquals("Sample Summary", result.entityValues.getAsString(Events.TITLE))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Location() {
-        buildEvent(true) {
-            location = "Sample Location"
-        }.let { result ->
-            assertEquals("Sample Location", result.entityValues.getAsString(Events.EVENT_LOCATION))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Url() {
-        buildEvent(true) {
-            url = URI("https://example.com")
-        }.let { result ->
-            assertEquals("https://example.com", firstExtendedProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Description() {
-        buildEvent(true) {
-            description = "Sample Description"
-        }.let { result ->
-            assertEquals("Sample Description", result.entityValues.getAsString(Events.DESCRIPTION))
-        }
     }
 
     @Test
@@ -1232,32 +1192,6 @@ class LegacyAndroidEventBuilder2Test {
             }
         }.let { result ->
             assertEquals(Attendees.ATTENDEE_STATUS_INVITED, firstAttendee(result)!!.getAsInteger(Attendees.ATTENDEE_STATUS))
-        }
-    }
-
-
-    @Test
-    fun testBuildUnknownProperty() {
-        buildEvent(true) {
-            val params = ParameterList()
-            params.add(Language("en"))
-            unknownProperties += XProperty("X-NAME", params, "Custom Value")
-        }.let { result ->
-            firstUnknownProperty(result)!!.let { property ->
-                assertEquals("X-NAME", property.name)
-                assertEquals("en", property.getParameter<Language>(Parameter.LANGUAGE).value)
-                assertEquals("Custom Value", property.value)
-            }
-        }
-    }
-
-    @Test
-    fun testBuildUnknownProperty_NoValue() {
-        buildEvent(true) {
-            unknownProperties += XProperty("ATTACH", ParameterList(), null)
-        }.let { result ->
-            // The property should not have been added, so the first unknown property should be null
-            assertNull(firstUnknownProperty(result))
         }
     }
 
