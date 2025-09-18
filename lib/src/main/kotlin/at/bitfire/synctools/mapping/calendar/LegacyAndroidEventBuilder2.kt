@@ -30,6 +30,7 @@ import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DirtyAndDeletedBuilder
+import at.bitfire.synctools.mapping.calendar.builder.ETagBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
@@ -43,7 +44,6 @@ import at.bitfire.synctools.mapping.calendar.builder.UidBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -81,6 +81,7 @@ class LegacyAndroidEventBuilder2(
         // sync columns (as defined in CalendarContract.EventsColumns)
         SyncIdBuilder(syncId),
         DirtyAndDeletedBuilder(),
+        ETagBuilder(eTag = eTag, scheduleTag = scheduleTag),
         SyncFlagsBuilder(flags),
         SequenceBuilder(),
         // event columns
@@ -163,8 +164,6 @@ class LegacyAndroidEventBuilder2(
 
         if (!isException) {
             // main event
-            row.put(AndroidEvent2.COLUMN_ETAG, eTag)
-            row.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
         } else {
             // exception
             row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
