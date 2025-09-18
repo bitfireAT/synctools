@@ -9,20 +9,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import net.fortuna.ical4j.model.property.Clazz
 
-class AccessLevelBuilder: AndroidEntityBuilder {
+class DirtyAndDeletedBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(
-            Events.ACCESS_LEVEL,
-            when (from.classification) {
-                Clazz.PUBLIC -> Events.ACCESS_PUBLIC
-                Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
-                null -> Events.ACCESS_DEFAULT
-                else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
-            }
-        )
+        // DIRTY and DELETED is always unset when we create or update an event row
+        to.entityValues.put(Events.DIRTY, 0)
+        to.entityValues.put(Events.DELETED, 0)
     }
 
 }

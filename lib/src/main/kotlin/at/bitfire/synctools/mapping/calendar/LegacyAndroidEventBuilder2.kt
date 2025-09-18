@@ -28,6 +28,7 @@ import at.bitfire.synctools.mapping.calendar.builder.AvailabilityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
+import at.bitfire.synctools.mapping.calendar.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
@@ -72,7 +73,9 @@ class LegacyAndroidEventBuilder2(
 ) {
 
     private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
-        // event fields (as defined in CalendarContract.EventsColumns)
+        // sync columns (as defined in CalendarContract.EventsColumns)
+        DirtyAndDeletedBuilder(),
+        // event columns
         TitleBuilder(),
         DescriptionBuilder(),
         LocationBuilder(),
@@ -128,8 +131,6 @@ class LegacyAndroidEventBuilder2(
         // start with object-level (AndroidEvent) fields
         val row = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DIRTY to 0,      // newly created event rows shall not be marked as dirty (relevant for update)
-            Events.DELETED to 0,    // see above
             AndroidEvent2.COLUMN_FLAGS to flags
         )
 
