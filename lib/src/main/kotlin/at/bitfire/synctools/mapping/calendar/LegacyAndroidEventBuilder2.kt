@@ -34,6 +34,7 @@ import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
+import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
@@ -75,6 +76,7 @@ class LegacyAndroidEventBuilder2(
     private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
         // sync columns (as defined in CalendarContract.EventsColumns)
         DirtyAndDeletedBuilder(),
+        SyncFlagsBuilder(flags),
         // event columns
         TitleBuilder(),
         DescriptionBuilder(),
@@ -131,7 +133,6 @@ class LegacyAndroidEventBuilder2(
         // start with object-level (AndroidEvent) fields
         val row = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            AndroidEvent2.COLUMN_FLAGS to flags
         )
 
         val isException = recurrence != null
