@@ -31,7 +31,6 @@ import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -483,122 +482,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-
-    // exceptions → test with EventAndException
-
-    private fun firstException(eventAndExceptions: EventAndExceptions) =
-        eventAndExceptions.exceptions.first()
-
-    @Test
-    fun testBuildException_NonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(tzVienna.id, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(0, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=DAILY;COUNT=10", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594143000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(0, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_NonAllDay_RecurrenceIdAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))   // illegal! should be rewritten to DateTime("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(tzVienna.id, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(0, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=DAILY;COUNT=10", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594143000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(0, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_AllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(AndroidTimeUtils.TZID_ALLDAY, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(1, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=WEEKLY;COUNT=3", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594080000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_AllDay_RecurrenceIdNonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T000000", tzVienna)     // illegal! should be rewritten to Date("20200707")
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(AndroidTimeUtils.TZID_ALLDAY, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(1, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=WEEKLY;COUNT=3", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594080000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
-            }
-        }
     }
 
 }

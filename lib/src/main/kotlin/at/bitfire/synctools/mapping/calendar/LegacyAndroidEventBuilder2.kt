@@ -12,11 +12,9 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
@@ -33,6 +31,7 @@ import at.bitfire.synctools.mapping.calendar.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ETagBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
@@ -45,7 +44,6 @@ import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
@@ -53,7 +51,6 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
 import java.time.Period
-import java.time.ZonedDateTime
 import java.util.logging.Logger
 
 /**
@@ -67,14 +64,14 @@ import java.util.logging.Logger
  * replaced by [at.bitfire.synctools.icalendar.AssociatedEvents].
  */
 class LegacyAndroidEventBuilder2(
-    private val calendar: AndroidCalendar,
+    calendar: AndroidCalendar,
     private val event: Event,
 
     // AndroidEvent-level fields
-    private val syncId: String?,
-    private val eTag: String?,
-    private val scheduleTag: String?,
-    private val flags: Int
+    syncId: String?,
+    eTag: String?,
+    scheduleTag: String?,
+    flags: Int
 ) {
 
     private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
@@ -94,6 +91,7 @@ class LegacyAndroidEventBuilder2(
         AllDayBuilder(),
         AccessLevelBuilder(),
         AvailabilityBuilder(),
+        OriginalInstanceTimeBuilder(),
         OrganizerBuilder(calendar.ownerAccount),
         UidBuilder(),
         // sub-rows (alphabetically, by class name)
@@ -161,33 +159,6 @@ class LegacyAndroidEventBuilder2(
            - rrule or rdate if the event is recurring
            - eventTimezone
            - a calendar_id */
-
-        if (!isException) {
-            // main event
-        } else {
-            // exception
-            row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
-
-            var recurrenceDate = from.recurrenceId!!.date
-            val dtStartDate = event.dtStart!!.date
-            if (recurrenceDate is DateTime && dtStartDate !is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
-
-            } else if (recurrenceDate !is DateTime && dtStartDate is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
-                // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    dtStartDate.toLocalTime(),
-                    dtStartDate.requireZoneId()
-                )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
-            }
-            row.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
-        }
 
         // time fields
         row.put(Events.DTSTART, dtStart.date.time)
