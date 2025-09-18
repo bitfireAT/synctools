@@ -20,7 +20,7 @@ import net.fortuna.ical4j.model.property.Clazz
  * Should not be returned as an unknown property in the future, but as a specific separate
  * extended property.
  */
-class RetainedClassificationBuilder: AndroidEventFieldBuilder {
+class RetainedClassificationBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
         val classification = from.classification

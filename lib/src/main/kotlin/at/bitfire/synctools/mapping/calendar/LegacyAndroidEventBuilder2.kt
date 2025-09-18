@@ -8,13 +8,10 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
-import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -26,10 +23,12 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
+import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
+import at.bitfire.synctools.mapping.calendar.builder.AttendeesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
+import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
@@ -42,12 +41,7 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
@@ -55,7 +49,6 @@ import net.fortuna.ical4j.model.property.Status
 import java.time.Duration
 import java.time.Period
 import java.time.ZonedDateTime
-import java.util.Locale
 import java.util.logging.Logger
 
 /**
@@ -80,12 +73,16 @@ class LegacyAndroidEventBuilder2(
     private val flags: Int
 ) {
 
-    private val fieldBuilders: Array<AndroidEventFieldBuilder> = arrayOf(
-        CategoriesBuilder(),
+    private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
+        // event fields (order as in CalendarContract.EventsColumns)
+        TitleBuilder(),
         DescriptionBuilder(),
         LocationBuilder(),
+        // sub-rows (alphabetically, by class name)
+        AttendeesBuilder(calendar),
+        CategoriesBuilder(),
+        RemindersBuilder(),
         RetainedClassificationBuilder(),
-        TitleBuilder(),
         UnknownPropertiesBuilder(),
         UrlBuilder()
     )
@@ -105,21 +102,13 @@ class LegacyAndroidEventBuilder2(
         )
 
     fun buildEvent(recurrence: Event?): Entity {
-        // build row from legacy builders
+        // build main row from legacy builders
         val row = buildEventRow(recurrence)
 
-        val entity = Entity(row)
-        val from = recurrence ?: event
-
-        for (reminder in from.alarms)
-            entity.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder))
-
-        for (attendee in from.attendees)
-            entity.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee))
-
         // additionally apply new builders
+        val entity = Entity(row)
         for (builder in fieldBuilders)
-            builder.build(from = from, main = event, to = entity)
+            builder.build(from = recurrence ?: event, main = event, to = entity)
 
         return entity
     }
@@ -389,63 +378,6 @@ class LegacyAndroidEventBuilder2(
             })
 
         return row
-    }
-
-    private fun buildAttendee(attendee: Attendee): ContentValues {
-        val values = ContentValues()
-        val organizer = event.organizerEmail ?:
-            /* no ORGANIZER, use current account owner as ORGANIZER */
-            calendar.ownerAccount ?: calendar.account.name
-
-        val member = attendee.calAddress
-        if (member.scheme.equals("mailto", true))   // attendee identified by email
-            values.put(Attendees.ATTENDEE_EMAIL, member.schemeSpecificPart)
-        else {
-            // attendee identified by other URI
-            values.put(Attendees.ATTENDEE_ID_NAMESPACE, member.scheme)
-            values.put(Attendees.ATTENDEE_IDENTITY, member.schemeSpecificPart)
-
-            attendee.getParameter<Email>(Parameter.EMAIL)?.let { email ->
-                values.put(Attendees.ATTENDEE_EMAIL, email.value)
-            }
-        }
-
-        attendee.getParameter<Cn>(Parameter.CN)?.let { cn ->
-            values.put(Attendees.ATTENDEE_NAME, cn.value)
-        }
-
-        // type/relation mapping is complex and thus outsourced to AttendeeMappings
-        AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
-
-        val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
-            PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
-            PartStat.DECLINED     -> Attendees.ATTENDEE_STATUS_DECLINED
-            PartStat.TENTATIVE    -> Attendees.ATTENDEE_STATUS_TENTATIVE
-            PartStat.DELEGATED    -> Attendees.ATTENDEE_STATUS_NONE
-            else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
-        }
-        values.put(Attendees.ATTENDEE_STATUS, status)
-
-        return values
-    }
-
-    private fun buildReminder(alarm: VAlarm): ContentValues {
-        val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
-            Action.DISPLAY.value,
-            Action.AUDIO.value -> Reminders.METHOD_ALERT    // will trigger an alarm on the Android device
-
-            // Note: The calendar provider doesn't support saving specific attendees for email reminders.
-            Action.EMAIL.value -> Reminders.METHOD_EMAIL
-
-            else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
-        }
-
-        val minutes = ICalendar.vAlarmToMin(alarm, event, false)?.second ?: Reminders.MINUTES_DEFAULT
-
-        return contentValuesOf(
-            Reminders.METHOD to method,
-            Reminders.MINUTES to minutes
-        )
     }
 
 }

@@ -15,7 +15,7 @@ import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.Property
 import java.util.logging.Logger
 
-class UnknownPropertiesBuilder: AndroidEventFieldBuilder {
+class UnknownPropertiesBuilder: AndroidEntityBuilder {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)

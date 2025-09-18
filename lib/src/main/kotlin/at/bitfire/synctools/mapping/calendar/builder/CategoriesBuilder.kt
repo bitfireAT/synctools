@@ -12,7 +12,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 
-class CategoriesBuilder: AndroidEventFieldBuilder {
+class CategoriesBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
         val categories = from.categories

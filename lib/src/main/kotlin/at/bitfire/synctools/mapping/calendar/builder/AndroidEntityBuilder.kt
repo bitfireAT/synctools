@@ -9,10 +9,10 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import at.bitfire.ical4android.Event
 
-interface AndroidEventFieldBuilder {
+interface AndroidEntityBuilder {
 
     /**
-     * Maps the given event into the provided [Entity].
+     * Maps a specific part of the given event into the provided [Entity].
      *
      * If [from] references the same object as [main], this method is called for a main event (not an exception).
      * If [from] references another object as [main], this method is called for an exception (not a main event).

@@ -12,7 +12,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 
-class UrlBuilder: AndroidEventFieldBuilder {
+class UrlBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
         val uri = from.url

@@ -11,7 +11,7 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
 import at.bitfire.vcard4android.Utils.trimToNull
 
-class DescriptionBuilder: AndroidEventFieldBuilder {
+class DescriptionBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
         to.entityValues.put(Events.DESCRIPTION, from.description.trimToNull())
