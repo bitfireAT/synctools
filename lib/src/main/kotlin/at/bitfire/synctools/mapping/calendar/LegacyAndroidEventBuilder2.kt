@@ -33,6 +33,7 @@ import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
+import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
@@ -78,6 +79,7 @@ class LegacyAndroidEventBuilder2(
         // sync columns (as defined in CalendarContract.EventsColumns)
         DirtyAndDeletedBuilder(),
         SyncFlagsBuilder(flags),
+        SequenceBuilder(),
         // event columns
         CalendarIdBuilder(calendar.id),
         TitleBuilder(),
@@ -185,9 +187,6 @@ class LegacyAndroidEventBuilder2(
             }
             row.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate.time)
         }
-
-        // UID, sequence
-        row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
 
         // time fields
         row.put(Events.DTSTART, dtStart.date.time)
