@@ -13,14 +13,10 @@ import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import java.util.logging.Logger
 
 class ColorBuilder(
     private val calendar: AndroidCalendar
 ): AndroidEntityBuilder {
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
 
     override fun build(from: Event, main: Event, to: Entity) {
         val values = to.entityValues

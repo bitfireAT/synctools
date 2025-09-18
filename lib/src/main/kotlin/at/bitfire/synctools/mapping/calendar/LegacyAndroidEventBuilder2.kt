@@ -319,7 +319,6 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.EXDATE)
         }
 
-        row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
         row.put(Events.ACCESS_LEVEL, when (from.classification) {
                 null -> Events.ACCESS_DEFAULT
                 Clazz.PUBLIC -> Events.ACCESS_PUBLIC

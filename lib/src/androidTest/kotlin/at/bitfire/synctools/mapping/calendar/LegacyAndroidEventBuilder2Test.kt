@@ -502,24 +502,6 @@ class LegacyAndroidEventBuilder2Test {
     }
 
     @Test
-    fun testBuildEvent_Opaque_True() {
-        buildEvent(true) {
-            opaque = true
-        }.let { result ->
-            assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.getAsInteger(Events.AVAILABILITY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Opaque_False() {
-        buildEvent(true) {
-            opaque = false
-        }.let { result ->
-            assertEquals(Events.AVAILABILITY_FREE, result.entityValues.getAsInteger(Events.AVAILABILITY))
-        }
-    }
-
-    @Test
     fun testBuildEvent_Classification_Public() {
         buildEvent(true) {
             classification = Clazz.PUBLIC
