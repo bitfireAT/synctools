@@ -19,9 +19,7 @@ import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
@@ -506,26 +504,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-    @Test
-    fun testBuildEvent_Color_WhenNotAvailable() {
-        buildEvent(true) {
-            color = Css3Color.darkseagreen
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.CALENDAR_COLOR_KEY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Color_WhenAvailable() {
-        val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3ColorIndices()
-        buildEvent(true) {
-            color = Css3Color.darkseagreen
-        }.let { result ->
-            assertEquals(Css3Color.darkseagreen.name, result.entityValues.getAsString(Events.EVENT_COLOR_KEY))
-        }
     }
 
     @Test

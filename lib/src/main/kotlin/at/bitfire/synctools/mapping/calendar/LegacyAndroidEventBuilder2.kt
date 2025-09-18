@@ -8,13 +8,11 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
-import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.TimeApiExtensions.requireZoneId
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
@@ -26,6 +24,7 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AttendeesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
+import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
@@ -78,6 +77,7 @@ class LegacyAndroidEventBuilder2(
         TitleBuilder(),
         DescriptionBuilder(),
         LocationBuilder(),
+        ColorBuilder(calendar),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
         CategoriesBuilder(),
@@ -317,23 +317,6 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.RDATE)
             row.putNull(Events.EXRULE)
             row.putNull(Events.EXDATE)
-        }
-
-        // color
-        val color = from.color
-        if (color != null) {
-            // set event color (if it's available for this account)
-            calendar.client.query(Colors.CONTENT_URI.asSyncAdapter(calendar.account), arrayOf(Colors.COLOR_KEY),
-                "${Colors.COLOR_KEY}=? AND ${Colors.COLOR_TYPE}=${Colors.TYPE_EVENT}", arrayOf(color.name), null)?.use { cursor ->
-                if (cursor.moveToNext())
-                    row.put(Events.EVENT_COLOR_KEY, color.name)
-                else
-                    logger.fine("Ignoring event color \"${color.name}\" (not available for this account)")
-            }
-        } else {
-            // reset color index and value
-            row.putNull(Events.EVENT_COLOR_KEY)
-            row.putNull(Events.EVENT_COLOR)
         }
 
         // scheduling
