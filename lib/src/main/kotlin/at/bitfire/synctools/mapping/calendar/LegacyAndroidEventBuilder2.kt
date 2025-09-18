@@ -21,6 +21,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
+import at.bitfire.synctools.mapping.calendar.builder.AllDayBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AttendeesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AvailabilityBuilder
@@ -36,6 +37,7 @@ import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuild
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
+import at.bitfire.synctools.mapping.calendar.builder.SyncIdBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UidBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
@@ -77,6 +79,7 @@ class LegacyAndroidEventBuilder2(
 
     private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
         // sync columns (as defined in CalendarContract.EventsColumns)
+        SyncIdBuilder(syncId),
         DirtyAndDeletedBuilder(),
         SyncFlagsBuilder(flags),
         SequenceBuilder(),
@@ -87,6 +90,7 @@ class LegacyAndroidEventBuilder2(
         LocationBuilder(),
         ColorBuilder(calendar),
         StatusBuilder(),
+        AllDayBuilder(),
         AccessLevelBuilder(),
         AvailabilityBuilder(),
         OrganizerBuilder(calendar.ownerAccount),
@@ -159,12 +163,10 @@ class LegacyAndroidEventBuilder2(
 
         if (!isException) {
             // main event
-            row.put(Events._SYNC_ID, syncId)
             row.put(AndroidEvent2.COLUMN_ETAG, eTag)
             row.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
         } else {
             // exception
-            row.put(Events.ORIGINAL_SYNC_ID, syncId)
             row.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(event.dtStart)) 1 else 0)
 
             var recurrenceDate = from.recurrenceId!!.date
@@ -190,7 +192,6 @@ class LegacyAndroidEventBuilder2(
 
         // time fields
         row.put(Events.DTSTART, dtStart.date.time)
-        row.put(Events.ALL_DAY, if (allDay) 1 else 0)
         row.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
         var dtEnd = from.dtEnd
