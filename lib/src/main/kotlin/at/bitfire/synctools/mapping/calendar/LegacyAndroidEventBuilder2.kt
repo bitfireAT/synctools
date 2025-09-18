@@ -32,6 +32,7 @@ import at.bitfire.synctools.mapping.calendar.builder.ETagBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
+import at.bitfire.synctools.mapping.calendar.builder.RecurrenceFieldsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
@@ -44,14 +45,11 @@ import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
 import java.time.Period
-import java.util.logging.Logger
 
 /**
  * Legacy mapper from an [Event] data object to Android content provider data rows
@@ -91,6 +89,7 @@ class LegacyAndroidEventBuilder2(
         AllDayBuilder(),
         AccessLevelBuilder(),
         AvailabilityBuilder(),
+        RecurrenceFieldsBuilder(),
         OriginalInstanceTimeBuilder(),
         OrganizerBuilder(calendar.ownerAccount),
         UidBuilder(),
@@ -102,9 +101,6 @@ class LegacyAndroidEventBuilder2(
         UnknownPropertiesBuilder(),
         UrlBuilder()
     )
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
@@ -208,47 +204,6 @@ class LegacyAndroidEventBuilder2(
             row.put(Events.DURATION, duration?.toRfc5545Duration(dtStart.date.toInstant()))
             row.putNull(Events.DTEND)
 
-            // add RRULEs
-            if (from.rRules.isNotEmpty())
-                row.put(Events.RRULE, from.rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                row.putNull(Events.RRULE)
-
-            if (from.rDates.isNotEmpty()) {
-                // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
-                val infiniteRrule = from.rRules.any { rRule ->
-                    rRule.recur.count == -1 &&  // no COUNT AND
-                            rRule.recur.until == null   // no UNTIL
-                }
-
-                if (infiniteRrule)
-                    logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
-                else {
-                    for (rDate in from.rDates)
-                        AndroidTimeUtils.androidifyTimeZone(rDate)
-
-                    // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
-                    val listWithDtStart = DateList()
-                    listWithDtStart.add(dtStart.date)
-                    from.rDates.addFirst(RDate(listWithDtStart))
-
-                    row.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.rDates, dtStart.date))
-                }
-            } else
-                row.putNull(Events.RDATE)
-
-            if (from.exRules.isNotEmpty())
-                row.put(Events.EXRULE, from.exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                row.putNull(Events.EXRULE)
-
-            if (from.exDates.isNotEmpty()) {
-                for (exDate in from.exDates)
-                    AndroidTimeUtils.androidifyTimeZone(exDate)
-                row.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(from.exDates, dtStart.date))
-            } else
-                row.putNull(Events.EXDATE)
-
         } else /* !recurring */ {
             // dtend must be set
             if (dtEnd == null) {
@@ -287,10 +242,6 @@ class LegacyAndroidEventBuilder2(
             row.put(Events.DTEND, dtEnd.date.time)
             row.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.storageTzId(dtEnd))
             row.putNull(Events.DURATION)
-            row.putNull(Events.RRULE)
-            row.putNull(Events.RDATE)
-            row.putNull(Events.EXRULE)
-            row.putNull(Events.EXDATE)
         }
 
         return row
