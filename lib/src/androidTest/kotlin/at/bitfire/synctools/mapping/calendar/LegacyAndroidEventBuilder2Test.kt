@@ -40,7 +40,6 @@ import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -544,50 +543,6 @@ class LegacyAndroidEventBuilder2Test {
             attendees += Attendee("mailto:attendee@example.com")
         }.let { result ->
             assertNull(result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Confirmed() {
-        buildEvent(true) {
-            status = Status.VEVENT_CONFIRMED
-        }.let { result ->
-            assertEquals(Events.STATUS_CONFIRMED, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Cancelled() {
-        buildEvent(true) {
-            status = Status.VEVENT_CANCELLED
-        }.let { result ->
-            assertEquals(Events.STATUS_CANCELED, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Tentative() {
-        buildEvent(true) {
-            status = Status.VEVENT_TENTATIVE
-        }.let { result ->
-            assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Invalid() {
-        buildEvent(true) {
-            status = Status.VTODO_IN_PROCESS
-        }.let { result ->
-            assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_None() {
-        buildEvent(true) {
-        }.let { result ->
-            assertNull(result.entityValues.getAsInteger(Events.STATUS))
         }
     }
 

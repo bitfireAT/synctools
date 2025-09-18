@@ -29,6 +29,7 @@ import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
+import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
@@ -44,7 +45,6 @@ import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.Status
 import java.time.Duration
 import java.time.Period
 import java.time.ZonedDateTime
@@ -78,6 +78,7 @@ class LegacyAndroidEventBuilder2(
         DescriptionBuilder(),
         LocationBuilder(),
         ColorBuilder(calendar),
+        StatusBuilder(),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
         CategoriesBuilder(),
@@ -341,16 +342,6 @@ class LegacyAndroidEventBuilder2(
             row.put(Events.HAS_ATTENDEE_DATA, 0)
             row.put(Events.ORGANIZER, calendar.ownerAccount)
         }
-
-        // Attention: don't update event with STATUS != null to STATUS = null (causes calendar provider operation to fail)!
-        // In this case, the whole event must be deleted and inserted again.
-        if (/* insert, not an update */ id == null || /* update, but we're not updating to null */ from.status != null)
-            row.put(Events.STATUS, when (from.status) {
-                null /* not possible by if statement */ -> null
-                Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
-                Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED
-                else -> Events.STATUS_TENTATIVE
-            })
 
         row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
         row.put(Events.ACCESS_LEVEL, when (from.classification) {
