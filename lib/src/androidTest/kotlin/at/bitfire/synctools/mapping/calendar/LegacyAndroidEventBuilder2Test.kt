@@ -485,15 +485,6 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
     }
 
-    @Test
-    fun testBuildEvent_UID2445() {
-        buildEvent(true) {
-            uid = "event1@example.com"
-        }.let { result ->
-            assertEquals("event1@example.com", result.entityValues.getAsString(Events.UID_2445))
-        }
-    }
-
 
     // exceptions → test with EventAndException
 

@@ -36,6 +36,7 @@ import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuild
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
+import at.bitfire.synctools.mapping.calendar.builder.UidBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
@@ -87,6 +88,7 @@ class LegacyAndroidEventBuilder2(
         AccessLevelBuilder(),
         AvailabilityBuilder(),
         OrganizerBuilder(calendar.ownerAccount),
+        UidBuilder(),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
         CategoriesBuilder(),
@@ -185,7 +187,6 @@ class LegacyAndroidEventBuilder2(
         }
 
         // UID, sequence
-        row.put(Events.UID_2445, from.uid)
         row.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
 
         // time fields
