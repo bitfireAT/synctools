@@ -21,8 +21,10 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AttendeesBuilder
+import at.bitfire.synctools.mapping.calendar.builder.AvailabilityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
@@ -41,7 +43,6 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
@@ -71,12 +72,14 @@ class LegacyAndroidEventBuilder2(
 ) {
 
     private val fieldBuilders: Array<AndroidEntityBuilder> = arrayOf(
-        // event fields (order as in CalendarContract.EventsColumns)
+        // event fields (as defined in CalendarContract.EventsColumns)
         TitleBuilder(),
         DescriptionBuilder(),
         LocationBuilder(),
         ColorBuilder(calendar),
         StatusBuilder(),
+        AccessLevelBuilder(),
+        AvailabilityBuilder(),
         OrganizerBuilder(calendar.ownerAccount),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
@@ -318,13 +321,6 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.EXRULE)
             row.putNull(Events.EXDATE)
         }
-
-        row.put(Events.ACCESS_LEVEL, when (from.classification) {
-                null -> Events.ACCESS_DEFAULT
-                Clazz.PUBLIC -> Events.ACCESS_PUBLIC
-                Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
-                else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
-            })
 
         return row
     }

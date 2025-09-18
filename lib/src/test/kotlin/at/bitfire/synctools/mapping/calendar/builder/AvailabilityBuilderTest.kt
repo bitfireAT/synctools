@@ -47,5 +47,4 @@ class AvailabilityBuilderTest {
         ), result.entityValues)
     }
 
-
 }

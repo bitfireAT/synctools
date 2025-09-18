@@ -8,14 +8,11 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.Entity
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
@@ -25,11 +22,9 @@ import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
@@ -122,17 +117,6 @@ class LegacyAndroidEventBuilder2Test {
 
     private fun buildEvent(automaticDates: Boolean, eventBuilder: Event.() -> Unit) =
         buildEventAndExceptions(automaticDates, eventBuilder).main
-
-    private fun firstExtendedProperty(entity: Entity) =
-        entity.subValues.firstOrNull { it.uri == ExtendedProperties.CONTENT_URI }?.values?.getAsString(ExtendedProperties.VALUE)
-
-    private fun firstUnknownProperty(entity: Entity): Property? {
-        val rawValue = firstExtendedProperty(entity)
-        return if (rawValue != null)
-            UnknownProperty.fromJsonString(rawValue)
-        else
-            null
-    }
 
     @Test
     fun testBuildEvent_NonAllDay_NoDtEnd_NoDuration_NonRecurring() {
@@ -499,55 +483,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Public() {
-        buildEvent(true) {
-            classification = Clazz.PUBLIC
-        }.let { result ->
-            assertEquals(Events.ACCESS_PUBLIC, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Private() {
-        buildEvent(true) {
-            classification = Clazz.PRIVATE
-        }.let { result ->
-            assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Confidential() {
-        buildEvent(true) {
-            classification = Clazz.CONFIDENTIAL
-        }.let { result ->
-            assertEquals(Events.ACCESS_CONFIDENTIAL, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertEquals(Clazz.CONFIDENTIAL, firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Custom() {
-        buildEvent(true) {
-            classification = Clazz("TOP-SECRET")
-        }.let { result ->
-            assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertEquals(Clazz("TOP-SECRET"), firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_None() {
-        buildEvent(true) {
-        }.let { result ->
-            assertEquals(Events.ACCESS_DEFAULT, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
     }
 
     @Test
