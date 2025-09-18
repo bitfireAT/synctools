@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
@@ -25,6 +24,7 @@ import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AttendeesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AvailabilityBuilder
+import at.bitfire.synctools.mapping.calendar.builder.CalendarIdBuilder
 import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
@@ -78,6 +78,7 @@ class LegacyAndroidEventBuilder2(
         DirtyAndDeletedBuilder(),
         SyncFlagsBuilder(flags),
         // event columns
+        CalendarIdBuilder(calendar.id),
         TitleBuilder(),
         DescriptionBuilder(),
         LocationBuilder(),
@@ -130,10 +131,7 @@ class LegacyAndroidEventBuilder2(
      * @param recurrence   event to be used as data source; *null*: use this AndroidEvent's main [event] as source
      */
     private fun buildEventRow(recurrence: Event?): ContentValues {
-        // start with object-level (AndroidEvent) fields
-        val row = contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-        )
+        val row = ContentValues()
 
         val isException = recurrence != null
         val from = recurrence ?: event
