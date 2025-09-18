@@ -28,6 +28,8 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.mapping.calendar.builder.AndroidEventFieldBuilder
+import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -59,6 +61,9 @@ import java.util.logging.Logger
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
+ *
+ * Note: "Legacy" will be removed from the class name as soon as the [Event] dependency is
+ * replaced by [at.bitfire.synctools.icalendar.AssociatedEvents].
  */
 class LegacyAndroidEventBuilder2(
     private val calendar: AndroidCalendar,
@@ -91,6 +96,13 @@ class LegacyAndroidEventBuilder2(
 
         val entity = Entity(row)
         val from = recurrence ?: event
+
+        // new builders
+
+        for (builder in fieldBuilders())
+            builder.build(from = from, main = event, to = entity)
+
+        // legacy fields
 
         for (reminder in from.alarms)
             entity.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder))
@@ -328,7 +340,6 @@ class LegacyAndroidEventBuilder2(
         }
 
         // text fields
-        row.put(Events.TITLE, from.summary)
         row.put(Events.EVENT_LOCATION, from.location)
         row.put(Events.DESCRIPTION, from.description)
 
@@ -496,6 +507,11 @@ class LegacyAndroidEventBuilder2(
     private fun buildUrl(url: String) = contentValuesOf(
         ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
         ExtendedProperties.VALUE to url
+    )
+
+
+    private fun fieldBuilders(): Array<AndroidEventFieldBuilder> = arrayOf(
+        TitleBuilder()
     )
 
 }
