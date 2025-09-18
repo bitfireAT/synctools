@@ -64,7 +64,6 @@ class LegacyAndroidEventBuilder2(
     private val event: Event,
 
     // AndroidEvent-level fields
-    private val id: Long?,
     private val syncId: String?,
     private val eTag: String?,
     private val scheduleTag: String?,

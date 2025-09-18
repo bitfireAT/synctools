@@ -113,7 +113,6 @@ class LegacyAndroidEventBuilder2Test {
         return LegacyAndroidEventBuilder2(
             calendar = calendar,
             event = event,
-            id = null,
             syncId = "some sync ID",
             eTag = null,
             scheduleTag = null,
