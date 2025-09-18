@@ -58,7 +58,7 @@ class RetainedClassificationBuilderTest {
     fun `CLASS is PRIVATE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz.PUBLIC),
+            from = Event(classification = Clazz.PRIVATE),
             main = Event(),
             to = result
         )
