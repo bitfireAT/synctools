@@ -28,15 +28,12 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -503,47 +500,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_NotGroupScheduled() {
-        buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_MailTo() {
-        buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_EmailParameter() {
-        buildEvent(true) {
-            organizer = Organizer("local-id:user").apply {
-                parameters.add(Email("organizer@example.com"))
-            }
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_NotEmail() {
-        buildEvent(true) {
-            organizer = Organizer("local-id:user")
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.ORGANIZER))
-        }
     }
 
     @Test

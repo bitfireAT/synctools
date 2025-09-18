@@ -27,6 +27,7 @@ import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
+import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
@@ -39,9 +40,7 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.RDate
@@ -79,6 +78,7 @@ class LegacyAndroidEventBuilder2(
         LocationBuilder(),
         ColorBuilder(calendar),
         StatusBuilder(),
+        OrganizerBuilder(calendar.ownerAccount),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
         CategoriesBuilder(),
@@ -318,29 +318,6 @@ class LegacyAndroidEventBuilder2(
             row.putNull(Events.RDATE)
             row.putNull(Events.EXRULE)
             row.putNull(Events.EXDATE)
-        }
-
-        // scheduling
-        val groupScheduled = from.attendees.isNotEmpty()
-        if (groupScheduled) {
-            row.put(Events.HAS_ATTENDEE_DATA, 1)
-            row.put(Events.ORGANIZER, from.organizer?.let { organizer ->
-                    val uri = organizer.calAddress
-                    val email = if (uri.scheme.equals("mailto", true))
-                        uri.schemeSpecificPart
-                    else
-                        organizer.getParameter<Email>(Parameter.EMAIL)?.value
-
-                    if (email != null)
-                        return@let email
-
-                    logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-                    null
-                } ?: calendar.ownerAccount)
-
-        } else { /* !groupScheduled */
-            row.put(Events.HAS_ATTENDEE_DATA, 0)
-            row.put(Events.ORGANIZER, calendar.ownerAccount)
         }
 
         row.put(Events.AVAILABILITY, if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE)
