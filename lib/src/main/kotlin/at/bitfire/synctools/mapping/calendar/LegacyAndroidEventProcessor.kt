@@ -11,8 +11,6 @@ import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
-import android.util.Patterns
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
@@ -23,6 +21,7 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -30,12 +29,8 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
@@ -45,7 +40,6 @@ import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
@@ -77,7 +71,8 @@ class LegacyAndroidEventProcessor(
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         UidProcessor(),
-        AttendeesProcessor()
+        AttendeesProcessor(),
+        RemindersProcessor(accountName)
     )
 
 
@@ -109,7 +104,6 @@ class LegacyAndroidEventProcessor(
         for (subValue in entity.subValues) {
             val subValues = subValue.values
             when (subValue.uri) {
-                Reminders.CONTENT_URI -> populateReminder(subValues, to = to)
                 ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
             }
         }
@@ -307,38 +301,6 @@ class LegacyAndroidEventProcessor(
             }
             to.recurrenceId = RecurrenceId(originalDate)
         }
-    }
-
-    private fun populateReminder(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event reminder from calender provider", row)
-
-        val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
-
-        val props = alarm.properties
-        when (row.getAsInteger(Reminders.METHOD)) {
-            Reminders.METHOD_EMAIL -> {
-                if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
-                    props += Action.EMAIL
-                    // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
-                    props += Summary(to.summary)
-                    props += Description(to.description ?: to.summary)
-                    // Android doesn't allow to save email reminder recipients, so we always use the
-                    // account name (should be account owner's email address)
-                    props += Attendee(URI("mailto", accountName, null))
-                } else {
-                    logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
-                    props += Action.DISPLAY
-                    props += Description(to.summary)
-                }
-            }
-
-            // default: set ACTION:DISPLAY (requires DESCRIPTION)
-            else -> {
-                props += Action.DISPLAY
-                props += Description(to.summary)
-            }
-        }
-        to.alarms += alarm
     }
 
     private fun populateExtended(row: ContentValues, to: Event) {

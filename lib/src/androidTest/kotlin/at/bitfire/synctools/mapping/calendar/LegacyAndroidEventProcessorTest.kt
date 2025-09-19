@@ -15,7 +15,6 @@ import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.Event
@@ -35,9 +34,7 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
@@ -47,16 +44,13 @@ import net.fortuna.ical4j.model.property.XProperty
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
 import java.net.URI
-import java.time.Duration
 
 /**
  * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
@@ -561,82 +555,6 @@ class LegacyAndroidEventProcessorTest {
         populateEvent(true) {
         }.let { result ->
             assertNull(result.classification)
-        }
-    }
-
-
-    private fun populateReminder(destinationCalendar: AndroidCalendar = calendar, builder: ContentValues.() -> Unit): VAlarm? {
-        populateEvent(true, destinationCalendar = destinationCalendar, insertCallback = { id ->
-            val reminderValues = ContentValues()
-            reminderValues.put(Reminders.EVENT_ID, id)
-            builder(reminderValues)
-            client.insert(Reminders.CONTENT_URI.asSyncAdapter(testAccount), reminderValues)
-        }).let { result ->
-            return result.alarms.firstOrNull()
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeEmail_AccountNameEmail() {
-        // account name looks like an email address
-        assumeTrue(testAccount.name.endsWith("@example.com"))
-
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_EMAIL)
-            put(Reminders.MINUTES, 10)
-        }!!.let { alarm ->
-            assertEquals(Action.EMAIL, alarm.action)
-            assertNotNull(alarm.summary)
-            assertNotNull(alarm.description)
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeEmail_AccountNameNotEmail() {
-        // test account name that doesn't look like an email address
-        val nonEmailAccount = Account("ical4android", ACCOUNT_TYPE_LOCAL)
-        val testCalendar = TestCalendar.findOrCreate(nonEmailAccount, client)
-        try {
-            populateReminder(testCalendar) {
-                put(Reminders.METHOD, Reminders.METHOD_EMAIL)
-            }!!.let { alarm ->
-                assertEquals(Action.DISPLAY, alarm.action)
-                assertNotNull(alarm.description)
-            }
-        } finally {
-            testCalendar.delete()
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeNotEmail() {
-        for (type in arrayOf(null, Reminders.METHOD_ALARM, Reminders.METHOD_ALERT, Reminders.METHOD_DEFAULT, Reminders.METHOD_SMS))
-            populateReminder {
-                put(Reminders.METHOD, type)
-                put(Reminders.MINUTES, 10)
-            }!!.let { alarm ->
-                assertEquals(Action.DISPLAY, alarm.action)
-                assertNotNull(alarm.description)
-            }
-    }
-
-    @Test
-    fun testPopulateReminder_Minutes_Positive() {
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_ALERT)
-            put(Reminders.MINUTES, 10)
-        }!!.let { alarm ->
-            assertEquals(Duration.ofMinutes(-10), alarm.trigger.duration)
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_Minutes_Negative() {
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_ALERT)
-            put(Reminders.MINUTES, -10)
-        }!!.let { alarm ->
-            assertEquals(Duration.ofMinutes(10), alarm.trigger.duration)
         }
     }
 
