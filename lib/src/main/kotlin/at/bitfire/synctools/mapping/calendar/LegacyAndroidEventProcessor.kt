@@ -21,6 +21,8 @@ import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
+import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
@@ -28,10 +30,6 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Cn
-import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.parameter.Rsvp
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
@@ -76,6 +74,10 @@ class LegacyAndroidEventProcessor(
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
+    private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
+        AttendeesProcessor()
+    )
+
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
         populateEvent(eventAndExceptions.main, to = to)
@@ -94,25 +96,25 @@ class LegacyAndroidEventProcessor(
      * an [Event] data object.
      *
      * @param entity            event row as returned by the calendar provider
-     * @param groupScheduled    whether the event is group-scheduled (= the main event has attendees)
      * @param to                destination data object
      */
     private fun populateEvent(entity: Entity, to: Event) {
-        // calculate some scheduling properties
+        // legacy processors
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
-
-        // main row
         populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
 
         // data rows
         for (subValue in entity.subValues) {
             val subValues = subValue.values
             when (subValue.uri) {
-                Attendees.CONTENT_URI -> populateAttendee(subValues, to = to)
                 Reminders.CONTENT_URI -> populateReminder(subValues, to = to)
                 ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
             }
         }
+
+        // new processors
+        for (processor in fieldProcessors)
+            processor.process(entity, to)
     }
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
@@ -303,47 +305,6 @@ class LegacyAndroidEventProcessor(
                 }
             }
             to.recurrenceId = RecurrenceId(originalDate)
-        }
-    }
-
-    private fun populateAttendee(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event attendee from calender provider", row)
-
-        try {
-            val attendee: Attendee
-            val email = row.getAsString(Attendees.ATTENDEE_EMAIL)
-            val idNS = row.getAsString(Attendees.ATTENDEE_ID_NAMESPACE)
-            val id = row.getAsString(Attendees.ATTENDEE_IDENTITY)
-
-            if (idNS != null || id != null) {
-                // attendee identified by namespace and ID
-                attendee = Attendee(URI(idNS, id, null))
-                email?.let { attendee.parameters.add(Email(it)) }
-            } else
-            // attendee identified by email address
-                attendee = Attendee(URI("mailto", email, null))
-            val params = attendee.parameters
-
-            // always add RSVP (offer attendees to accept/decline)
-            params.add(Rsvp.TRUE)
-
-            row.getAsString(Attendees.ATTENDEE_NAME)?.let { cn -> params.add(Cn(cn)) }
-
-            // type/relation mapping is complex and thus outsourced to AttendeeMappings
-            AttendeeMappings.androidToICalendar(row, attendee)
-
-            // status
-            when (row.getAsInteger(Attendees.ATTENDEE_STATUS)) {
-                Attendees.ATTENDEE_STATUS_INVITED -> params.add(PartStat.NEEDS_ACTION)
-                Attendees.ATTENDEE_STATUS_ACCEPTED -> params.add(PartStat.ACCEPTED)
-                Attendees.ATTENDEE_STATUS_DECLINED -> params.add(PartStat.DECLINED)
-                Attendees.ATTENDEE_STATUS_TENTATIVE -> params.add(PartStat.TENTATIVE)
-                Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
-            }
-
-            to.attendees.add(attendee)
-        } catch (e: URISyntaxException) {
-            logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
         }
     }
 
