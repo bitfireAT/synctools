@@ -28,8 +28,8 @@ class RemindersProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(entity: Entity, to: Event) {
-        for (row in entity.subValues.filter { it.uri == Reminders.CONTENT_URI })
+    override fun process(from: Entity, to: Event) {
+        for (row in from.subValues.filter { it.uri == Reminders.CONTENT_URI })
             populateReminder(row.values, to)
     }
 

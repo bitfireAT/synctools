@@ -77,9 +77,14 @@ class LegacyAndroidEventProcessor(
 
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
-        populateEvent(eventAndExceptions.main, to = to)
+        populateEvent(
+            entity = eventAndExceptions.main,
+            main = eventAndExceptions.main,
+            to = to
+        )
         populateExceptions(
             exceptions = eventAndExceptions.exceptions,
+            main = eventAndExceptions.main,
             originalAllDay = DateUtils.isDate(to.dtStart),
             to = to
         )
@@ -93,9 +98,10 @@ class LegacyAndroidEventProcessor(
      * an [Event] data object.
      *
      * @param entity            event row as returned by the calendar provider
+     * @param main              main event row as returned by the calendar provider
      * @param to                destination data object
      */
-    private fun populateEvent(entity: Entity, to: Event) {
+    private fun populateEvent(entity: Entity, main: Entity, to: Event) {
         // legacy processors
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
         populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
@@ -110,7 +116,7 @@ class LegacyAndroidEventProcessor(
 
         // new processors
         for (processor in fieldProcessors)
-            processor.process(entity, to)
+            processor.process(from = entity, main = main, to = to)
     }
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
@@ -328,12 +334,12 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateExceptions(exceptions: List<Entity>, originalAllDay: Boolean, to: Event) {
+    private fun populateExceptions(exceptions: List<Entity>, main: Entity, originalAllDay: Boolean, to: Event) {
         for (exception in exceptions) {
             val exceptionEvent = Event()
 
             // convert exception row to Event
-            populateEvent(exception, to = exceptionEvent)
+            populateEvent(exception, main, to = exceptionEvent)
 
             // exceptions are required to have a RECURRENCE-ID
             val recurrenceId = exceptionEvent.recurrenceId ?: continue

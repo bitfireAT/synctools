@@ -15,11 +15,22 @@ interface AndroidEventFieldProcessor {
      * Takes specific data from an event (= event row plus data rows, taken from the content provider)
      * and maps it to the [Event] data class.
      *
+     * If [from] references the same object as [main], this method is called for a main event (not an exception).
+     * If [from] references another object as [main], this method is called for an exception (not a main event).
+     *
+     * So you can use (note the referential equality operator):
+     *
+     * ```
+     * val isMainEvent = from === main  // or
+     * val isException = from !== main
+     * ```
+     *
      * In a later step of refactoring, it should map to [net.fortuna.ical4j.model.component.VEvent].
      *
-     * @param entity    event from content provider
-     * @param to        data object where the mapped data shall be stored
+     * @param from      event from content provider
+     * @param main      main event from content provider
+     * @param to        destination object where the mapped data are stored
      */
-    fun process(entity: Entity, to: Event)
+    fun process(from: Entity, main: Entity, to: Event)
 
 }
