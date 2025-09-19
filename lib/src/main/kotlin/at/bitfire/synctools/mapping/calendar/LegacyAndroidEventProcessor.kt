@@ -23,6 +23,7 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
@@ -75,6 +76,7 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
+        UidProcessor(),
         AttendeesProcessor()
     )
 
@@ -238,7 +240,6 @@ class LegacyAndroidEventProcessor(
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
 
-        to.uid = row.getAsString(Events.UID_2445)
         to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
@@ -356,11 +357,6 @@ class LegacyAndroidEventProcessor(
                     } catch(_: URISyntaxException) {
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
-
-                AndroidEvent2.EXTNAME_ICAL_UID ->
-                    // only consider iCalUid when there's no uid
-                    if (to.uid == null)
-                        to.uid = rawValue
 
                 UnknownProperty.CONTENT_ITEM_TYPE ->
                     to.unknownProperties += UnknownProperty.fromJsonString(rawValue)

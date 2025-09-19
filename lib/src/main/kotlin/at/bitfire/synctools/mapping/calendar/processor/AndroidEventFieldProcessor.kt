@@ -11,6 +11,15 @@ import at.bitfire.ical4android.Event
 
 interface AndroidEventFieldProcessor {
 
+    /**
+     * Takes specific data from an event (= event row plus data rows, taken from the content provider)
+     * and maps it to the [Event] data class.
+     *
+     * In a later step of refactoring, it should map to [net.fortuna.ical4j.model.component.VEvent].
+     *
+     * @param entity    event from content provider
+     * @param to        data object where the mapped data shall be stored
+     */
     fun process(entity: Entity, to: Event)
 
 }

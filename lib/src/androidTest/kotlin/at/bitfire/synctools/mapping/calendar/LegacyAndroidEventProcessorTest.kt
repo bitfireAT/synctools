@@ -153,41 +153,6 @@ class LegacyAndroidEventProcessorTest {
         return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 
-    @Test
-    fun testPopulateEvent_Uid_iCalUid() {
-        populateEvent(
-            true,
-            extendedProperties = mapOf(
-                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
-            )
-        ).let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445() {
-        populateEvent(true) {
-            put(Events.UID_2445, "event1@example.com")
-        }.let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445_and_iCalUid() {
-        populateEvent(
-            true,
-            extendedProperties = mapOf(
-                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
-            )
-        ) {
-            put(Events.UID_2445, "event2@example.com")
-        }.let { result ->
-            assertEquals("event2@example.com", result.uid)
-        }
-    }
-
 
     @Test
     fun testPopulateEvent_Sequence_Int() {
