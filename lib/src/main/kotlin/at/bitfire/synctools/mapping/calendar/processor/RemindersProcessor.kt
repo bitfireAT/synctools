@@ -34,7 +34,7 @@ class RemindersProcessor(
     }
 
     private fun populateReminder(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event reminder from calender provider", row)
+        logger.log(Level.FINE, "Read event reminder from calendar provider", row)
 
         val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
 

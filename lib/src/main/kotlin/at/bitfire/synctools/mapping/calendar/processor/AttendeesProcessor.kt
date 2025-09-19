@@ -32,7 +32,7 @@ class AttendeesProcessor: AndroidEventFieldProcessor {
     }
 
     private fun populateAttendee(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event attendee from calender provider", row)
+        logger.log(Level.FINE, "Read event attendee from calendar provider", row)
 
         try {
             val attendee: Attendee
