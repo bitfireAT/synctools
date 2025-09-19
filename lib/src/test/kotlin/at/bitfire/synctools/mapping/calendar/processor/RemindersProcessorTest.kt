@@ -33,7 +33,7 @@ class RemindersProcessorTest {
 
         val entity = Entity(ContentValues())
         entity.addSubValue(Reminders.CONTENT_URI, contentValuesOf(
-    Reminders.METHOD to Reminders.METHOD_EMAIL,
+            Reminders.METHOD to Reminders.METHOD_EMAIL,
             Reminders.MINUTES to 10
         ))
         val result = Event()
