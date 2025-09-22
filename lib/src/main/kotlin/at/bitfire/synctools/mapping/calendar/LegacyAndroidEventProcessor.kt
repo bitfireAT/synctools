@@ -87,6 +87,13 @@ class LegacyAndroidEventProcessor(
         for (exception in eventAndExceptions.exceptions) {
             val exceptionEvent = Event()
 
+            // convert exception to Event
+            populateEvent(
+                entity = exception,
+                main = eventAndExceptions.main,
+                to = exceptionEvent
+            )
+
             // make sure that exception has a RECURRENCE-ID
             val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
@@ -95,13 +102,6 @@ class LegacyAndroidEventProcessor(
                 addAsExDate(exception, recurrenceId, to = to)
 
             } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // convert exception to Event
-                populateEvent(
-                    entity = exception,
-                    main = eventAndExceptions.main,
-                    to = exceptionEvent
-                )
-
                 // add exception to list of exceptions
                 to.exceptions += exceptionEvent
             }

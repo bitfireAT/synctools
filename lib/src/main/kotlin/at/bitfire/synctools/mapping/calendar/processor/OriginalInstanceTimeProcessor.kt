@@ -9,15 +9,20 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.RecurrenceId
+import net.fortuna.ical4j.util.TimeZones
 
 class OriginalInstanceTimeProcessor: AndroidEventFieldProcessor {
 
+    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+
     override fun process(from: Entity, main: Entity, to: Event) {
         // only applicable to exceptions, not to main events
-        if (from == main)
+        if (from === main)
             return
 
         val values = from.entityValues
@@ -28,14 +33,20 @@ class OriginalInstanceTimeProcessor: AndroidEventFieldProcessor {
                     Date(originalInstanceTime)
                 else
                     DateTime(originalInstanceTime)
+
             if (originalDate is DateTime) {
-                to.dtStart?.let { dtStart ->
-                    if (dtStart.isUtc)
+                // get DTSTART time zone
+                val startTzId = DateUtils.findAndroidTimezoneID(values.getAsString(Events.EVENT_TIMEZONE))
+                val startTz = tzRegistry.getTimeZone(startTzId)
+
+                if (startTz != null) {
+                    if (TimeZones.isUtc(startTz))
                         originalDate.isUtc = true
-                    else if (dtStart.timeZone != null)
-                        originalDate.timeZone = dtStart.timeZone
+                    else
+                        originalDate.timeZone = startTz
                 }
             }
+
             to.recurrenceId = RecurrenceId(originalDate)
         }
     }

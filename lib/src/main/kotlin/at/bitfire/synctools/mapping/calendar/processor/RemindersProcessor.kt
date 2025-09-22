@@ -44,6 +44,7 @@ class RemindersProcessor(
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
                     props += Action.EMAIL
                     // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
+                    // FIXME: we MUST NOT read from "to"
                     props += Summary(to.summary)
                     props += Description(to.description ?: to.summary)
                     // Android doesn't allow to save email reminder recipients, so we always use the
