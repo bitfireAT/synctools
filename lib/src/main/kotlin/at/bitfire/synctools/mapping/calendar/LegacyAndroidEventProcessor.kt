@@ -21,6 +21,7 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
@@ -71,6 +72,7 @@ class LegacyAndroidEventProcessor(
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         UidProcessor(),
+        CategoriesProcessor(),
         AttendeesProcessor(),
         RemindersProcessor(accountName)
     )
@@ -316,9 +318,6 @@ class LegacyAndroidEventProcessor(
 
         try {
             when (name) {
-                AndroidEvent2.EXTNAME_CATEGORIES ->
-                    to.categories += rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR)
-
                 AndroidEvent2.EXTNAME_URL ->
                     try {
                         to.url = URI(rawValue)

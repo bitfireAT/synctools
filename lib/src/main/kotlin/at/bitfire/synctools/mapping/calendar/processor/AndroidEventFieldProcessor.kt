@@ -30,6 +30,7 @@ interface AndroidEventFieldProcessor {
      * @param from      event from content provider
      * @param main      main event from content provider
      * @param to        destination object where the mapped data are stored
+     *                  (no explicit `null` values needed for fields that are not present)
      */
     fun process(from: Entity, main: Entity, to: Event)
 
