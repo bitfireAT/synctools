@@ -12,7 +12,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
-import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
@@ -39,7 +38,6 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -158,33 +156,6 @@ class LegacyAndroidEventProcessorTest {
             putNull(AndroidEvent2.COLUMN_SEQUENCE)
         }.let { result ->
             assertNull(result.sequence)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_False() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(Events.IS_ORGANIZER, "0")
-        }.let { result ->
-            assertFalse(result.isOrganizer!!)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_Null() {
-        populateEvent(true, asSyncAdapter = true) {
-            putNull(Events.IS_ORGANIZER)
-        }.let { result ->
-            assertNull(result.isOrganizer)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_True() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(Events.IS_ORGANIZER, "1")
-        }.let { result ->
-            assertTrue(result.isOrganizer!!)
         }
     }
 
@@ -336,35 +307,6 @@ class LegacyAndroidEventProcessorTest {
             assertEquals(DtStart(Date("20200621")), result.dtStart)
             assertEquals(DtEnd(Date("20200623")), result.dtEnd)
             assertNull(result.duration)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_NotGroupScheduled() {
-        assertNull(populateEvent(true).organizer)
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_NotGroupScheduled_ExplicitOrganizer() {
-        populateEvent(true) {
-            put(Events.ORGANIZER, "sample@example.com")
-        }.let { result ->
-            assertNull(result.organizer)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_GroupScheduled() {
-        populateEvent(true, insertCallback = { id ->
-            client.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), ContentValues().apply {
-                put(Attendees.EVENT_ID, id)
-                put(Attendees.ATTENDEE_EMAIL, "organizer@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.RELATIONSHIP_ORGANIZER)
-            })
-        }) {
-            put(Events.ORGANIZER, "organizer@example.com")
-        }.let { result ->
-            assertEquals("mailto:organizer@example.com", result.organizer?.value)
         }
     }
 

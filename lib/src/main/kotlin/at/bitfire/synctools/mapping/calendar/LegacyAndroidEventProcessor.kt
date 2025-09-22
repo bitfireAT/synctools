@@ -24,6 +24,7 @@ import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
+import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
@@ -41,14 +42,11 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
-import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
-import java.net.URI
-import java.net.URISyntaxException
 import java.time.Duration
 import java.time.Instant
 import java.time.Period
@@ -85,12 +83,14 @@ class LegacyAndroidEventProcessor(
         AccessLevelProcessor(),
         AvailabilityProcessor(),
         StatusProcessor(),
+        // scheduling
+        OrganizerProcessor(),
+        AttendeesProcessor(),
         // extended properties
         CategoriesProcessor(),
         UnknownPropertiesProcessor(),
         UrlProcessor(),
-        // data rows (sub-values)
-        AttendeesProcessor(),
+        // sub-components
         RemindersProcessor(accountName)
     )
 
@@ -249,18 +249,6 @@ class LegacyAndroidEventProcessor(
         }
 
         to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
-        to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
-
-        // scheduling
-        if (groupScheduled) {
-            // ORGANIZER must only be set for group-scheduled events (= events with attendees)
-            if (row.containsKey(Events.ORGANIZER))
-                try {
-                    to.organizer = Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
-                } catch (e: URISyntaxException) {
-                    logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
-                }
-        }
 
         // exceptions from recurring events
         row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
@@ -310,9 +298,6 @@ class LegacyAndroidEventProcessor(
                 }
 
             } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-                exceptionEvent.organizer = to.organizer
-
                 // add exception to list of exceptions
                 to.exceptions += exceptionEvent
             }
