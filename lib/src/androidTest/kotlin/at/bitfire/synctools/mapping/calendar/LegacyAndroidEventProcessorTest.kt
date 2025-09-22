@@ -15,7 +15,6 @@ import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.Event
@@ -35,15 +34,7 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.CuType
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.parameter.Role
-import net.fortuna.ical4j.model.parameter.Rsvp
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
@@ -53,16 +44,13 @@ import net.fortuna.ical4j.model.property.XProperty
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
 import java.net.URI
-import java.time.Duration
 
 /**
  * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
@@ -157,41 +145,6 @@ class LegacyAndroidEventProcessorTest {
 
         // LegacyAndroidEventProcessor.populate() is called here:
         return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_iCalUid() {
-        populateEvent(
-            true,
-            extendedProperties = mapOf(
-                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
-            )
-        ).let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445() {
-        populateEvent(true) {
-            put(Events.UID_2445, "event1@example.com")
-        }.let { result ->
-            assertEquals("event1@example.com", result.uid)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Uid_UID_2445_and_iCalUid() {
-        populateEvent(
-            true,
-            extendedProperties = mapOf(
-                AndroidEvent2.EXTNAME_ICAL_UID to "event1@example.com"
-            )
-        ) {
-            put(Events.UID_2445, "event2@example.com")
-        }.let { result ->
-            assertEquals("event2@example.com", result.uid)
-        }
     }
 
 
@@ -605,316 +558,6 @@ class LegacyAndroidEventProcessorTest {
         }
     }
 
-
-    private fun populateReminder(destinationCalendar: AndroidCalendar = calendar, builder: ContentValues.() -> Unit): VAlarm? {
-        populateEvent(true, destinationCalendar = destinationCalendar, insertCallback = { id ->
-            val reminderValues = ContentValues()
-            reminderValues.put(Reminders.EVENT_ID, id)
-            builder(reminderValues)
-            client.insert(Reminders.CONTENT_URI.asSyncAdapter(testAccount), reminderValues)
-        }).let { result ->
-            return result.alarms.firstOrNull()
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeEmail_AccountNameEmail() {
-        // account name looks like an email address
-        assumeTrue(testAccount.name.endsWith("@example.com"))
-
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_EMAIL)
-            put(Reminders.MINUTES, 10)
-        }!!.let { alarm ->
-            assertEquals(Action.EMAIL, alarm.action)
-            assertNotNull(alarm.summary)
-            assertNotNull(alarm.description)
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeEmail_AccountNameNotEmail() {
-        // test account name that doesn't look like an email address
-        val nonEmailAccount = Account("ical4android", ACCOUNT_TYPE_LOCAL)
-        val testCalendar = TestCalendar.findOrCreate(nonEmailAccount, client)
-        try {
-            populateReminder(testCalendar) {
-                put(Reminders.METHOD, Reminders.METHOD_EMAIL)
-            }!!.let { alarm ->
-                assertEquals(Action.DISPLAY, alarm.action)
-                assertNotNull(alarm.description)
-            }
-        } finally {
-            testCalendar.delete()
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_TypeNotEmail() {
-        for (type in arrayOf(null, Reminders.METHOD_ALARM, Reminders.METHOD_ALERT, Reminders.METHOD_DEFAULT, Reminders.METHOD_SMS))
-            populateReminder {
-                put(Reminders.METHOD, type)
-                put(Reminders.MINUTES, 10)
-            }!!.let { alarm ->
-                assertEquals(Action.DISPLAY, alarm.action)
-                assertNotNull(alarm.description)
-            }
-    }
-
-    @Test
-    fun testPopulateReminder_Minutes_Positive() {
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_ALERT)
-            put(Reminders.MINUTES, 10)
-        }!!.let { alarm ->
-            assertEquals(Duration.ofMinutes(-10), alarm.trigger.duration)
-        }
-    }
-
-    @Test
-    fun testPopulateReminder_Minutes_Negative() {
-        populateReminder {
-            put(Reminders.METHOD, Reminders.METHOD_ALERT)
-            put(Reminders.MINUTES, -10)
-        }!!.let { alarm ->
-            assertEquals(Duration.ofMinutes(10), alarm.trigger.duration)
-        }
-    }
-
-
-    private fun populateAttendee(builder: ContentValues.() -> Unit): Attendee? {
-        populateEvent(true, insertCallback = { id ->
-            val attendeeValues = ContentValues()
-            attendeeValues.put(Attendees.EVENT_ID, id)
-            builder(attendeeValues)
-            client.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), attendeeValues)
-        }).let { result ->
-            return result.attendees.firstOrNull()
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Email() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-        }!!.let { attendee ->
-            assertEquals(URI("mailto:attendee@example.com"), attendee.calAddress)
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_OtherUri() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_ID_NAMESPACE, "https")
-            put(Attendees.ATTENDEE_IDENTITY, "//example.com/principals/attendee")
-        }!!.let { attendee ->
-            assertEquals(URI("https://example.com/principals/attendee"), attendee.calAddress)
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_EmailAndOtherUri() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_ID_NAMESPACE, "https")
-            put(Attendees.ATTENDEE_IDENTITY, "//example.com/principals/attendee")
-        }!!.let { attendee ->
-            assertEquals(URI("https://example.com/principals/attendee"), attendee.calAddress)
-            assertEquals("attendee@example.com", attendee.getParameter<Email>(Parameter.EMAIL).value)
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_AttendeeOrganizer() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_ATTENDEE, Attendees.RELATIONSHIP_ORGANIZER))
-            for (type in arrayOf(Attendees.TYPE_REQUIRED, Attendees.TYPE_OPTIONAL, Attendees.TYPE_NONE, null))
-                populateAttendee {
-                    put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-                    if (type != null)
-                        put(Attendees.ATTENDEE_TYPE, type as Int?)
-                }!!.let { attendee ->
-                    assertNull(attendee.getParameter(Parameter.CUTYPE))
-                }
-    }
-
-    @Test
-    fun testPopulateAttendee_Performer() {
-        for (type in arrayOf(Attendees.TYPE_REQUIRED, Attendees.TYPE_OPTIONAL, Attendees.TYPE_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
-                if (type != null)
-                    put(Attendees.ATTENDEE_TYPE, type as Int?)
-            }!!.let { attendee ->
-                assertEquals(CuType.GROUP, attendee.getParameter<CuType>(Parameter.CUTYPE))
-            }
-    }
-
-    @Test
-    fun testPopulateAttendee_Speaker() {
-        for (type in arrayOf(Attendees.TYPE_REQUIRED, Attendees.TYPE_OPTIONAL, Attendees.TYPE_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
-                if (type != null)
-                    put(Attendees.ATTENDEE_TYPE, type as Int?)
-            }!!.let { attendee ->
-                assertNull(attendee.getParameter(Parameter.CUTYPE))
-                assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
-            }
-        // TYPE_RESOURCE
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
-            put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
-        }!!.let { attendee ->
-            assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_RelNone() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_NONE, null))
-            for (type in arrayOf(Attendees.TYPE_REQUIRED, Attendees.TYPE_OPTIONAL, Attendees.TYPE_NONE, null))
-                populateAttendee {
-                    put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-                    if (type != null)
-                        put(Attendees.ATTENDEE_TYPE, type as Int?)
-                }!!.let { attendee ->
-                    assertEquals(CuType.UNKNOWN, attendee.getParameter<CuType>(Parameter.CUTYPE))
-                }
-    }
-
-    @Test
-    fun testPopulateAttendee_TypeNone() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_ATTENDEE, Attendees.RELATIONSHIP_ORGANIZER, Attendees.RELATIONSHIP_PERFORMER, Attendees.RELATIONSHIP_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
-                if (relationship != null)
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-            }!!.let { attendee ->
-                assertNull(attendee.getParameter<Role>(Parameter.ROLE))
-            }
-    }
-
-    @Test
-    fun testPopulateAttendee_Required() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_ATTENDEE, Attendees.RELATIONSHIP_ORGANIZER, Attendees.RELATIONSHIP_PERFORMER, Attendees.RELATIONSHIP_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
-                if (relationship != null)
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-            }!!.let { attendee ->
-                assertNull(attendee.getParameter(Parameter.ROLE))
-            }
-    }
-
-    @Test
-    fun testPopulateAttendee_Optional() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_ATTENDEE, Attendees.RELATIONSHIP_ORGANIZER, Attendees.RELATIONSHIP_PERFORMER, Attendees.RELATIONSHIP_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
-                if (relationship != null)
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-            }!!.let { attendee ->
-                assertEquals(Role.OPT_PARTICIPANT, attendee.getParameter<Role>(Parameter.ROLE))
-            }
-    }
-
-    @Test
-    fun testPopulateAttendee_Resource() {
-        for (relationship in arrayOf(Attendees.RELATIONSHIP_ATTENDEE, Attendees.RELATIONSHIP_ORGANIZER, Attendees.RELATIONSHIP_NONE, null))
-            populateAttendee {
-                put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
-                if (relationship != null)
-                    put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
-            }!!.let { attendee ->
-                assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
-            }
-        // RELATIONSHIP_PERFORMER
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
-            put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
-        }!!.let { attendee ->
-            assertEquals(CuType.ROOM, attendee.getParameter<CuType>(Parameter.CUTYPE))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_Null() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-        }!!.let { attendee ->
-            assertNull(attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_Invited() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_STATUS, Attendees.ATTENDEE_STATUS_INVITED)
-        }!!.let { attendee ->
-            assertEquals(PartStat.NEEDS_ACTION, attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_Accepted() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_STATUS, Attendees.ATTENDEE_STATUS_ACCEPTED)
-        }!!.let { attendee ->
-            assertEquals(PartStat.ACCEPTED, attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_Declined() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_STATUS, Attendees.ATTENDEE_STATUS_DECLINED)
-        }!!.let { attendee ->
-            assertEquals(PartStat.DECLINED, attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_Tentative() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_STATUS, Attendees.ATTENDEE_STATUS_TENTATIVE)
-        }!!.let { attendee ->
-            assertEquals(PartStat.TENTATIVE, attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Status_None() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-            put(Attendees.ATTENDEE_STATUS, Attendees.ATTENDEE_STATUS_NONE)
-        }!!.let { attendee ->
-            assertNull(attendee.getParameter(Parameter.PARTSTAT))
-        }
-    }
-
-    @Test
-    fun testPopulateAttendee_Rsvp() {
-        populateAttendee {
-            put(Attendees.ATTENDEE_EMAIL, "attendee@example.com")
-        }!!.let { attendee ->
-            assertTrue(attendee.getParameter<Rsvp>(Parameter.RSVP).rsvp)
-        }
-    }
 
     @Test
     fun testPopulateUnknownProperty() {

@@ -11,8 +11,6 @@ import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import android.provider.CalendarContract.Reminders
-import android.util.Patterns
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
@@ -21,22 +19,18 @@ import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
+import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Cn
-import net.fortuna.ical4j.model.parameter.Email
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.parameter.Rsvp
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
@@ -46,7 +40,6 @@ import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
@@ -76,11 +69,22 @@ class LegacyAndroidEventProcessor(
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
+    private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
+        UidProcessor(),
+        AttendeesProcessor(),
+        RemindersProcessor(accountName)
+    )
+
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
-        populateEvent(eventAndExceptions.main, to = to)
+        populateEvent(
+            entity = eventAndExceptions.main,
+            main = eventAndExceptions.main,
+            to = to
+        )
         populateExceptions(
             exceptions = eventAndExceptions.exceptions,
+            main = eventAndExceptions.main,
             originalAllDay = DateUtils.isDate(to.dtStart),
             to = to
         )
@@ -94,25 +98,25 @@ class LegacyAndroidEventProcessor(
      * an [Event] data object.
      *
      * @param entity            event row as returned by the calendar provider
-     * @param groupScheduled    whether the event is group-scheduled (= the main event has attendees)
+     * @param main              main event row as returned by the calendar provider
      * @param to                destination data object
      */
-    private fun populateEvent(entity: Entity, to: Event) {
-        // calculate some scheduling properties
+    private fun populateEvent(entity: Entity, main: Entity, to: Event) {
+        // legacy processors
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
-
-        // main row
         populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
 
         // data rows
         for (subValue in entity.subValues) {
             val subValues = subValue.values
             when (subValue.uri) {
-                Attendees.CONTENT_URI -> populateAttendee(subValues, to = to)
-                Reminders.CONTENT_URI -> populateReminder(subValues, to = to)
                 ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
             }
         }
+
+        // new processors
+        for (processor in fieldProcessors)
+            processor.process(from = entity, main = main, to = to)
     }
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
@@ -236,7 +240,6 @@ class LegacyAndroidEventProcessor(
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
 
-        to.uid = row.getAsString(Events.UID_2445)
         to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
 
@@ -306,79 +309,6 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateAttendee(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event attendee from calender provider", row)
-
-        try {
-            val attendee: Attendee
-            val email = row.getAsString(Attendees.ATTENDEE_EMAIL)
-            val idNS = row.getAsString(Attendees.ATTENDEE_ID_NAMESPACE)
-            val id = row.getAsString(Attendees.ATTENDEE_IDENTITY)
-
-            if (idNS != null || id != null) {
-                // attendee identified by namespace and ID
-                attendee = Attendee(URI(idNS, id, null))
-                email?.let { attendee.parameters.add(Email(it)) }
-            } else
-            // attendee identified by email address
-                attendee = Attendee(URI("mailto", email, null))
-            val params = attendee.parameters
-
-            // always add RSVP (offer attendees to accept/decline)
-            params.add(Rsvp.TRUE)
-
-            row.getAsString(Attendees.ATTENDEE_NAME)?.let { cn -> params.add(Cn(cn)) }
-
-            // type/relation mapping is complex and thus outsourced to AttendeeMappings
-            AttendeeMappings.androidToICalendar(row, attendee)
-
-            // status
-            when (row.getAsInteger(Attendees.ATTENDEE_STATUS)) {
-                Attendees.ATTENDEE_STATUS_INVITED -> params.add(PartStat.NEEDS_ACTION)
-                Attendees.ATTENDEE_STATUS_ACCEPTED -> params.add(PartStat.ACCEPTED)
-                Attendees.ATTENDEE_STATUS_DECLINED -> params.add(PartStat.DECLINED)
-                Attendees.ATTENDEE_STATUS_TENTATIVE -> params.add(PartStat.TENTATIVE)
-                Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
-            }
-
-            to.attendees.add(attendee)
-        } catch (e: URISyntaxException) {
-            logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
-        }
-    }
-
-    private fun populateReminder(row: ContentValues, to: Event) {
-        logger.log(Level.FINE, "Read event reminder from calender provider", row)
-
-        val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
-
-        val props = alarm.properties
-        when (row.getAsInteger(Reminders.METHOD)) {
-            Reminders.METHOD_EMAIL -> {
-                if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
-                    props += Action.EMAIL
-                    // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
-                    props += Summary(to.summary)
-                    props += Description(to.description ?: to.summary)
-                    // Android doesn't allow to save email reminder recipients, so we always use the
-                    // account name (should be account owner's email address)
-                    props += Attendee(URI("mailto", accountName, null))
-                } else {
-                    logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
-                    props += Action.DISPLAY
-                    props += Description(to.summary)
-                }
-            }
-
-            // default: set ACTION:DISPLAY (requires DESCRIPTION)
-            else -> {
-                props += Action.DISPLAY
-                props += Description(to.summary)
-            }
-        }
-        to.alarms += alarm
-    }
-
     private fun populateExtended(row: ContentValues, to: Event) {
         val name = row.getAsString(ExtendedProperties.NAME)
         val rawValue = row.getAsString(ExtendedProperties.VALUE)
@@ -396,11 +326,6 @@ class LegacyAndroidEventProcessor(
                         logger.warning("Won't process invalid local URL: $rawValue")
                     }
 
-                AndroidEvent2.EXTNAME_ICAL_UID ->
-                    // only consider iCalUid when there's no uid
-                    if (to.uid == null)
-                        to.uid = rawValue
-
                 UnknownProperty.CONTENT_ITEM_TYPE ->
                     to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
             }
@@ -409,12 +334,12 @@ class LegacyAndroidEventProcessor(
         }
     }
 
-    private fun populateExceptions(exceptions: List<Entity>, originalAllDay: Boolean, to: Event) {
+    private fun populateExceptions(exceptions: List<Entity>, main: Entity, originalAllDay: Boolean, to: Event) {
         for (exception in exceptions) {
             val exceptionEvent = Event()
 
             // convert exception row to Event
-            populateEvent(exception, to = exceptionEvent)
+            populateEvent(exception, main, to = exceptionEvent)
 
             // exceptions are required to have a RECURRENCE-ID
             val recurrenceId = exceptionEvent.recurrenceId ?: continue
