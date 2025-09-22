@@ -98,13 +98,10 @@ class LegacyAndroidEventProcessor(
             val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
             // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
-            if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED) {
+            if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
                 addAsExDate(exception, recurrenceId, to = to)
-
-            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // add exception to list of exceptions
+            else
                 to.exceptions += exceptionEvent
-            }
         }
     }
 
