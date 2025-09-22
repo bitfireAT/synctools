@@ -10,9 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
@@ -24,6 +22,7 @@ import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
@@ -79,6 +78,7 @@ class LegacyAndroidEventProcessor(
         RemindersProcessor(accountName),
         // extended properties
         CategoriesProcessor(),
+        UnknownPropertiesProcessor(),
         UrlProcessor()
     )
 
@@ -112,14 +112,6 @@ class LegacyAndroidEventProcessor(
         // legacy processors
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
         populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
-
-        // data rows
-        for (subValue in entity.subValues) {
-            val subValues = subValue.values
-            when (subValue.uri) {
-                ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
-            }
-        }
 
         // new processors
         for (processor in fieldProcessors)
@@ -313,21 +305,6 @@ class LegacyAndroidEventProcessor(
                 }
             }
             to.recurrenceId = RecurrenceId(originalDate)
-        }
-    }
-
-    private fun populateExtended(row: ContentValues, to: Event) {
-        val name = row.getAsString(ExtendedProperties.NAME)
-        val rawValue = row.getAsString(ExtendedProperties.VALUE)
-        logger.log(Level.FINE, "Read extended property from calender provider", arrayOf(name, rawValue))
-
-        try {
-            when (name) {
-                UnknownProperty.CONTENT_ITEM_TYPE ->
-                    to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
-            }
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't parse extended property", e)
         }
     }
 
