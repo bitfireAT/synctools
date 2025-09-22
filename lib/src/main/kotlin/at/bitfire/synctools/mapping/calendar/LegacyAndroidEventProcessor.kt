@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
-import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
@@ -22,6 +21,7 @@ import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
+import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
@@ -32,12 +32,9 @@ import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -62,6 +59,7 @@ class LegacyAndroidEventProcessor(
         // event row fields
         MutatorsProcessor(),    // for PRODID
         UidProcessor(),
+        OriginalInstanceTimeProcessor(),
         TitleProcessor(),
         LocationProcessor(),
         TimeFieldsProcessor(),
@@ -118,25 +116,6 @@ class LegacyAndroidEventProcessor(
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
-
-        // exceptions from recurring events
-        row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
-            val originalAllDay = (row.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-            val originalDate =
-                if (originalAllDay)
-                    Date(originalInstanceTime)
-                else
-                    DateTime(originalInstanceTime)
-            if (originalDate is DateTime) {
-                to.dtStart?.let { dtStart ->
-                    if (dtStart.isUtc)
-                        originalDate.isUtc = true
-                    else if (dtStart.timeZone != null)
-                        originalDate.timeZone = dtStart.timeZone
-                }
-            }
-            to.recurrenceId = RecurrenceId(originalDate)
-        }
     }
 
     private fun populateExceptions(exceptions: List<Entity>, main: Entity, originalAllDay: Boolean, to: Event) {
