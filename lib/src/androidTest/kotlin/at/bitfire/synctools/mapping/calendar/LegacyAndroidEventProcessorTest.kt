@@ -24,9 +24,7 @@ import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
@@ -340,27 +338,6 @@ class LegacyAndroidEventProcessorTest {
             assertNull(result.duration)
         }
     }
-
-    @Test
-    fun testPopulateEvent_Color_FromIndex() {
-        val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3ColorIndices()
-        populateEvent(true) {
-            put(Events.EVENT_COLOR_KEY, Css3Color.silver.name)
-        }.let { result ->
-            assertEquals(Css3Color.silver, result.color)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Color_FromValue() {
-        populateEvent(true) {
-            put(Events.EVENT_COLOR, Css3Color.silver.argb)
-        }.let { result ->
-            assertEquals(Css3Color.silver, result.color)
-        }
-    }
-
 
     @Test
     fun testPopulateEvent_Organizer_NotGroupScheduled() {

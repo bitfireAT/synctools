@@ -16,12 +16,12 @@ import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AvailabilityProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
@@ -81,6 +81,7 @@ class LegacyAndroidEventProcessor(
         TitleProcessor(),
         LocationProcessor(),
         DescriptionProcessor(),
+        ColorProcessor(),
         AccessLevelProcessor(),
         AvailabilityProcessor(),
         StatusProcessor(),
@@ -249,19 +250,6 @@ class LegacyAndroidEventProcessor(
 
         to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
-
-        // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
-        to.color =
-            row.getAsString(Events.EVENT_COLOR_KEY)?.let { name ->      // try color key first
-                try {
-                    Css3Color.valueOf(name)
-                } catch (_: IllegalArgumentException) {
-                    logger.warning("Ignoring unknown color name \"$name\"")
-                    null
-                }
-            } ?: row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
-                    Css3Color.entries.firstOrNull { it.argb == color }
-                }
 
         // scheduling
         if (groupScheduled) {
