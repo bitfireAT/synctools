@@ -10,39 +10,44 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.AvailabilityProcessor
+import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
+import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
+import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
+import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
+import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
+import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
+import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
+import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
-import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
-import java.net.URI
-import java.net.URISyntaxException
 import java.time.Duration
 import java.time.Instant
 import java.time.Period
@@ -70,8 +75,25 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
+        // event row fields
+        MutatorsProcessor(),    // for PRODID
         UidProcessor(),
+        TitleProcessor(),
+        LocationProcessor(),
+        DescriptionProcessor(),
+        ColorProcessor(),
+        AccessLevelProcessor(),
+        AvailabilityProcessor(),
+        StatusProcessor(),
+        // scheduling
+        SequenceProcessor(),
+        OrganizerProcessor(),
         AttendeesProcessor(),
+        // extended properties
+        CategoriesProcessor(),
+        UnknownPropertiesProcessor(),
+        UrlProcessor(),
+        // sub-components
         RemindersProcessor(accountName)
     )
 
@@ -88,9 +110,6 @@ class LegacyAndroidEventProcessor(
             originalAllDay = DateUtils.isDate(to.dtStart),
             to = to
         )
-
-        // post-processing
-        useRetainedClassification(to)
     }
 
     /**
@@ -106,14 +125,6 @@ class LegacyAndroidEventProcessor(
         val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
         populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
 
-        // data rows
-        for (subValue in entity.subValues) {
-            val subValues = subValue.values
-            when (subValue.uri) {
-                ExtendedProperties.CONTENT_URI -> populateExtended(subValues, to = to)
-            }
-        }
-
         // new processors
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = to)
@@ -121,11 +132,6 @@ class LegacyAndroidEventProcessor(
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
-
-        row.getAsString(Events.MUTATORS)?.let { strPackages ->
-            val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
-            to.userAgents.addAll(packages)
-        }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = row.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
@@ -240,55 +246,6 @@ class LegacyAndroidEventProcessor(
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
 
-        to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
-        to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
-
-        to.summary = row.getAsString(Events.TITLE)
-        to.location = row.getAsString(Events.EVENT_LOCATION)
-        to.description = row.getAsString(Events.DESCRIPTION)
-
-        // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
-        to.color =
-            row.getAsString(Events.EVENT_COLOR_KEY)?.let { name ->      // try color key first
-                try {
-                    Css3Color.valueOf(name)
-                } catch (_: IllegalArgumentException) {
-                    logger.warning("Ignoring unknown color name \"$name\"")
-                    null
-                }
-            } ?:
-                    row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
-                        Css3Color.entries.firstOrNull { it.argb == color }
-                    }
-
-        // status
-        when (row.getAsInteger(Events.STATUS)) {
-            Events.STATUS_CONFIRMED -> to.status = Status.VEVENT_CONFIRMED
-            Events.STATUS_TENTATIVE -> to.status = Status.VEVENT_TENTATIVE
-            Events.STATUS_CANCELED -> to.status = Status.VEVENT_CANCELLED
-        }
-
-        // availability
-        to.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
-
-        // scheduling
-        if (groupScheduled) {
-            // ORGANIZER must only be set for group-scheduled events (= events with attendees)
-            if (row.containsKey(Events.ORGANIZER))
-                try {
-                    to.organizer = Organizer(URI("mailto", row.getAsString(Events.ORGANIZER), null))
-                } catch (e: URISyntaxException) {
-                    logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
-                }
-        }
-
-        // classification
-        when (row.getAsInteger(Events.ACCESS_LEVEL)) {
-            Events.ACCESS_PUBLIC -> to.classification = Clazz.PUBLIC
-            Events.ACCESS_PRIVATE -> to.classification = Clazz.PRIVATE
-            Events.ACCESS_CONFIDENTIAL -> to.classification = Clazz.CONFIDENTIAL
-        }
-
         // exceptions from recurring events
         row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (row.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
@@ -306,31 +263,6 @@ class LegacyAndroidEventProcessor(
                 }
             }
             to.recurrenceId = RecurrenceId(originalDate)
-        }
-    }
-
-    private fun populateExtended(row: ContentValues, to: Event) {
-        val name = row.getAsString(ExtendedProperties.NAME)
-        val rawValue = row.getAsString(ExtendedProperties.VALUE)
-        logger.log(Level.FINE, "Read extended property from calender provider", arrayOf(name, rawValue))
-
-        try {
-            when (name) {
-                AndroidEvent2.EXTNAME_CATEGORIES ->
-                    to.categories += rawValue.split(AndroidEvent2.CATEGORIES_SEPARATOR)
-
-                AndroidEvent2.EXTNAME_URL ->
-                    try {
-                        to.url = URI(rawValue)
-                    } catch(_: URISyntaxException) {
-                        logger.warning("Won't process invalid local URL: $rawValue")
-                    }
-
-                UnknownProperty.CONTENT_ITEM_TYPE ->
-                    to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
-            }
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't parse extended property", e)
         }
     }
 
@@ -362,29 +294,10 @@ class LegacyAndroidEventProcessor(
                 }
 
             } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // make sure that all components have the same ORGANIZER [RFC 6638 3.1]
-                exceptionEvent.organizer = to.organizer
-
                 // add exception to list of exceptions
                 to.exceptions += exceptionEvent
             }
         }
-    }
-
-    private fun useRetainedClassification(event: Event) {
-        var retainedClazz: Clazz? = null
-        val it = event.unknownProperties.iterator()
-        while (it.hasNext()) {
-            val prop = it.next()
-            if (prop is Clazz) {
-                retainedClazz = prop
-                it.remove()
-            }
-        }
-
-        if (event.classification == null)
-            // no classification, use retained one if possible
-            event.classification = retainedClazz
     }
 
 }

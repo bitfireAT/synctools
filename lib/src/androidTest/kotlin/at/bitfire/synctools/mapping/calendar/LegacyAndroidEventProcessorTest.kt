@@ -12,7 +12,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
-import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
@@ -24,9 +23,7 @@ import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
@@ -35,22 +32,18 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
-import java.net.URI
 
 /**
  * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
@@ -147,51 +140,6 @@ class LegacyAndroidEventProcessorTest {
         return LegacyAndroidCalendar(destinationCalendar).getEvent(androidEvent.id)!!
     }
 
-
-    @Test
-    fun testPopulateEvent_Sequence_Int() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(AndroidEvent2.COLUMN_SEQUENCE, 5)
-        }.let { result ->
-            assertEquals(5, result.sequence)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Sequence_Null() {
-        populateEvent(true, asSyncAdapter = true) {
-            putNull(AndroidEvent2.COLUMN_SEQUENCE)
-        }.let { result ->
-            assertNull(result.sequence)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_False() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(Events.IS_ORGANIZER, "0")
-        }.let { result ->
-            assertFalse(result.isOrganizer!!)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_Null() {
-        populateEvent(true, asSyncAdapter = true) {
-            putNull(Events.IS_ORGANIZER)
-        }.let { result ->
-            assertNull(result.isOrganizer)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_IsOrganizer_True() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(Events.IS_ORGANIZER, "1")
-        }.let { result ->
-            assertTrue(result.isOrganizer!!)
-        }
-    }
 
     @Test
     fun testPopulateEvent_NonAllDay_NonRecurring() {
@@ -341,220 +289,6 @@ class LegacyAndroidEventProcessorTest {
             assertEquals(DtStart(Date("20200621")), result.dtStart)
             assertEquals(DtEnd(Date("20200623")), result.dtEnd)
             assertNull(result.duration)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Summary() {
-        populateEvent(true) {
-            put(Events.TITLE, "Sample Title")
-        }.let { result ->
-            assertEquals("Sample Title", result.summary)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Location() {
-        populateEvent(true) {
-            put(Events.EVENT_LOCATION, "Sample Location")
-        }.let { result ->
-            assertEquals("Sample Location", result.location)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Url() {
-        populateEvent(true,
-            extendedProperties = mapOf(AndroidEvent2.EXTNAME_URL to "https://example.com")
-        ).let { result ->
-            assertEquals(URI("https://example.com"), result.url)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Description() {
-        populateEvent(true) {
-            put(Events.DESCRIPTION, "Sample Description")
-        }.let { result ->
-            assertEquals("Sample Description", result.description)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Color_FromIndex() {
-        val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3ColorIndices()
-        populateEvent(true) {
-            put(Events.EVENT_COLOR_KEY, Css3Color.silver.name)
-        }.let { result ->
-            assertEquals(Css3Color.silver, result.color)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Color_FromValue() {
-        populateEvent(true) {
-            put(Events.EVENT_COLOR, Css3Color.silver.argb)
-        }.let { result ->
-            assertEquals(Css3Color.silver, result.color)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_Confirmed() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_CONFIRMED)
-        }.let { result ->
-            assertEquals(Status.VEVENT_CONFIRMED, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_Tentative() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_TENTATIVE)
-        }.let { result ->
-            assertEquals(Status.VEVENT_TENTATIVE, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_Cancelled() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_CANCELED)
-        }.let { result ->
-            assertEquals(Status.VEVENT_CANCELLED, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_None() {
-        assertNull(populateEvent(true).status)
-    }
-
-    @Test
-    fun testPopulateEvent_Availability_Busy() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_BUSY)
-        }.let { result ->
-            assertTrue(result.opaque)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Availability_Tentative() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_TENTATIVE)
-        }.let { result ->
-            assertTrue(result.opaque)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Availability_Free() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_FREE)
-        }.let { result ->
-            assertFalse(result.opaque)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_NotGroupScheduled() {
-        assertNull(populateEvent(true).organizer)
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_NotGroupScheduled_ExplicitOrganizer() {
-        populateEvent(true) {
-            put(Events.ORGANIZER, "sample@example.com")
-        }.let { result ->
-            assertNull(result.organizer)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Organizer_GroupScheduled() {
-        populateEvent(true, insertCallback = { id ->
-            client.insert(Attendees.CONTENT_URI.asSyncAdapter(testAccount), ContentValues().apply {
-                put(Attendees.EVENT_ID, id)
-                put(Attendees.ATTENDEE_EMAIL, "organizer@example.com")
-                put(Attendees.ATTENDEE_TYPE, Attendees.RELATIONSHIP_ORGANIZER)
-            })
-        }) {
-            put(Events.ORGANIZER, "organizer@example.com")
-        }.let { result ->
-            assertEquals("mailto:organizer@example.com", result.organizer?.value)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Public() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_PUBLIC)
-        }.let { result ->
-            assertEquals(Clazz.PUBLIC, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Private() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_PRIVATE)
-        }.let { result ->
-            assertEquals(Clazz.PRIVATE, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Confidential() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_CONFIDENTIAL)
-        }.let { result ->
-            assertEquals(Clazz.CONFIDENTIAL, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Confidential_Retained() {
-        populateEvent(true,
-            extendedProperties = mapOf(UnknownProperty.CONTENT_ITEM_TYPE to UnknownProperty.toJsonString(Clazz.CONFIDENTIAL))
-        ) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-        }.let { result ->
-            assertEquals(Clazz.CONFIDENTIAL, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Default() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-        }.let { result ->
-            assertNull(result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Custom() {
-        populateEvent(
-            true,
-            valuesBuilder = {
-                put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-            },
-            extendedProperties = mapOf(
-                UnknownProperty.CONTENT_ITEM_TYPE to UnknownProperty.toJsonString(Clazz("TOP-SECRET"))
-            )
-        ).let { result ->
-            assertEquals(Clazz("TOP-SECRET"), result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_None() {
-        populateEvent(true) {
-        }.let { result ->
-            assertNull(result.classification)
         }
     }
 
