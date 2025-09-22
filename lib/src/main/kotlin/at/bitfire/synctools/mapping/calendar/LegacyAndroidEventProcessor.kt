@@ -21,7 +21,10 @@ import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
+import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
+import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
@@ -41,7 +44,6 @@ import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
@@ -72,16 +74,19 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
-        // event row fields (order by targeted property as in RFC 5545 3.6.1)
+        // event row fields
         UidProcessor(),
+        TitleProcessor(),
+        LocationProcessor(),
         AccessLevelProcessor(),
-        // data rows (sub-values)
-        AttendeesProcessor(),
-        RemindersProcessor(accountName),
+        DescriptionProcessor(),
         // extended properties
         CategoriesProcessor(),
         UnknownPropertiesProcessor(),
-        UrlProcessor()
+        UrlProcessor(),
+                // data rows (sub-values)
+        AttendeesProcessor(),
+        RemindersProcessor(accountName)
     )
 
 
@@ -240,10 +245,6 @@ class LegacyAndroidEventProcessor(
 
         to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
         to.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
-
-        to.summary = row.getAsString(Events.TITLE)
-        to.location = row.getAsString(Events.EVENT_LOCATION)
-        to.description = row.getAsString(Events.DESCRIPTION)
 
         // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
         to.color =

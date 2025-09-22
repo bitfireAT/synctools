@@ -35,7 +35,6 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -50,7 +49,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
-import java.net.URI
 
 /**
  * Tests mapping from [at.bitfire.synctools.storage.calendar.EventAndExceptions] to [Event].
@@ -345,42 +343,6 @@ class LegacyAndroidEventProcessorTest {
     }
 
     @Test
-    fun testPopulateEvent_Summary() {
-        populateEvent(true) {
-            put(Events.TITLE, "Sample Title")
-        }.let { result ->
-            assertEquals("Sample Title", result.summary)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Location() {
-        populateEvent(true) {
-            put(Events.EVENT_LOCATION, "Sample Location")
-        }.let { result ->
-            assertEquals("Sample Location", result.location)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Url() {
-        populateEvent(true,
-            extendedProperties = mapOf(AndroidEvent2.EXTNAME_URL to "https://example.com")
-        ).let { result ->
-            assertEquals(URI("https://example.com"), result.url)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Description() {
-        populateEvent(true) {
-            put(Events.DESCRIPTION, "Sample Description")
-        }.let { result ->
-            assertEquals("Sample Description", result.description)
-        }
-    }
-
-    @Test
     fun testPopulateEvent_Color_FromIndex() {
         val provider = AndroidCalendarProvider(testAccount, client)
         provider.provideCss3ColorIndices()
@@ -485,76 +447,6 @@ class LegacyAndroidEventProcessorTest {
             put(Events.ORGANIZER, "organizer@example.com")
         }.let { result ->
             assertEquals("mailto:organizer@example.com", result.organizer?.value)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Public() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_PUBLIC)
-        }.let { result ->
-            assertEquals(Clazz.PUBLIC, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Private() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_PRIVATE)
-        }.let { result ->
-            assertEquals(Clazz.PRIVATE, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Confidential() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_CONFIDENTIAL)
-        }.let { result ->
-            assertEquals(Clazz.CONFIDENTIAL, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Confidential_Retained() {
-        populateEvent(true,
-            extendedProperties = mapOf(UnknownProperty.CONTENT_ITEM_TYPE to UnknownProperty.toJsonString(Clazz.CONFIDENTIAL))
-        ) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-        }.let { result ->
-            assertEquals(Clazz.CONFIDENTIAL, result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Default() {
-        populateEvent(true) {
-            put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-        }.let { result ->
-            assertNull(result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_Custom() {
-        populateEvent(
-            true,
-            valuesBuilder = {
-                put(Events.ACCESS_LEVEL, Events.ACCESS_DEFAULT)
-            },
-            extendedProperties = mapOf(
-                UnknownProperty.CONTENT_ITEM_TYPE to UnknownProperty.toJsonString(Clazz("TOP-SECRET"))
-            )
-        ).let { result ->
-            assertEquals(Clazz("TOP-SECRET"), result.classification)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Classification_None() {
-        populateEvent(true) {
-        }.let { result ->
-            assertNull(result.classification)
         }
     }
 
