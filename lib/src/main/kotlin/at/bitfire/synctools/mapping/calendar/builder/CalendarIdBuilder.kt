@@ -9,12 +9,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.vcard4android.Utils.trimToNull
 
-class TitleBuilder: AndroidEntityBuilder {
+class CalendarIdBuilder(
+    private val calendarId: Long
+): AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.TITLE, from.summary.trimToNull())
+        to.entityValues.put(Events.CALENDAR_ID, calendarId)
     }
 
 }

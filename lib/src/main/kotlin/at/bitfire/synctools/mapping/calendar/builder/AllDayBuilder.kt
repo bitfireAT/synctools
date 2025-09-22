@@ -9,12 +9,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.vcard4android.Utils.trimToNull
+import at.bitfire.ical4android.util.DateUtils
 
-class TitleBuilder: AndroidEntityBuilder {
+class AllDayBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.TITLE, from.summary.trimToNull())
+        val allDay = DateUtils.isDate(from.dtStart)
+        to.entityValues.put(Events.ALL_DAY, if (allDay) 1 else 0)
     }
 
 }

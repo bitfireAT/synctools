@@ -7,14 +7,13 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
-import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.vcard4android.Utils.trimToNull
+import at.bitfire.synctools.storage.calendar.AndroidEvent2
 
-class TitleBuilder: AndroidEntityBuilder {
+class SequenceBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.TITLE, from.summary.trimToNull())
+        to.entityValues.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
     }
 
 }

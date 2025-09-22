@@ -9,12 +9,22 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.vcard4android.Utils.trimToNull
 
-class TitleBuilder: AndroidEntityBuilder {
+class SyncIdBuilder(
+    private val syncId: String?
+): AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.TITLE, from.summary.trimToNull())
+        if (from === main) {
+            // main event: only set _SYNC_ID
+            to.entityValues.put(Events._SYNC_ID, syncId)
+            to.entityValues.putNull(Events.ORIGINAL_SYNC_ID)
+        } else {
+
+            // exception: set ORIGINAL_SYNC_ID
+            to.entityValues.putNull(Events._SYNC_ID)
+            to.entityValues.put(Events.ORIGINAL_SYNC_ID, syncId)
+        }
     }
 
 }

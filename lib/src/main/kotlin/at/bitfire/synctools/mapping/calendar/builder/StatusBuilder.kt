@@ -9,12 +9,17 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.vcard4android.Utils.trimToNull
+import net.fortuna.ical4j.model.property.Status
 
-class TitleBuilder: AndroidEntityBuilder {
+class StatusBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.TITLE, from.summary.trimToNull())
+        to.entityValues.put(Events.STATUS, when (from.status) {
+            Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
+            Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED
+            null -> null
+            else -> Events.STATUS_TENTATIVE
+        })
     }
 
 }
