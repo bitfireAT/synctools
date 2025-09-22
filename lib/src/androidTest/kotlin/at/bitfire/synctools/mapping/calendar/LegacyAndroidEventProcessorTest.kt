@@ -38,7 +38,6 @@ import net.fortuna.ical4j.model.parameter.Language
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -361,38 +360,7 @@ class LegacyAndroidEventProcessorTest {
             assertEquals(Css3Color.silver, result.color)
         }
     }
-
-    @Test
-    fun testPopulateEvent_Status_Confirmed() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_CONFIRMED)
-        }.let { result ->
-            assertEquals(Status.VEVENT_CONFIRMED, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_Tentative() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_TENTATIVE)
-        }.let { result ->
-            assertEquals(Status.VEVENT_TENTATIVE, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_Cancelled() {
-        populateEvent(true) {
-            put(Events.STATUS, Events.STATUS_CANCELED)
-        }.let { result ->
-            assertEquals(Status.VEVENT_CANCELLED, result.status)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Status_None() {
-        assertNull(populateEvent(true).status)
-    }
+    
 
     @Test
     fun testPopulateEvent_Availability_Busy() {

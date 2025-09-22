@@ -24,6 +24,7 @@ import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
+import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
@@ -78,13 +79,14 @@ class LegacyAndroidEventProcessor(
         UidProcessor(),
         TitleProcessor(),
         LocationProcessor(),
-        AccessLevelProcessor(),
         DescriptionProcessor(),
+        AccessLevelProcessor(),
+        StatusProcessor(),
         // extended properties
         CategoriesProcessor(),
         UnknownPropertiesProcessor(),
         UrlProcessor(),
-                // data rows (sub-values)
+        // data rows (sub-values)
         AttendeesProcessor(),
         RemindersProcessor(accountName)
     )
@@ -259,13 +261,6 @@ class LegacyAndroidEventProcessor(
                     row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
                         Css3Color.entries.firstOrNull { it.argb == color }
                     }
-
-        // status
-        when (row.getAsInteger(Events.STATUS)) {
-            Events.STATUS_CONFIRMED -> to.status = Status.VEVENT_CONFIRMED
-            Events.STATUS_TENTATIVE -> to.status = Status.VEVENT_TENTATIVE
-            Events.STATUS_CANCELED -> to.status = Status.VEVENT_CANCELLED
-        }
 
         // availability
         to.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
