@@ -24,6 +24,7 @@ import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
+import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
@@ -75,6 +76,7 @@ class LegacyAndroidEventProcessor(
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
+        MutatorsProcessor(),    // for PRODID
         UidProcessor(),
         TitleProcessor(),
         LocationProcessor(),
@@ -129,11 +131,6 @@ class LegacyAndroidEventProcessor(
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
-
-        row.getAsString(Events.MUTATORS)?.let { strPackages ->
-            val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
-            to.userAgents.addAll(packages)
-        }
 
         val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = row.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
