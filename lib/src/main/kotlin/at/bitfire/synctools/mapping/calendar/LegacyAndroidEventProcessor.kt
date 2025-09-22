@@ -24,6 +24,7 @@ import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
@@ -71,10 +72,14 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
+        // event row fields
         UidProcessor(),
-        CategoriesProcessor(),
+        // data rows (sub-values)
         AttendeesProcessor(),
-        RemindersProcessor(accountName)
+        RemindersProcessor(accountName),
+        // extended properties
+        CategoriesProcessor(),
+        UrlProcessor()
     )
 
 
@@ -318,13 +323,6 @@ class LegacyAndroidEventProcessor(
 
         try {
             when (name) {
-                AndroidEvent2.EXTNAME_URL ->
-                    try {
-                        to.url = URI(rawValue)
-                    } catch(_: URISyntaxException) {
-                        logger.warning("Won't process invalid local URL: $rawValue")
-                    }
-
                 UnknownProperty.CONTENT_ITEM_TYPE ->
                     to.unknownProperties += UnknownProperty.fromJsonString(rawValue)
             }
