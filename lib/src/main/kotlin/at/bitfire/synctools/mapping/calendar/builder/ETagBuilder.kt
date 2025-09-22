@@ -19,11 +19,11 @@ class ETagBuilder(
         val values = to.entityValues
         if (from === main) {
             // only set ETag and Schedule-Tag for main event
-            values.put(AndroidEvent2.Companion.COLUMN_ETAG, eTag)
-            values.put(AndroidEvent2.Companion.COLUMN_SCHEDULE_TAG, scheduleTag)
+            values.put(AndroidEvent2.COLUMN_ETAG, eTag)
+            values.put(AndroidEvent2.COLUMN_SCHEDULE_TAG, scheduleTag)
         } else {
-            values.putNull(AndroidEvent2.Companion.COLUMN_ETAG)
-            values.putNull(AndroidEvent2.Companion.COLUMN_SCHEDULE_TAG)
+            values.putNull(AndroidEvent2.COLUMN_ETAG)
+            values.putNull(AndroidEvent2.COLUMN_SCHEDULE_TAG)
         }
     }
 
