@@ -17,7 +17,7 @@ import java.util.logging.Logger
 
 class UnknownPropertiesProcessor: AndroidEventFieldProcessor {
 
-    val logger: Logger
+    private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
 
     override fun process(from: Entity, main: Entity, to: Event) {
