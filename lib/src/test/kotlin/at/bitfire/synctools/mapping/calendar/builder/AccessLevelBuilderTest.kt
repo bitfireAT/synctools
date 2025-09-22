@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.ContentValues
 import android.content.Entity
+import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
@@ -15,35 +16,70 @@ import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.property.Clazz
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class RetainedClassificationBuilderTest {
+class AccessLevelBuilderTest {
 
-    private val builder = RetainedClassificationBuilder()
+    private val builder = AccessLevelBuilder()
 
     @Test
-    fun `No CLASS`() {
+    fun `No classification`() {
         val result = Entity(ContentValues())
         builder.build(
             from = Event(),
             main = Event(),
             to = result
         )
-        assertTrue(result.subValues.isEmpty())
+        assertContentValuesEqual(contentValuesOf(
+            Events.ACCESS_LEVEL to Events.ACCESS_DEFAULT
+        ), result.entityValues)
+        assertEquals(0, result.subValues.size)
     }
 
     @Test
-    fun `CLASS is CONFIDENTIAL`() {
+    fun `Classification is PUBLIC`() {
+        val result = Entity(ContentValues())
+        builder.build(
+            from = Event(classification = Clazz.PUBLIC),
+            main = Event(),
+            to = result
+        )
+        assertContentValuesEqual(contentValuesOf(
+            Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
+        ), result.entityValues)
+        assertEquals(0, result.subValues.size)
+    }
+
+    @Test
+    fun `Classification is PRIVATE`() {
+        val result = Entity(ContentValues())
+        builder.build(
+            from = Event(classification = Clazz.PRIVATE),
+            main = Event(),
+            to = result
+        )
+        assertContentValuesEqual(contentValuesOf(
+            Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
+        ), result.entityValues)
+        assertEquals(0, result.subValues.size)
+    }
+
+    @Test
+    fun `Classification is CONFIDENTIAL`() {
         val result = Entity(ContentValues())
         builder.build(
             from = Event(classification = Clazz.CONFIDENTIAL),
             main = Event(),
             to = result
         )
+
+        assertContentValuesEqual(contentValuesOf(
+            Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
+        ), result.entityValues)
+
         assertEquals(1, result.subValues.size)
         assertContentValuesEqual(
             contentValuesOf(
@@ -55,40 +91,23 @@ class RetainedClassificationBuilderTest {
     }
 
     @Test
-    fun `CLASS is PRIVATE`() {
+    fun `Classification is custom value`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz.PRIVATE),
+            from = Event(classification = Clazz("TOP-SECRET")),
             main = Event(),
             to = result
         )
-        assertTrue(result.subValues.isEmpty())
-    }
 
-    @Test
-    fun `CLASS is PUBLIC`() {
-        val result = Entity(ContentValues())
-        builder.build(
-            from = Event(classification = Clazz.PUBLIC),
-            main = Event(),
-            to = result
-        )
-        assertTrue(result.subValues.isEmpty())
-    }
+        assertContentValuesEqual(contentValuesOf(
+            Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
+        ), result.entityValues)
 
-    @Test
-    fun `CLASS is X-Something`() {
-        val result = Entity(ContentValues())
-        builder.build(
-            from = Event(classification = Clazz("X-Something")),
-            main = Event(),
-            to = result
-        )
         assertEquals(1, result.subValues.size)
         assertContentValuesEqual(
             contentValuesOf(
                 ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
-                ExtendedProperties.VALUE to "[\"CLASS\",\"X-Something\"]"
+                ExtendedProperties.VALUE to "[\"CLASS\",\"TOP-SECRET\"]"
             ),
             result.subValues.first().values
         )

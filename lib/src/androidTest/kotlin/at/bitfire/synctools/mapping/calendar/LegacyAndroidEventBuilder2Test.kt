@@ -8,41 +8,29 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.accounts.Account
 import android.content.ContentProviderClient
-import android.content.Entity
 import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.AUTHORITY
 import android.provider.CalendarContract.Events
-import android.provider.CalendarContract.ExtendedProperties
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
-import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Attendee
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -119,7 +107,6 @@ class LegacyAndroidEventBuilder2Test {
         return LegacyAndroidEventBuilder2(
             calendar = calendar,
             event = event,
-            id = null,
             syncId = "some sync ID",
             eTag = null,
             scheduleTag = null,
@@ -129,17 +116,6 @@ class LegacyAndroidEventBuilder2Test {
 
     private fun buildEvent(automaticDates: Boolean, eventBuilder: Event.() -> Unit) =
         buildEventAndExceptions(automaticDates, eventBuilder).main
-
-    private fun firstExtendedProperty(entity: Entity) =
-        entity.subValues.firstOrNull { it.uri == ExtendedProperties.CONTENT_URI }?.values?.getAsString(ExtendedProperties.VALUE)
-
-    private fun firstUnknownProperty(entity: Entity): Property? {
-        val rawValue = firstExtendedProperty(entity)
-        return if (rawValue != null)
-            UnknownProperty.fromJsonString(rawValue)
-        else
-            null
-    }
 
     @Test
     fun testBuildEvent_NonAllDay_NoDtEnd_NoDuration_NonRecurring() {
@@ -506,303 +482,6 @@ class LegacyAndroidEventBuilder2Test {
 
         assertEquals(1591021801000L, entity.entityValues.getAsLong(Events.DTEND))
         assertEquals(TimeZones.UTC_ID, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
-    }
-
-    @Test
-    fun testBuildEvent_Color_WhenNotAvailable() {
-        buildEvent(true) {
-            color = Css3Color.darkseagreen
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.CALENDAR_COLOR_KEY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Color_WhenAvailable() {
-        val provider = AndroidCalendarProvider(testAccount, client)
-        provider.provideCss3ColorIndices()
-        buildEvent(true) {
-            color = Css3Color.darkseagreen
-        }.let { result ->
-            assertEquals(Css3Color.darkseagreen.name, result.entityValues.getAsString(Events.EVENT_COLOR_KEY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_NotGroupScheduled() {
-        buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_MailTo() {
-        buildEvent(true) {
-            organizer = Organizer("mailto:organizer@example.com")
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_EmailParameter() {
-        buildEvent(true) {
-            organizer = Organizer("local-id:user").apply {
-                parameters.add(Email("organizer@example.com"))
-            }
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertEquals("organizer@example.com", result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Organizer_NotEmail() {
-        buildEvent(true) {
-            organizer = Organizer("local-id:user")
-            attendees += Attendee("mailto:attendee@example.com")
-        }.let { result ->
-            assertNull(result.entityValues.getAsString(Events.ORGANIZER))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Confirmed() {
-        buildEvent(true) {
-            status = Status.VEVENT_CONFIRMED
-        }.let { result ->
-            assertEquals(Events.STATUS_CONFIRMED, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Cancelled() {
-        buildEvent(true) {
-            status = Status.VEVENT_CANCELLED
-        }.let { result ->
-            assertEquals(Events.STATUS_CANCELED, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Tentative() {
-        buildEvent(true) {
-            status = Status.VEVENT_TENTATIVE
-        }.let { result ->
-            assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_Invalid() {
-        buildEvent(true) {
-            status = Status.VTODO_IN_PROCESS
-        }.let { result ->
-            assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Status_None() {
-        buildEvent(true) {
-        }.let { result ->
-            assertNull(result.entityValues.getAsInteger(Events.STATUS))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Opaque_True() {
-        buildEvent(true) {
-            opaque = true
-        }.let { result ->
-            assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.getAsInteger(Events.AVAILABILITY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Opaque_False() {
-        buildEvent(true) {
-            opaque = false
-        }.let { result ->
-            assertEquals(Events.AVAILABILITY_FREE, result.entityValues.getAsInteger(Events.AVAILABILITY))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Public() {
-        buildEvent(true) {
-            classification = Clazz.PUBLIC
-        }.let { result ->
-            assertEquals(Events.ACCESS_PUBLIC, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Private() {
-        buildEvent(true) {
-            classification = Clazz.PRIVATE
-        }.let { result ->
-            assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Confidential() {
-        buildEvent(true) {
-            classification = Clazz.CONFIDENTIAL
-        }.let { result ->
-            assertEquals(Events.ACCESS_CONFIDENTIAL, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertEquals(Clazz.CONFIDENTIAL, firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_Custom() {
-        buildEvent(true) {
-            classification = Clazz("TOP-SECRET")
-        }.let { result ->
-            assertEquals(Events.ACCESS_PRIVATE, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertEquals(Clazz("TOP-SECRET"), firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_Classification_None() {
-        buildEvent(true) {
-        }.let { result ->
-            assertEquals(Events.ACCESS_DEFAULT, result.entityValues.getAsInteger(Events.ACCESS_LEVEL))
-            assertNull(firstUnknownProperty(result))
-        }
-    }
-
-    @Test
-    fun testBuildEvent_UID2445() {
-        buildEvent(true) {
-            uid = "event1@example.com"
-        }.let { result ->
-            assertEquals("event1@example.com", result.entityValues.getAsString(Events.UID_2445))
-        }
-    }
-
-
-    // exceptions → test with EventAndException
-
-    private fun firstException(eventAndExceptions: EventAndExceptions) =
-        eventAndExceptions.exceptions.first()
-
-    @Test
-    fun testBuildException_NonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(tzVienna.id, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(0, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=DAILY;COUNT=10", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594143000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(0, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_NonAllDay_RecurrenceIdAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart("20200706T193000", tzVienna)
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))   // illegal! should be rewritten to DateTime("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai)
-                summary = "Event moved to one hour later"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1594056600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(tzVienna.id, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(0, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=DAILY;COUNT=10", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594143000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(0, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594038600000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(tzShanghai.id, exception.getAsString(Events.EVENT_TIMEZONE))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Event moved to one hour later", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_AllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId(Date("20200707"))
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(AndroidTimeUtils.TZID_ALLDAY, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(1, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=WEEKLY;COUNT=3", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594080000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
-            }
-        }
-    }
-
-    @Test
-    fun testBuildException_AllDay_RecurrenceIdNonAllDay() {
-        buildEventAndExceptions(false) {
-            dtStart = DtStart(Date("20200706"))
-            rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            exceptions += Event().apply {
-                recurrenceId = RecurrenceId("20200707T000000", tzVienna)     // illegal! should be rewritten to Date("20200707")
-                dtStart = DtStart("20200706T123000", tzVienna)
-                summary = "Today not an all-day event"
-            }
-        }.let { result ->
-            val values = result.main.entityValues
-            assertEquals(1593993600000L, values.getAsLong(Events.DTSTART))
-            assertEquals(AndroidTimeUtils.TZID_ALLDAY, values.getAsString(Events.EVENT_TIMEZONE))
-            assertEquals(1, values.getAsInteger(Events.ALL_DAY))
-            assertEquals("FREQ=WEEKLY;COUNT=3", values.getAsString(Events.RRULE))
-            firstException(result).let { exceptionEntity ->
-                val exception = exceptionEntity.entityValues
-                assertEquals(1594080000000L, exception.getAsLong(Events.ORIGINAL_INSTANCE_TIME))
-                assertEquals(1, exception.getAsInteger(Events.ORIGINAL_ALL_DAY))
-                assertEquals(1594031400000L, exception.getAsLong(Events.DTSTART))
-                assertEquals(0, exception.getAsInteger(Events.ALL_DAY))
-                assertEquals("Today not an all-day event", exception.getAsString(Events.TITLE))
-            }
-        }
     }
 
 }
