@@ -11,7 +11,6 @@ import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
@@ -23,6 +22,7 @@ import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
+import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
@@ -35,12 +35,8 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.ExRule
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
 import java.util.logging.Level
@@ -62,15 +58,14 @@ class LegacyAndroidEventProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
         MutatorsProcessor(),    // for PRODID
         UidProcessor(),
         TitleProcessor(),
-        TimeFieldsProcessor(),
         LocationProcessor(),
+        TimeFieldsProcessor(),
+        RecurrenceFieldsProcessor(),
         DescriptionProcessor(),
         ColorProcessor(),
         AccessLevelProcessor(),
@@ -123,29 +118,6 @@ class LegacyAndroidEventProcessor(
 
     private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
         logger.log(Level.FINE, "Read event entity from calender provider", row)
-
-        // recurrence
-        try {
-            row.getAsString(Events.RRULE)?.let { rulesStr ->
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.rRules += RRule(rule)
-            }
-            row.getAsString(Events.RDATE)?.let { datesStr ->
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay, tsStart) { RDate(it) }
-                to.rDates += rDate
-            }
-
-            row.getAsString(Events.EXRULE)?.let { rulesStr ->
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.exRules += ExRule(null, rule)
-            }
-            row.getAsString(Events.EXDATE)?.let { datesStr ->
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay) { ExDate(it) }
-                to.exDates += exDate
-            }
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
-        }
 
         // exceptions from recurring events
         row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
