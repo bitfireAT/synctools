@@ -34,9 +34,13 @@ class UnknownPropertiesProcessorTest {
     }
 
     @Test
-    fun `Two unknown properties`() {
+    fun `Three unknown properties, one of them excluded`() {
         val result = Event()
         val entity = Entity(ContentValues())
+        entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(     // used by ClassificationProcessor
+            ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+            ExtendedProperties.VALUE to "[\"CLASS\", \"CONFIDENTIAL\"]"
+        ))
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
             ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
             ExtendedProperties.VALUE to "[\"X-PROP1\", \"value 1\"]"

@@ -17,6 +17,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
@@ -31,7 +32,6 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
@@ -71,8 +71,9 @@ class LegacyAndroidEventProcessor(
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
-        // event row fields
+        // event row fields (order by targeted property as in RFC 5545 3.6.1)
         UidProcessor(),
+        AccessLevelProcessor(),
         // data rows (sub-values)
         AttendeesProcessor(),
         RemindersProcessor(accountName),
@@ -95,9 +96,6 @@ class LegacyAndroidEventProcessor(
             originalAllDay = DateUtils.isDate(to.dtStart),
             to = to
         )
-
-        // post-processing
-        useRetainedClassification(to)
     }
 
     /**
@@ -281,13 +279,6 @@ class LegacyAndroidEventProcessor(
                 }
         }
 
-        // classification
-        when (row.getAsInteger(Events.ACCESS_LEVEL)) {
-            Events.ACCESS_PUBLIC -> to.classification = Clazz.PUBLIC
-            Events.ACCESS_PRIVATE -> to.classification = Clazz.PRIVATE
-            Events.ACCESS_CONFIDENTIAL -> to.classification = Clazz.CONFIDENTIAL
-        }
-
         // exceptions from recurring events
         row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (row.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
@@ -343,22 +334,6 @@ class LegacyAndroidEventProcessor(
                 to.exceptions += exceptionEvent
             }
         }
-    }
-
-    private fun useRetainedClassification(event: Event) {
-        var retainedClazz: Clazz? = null
-        val it = event.unknownProperties.iterator()
-        while (it.hasNext()) {
-            val prop = it.next()
-            if (prop is Clazz) {
-                retainedClazz = prop
-                it.remove()
-            }
-        }
-
-        if (event.classification == null)
-            // no classification, use retained one if possible
-            event.classification = retainedClazz
     }
 
 }
