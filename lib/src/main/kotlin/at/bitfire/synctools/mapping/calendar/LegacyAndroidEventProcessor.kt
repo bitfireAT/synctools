@@ -27,12 +27,12 @@ import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
+import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -86,6 +86,7 @@ class LegacyAndroidEventProcessor(
         AvailabilityProcessor(),
         StatusProcessor(),
         // scheduling
+        SequenceProcessor(),
         OrganizerProcessor(),
         AttendeesProcessor(),
         // extended properties
@@ -244,8 +245,6 @@ class LegacyAndroidEventProcessor(
         } catch (e: Exception) {
             logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
         }
-
-        to.sequence = row.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
 
         // exceptions from recurring events
         row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->

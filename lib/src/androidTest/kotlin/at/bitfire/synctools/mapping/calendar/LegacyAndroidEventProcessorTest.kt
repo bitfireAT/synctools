@@ -142,24 +142,6 @@ class LegacyAndroidEventProcessorTest {
 
 
     @Test
-    fun testPopulateEvent_Sequence_Int() {
-        populateEvent(true, asSyncAdapter = true) {
-            put(AndroidEvent2.COLUMN_SEQUENCE, 5)
-        }.let { result ->
-            assertEquals(5, result.sequence)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Sequence_Null() {
-        populateEvent(true, asSyncAdapter = true) {
-            putNull(AndroidEvent2.COLUMN_SEQUENCE)
-        }.let { result ->
-            assertNull(result.sequence)
-        }
-    }
-
-    @Test
     fun testPopulateEvent_NonAllDay_NonRecurring() {
         populateEvent(false) {
             put(Events.DTSTART, 1592733600000L)  // 21/06/2020 12:00 +0200
