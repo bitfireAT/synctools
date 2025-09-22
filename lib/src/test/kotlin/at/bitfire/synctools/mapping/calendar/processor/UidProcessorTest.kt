@@ -27,7 +27,8 @@ class UidProcessorTest {
     @Test
     fun `No UID`() {
         val result = Event()
-        processor.process(Entity(ContentValues()), result)
+        val entity = Entity(ContentValues())
+        processor.process(entity, entity, result)
         assertNull(result.uid)
     }
 
@@ -37,7 +38,7 @@ class UidProcessorTest {
             Events.UID_2445 to "from-event"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals("from-event", result.uid)
     }
 
@@ -49,7 +50,7 @@ class UidProcessorTest {
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals("from-extended", result.uid)
     }
 
@@ -63,7 +64,7 @@ class UidProcessorTest {
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals("from-event", result.uid)
     }
 

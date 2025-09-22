@@ -14,7 +14,7 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2
 
 class UidProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: Event) {
         // take from event row or Google Calendar extended property
         to.uid = from.entityValues.getAsString(Events.UID_2445) ?:
             uidFromExtendedProperties(from.subValues)

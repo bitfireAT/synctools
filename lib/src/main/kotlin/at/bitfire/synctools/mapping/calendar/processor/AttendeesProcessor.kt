@@ -26,7 +26,7 @@ class AttendeesProcessor: AndroidEventFieldProcessor {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: Event) {
         for (row in from.subValues.filter { it.uri == Attendees.CONTENT_URI })
             populateAttendee(row.values, to)
     }

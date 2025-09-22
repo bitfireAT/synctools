@@ -37,7 +37,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals(URI("mailto:attendee@example.com"), result.attendees.first().calAddress)
     }
 
@@ -49,7 +49,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_IDENTITY to "//example.com/principals/attendee"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals(URI("https://example.com/principals/attendee"), result.attendees.first().calAddress)
     }
 
@@ -62,7 +62,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_IDENTITY to "//example.com/principals/attendee"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         assertEquals(1, result.attendees.size)
         val attendee = result.attendees.first()
         assertEquals(URI("https://example.com/principals/attendee"), attendee.calAddress)
@@ -81,7 +81,7 @@ class AttendeesProcessorTest {
                     Attendees.ATTENDEE_TYPE to type
                 ))
                 val result = Event()
-                processor.process(entity, result)
+                processor.process(entity, entity, result)
                 val attendee = result.attendees.first()
                 assertNull(attendee.getParameter(Parameter.CUTYPE))
             }
@@ -97,7 +97,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to type
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertEquals(CuType.GROUP, attendee.getParameter<CuType>(Parameter.CUTYPE))
         }
@@ -113,7 +113,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to type
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertNull(attendee.getParameter(Parameter.CUTYPE))
             assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
@@ -129,7 +129,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
         assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
@@ -146,7 +146,7 @@ class AttendeesProcessorTest {
                     Attendees.ATTENDEE_TYPE to type
                 ))
                 val result = Event()
-                processor.process(entity, result)
+                processor.process(entity, entity, result)
                 val attendee = result.attendees.first()
                 assertEquals(CuType.UNKNOWN, attendee.getParameter<CuType>(Parameter.CUTYPE))
             }
@@ -163,7 +163,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_NONE
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertNull(attendee.getParameter<Role>(Parameter.ROLE))
         }
@@ -179,7 +179,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_REQUIRED
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertNull(attendee.getParameter<Role>(Parameter.ROLE))
         }
@@ -195,7 +195,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_OPTIONAL
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertEquals(Role.OPT_PARTICIPANT, attendee.getParameter<Role>(Parameter.ROLE))
         }
@@ -211,7 +211,7 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val attendee = result.attendees.first()
             assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
         }
@@ -226,7 +226,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(CuType.ROOM, attendee.getParameter<CuType>(Parameter.CUTYPE))
     }
@@ -239,7 +239,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertNull(attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -252,7 +252,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_INVITED
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(PartStat.NEEDS_ACTION, attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -265,7 +265,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_ACCEPTED
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(PartStat.ACCEPTED, attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -278,7 +278,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_DECLINED
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(PartStat.DECLINED, attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -291,7 +291,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_TENTATIVE
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertEquals(PartStat.TENTATIVE, attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -304,7 +304,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_NONE
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertNull(attendee.getParameter(Parameter.PARTSTAT))
     }
@@ -317,7 +317,7 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val attendee = result.attendees.first()
         assertTrue(attendee.getParameter<Rsvp>(Parameter.RSVP).rsvp)
     }

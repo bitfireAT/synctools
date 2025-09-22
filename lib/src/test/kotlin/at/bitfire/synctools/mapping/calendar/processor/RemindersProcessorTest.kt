@@ -37,7 +37,7 @@ class RemindersProcessorTest {
             Reminders.MINUTES to 10
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Action.EMAIL, alarm.action)
         assertNotNull(alarm.summary)
@@ -56,7 +56,7 @@ class RemindersProcessorTest {
             Reminders.MINUTES to 10
         ))
         val result = Event()
-        processor2.process(entity, result)
+        processor2.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Action.DISPLAY, alarm.action)
         assertNotNull(alarm.description)
@@ -71,7 +71,7 @@ class RemindersProcessorTest {
                 Reminders.MINUTES to 10
             ))
             val result = Event()
-            processor.process(entity, result)
+            processor.process(entity, entity, result)
             val alarm = result.alarms.first()
             assertEquals(Action.DISPLAY, alarm.action)
             assertNotNull(alarm.description)
@@ -87,7 +87,7 @@ class RemindersProcessorTest {
             Reminders.MINUTES to 10
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Duration.ofMinutes(-10), alarm.trigger.duration)
     }
@@ -100,7 +100,7 @@ class RemindersProcessorTest {
             Reminders.MINUTES to -10
         ))
         val result = Event()
-        processor.process(entity, result)
+        processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Duration.ofMinutes(10), alarm.trigger.duration)
     }
