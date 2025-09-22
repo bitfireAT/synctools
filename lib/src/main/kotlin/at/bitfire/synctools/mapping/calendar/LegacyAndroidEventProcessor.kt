@@ -6,11 +6,9 @@
 
 package at.bitfire.synctools.mapping.calendar
 
-import android.content.ContentValues
 import android.content.Entity
-import android.provider.CalendarContract.Attendees
+import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
@@ -35,9 +33,7 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Status
-import java.util.logging.Level
-import java.util.logging.Logger
+import net.fortuna.ical4j.model.property.RecurrenceId
 
 /**
  * Legacy mapper from Android event main + data rows to an [Event]
@@ -51,9 +47,6 @@ import java.util.logging.Logger
 class LegacyAndroidEventProcessor(
     private val accountName: String
 ) {
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
@@ -83,17 +76,54 @@ class LegacyAndroidEventProcessor(
 
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
+        // main event
         populateEvent(
             entity = eventAndExceptions.main,
             main = eventAndExceptions.main,
             to = to
         )
-        populateExceptions(
-            exceptions = eventAndExceptions.exceptions,
-            main = eventAndExceptions.main,
-            originalAllDay = DateUtils.isDate(to.dtStart),
-            to = to
+
+        // exceptions of recurring main event
+        for (exception in eventAndExceptions.exceptions) {
+            val exceptionEvent = Event()
+
+            // make sure that exception has a RECURRENCE-ID
+            val recurrenceId = exceptionEvent.recurrenceId ?: continue
+
+            // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
+            if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED) {
+                addAsExDate(exception, recurrenceId, to = to)
+
+            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
+                // convert exception to Event
+                populateEvent(
+                    entity = exception,
+                    main = eventAndExceptions.main,
+                    to = exceptionEvent
+                )
+
+                // add exception to list of exceptions
+                to.exceptions += exceptionEvent
+            }
+        }
+    }
+
+    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: Event) {
+        val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
+        val list = DateList(
+            if (originalAllDay) Value.DATE else Value.DATE_TIME,
+            recurrenceId.timeZone
         )
+        list.add(recurrenceId.date)
+        to.exDates += ExDate(list).apply {
+            // also set TZ properties of ExDate (not only the list)
+            if (!originalAllDay) {
+                if (recurrenceId.isUtc)
+                    setUtc(true)
+                else
+                    timeZone = recurrenceId.timeZone
+            }
+        }
     }
 
     /**
@@ -105,51 +135,9 @@ class LegacyAndroidEventProcessor(
      * @param to                destination data object
      */
     private fun populateEvent(entity: Entity, main: Entity, to: Event) {
-        // legacy processors
-        val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
-        populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
-
         // new processors
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = to)
-    }
-
-    private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
-        logger.log(Level.FINE, "Read event entity from calender provider", row)
-    }
-
-    private fun populateExceptions(exceptions: List<Entity>, main: Entity, originalAllDay: Boolean, to: Event) {
-        for (exception in exceptions) {
-            val exceptionEvent = Event()
-
-            // convert exception row to Event
-            populateEvent(exception, main, to = exceptionEvent)
-
-            // exceptions are required to have a RECURRENCE-ID
-            val recurrenceId = exceptionEvent.recurrenceId ?: continue
-
-            // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
-                val list = DateList(
-                    if (originalAllDay) Value.DATE else Value.DATE_TIME,
-                    recurrenceId.timeZone
-                )
-                list.add(recurrenceId.date)
-                to.exDates += ExDate(list).apply {
-                    // also set TZ properties of ExDate (not only the list)
-                    if (!originalAllDay) {
-                        if (recurrenceId.isUtc)
-                            setUtc(true)
-                        else
-                            timeZone = recurrenceId.timeZone
-                    }
-                }
-
-            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // add exception to list of exceptions
-                to.exceptions += exceptionEvent
-            }
-        }
     }
 
 }
