@@ -360,34 +360,7 @@ class LegacyAndroidEventProcessorTest {
             assertEquals(Css3Color.silver, result.color)
         }
     }
-    
 
-    @Test
-    fun testPopulateEvent_Availability_Busy() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_BUSY)
-        }.let { result ->
-            assertTrue(result.opaque)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Availability_Tentative() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_TENTATIVE)
-        }.let { result ->
-            assertTrue(result.opaque)
-        }
-    }
-
-    @Test
-    fun testPopulateEvent_Availability_Free() {
-        populateEvent(true) {
-            put(Events.AVAILABILITY, Events.AVAILABILITY_FREE)
-        }.let { result ->
-            assertFalse(result.opaque)
-        }
-    }
 
     @Test
     fun testPopulateEvent_Organizer_NotGroupScheduled() {

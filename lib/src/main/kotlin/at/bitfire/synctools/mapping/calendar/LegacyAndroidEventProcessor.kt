@@ -20,6 +20,7 @@ import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
+import at.bitfire.synctools.mapping.calendar.processor.AvailabilityProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
@@ -81,6 +82,7 @@ class LegacyAndroidEventProcessor(
         LocationProcessor(),
         DescriptionProcessor(),
         AccessLevelProcessor(),
+        AvailabilityProcessor(),
         StatusProcessor(),
         // extended properties
         CategoriesProcessor(),
@@ -257,13 +259,9 @@ class LegacyAndroidEventProcessor(
                     logger.warning("Ignoring unknown color name \"$name\"")
                     null
                 }
-            } ?:
-                    row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
-                        Css3Color.entries.firstOrNull { it.argb == color }
-                    }
-
-        // availability
-        to.opaque = row.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
+            } ?: row.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
+                    Css3Color.entries.firstOrNull { it.argb == color }
+                }
 
         // scheduling
         if (groupScheduled) {
