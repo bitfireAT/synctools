@@ -8,21 +8,58 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.property.Clazz
 
 class AccessLevelBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(
-            Events.ACCESS_LEVEL,
-            when (from.classification) {
-                Clazz.PUBLIC -> Events.ACCESS_PUBLIC
-                Clazz.CONFIDENTIAL -> Events.ACCESS_CONFIDENTIAL
-                null -> Events.ACCESS_DEFAULT
-                else /* including Events.ACCESS_PRIVATE */ -> Events.ACCESS_PRIVATE
+        val accessLevel: Int
+        val retainValue: Boolean
+
+        val classification = from.classification
+        when (classification) {
+            Clazz.PUBLIC -> {
+                accessLevel = Events.ACCESS_PUBLIC
+                retainValue = false
             }
-        )
+
+            Clazz.PRIVATE -> {
+                accessLevel = Events.ACCESS_PRIVATE
+                retainValue = false
+            }
+
+            Clazz.CONFIDENTIAL -> {
+                accessLevel = Events.ACCESS_CONFIDENTIAL
+                retainValue = true
+            }
+
+            null -> {
+                accessLevel = Events.ACCESS_DEFAULT
+                retainValue = false
+            }
+
+            else -> {
+                accessLevel = Events.ACCESS_PRIVATE
+                retainValue = true
+            }
+        }
+
+        // store access level in main row
+        to.entityValues.put(Events.ACCESS_LEVEL, accessLevel)
+
+        // add retained classification, if needed
+        if (retainValue && classification != null)
+            to.addSubValue(
+                ExtendedProperties.CONTENT_URI,
+                contentValuesOf(
+                    ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                    ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
+                )
+            )
     }
 
 }

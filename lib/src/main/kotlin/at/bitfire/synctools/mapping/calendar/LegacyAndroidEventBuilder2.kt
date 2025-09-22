@@ -25,7 +25,6 @@ import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RecurrenceFieldsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
-import at.bitfire.synctools.mapping.calendar.builder.RetainedClassificationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
@@ -85,7 +84,6 @@ class LegacyAndroidEventBuilder2(
         AttendeesBuilder(calendar),
         CategoriesBuilder(),
         RemindersBuilder(),
-        RetainedClassificationBuilder(),
         UnknownPropertiesBuilder(),
         UrlBuilder()
     )

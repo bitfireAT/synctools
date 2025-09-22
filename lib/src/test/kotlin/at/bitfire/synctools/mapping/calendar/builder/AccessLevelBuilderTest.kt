@@ -9,10 +9,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.property.Clazz
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,6 +36,7 @@ class AccessLevelBuilderTest {
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_DEFAULT
         ), result.entityValues)
+        assertEquals(0, result.subValues.size)
     }
 
     @Test
@@ -46,6 +50,7 @@ class AccessLevelBuilderTest {
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ), result.entityValues)
+        assertEquals(0, result.subValues.size)
     }
 
     @Test
@@ -59,6 +64,7 @@ class AccessLevelBuilderTest {
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ), result.entityValues)
+        assertEquals(0, result.subValues.size)
     }
 
     @Test
@@ -69,9 +75,19 @@ class AccessLevelBuilderTest {
             main = Event(),
             to = result
         )
+
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
         ), result.entityValues)
+
+        assertEquals(1, result.subValues.size)
+        assertContentValuesEqual(
+            contentValuesOf(
+                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                ExtendedProperties.VALUE to "[\"CLASS\",\"CONFIDENTIAL\"]"
+            ),
+            result.subValues.first().values
+        )
     }
 
     @Test
@@ -82,9 +98,19 @@ class AccessLevelBuilderTest {
             main = Event(),
             to = result
         )
+
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ), result.entityValues)
+
+        assertEquals(1, result.subValues.size)
+        assertContentValuesEqual(
+            contentValuesOf(
+                ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
+                ExtendedProperties.VALUE to "[\"CLASS\",\"TOP-SECRET\"]"
+            ),
+            result.subValues.first().values
+        )
     }
 
 }
