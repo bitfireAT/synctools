@@ -41,6 +41,7 @@ import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.util.TimeZones
 import java.net.URI
 import java.net.URISyntaxException
