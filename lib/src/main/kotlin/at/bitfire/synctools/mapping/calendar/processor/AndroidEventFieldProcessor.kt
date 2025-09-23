@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.exception.InvalidLocalResourceException
 
 interface AndroidEventFieldProcessor {
 
@@ -31,6 +32,8 @@ interface AndroidEventFieldProcessor {
      * @param main      main event from content provider
      * @param to        destination object where the mapped data are stored
      *                  (no explicit `null` values needed for fields that are not present)
+     *
+     * @throws InvalidLocalResourceException on missing or invalid required fields (like [android.provider.CalendarContract.Events.DTSTART])
      */
     fun process(from: Entity, main: Entity, to: Event)
 

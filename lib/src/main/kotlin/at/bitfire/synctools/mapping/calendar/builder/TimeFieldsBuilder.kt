@@ -16,7 +16,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
@@ -30,7 +30,7 @@ class TimeFieldsBuilder: AndroidEntityBuilder {
     override fun build(from: Event, main: Event, to: Entity) {
         val values = to.entityValues
 
-        val dtStart = from.dtStart ?: throw InvalidLocalResourceException("Events must have DTSTART")
+        val dtStart = from.dtStart ?: throw InvalidRemoteResourceException("Events must have DTSTART")
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android

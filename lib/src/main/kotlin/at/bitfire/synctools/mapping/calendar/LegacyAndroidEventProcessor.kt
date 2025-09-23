@@ -6,16 +6,9 @@
 
 package at.bitfire.synctools.mapping.calendar
 
-import android.content.ContentValues
 import android.content.Entity
-import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.TimeApiExtensions
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
@@ -26,35 +19,21 @@ import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
+import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
+import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
+import at.bitfire.synctools.mapping.calendar.processor.TimeFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.ExRule
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.util.TimeZones
-import java.time.Duration
-import java.time.Instant
-import java.time.Period
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.util.logging.Level
-import java.util.logging.Logger
 
 /**
  * Legacy mapper from Android event main + data rows to an [Event]
@@ -69,17 +48,15 @@ class LegacyAndroidEventProcessor(
     private val accountName: String
 ) {
 
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
-
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
         MutatorsProcessor(),    // for PRODID
         UidProcessor(),
+        OriginalInstanceTimeProcessor(),
         TitleProcessor(),
         LocationProcessor(),
+        TimeFieldsProcessor(),
+        RecurrenceFieldsProcessor(),
         DescriptionProcessor(),
         ColorProcessor(),
         AccessLevelProcessor(),
@@ -99,17 +76,51 @@ class LegacyAndroidEventProcessor(
 
 
     fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
+        // main event
         populateEvent(
             entity = eventAndExceptions.main,
             main = eventAndExceptions.main,
             to = to
         )
-        populateExceptions(
-            exceptions = eventAndExceptions.exceptions,
-            main = eventAndExceptions.main,
-            originalAllDay = DateUtils.isDate(to.dtStart),
-            to = to
+
+        // exceptions of recurring main event
+        for (exception in eventAndExceptions.exceptions) {
+            val exceptionEvent = Event()
+
+            // convert exception to Event
+            populateEvent(
+                entity = exception,
+                main = eventAndExceptions.main,
+                to = exceptionEvent
+            )
+
+            // make sure that exception has a RECURRENCE-ID
+            val recurrenceId = exceptionEvent.recurrenceId ?: continue
+
+            // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
+            if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
+                addAsExDate(exception, recurrenceId, to = to)
+            else
+                to.exceptions += exceptionEvent
+        }
+    }
+
+    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: Event) {
+        val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
+        val list = DateList(
+            if (originalAllDay) Value.DATE else Value.DATE_TIME,
+            recurrenceId.timeZone
         )
+        list.add(recurrenceId.date)
+        to.exDates += ExDate(list).apply {
+            // also set TZ properties of ExDate (not only the list)
+            if (!originalAllDay) {
+                if (recurrenceId.isUtc)
+                    setUtc(true)
+                else
+                    timeZone = recurrenceId.timeZone
+            }
+        }
     }
 
     /**
@@ -121,183 +132,9 @@ class LegacyAndroidEventProcessor(
      * @param to                destination data object
      */
     private fun populateEvent(entity: Entity, main: Entity, to: Event) {
-        // legacy processors
-        val hasAttendees = entity.subValues.any { it.uri == Attendees.CONTENT_URI }
-        populateEventRow(entity.entityValues, groupScheduled = hasAttendees, to = to)
-
         // new processors
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = to)
-    }
-
-    private fun populateEventRow(row: ContentValues, groupScheduled: Boolean, to: Event) {
-        logger.log(Level.FINE, "Read event entity from calender provider", row)
-
-        val allDay = (row.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-        val tsStart = row.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
-
-        var tsEnd = row.getAsLong(Events.DTEND)
-        var duration =   // only use DURATION of DTEND is not defined
-            if (tsEnd == null)
-                row.getAsString(Events.DURATION)?.let { AndroidTimeUtils.parseDuration(it) }
-            else
-                null
-
-        if (allDay) {
-            to.dtStart = DtStart(Date(tsStart))
-
-            // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
-            // Assume 1 day if missing (should never occur, but occurs).
-            if (tsEnd == null && duration == null)
-                duration = Duration.ofDays(1)
-
-            if (duration != null) {
-                // Some servers have problems with DURATION, so we always generate DTEND.
-                val startDate = ZonedDateTime.ofInstant(Instant.ofEpochMilli(tsStart), ZoneOffset.UTC).toLocalDate()
-                if (duration is Duration)
-                    duration = Period.ofDays(duration.toDays().toInt())
-                tsEnd = (startDate + duration).toEpochDay() * TimeApiExtensions.MILLIS_PER_DAY
-                duration = null
-            }
-
-            if (tsEnd != null) {
-                when {
-                    tsEnd < tsStart ->
-                        logger.warning("dtEnd $tsEnd (allDay) < dtStart $tsStart (allDay), ignoring")
-
-                    tsEnd == tsStart ->
-                        logger.fine("dtEnd $tsEnd (allDay) = dtStart, won't generate DTEND property")
-
-                    else /* tsEnd > tsStart */ ->
-                        to.dtEnd = DtEnd(Date(tsEnd))
-                }
-            }
-
-        } else /* !allDay */ {
-            // use DATE-TIME values
-
-            // check time zone ID (calendar apps may insert no or an invalid ID)
-            val startTzId = DateUtils.findAndroidTimezoneID(row.getAsString(Events.EVENT_TIMEZONE))
-            val startTz = tzRegistry.getTimeZone(startTzId)
-            val dtStartDateTime = DateTime(tsStart).apply {
-                if (startTz != null) {  // null if there was not ical4j time zone for startTzId, which should not happen, but technically may happen
-                    if (TimeZones.isUtc(startTz))
-                        isUtc = true
-                    else
-                        timeZone = startTz
-                }
-            }
-            to.dtStart = DtStart(dtStartDateTime)
-
-            // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
-            // Assume 1 hour if missing (should never occur, but occurs).
-            if (tsEnd == null && duration == null)
-                duration = Duration.ofHours(1)
-
-            if (duration != null) {
-                // Some servers have problems with DURATION, so we always generate DTEND.
-                val zonedStart = dtStartDateTime.toZonedDateTime()
-                tsEnd = (zonedStart + duration).toInstant().toEpochMilli()
-                duration = null
-            }
-
-            if (tsEnd != null) {
-                if (tsEnd < tsStart)
-                    logger.warning("dtEnd $tsEnd < dtStart $tsStart, ignoring")
-                /*else if (tsEnd == tsStart)    // iCloud sends 404 when it receives an iCalendar with DTSTART but without DTEND
-                    logger.fine("dtEnd $tsEnd == dtStart, won't generate DTEND property")*/
-                else /* tsEnd > tsStart */ {
-                    val endTz = row.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
-                        tzRegistry.getTimeZone(tzId)
-                    } ?: startTz
-                    to.dtEnd = DtEnd(DateTime(tsEnd).apply {
-                        if (endTz != null) {
-                            if (TimeZones.isUtc(endTz))
-                                isUtc = true
-                            else
-                                timeZone = endTz
-                        }
-                    })
-                }
-            }
-
-        }
-
-        // recurrence
-        try {
-            row.getAsString(Events.RRULE)?.let { rulesStr ->
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.rRules += RRule(rule)
-            }
-            row.getAsString(Events.RDATE)?.let { datesStr ->
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay, tsStart) { RDate(it) }
-                to.rDates += rDate
-            }
-
-            row.getAsString(Events.EXRULE)?.let { rulesStr ->
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.exRules += ExRule(null, rule)
-            }
-            row.getAsString(Events.EXDATE)?.let { datesStr ->
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay) { ExDate(it) }
-                to.exDates += exDate
-            }
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
-        }
-
-        // exceptions from recurring events
-        row.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
-            val originalAllDay = (row.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-            val originalDate =
-                if (originalAllDay)
-                    Date(originalInstanceTime)
-                else
-                    DateTime(originalInstanceTime)
-            if (originalDate is DateTime) {
-                to.dtStart?.let { dtStart ->
-                    if (dtStart.isUtc)
-                        originalDate.isUtc = true
-                    else if (dtStart.timeZone != null)
-                        originalDate.timeZone = dtStart.timeZone
-                }
-            }
-            to.recurrenceId = RecurrenceId(originalDate)
-        }
-    }
-
-    private fun populateExceptions(exceptions: List<Entity>, main: Entity, originalAllDay: Boolean, to: Event) {
-        for (exception in exceptions) {
-            val exceptionEvent = Event()
-
-            // convert exception row to Event
-            populateEvent(exception, main, to = exceptionEvent)
-
-            // exceptions are required to have a RECURRENCE-ID
-            val recurrenceId = exceptionEvent.recurrenceId ?: continue
-
-            // generate EXDATE instead of RECURRENCE-ID exceptions for cancelled instances
-            if (exceptionEvent.status == Status.VEVENT_CANCELLED) {
-                val list = DateList(
-                    if (originalAllDay) Value.DATE else Value.DATE_TIME,
-                    recurrenceId.timeZone
-                )
-                list.add(recurrenceId.date)
-                to.exDates += ExDate(list).apply {
-                    // also set TZ properties of ExDate (not only the list)
-                    if (!originalAllDay) {
-                        if (recurrenceId.isUtc)
-                            setUtc(true)
-                        else
-                            timeZone = recurrenceId.timeZone
-                    }
-                }
-
-            } else /* exceptionEvent.status != Status.VEVENT_CANCELLED */ {
-                // add exception to list of exceptions
-                to.exceptions += exceptionEvent
-            }
-        }
     }
 
 }
