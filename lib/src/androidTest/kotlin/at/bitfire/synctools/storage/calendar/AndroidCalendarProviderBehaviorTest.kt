@@ -74,6 +74,22 @@ class AndroidCalendarProviderBehaviorTest {
         ))
     }
 
+    fun testUpdateEventStatusFromNullToNotPresent() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to System.currentTimeMillis(),
+            Events.DTEND to System.currentTimeMillis() + 3600000,
+            Events.TITLE to "Some Event (Status tentative)",
+            Events.STATUS to null
+        )))
+
+        // No problem because STATUS is not explicitly set.
+        calendar.updateEventRow(id, contentValuesOf(
+            //Events.STATUS to null,      // updating status to null causes NullPointerException
+            Events.TITLE to "Some Event (Status null)"
+        ))
+    }
+
     /**
      * Reported as https://issuetracker.google.com/issues/446730408.
      */

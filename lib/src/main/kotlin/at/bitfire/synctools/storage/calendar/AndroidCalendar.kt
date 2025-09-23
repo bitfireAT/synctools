@@ -313,7 +313,7 @@ class AndroidCalendar(
 
     fun updateEvent(id: Long, entity: Entity): Long {
         try {
-            val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
+            val rebuild = eventUpdateNeedsRebuild(entity.entityValues) ?: true
             if (rebuild) {
                 deleteEvent(id)
                 return addEvent(entity)
@@ -375,18 +375,16 @@ class AndroidCalendar(
 
     /**
      * There is a bug in the calendar provider that prevent events from being updated from a non-null STATUS value
-     * to STATUS=null (see AndroidCalendarProviderBehaviorTest.testUpdateEventStatusToNull).
+     * to STATUS=null (see AndroidCalendarProviderBehaviorTest): https://issuetracker.google.com/issues/446730408
      *
      * In that case we can't update the event, so we completely re-create it.
      *
-     * @param id            event of existing ID
      * @param newValues     new values that the event shall be updated to
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
-    internal fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
-        val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null
-        return existingValues.getAsInteger(Events.STATUS) != null && newValues.getAsInteger(Events.STATUS) == null
+    internal fun eventUpdateNeedsRebuild(newValues: ContentValues): Boolean? {
+        return newValues.containsKey(Events.STATUS) && newValues.getAsInteger(Events.STATUS) == null
     }
 
     /**
