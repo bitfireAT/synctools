@@ -56,13 +56,29 @@ class AndroidCalendarProviderBehaviorTest {
 
 
     @Test(expected = NullPointerException::class)
-    fun testUpdateEventStatusToNull() {
+    fun testUpdateEventStatusFromNonNullToNull() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to System.currentTimeMillis(),
             Events.DTEND to System.currentTimeMillis() + 3600000,
             Events.TITLE to "Some Event (Status tentative)",
             Events.STATUS to Events.STATUS_TENTATIVE
+        )))
+
+        calendar.updateEventRow(id, contentValuesOf(
+            Events.STATUS to null,      // updating status to null causes NullPointerException
+            Events.TITLE to "Some Event (Status null)"
+        ))
+    }
+
+    @Test(expected = NullPointerException::class)
+    fun testUpdateEventStatusFromNullToNull() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to System.currentTimeMillis(),
+            Events.DTEND to System.currentTimeMillis() + 3600000,
+            Events.TITLE to "Some Event (Status tentative)",
+            Events.STATUS to null
         )))
 
         calendar.updateEventRow(id, contentValuesOf(
