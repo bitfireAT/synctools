@@ -55,6 +55,9 @@ class AndroidCalendarProviderBehaviorTest {
     }
 
 
+    /**
+     * Reported as https://issuetracker.google.com/issues/446730408.
+     */
     @Test(expected = NullPointerException::class)
     fun testUpdateEventStatusFromNonNullToNull() {
         val id = calendar.addEvent(Entity(contentValuesOf(
@@ -71,6 +74,9 @@ class AndroidCalendarProviderBehaviorTest {
         ))
     }
 
+    /**
+     * Reported as https://issuetracker.google.com/issues/446730408.
+     */
     @Test(expected = NullPointerException::class)
     fun testUpdateEventStatusFromNullToNull() {
         val id = calendar.addEvent(Entity(contentValuesOf(
