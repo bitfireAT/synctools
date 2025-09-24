@@ -102,7 +102,7 @@ class AndroidRecurringCalendar(
                 .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
 
             // update main event (also applies eventStatus workaround, if needed)
-            calendar.updateEvent(id, cleaned.main, batch)
+            val newEventIdIdx = calendar.updateEvent(id, cleaned.main, batch)
 
             // add updated exceptions
             for (exception in cleaned.exceptions)
@@ -110,8 +110,15 @@ class AndroidRecurringCalendar(
 
             batch.commit()
 
-            // original row was updated, so return original ID
-            return id
+            if (newEventIdIdx == null) {
+                // original row was updated, so return original ID
+                return id
+            } else {
+                // event was re-built
+                val result = batch.getResult(newEventIdIdx)
+                val newEventUri = result?.uri ?: throw LocalStorageException("Content provider returned null on insert")
+                return ContentUris.parseId(newEventUri)
+            }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update event/exceptions", e)
         }

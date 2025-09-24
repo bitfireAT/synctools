@@ -27,6 +27,7 @@ import io.mockk.verify
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -190,7 +191,8 @@ class AndroidRecurringCalendarTest {
                 Events.ORIGINAL_SYNC_ID to "recur3",
                 Events.DTSTART to now + 86400000,
                 Events.DTEND to now + 86400000 + 2*3600000,
-                Events.TITLE to "Initial Exception"
+                Events.TITLE to "Initial Exception",
+                Events.STATUS to Events.STATUS_CONFIRMED
             ))
         )
         val initialEventAndExceptions = EventAndExceptions(main = initialEvent, exceptions = initialExceptions)
@@ -199,19 +201,22 @@ class AndroidRecurringCalendarTest {
         // Create updated event with null STATUS (requires rebuild)
         val updatedEvent = Entity(initialEvent.entityValues.apply {
             put(Events.TITLE, "Updated Event")
-            remove(Events.STATUS)
+            putNull(Events.STATUS)
         })
         val updatedEventAndExceptions = EventAndExceptions(main = updatedEvent, exceptions = initialExceptions)
 
         // Update event (should trigger rebuild)
         val updatedEventId = recurringCalendar.updateEventAndExceptions(mainEventId, updatedEventAndExceptions)
+        assertNotEquals(mainEventId, updatedEventId)
 
         // Verify update = deletion + re-creation
         assertNull(recurringCalendar.getById(mainEventId))
-        val updatedEvent2 = recurringCalendar.getById(updatedEventId)
+        val updatedEvent2 = recurringCalendar.getById(updatedEventId)!!
+        if (!updatedEvent2.main.entityValues.containsKey(Events.STATUS))      // STATUS will not be returned if it's null
+            updatedEvent2.main.entityValues.putNull(Events.STATUS)      // add for equality check
         assertEventAndExceptionsEqual(
             updatedEventAndExceptions.withId(updatedEventId),
-            updatedEvent2!!,
+            updatedEvent2,
             onlyFieldsInExpected = true
         )
     }

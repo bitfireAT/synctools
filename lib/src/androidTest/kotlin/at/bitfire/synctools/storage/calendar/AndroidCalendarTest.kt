@@ -312,7 +312,8 @@ class AndroidCalendarTest {
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
-            Events.TITLE to "Some Event"
+            Events.TITLE to "Some Event",
+            Events.STATUS to null
         )
         val entity = Entity(values)
         val reminder = contentValuesOf(

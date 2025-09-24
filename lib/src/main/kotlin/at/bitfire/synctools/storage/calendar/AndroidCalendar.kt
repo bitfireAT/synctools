@@ -426,10 +426,10 @@ class AndroidCalendar(
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
     internal fun getStatusUpdateWorkaround(id: Long, newValues: ContentValues): StatusUpdateWorkaround {
-        // No workaround needed if STATUS is not updated to null.
+        // No workaround needed if STATUS is a) not updated at all, or b) updated to a non-null value.
         if (!newValues.containsKey(Events.STATUS) || newValues.getAsInteger(Events.STATUS) != null)
             return StatusUpdateWorkaround.NO_WORKAROUND
-        // We're now sure that newValues[STATUS] is null.
+        // We're now sure that STATUS shall be updated to null.
 
         // If STATUS is null before the update, just don't include the STATUS in the update.
         // In case that the old values can't be determined, rebuild the row to be on the safe side.
@@ -575,9 +575,9 @@ class AndroidCalendar(
     enum class StatusUpdateWorkaround {
         /** no workaround needed */
         NO_WORKAROUND,
-        /** don't update eventStatus (ne need to change value) */
+        /** don't update eventStatus (no need to change value) */
         DONT_UPDATE_STATUS,
-        /** rebuild event (delete+insert of update) */
+        /** rebuild event (delete+insert instead of update) */
         REBUILD_EVENT
     }
 
