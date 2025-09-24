@@ -247,6 +247,52 @@ class AndroidCalendarTest {
     }
 
     @Test
+    fun testGetStatusUpdateWorkaround_NoStatusUpdate() {
+        assertEquals(
+            AndroidCalendar.StatusUpdateWorkaround.NO_WORKAROUND,
+            calendar.getStatusUpdateWorkaround(0, ContentValues())
+        )
+    }
+
+    @Test
+    fun testGetStatusUpdateWorkaround_UpdateStatusToNonNull() {
+        assertEquals(
+            AndroidCalendar.StatusUpdateWorkaround.NO_WORKAROUND,
+            calendar.getStatusUpdateWorkaround(0, contentValuesOf(Events.STATUS to Events.STATUS_TENTATIVE))
+        )
+    }
+
+    @Test
+    fun testGetStatusUpdateWorkaround_UpdateStatusFromNullToNull() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Event without status",
+            Events.STATUS to null
+        )))
+        assertEquals(
+            AndroidCalendar.StatusUpdateWorkaround.DONT_UPDATE_STATUS,
+            calendar.getStatusUpdateWorkaround(id, contentValuesOf(Events.STATUS to null))
+        )
+    }
+
+    @Test
+    fun testGetStatusUpdateWorkaround_UpdateStatusFromNonNullToNull() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Event without status",
+            Events.STATUS to Events.STATUS_TENTATIVE
+        )))
+        assertEquals(
+            AndroidCalendar.StatusUpdateWorkaround.REBUILD_EVENT,
+            calendar.getStatusUpdateWorkaround(id, contentValuesOf(Events.STATUS to null))
+        )
+    }
+
+    @Test
     fun testUpdateEventRow() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
