@@ -295,7 +295,7 @@ class AndroidCalendar(
      * Updates a specific event's main row with the given values. Doesn't influence data rows.
      *
      * This method always uses the update method of the content provider and does not
-     * re-create rows, as it is required for some operations (see [updateEvent] and [eventUpdateNeedsRebuild]
+     * re-create rows, as it is required for some operations (see [updateEvent] and [getStatusUpdateWorkaround]
      * for more information).
      *
      * @param id        event ID
@@ -311,33 +311,72 @@ class AndroidCalendar(
         }
     }
 
+    /**
+     * Updates an event and applies the eventStatus=null workaround, if necessary.
+     *
+     * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
+     *
+     * @param id        ID of the event to update
+     * @param entity    new values of the event
+     *
+     * @return ID of the updated event (not necessarily the same as the original event)
+     */
     fun updateEvent(id: Long, entity: Entity): Long {
         try {
-            val rebuild = eventUpdateNeedsRebuild(id, entity.entityValues) ?: true
-            if (rebuild) {
-                deleteEvent(id)
-                return addEvent(entity)
-            }
-
-            // remove existing data rows which are created by us (don't touch 3rd-party calendar apps rows)
             val batch = CalendarBatchOperation(client)
-            updateEvent(id, entity, batch)
+            val newEventIdIdx = updateEvent(id, entity, batch)
             batch.commit()
 
-            return id
+            if (newEventIdIdx == null)
+                // event was updated
+                return id
+            else {
+                // event was re-built
+                val result = batch.getResult(newEventIdIdx)
+                val newEventUri = result?.uri ?: throw LocalStorageException("Content provider returned null on insert")
+                return ContentUris.parseId(newEventUri)
+            }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update event $id", e)
         }
     }
 
-    internal fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation) {
+    /**
+     * Enqueues an update of an event and applies the eventStatus=null workaround, if necessary.
+     *
+     * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
+     *
+     * @param id        ID of the event to update
+     * @param batch     batch operation in which the update is enqueued
+     * @param entity    new values of the event
+     *
+     * @return `null` if an event update was enqueued so that its ID won't change;
+     * otherwise (if re-build is needed) the result index of the new event ID.
+     */
+    internal fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation): Int? {
+        val workaround = getStatusUpdateWorkaround(id, entity.entityValues)
+        if (workaround == StatusUpdateWorkaround.REBUILD_EVENT) {
+            deleteEvent(id, batch)
+
+            val idx = batch.nextBackrefIdx()
+            addEvent(entity, batch)
+            return idx
+        }
+
+        // remove existing data rows which are created by us (don't touch 3rd-party calendar apps rows)
         deleteDataRows(id, batch)
 
         // update main row
+        val newValues = ContentValues(entity.entityValues).apply {
+            // don't update event ID
+            remove(Events._ID)
+
+            // don't update status if that is our required workaround
+            if (workaround == StatusUpdateWorkaround.DONT_UPDATE_STATUS)
+                remove(Events.STATUS)
+        }
         batch += CpoBuilder.newUpdate(eventUri(id))
-            .withValues(ContentValues(entity.entityValues).apply {
-                remove(Events._ID)  // don't update ID
-            })
+            .withValues(newValues)
 
         // insert data rows (with reference to main row ID)
         for (row in entity.subValues)
@@ -345,6 +384,8 @@ class AndroidCalendar(
                 .withValues(ContentValues(row.values).apply {
                     put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // always keep reference to main row ID
                 })
+
+        return null
     }
 
     /**
@@ -375,7 +416,7 @@ class AndroidCalendar(
 
     /**
      * There is a bug in the calendar provider that prevent events from being updated from a non-null STATUS value
-     * to STATUS=null (see AndroidCalendarProviderBehaviorTest.testUpdateEventStatusToNull).
+     * to STATUS=null (see `AndroidCalendarProviderBehaviorTest` test class).
      *
      * In that case we can't update the event, so we completely re-create it.
      *
@@ -384,9 +425,20 @@ class AndroidCalendar(
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
-    internal fun eventUpdateNeedsRebuild(id: Long, newValues: ContentValues): Boolean? {
-        val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return null
-        return existingValues.getAsInteger(Events.STATUS) != null && newValues.getAsInteger(Events.STATUS) == null
+    internal fun getStatusUpdateWorkaround(id: Long, newValues: ContentValues): StatusUpdateWorkaround {
+        // No workaround needed if STATUS is a) not updated at all, or b) updated to a non-null value.
+        if (!newValues.containsKey(Events.STATUS) || newValues.getAsInteger(Events.STATUS) != null)
+            return StatusUpdateWorkaround.NO_WORKAROUND
+        // We're now sure that STATUS shall be updated to null.
+
+        // If STATUS is null before the update, just don't include the STATUS in the update.
+        // In case that the old values can't be determined, rebuild the row to be on the safe side.
+        val existingValues = getEventRow(id, arrayOf(Events.STATUS)) ?: return StatusUpdateWorkaround.REBUILD_EVENT
+        if (existingValues.getAsInteger(Events.STATUS) == null)
+            return StatusUpdateWorkaround.DONT_UPDATE_STATUS
+
+        // Update from non-null to null → rebuild (delete/insert) event instead of updating it.
+        return StatusUpdateWorkaround.REBUILD_EVENT
     }
 
     /**
@@ -420,6 +472,10 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete event $id", e)
         }
+    }
+
+    internal fun deleteEvent(id: Long, batch: CalendarBatchOperation) {
+        batch += CpoBuilder.newDelete(eventUri(id))
     }
 
 
@@ -515,6 +571,15 @@ class AndroidCalendar(
 
 
     // helpers
+
+    enum class StatusUpdateWorkaround {
+        /** no workaround needed */
+        NO_WORKAROUND,
+        /** don't update eventStatus (no need to change value) */
+        DONT_UPDATE_STATUS,
+        /** rebuild event (delete+insert instead of update) */
+        REBUILD_EVENT
+    }
 
     val account
         get() = provider.account

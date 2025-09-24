@@ -93,23 +93,16 @@ class AndroidRecurringCalendar(
      */
     fun updateEventAndExceptions(id: Long, eventAndExceptions: EventAndExceptions): Long {
         try {
-            val rebuild = calendar.eventUpdateNeedsRebuild(id, eventAndExceptions.main.entityValues) ?: true
-            if (rebuild) {
-                deleteEventAndExceptions(id)
-                return addEventAndExceptions(eventAndExceptions)
-            }
-
             // validate / clean up input
             val cleaned = cleanUp(eventAndExceptions)
 
-            val batch = CalendarBatchOperation(calendar.client)
-
             // remove old exceptions (because they may be invalid for the updated event)
+            val batch = CalendarBatchOperation(calendar.client)
             batch += CpoBuilder.newDelete(calendar.eventsUri)
                 .withSelection("${Events.ORIGINAL_ID}=?", arrayOf(id.toString()))
 
-            // update main event
-            calendar.updateEvent(id, cleaned.main, batch)
+            // update main event (also applies eventStatus workaround, if needed)
+            val newEventIdIdx = calendar.updateEvent(id, cleaned.main, batch)
 
             // add updated exceptions
             for (exception in cleaned.exceptions)
@@ -117,8 +110,15 @@ class AndroidRecurringCalendar(
 
             batch.commit()
 
-            // original row was updated, so return original ID
-            return id
+            if (newEventIdIdx == null) {
+                // original row was updated, so return original ID
+                return id
+            } else {
+                // event was re-built
+                val result = batch.getResult(newEventIdIdx)
+                val newEventUri = result?.uri ?: throw LocalStorageException("Content provider returned null on insert")
+                return ContentUris.parseId(newEventUri)
+            }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update event/exceptions", e)
         }
