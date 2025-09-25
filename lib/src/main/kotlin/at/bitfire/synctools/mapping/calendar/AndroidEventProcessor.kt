@@ -44,7 +44,7 @@ import net.fortuna.ical4j.model.property.RecurrenceId
  *
  * @param accountName   account name (used to generate self-attendee)
  */
-class LegacyAndroidEventProcessor(
+class AndroidEventProcessor(
     private val accountName: String
 ) {
 
@@ -133,7 +133,7 @@ class LegacyAndroidEventProcessor(
      */
     private fun populateEvent(entity: Entity, main: Entity): VEvent {
         // new processors
-        val vEvent = VEvent(/* initialise = */ false)
+        val vEvent = VEvent()   // initialized with DTSTAMP
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = vEvent)
         return vEvent

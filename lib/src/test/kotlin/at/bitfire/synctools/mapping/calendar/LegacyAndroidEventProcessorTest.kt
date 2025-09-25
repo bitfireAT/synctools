@@ -27,7 +27,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class LegacyAndroidEventProcessorTest {
 
-    private val processor = LegacyAndroidEventProcessor("account@example.com")
+    private val processor = AndroidEventProcessor("account@example.com")
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
