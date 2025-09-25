@@ -60,7 +60,6 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
                 if (duration is Duration)
                     duration = Period.ofDays(duration.toDays().toInt())
                 tsEnd = (startDate + duration).toEpochDay() * TimeApiExtensions.MILLIS_PER_DAY
-                duration = null
             }
 
             if (tsEnd != null) {
@@ -107,8 +106,6 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
             if (tsEnd != null) {
                 if (tsEnd < tsStart)
                     logger.warning("dtEnd $tsEnd < dtStart $tsStart, ignoring")
-                /*else if (tsEnd == tsStart)    // iCloud sends 404 when it receives an iCalendar with DTSTART but without DTEND
-                    logger.fine("dtEnd $tsEnd == dtStart, won't generate DTEND property")*/
                 else /* tsEnd > tsStart */ {
                     val endTz = values.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
                         tzRegistry.getTimeZone(tzId)

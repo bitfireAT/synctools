@@ -186,7 +186,7 @@ object EventValidator {
             exception.exDates.clear()
         }
     }
-
+ 
 
     /**
      * Will remove the RRULES of an event where UNTIL lies before DTSTART
