@@ -7,17 +7,16 @@
 package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
-import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.component.VEvent
 
 class MutatorsProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        from.entityValues.getAsString(Events.MUTATORS)?.let { strPackages ->
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        /*from.entityValues.getAsString(Events.MUTATORS)?.let { strPackages ->
             val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
             to.userAgents.addAll(packages)
-        }
+        }*/
+        // TODO
     }
 
 }

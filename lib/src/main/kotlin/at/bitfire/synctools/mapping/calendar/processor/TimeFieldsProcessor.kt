@@ -8,7 +8,6 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
@@ -17,6 +16,7 @@ import at.bitfire.synctools.exception.InvalidLocalResourceException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.util.TimeZones
@@ -34,7 +34,7 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
@@ -47,7 +47,7 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
                 null
 
         if (allDay) {
-            to.dtStart = DtStart(Date(tsStart))
+            to.properties += DtStart(Date(tsStart))
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 day if missing (should never occur, but occurs).
@@ -72,7 +72,7 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
                         logger.fine("dtEnd $tsEnd (allDay) = dtStart, won't generate DTEND property")
 
                     else /* tsEnd > tsStart */ ->
-                        to.dtEnd = DtEnd(Date(tsEnd))
+                        to.properties += DtEnd(Date(tsEnd))
                 }
             }
 
@@ -90,7 +90,7 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
                         timeZone = startTz
                 }
             }
-            to.dtStart = DtStart(dtStartDateTime)
+            to.properties += DtStart(dtStartDateTime)
 
             // Android events MUST have duration or dtend [https://developer.android.com/reference/android/provider/CalendarContract.Events#operations].
             // Assume 1 hour if missing (should never occur, but occurs).
@@ -113,7 +113,7 @@ class TimeFieldsProcessor: AndroidEventFieldProcessor {
                     val endTz = values.getAsString(Events.EVENT_END_TIMEZONE)?.let { tzId ->
                         tzRegistry.getTimeZone(tzId)
                     } ?: startTz
-                    to.dtEnd = DtEnd(DateTime(tsEnd).apply {
+                    to.properties += DtEnd(DateTime(tsEnd).apply {
                         if (endTz != null) {
                             if (TimeZones.isUtc(endTz))
                                 isUtc = true

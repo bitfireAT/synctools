@@ -7,13 +7,16 @@
 package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Sequence
 
 class SequenceProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.sequence = from.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        val sequence = from.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
+        if (sequence != null && sequence > 0)
+            to.properties += Sequence(sequence)
     }
 
 }
