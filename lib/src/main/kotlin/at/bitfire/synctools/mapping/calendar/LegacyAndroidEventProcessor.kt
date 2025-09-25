@@ -135,7 +135,7 @@ class LegacyAndroidEventProcessor(
      */
     private fun populateEvent(entity: Entity, main: Entity): VEvent {
         // new processors
-        val vEvent = VEvent()
+        val vEvent = VEvent(/* initialise = */ false)
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = vEvent)
         return vEvent

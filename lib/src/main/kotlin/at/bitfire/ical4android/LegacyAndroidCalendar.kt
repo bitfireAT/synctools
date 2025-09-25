@@ -30,7 +30,8 @@ class LegacyAndroidCalendar(
         val eventAndExceptions = recurringCalendar.getById(id) ?: return null
         return Event().also { event ->
             val processor = LegacyAndroidEventProcessor(calendar.account.name)
-            processor.populate(eventAndExceptions, to = event)
+            //processor.populate(eventAndExceptions, to = event)
+            // FIXME
         }
 
     }

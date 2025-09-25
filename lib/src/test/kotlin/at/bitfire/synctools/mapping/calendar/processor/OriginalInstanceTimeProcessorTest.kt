@@ -10,10 +10,10 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -30,7 +30,7 @@ class OriginalInstanceTimeProcessorTest {
 
     @Test
     fun `Original event is all-day`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.ORIGINAL_INSTANCE_TIME to 1594080000000L,
             Events.ORIGINAL_ALL_DAY to 1
@@ -41,7 +41,7 @@ class OriginalInstanceTimeProcessorTest {
 
     @Test
     fun `Original event is not all-day`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
             Events.ORIGINAL_ALL_DAY to 0,

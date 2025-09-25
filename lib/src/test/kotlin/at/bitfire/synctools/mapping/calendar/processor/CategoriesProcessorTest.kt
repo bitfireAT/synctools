@@ -10,10 +10,12 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Categories
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,22 +27,22 @@ class CategoriesProcessorTest {
 
     @Test
     fun `No categories`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
-        assertTrue(result.categories.isEmpty())
+        assertNull(result.getProperty<Categories>(Property.CATEGORIES))
     }
 
     @Test
     fun `Multiple categories`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
             ExtendedProperties.NAME to AndroidEvent2.EXTNAME_CATEGORIES,
             ExtendedProperties.VALUE to "Cat 1\\Cat 2"
         ))
         processor.process(entity, entity, result)
-        assertEquals(listOf("Cat 1", "Cat 2"), result.categories)
+        assertEquals(listOf("Cat 1", "Cat 2"), result.getProperty<Categories>(Property.CATEGORIES).categories.toList())
     }
 
 }
