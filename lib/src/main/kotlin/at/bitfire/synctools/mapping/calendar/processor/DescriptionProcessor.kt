@@ -8,13 +8,16 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.vcard4android.Utils.trimToNull
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Description
 
 class DescriptionProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.description = from.entityValues.getAsString(Events.DESCRIPTION).trimToNull()
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        val description = from.entityValues.getAsString(Events.DESCRIPTION).trimToNull()
+        if (description != null)
+            to.properties += Description(description)
     }
 
 }

@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -36,7 +36,7 @@ class RemindersProcessorTest {
             Reminders.METHOD to Reminders.METHOD_EMAIL,
             Reminders.MINUTES to 10
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Action.EMAIL, alarm.action)
@@ -55,7 +55,7 @@ class RemindersProcessorTest {
             Reminders.METHOD to Reminders.METHOD_EMAIL,
             Reminders.MINUTES to 10
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor2.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Action.DISPLAY, alarm.action)
@@ -70,7 +70,7 @@ class RemindersProcessorTest {
                 Reminders.METHOD to type,
                 Reminders.MINUTES to 10
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
             val alarm = result.alarms.first()
             assertEquals(Action.DISPLAY, alarm.action)
@@ -86,7 +86,7 @@ class RemindersProcessorTest {
             Reminders.METHOD to Reminders.METHOD_ALERT,
             Reminders.MINUTES to 10
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Duration.ofMinutes(-10), alarm.trigger.duration)
@@ -99,7 +99,7 @@ class RemindersProcessorTest {
             Reminders.METHOD to Reminders.METHOD_ALERT,
             Reminders.MINUTES to -10
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Duration.ofMinutes(10), alarm.trigger.duration)

@@ -8,11 +8,11 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.util.TimeZones
 
@@ -20,7 +20,7 @@ class OriginalInstanceTimeProcessor: AndroidEventFieldProcessor {
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         // only applicable to exceptions, not to main events
         if (from === main)
             return
@@ -47,7 +47,7 @@ class OriginalInstanceTimeProcessor: AndroidEventFieldProcessor {
                 }
             }
 
-            to.recurrenceId = RecurrenceId(originalDate)
+            to.properties += RecurrenceId(originalDate)
         }
     }
 

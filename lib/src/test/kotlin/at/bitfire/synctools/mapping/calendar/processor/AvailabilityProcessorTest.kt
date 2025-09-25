@@ -10,9 +10,10 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Transp
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,40 +25,40 @@ class AvailabilityProcessorTest {
 
     @Test
     fun `No availability`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        assertNull(result.transparency)
     }
 
     @Test
     fun `Availability BUSY`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_BUSY
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        assertEquals(Transp.OPAQUE, result.transparency)
     }
 
     @Test
     fun `Availability FREE`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_FREE
         ))
         processor.process(entity, entity, result)
-        assertFalse(result.opaque)
+        assertEquals(Transp.TRANSPARENT, result.transparency)
     }
 
     @Test
     fun `Availability TENTATIVE`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_TENTATIVE
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        assertNull(result.transparency)
     }
 
 }

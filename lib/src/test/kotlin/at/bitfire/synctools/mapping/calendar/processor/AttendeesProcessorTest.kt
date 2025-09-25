@@ -10,13 +10,15 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.parameter.Rsvp
+import net.fortuna.ical4j.model.property.Attendee
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -36,9 +38,9 @@ class AttendeesProcessorTest {
         entity.addSubValue(Attendees.CONTENT_URI, contentValuesOf(
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        assertEquals(URI("mailto:attendee@example.com"), result.attendees.first().calAddress)
+        assertEquals(URI("mailto:attendee@example.com"), result.getProperty<Attendee>(Property.ATTENDEE).calAddress)
     }
 
     @Test
@@ -48,9 +50,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_ID_NAMESPACE to "https",
             Attendees.ATTENDEE_IDENTITY to "//example.com/principals/attendee"
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        assertEquals(URI("https://example.com/principals/attendee"), result.attendees.first().calAddress)
+        assertEquals(URI("https://example.com/principals/attendee"), result.getProperty<Attendee>(Property.ATTENDEE).calAddress)
     }
 
     @Test
@@ -61,10 +63,10 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_ID_NAMESPACE to "https",
             Attendees.ATTENDEE_IDENTITY to "//example.com/principals/attendee"
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        assertEquals(1, result.attendees.size)
-        val attendee = result.attendees.first()
+        assertEquals(1, result.getProperties<Attendee>(Property.ATTENDEE).size)
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(URI("https://example.com/principals/attendee"), attendee.calAddress)
         assertEquals("attendee@example.com", attendee.getParameter<Email>(Parameter.EMAIL).value)
     }
@@ -80,9 +82,9 @@ class AttendeesProcessorTest {
                     Attendees.ATTENDEE_RELATIONSHIP to relationship,
                     Attendees.ATTENDEE_TYPE to type
                 ))
-                val result = Event()
+                val result = VEvent(/* initialise = */ false)
                 processor.process(entity, entity, result)
-                val attendee = result.attendees.first()
+                val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
                 assertNull(attendee.getParameter(Parameter.CUTYPE))
             }
     }
@@ -96,9 +98,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to Attendees.RELATIONSHIP_PERFORMER,
                 Attendees.ATTENDEE_TYPE to type
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertEquals(CuType.GROUP, attendee.getParameter<CuType>(Parameter.CUTYPE))
         }
     }
@@ -112,9 +114,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to Attendees.RELATIONSHIP_SPEAKER,
                 Attendees.ATTENDEE_TYPE to type
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertNull(attendee.getParameter(Parameter.CUTYPE))
             assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
         }
@@ -128,9 +130,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_RELATIONSHIP to Attendees.RELATIONSHIP_SPEAKER,
             Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
         assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
     }
@@ -145,9 +147,9 @@ class AttendeesProcessorTest {
                     Attendees.ATTENDEE_RELATIONSHIP to relationship,
                     Attendees.ATTENDEE_TYPE to type
                 ))
-                val result = Event()
+                val result = VEvent(/* initialise = */ false)
                 processor.process(entity, entity, result)
-                val attendee = result.attendees.first()
+                val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
                 assertEquals(CuType.UNKNOWN, attendee.getParameter<CuType>(Parameter.CUTYPE))
             }
     }
@@ -162,9 +164,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to relationship,
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_NONE
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertNull(attendee.getParameter<Role>(Parameter.ROLE))
         }
     }
@@ -178,9 +180,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to relationship,
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_REQUIRED
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertNull(attendee.getParameter<Role>(Parameter.ROLE))
         }
     }
@@ -194,9 +196,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to relationship,
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_OPTIONAL
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertEquals(Role.OPT_PARTICIPANT, attendee.getParameter<Role>(Parameter.ROLE))
         }
     }
@@ -210,9 +212,9 @@ class AttendeesProcessorTest {
                 Attendees.ATTENDEE_RELATIONSHIP to relationship,
                 Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
             ))
-            val result = Event()
+            val result = VEvent(/* initialise = */ false)
             processor.process(entity, entity, result)
-            val attendee = result.attendees.first()
+            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
             assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
         }
     }
@@ -225,9 +227,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_RELATIONSHIP to Attendees.RELATIONSHIP_PERFORMER,
             Attendees.ATTENDEE_TYPE to Attendees.TYPE_RESOURCE
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(CuType.ROOM, attendee.getParameter<CuType>(Parameter.CUTYPE))
     }
 
@@ -238,9 +240,9 @@ class AttendeesProcessorTest {
         entity.addSubValue(Attendees.CONTENT_URI, contentValuesOf(
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertNull(attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -251,9 +253,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com",
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_INVITED
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(PartStat.NEEDS_ACTION, attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -264,9 +266,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com",
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_ACCEPTED
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(PartStat.ACCEPTED, attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -277,9 +279,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com",
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_DECLINED
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(PartStat.DECLINED, attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -290,9 +292,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com",
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_TENTATIVE
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals(PartStat.TENTATIVE, attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -303,9 +305,9 @@ class AttendeesProcessorTest {
             Attendees.ATTENDEE_EMAIL to "attendee@example.com",
             Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_NONE
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertNull(attendee.getParameter(Parameter.PARTSTAT))
     }
 
@@ -316,9 +318,9 @@ class AttendeesProcessorTest {
         entity.addSubValue(Attendees.CONTENT_URI, contentValuesOf(
             Attendees.ATTENDEE_EMAIL to "attendee@example.com"
         ))
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         processor.process(entity, entity, result)
-        val attendee = result.attendees.first()
+        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
         assertTrue(attendee.getParameter<Rsvp>(Parameter.RSVP).rsvp)
     }
 

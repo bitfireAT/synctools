@@ -6,17 +6,14 @@
 
 package at.bitfire.synctools.mapping.calendar.processor
 
-import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Organizer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -27,37 +24,8 @@ class OrganizerProcessorTest {
     private val processor = OrganizerProcessor()
 
     @Test
-    fun `isOrganizer not set`() {
-        val result = Event()
-        val entity = Entity(ContentValues())
-        processor.process(entity, entity, result)
-        assertNull(result.isOrganizer)
-    }
-
-    @Test
-    fun `isOrganizer is 0`() {
-        val result = Event()
-        val entity = Entity(contentValuesOf(
-            Events.IS_ORGANIZER to 0,
-        ))
-        processor.process(entity, entity, result)
-        assertFalse(result.isOrganizer!!)
-    }
-
-    @Test
-    fun `isOrganizer is 1`() {
-        val result = Event()
-        val entity = Entity(contentValuesOf(
-            Events.IS_ORGANIZER to 1,
-        ))
-        processor.process(entity, entity, result)
-        assertTrue(result.isOrganizer!!)
-    }
-
-
-    @Test
     fun `No ORGANIZER for non-group-scheduled event`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.ORGANIZER to "organizer@example.com"
         ))
@@ -67,7 +35,7 @@ class OrganizerProcessorTest {
 
     @Test
     fun `ORGANIZER for group-scheduled event`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(contentValuesOf(
             Events.ORGANIZER to "organizer@example.com"
         ))

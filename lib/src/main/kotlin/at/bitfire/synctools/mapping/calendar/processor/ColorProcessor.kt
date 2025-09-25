@@ -8,8 +8,9 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.icalendar.Css3Color
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Color
 import java.util.logging.Logger
 
 class ColorProcessor: AndroidEventFieldProcessor {
@@ -17,11 +18,11 @@ class ColorProcessor: AndroidEventFieldProcessor {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
 
         // color can be specified as RGB value and/or as index key (CSS3 color of AndroidCalendar)
-        to.color =
+        val color: Css3Color? =
             values.getAsString(Events.EVENT_COLOR_KEY)?.let { name ->      // try color key first
                 try {
                     Css3Color.valueOf(name)
@@ -32,6 +33,9 @@ class ColorProcessor: AndroidEventFieldProcessor {
             } ?: values.getAsInteger(Events.EVENT_COLOR)?.let { color ->        // otherwise, try to find the color name from the value
                 Css3Color.entries.firstOrNull { it.argb == color }
             }
+
+        if (color != null)
+            to.properties += Color(null, color.name)
     }
 
 }

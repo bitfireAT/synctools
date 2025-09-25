@@ -8,24 +8,23 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Status
 
 class StatusProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.status = when (from.entityValues.getAsInteger(Events.STATUS)) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        when (from.entityValues.getAsInteger(Events.STATUS)) {
             Events.STATUS_CONFIRMED ->
-                Status.VEVENT_CONFIRMED
+                to.properties += Status.VEVENT_CONFIRMED
 
             Events.STATUS_TENTATIVE ->
-                Status.VEVENT_TENTATIVE
+                to.properties += Status.VEVENT_TENTATIVE
 
             Events.STATUS_CANCELED ->
-                Status.VEVENT_CANCELLED
+                to.properties += Status.VEVENT_CANCELLED
 
-            else ->
-                null
+            // do nothing for null
         }
     }
 

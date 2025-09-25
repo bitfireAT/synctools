@@ -8,13 +8,16 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.vcard4android.Utils.trimToNull
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Location
 
 class LocationProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.location = from.entityValues.getAsString(Events.EVENT_LOCATION).trimToNull()
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        val location = from.entityValues.getAsString(Events.EVENT_LOCATION).trimToNull()
+        if (location != null)
+            to.properties += Location(location)
     }
 
 }
