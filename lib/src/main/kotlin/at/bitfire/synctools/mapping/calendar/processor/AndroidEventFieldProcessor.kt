@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import net.fortuna.ical4j.model.component.VEvent
 
 interface AndroidEventFieldProcessor {
 
@@ -35,6 +36,6 @@ interface AndroidEventFieldProcessor {
      *
      * @throws InvalidLocalResourceException on missing or invalid required fields (like [android.provider.CalendarContract.Events.DTSTART])
      */
-    fun process(from: Entity, main: Entity, to: Event)
+    fun process(from: Entity, main: Entity, to: VEvent)
 
 }

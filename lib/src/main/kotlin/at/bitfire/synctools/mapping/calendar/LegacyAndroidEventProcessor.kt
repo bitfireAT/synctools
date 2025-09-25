@@ -8,7 +8,7 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
@@ -31,12 +31,13 @@ import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcesso
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RecurrenceId
 
 /**
- * Legacy mapper from Android event main + data rows to an [Event]
+ * Legacy mapper from Android event main + data rows to an iCalendar
  * (former "populate..." methods).
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
@@ -75,23 +76,20 @@ class LegacyAndroidEventProcessor(
     )
 
 
-    fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
+    fun process(eventAndExceptions: EventAndExceptions): AssociatedEvents {
         // main event
-        populateEvent(
+        val mainVEvent = populateEvent(
             entity = eventAndExceptions.main,
-            main = eventAndExceptions.main,
-            to = to
+            main = eventAndExceptions.main
         )
 
         // exceptions of recurring main event
+        val exceptions = mutableListOf<VEvent>()
         for (exception in eventAndExceptions.exceptions) {
-            val exceptionEvent = Event()
-
-            // convert exception to Event
-            populateEvent(
+            // convert exception to VEvent
+            val exceptionEvent = populateEvent(
                 entity = exception,
                 main = eventAndExceptions.main,
-                to = exceptionEvent
             )
 
             // make sure that exception has a RECURRENCE-ID
@@ -99,20 +97,25 @@ class LegacyAndroidEventProcessor(
 
             // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
             if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                addAsExDate(exception, recurrenceId, to = to)
+                addAsExDate(exception, recurrenceId, to = mainVEvent)
             else
-                to.exceptions += exceptionEvent
+                exceptions += exceptionEvent
         }
+
+        return AssociatedEvents(
+            main = mainVEvent,
+            exceptions = exceptions
+        )
     }
 
-    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: Event) {
+    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: VEvent) {
         val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
         val list = DateList(
             if (originalAllDay) Value.DATE else Value.DATE_TIME,
             recurrenceId.timeZone
         )
         list.add(recurrenceId.date)
-        to.exDates += ExDate(list).apply {
+        to.properties += ExDate(list).apply {
             // also set TZ properties of ExDate (not only the list)
             if (!originalAllDay) {
                 if (recurrenceId.isUtc)
@@ -129,12 +132,13 @@ class LegacyAndroidEventProcessor(
      *
      * @param entity            event row as returned by the calendar provider
      * @param main              main event row as returned by the calendar provider
-     * @param to                destination data object
      */
-    private fun populateEvent(entity: Entity, main: Entity, to: Event) {
+    private fun populateEvent(entity: Entity, main: Entity): VEvent {
         // new processors
+        val vEvent = VEvent()
         for (processor in fieldProcessors)
-            processor.process(from = entity, main = main, to = to)
+            processor.process(from = entity, main = main, to = vEvent)
+        return vEvent
     }
 
 }

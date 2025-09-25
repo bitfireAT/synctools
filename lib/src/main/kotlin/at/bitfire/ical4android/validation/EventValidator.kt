@@ -34,6 +34,7 @@ import java.util.logging.Logger
  * - once to every event after completely reading an iCalendar, and
  * - to every event when writing an iCalendar.
  */
+@Deprecated("Deprecated with Event")
 object EventValidator {
 
     private val logger
