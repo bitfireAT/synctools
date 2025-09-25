@@ -17,7 +17,6 @@ import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
-import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
@@ -51,7 +50,6 @@ class LegacyAndroidEventProcessor(
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
-        MutatorsProcessor(),    // for PRODID
         UidProcessor(),
         OriginalInstanceTimeProcessor(),
         TitleProcessor(),

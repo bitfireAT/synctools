@@ -19,6 +19,11 @@ class ICalendarWriter(
     fun write(components: AssociatedComponents<*>, to: Writer) {
         val ical = Calendar()
 
+        /*from.entityValues.getAsString(Events.MUTATORS)?.let { strPackages ->
+            val packages = strPackages.split(AndroidEvent2.MUTATORS_SEPARATOR).toSet()
+            to.userAgents.addAll(packages)
+        }*/
+
         // VCALENDAR with PRODID
         ical.properties += Version.VERSION_2_0
         ical.properties += prodId
