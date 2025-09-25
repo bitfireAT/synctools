@@ -9,23 +9,13 @@ package at.bitfire.ical4android.validation
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.EventReader
 import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.Recur
-import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VTimeZone
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.TzId
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -372,116 +362,6 @@ class EventValidatorTest {
                 )
             )
         )
-    }
-
-    @Test
-    fun testRemoveRecurrencesOfRecurringWithExceptions() {
-        // Test manually created event
-        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-        val tz = tzRegistry.getTimeZone("Europe/Paris")
-        val manualEvent = Event().apply {
-            dtStart = DtStart("20240219T130000", tz)
-            dtEnd = DtEnd("20240219T140000", tz)
-            summary = "recurring event"
-            rRules.add(RRule(Recur.Builder()                        // Should keep this RRULE
-                .frequency(Recur.Frequency.DAILY)
-                .interval(1)
-                .count(5)
-                .build()))
-            sequence = 0
-            uid = "76c08fb1-99a3-41cf-b482-2d3b06648814"
-            exceptions.add(Event().apply {
-                dtStart = DtStart("20240221T110000", tz)
-                dtEnd = DtEnd("20240221T120000", tz)
-                recurrenceId = RecurrenceId("20240221T130000", tz)
-                sequence = 0
-                summary = "exception of recurring event"
-                rRules.addAll(listOf(
-                    RRule(Recur.Builder()                           // but remove this one
-                        .frequency(Recur.Frequency.DAILY)
-                        .count(6)
-                        .interval(2)
-                        .build()),
-                    RRule(Recur.Builder()                           // and this one
-                        .frequency(Recur.Frequency.DAILY)
-                        .count(6)
-                        .interval(2)
-                        .build())
-                ))
-                rDates.addAll(listOf(
-                    RDate(DateList(Value("19970714T123000Z"))),
-                    RDate(
-                        DateList(
-                            Value("19960403T020000Z"),
-                            TimeZone(
-                                VTimeZone(
-                                    PropertyList<Property>(1).apply {
-                                        add(TzId("US-EASTERN"))
-                                    }
-                                )
-                            )
-                        )
-                    )
-                ))
-                exDates.addAll(listOf(
-                    ExDate(DateList(Value("19970714T123000Z"))),
-                    ExDate(
-                        DateList(
-                            Value("19960403T020000Z"),
-                            TimeZone(
-                                VTimeZone(
-                                    PropertyList<Property>(1).apply {
-                                        add(TzId("US-EASTERN"))
-                                    }
-                                )
-                            )
-                        )
-                    )
-                ))
-                uid = "76c08fb1-99a3-41cf-b482-2d3b06648814"
-            })
-        }
-        assertTrue(manualEvent.rRules.size == 1)
-        assertTrue(manualEvent.exceptions.first().rRules.size == 2)
-        assertTrue(manualEvent.exceptions.first().rDates.size == 2)
-        assertTrue(manualEvent.exceptions.first().exDates.size == 2)
-        EventValidator.removeRecurrenceOfExceptions(manualEvent.exceptions) // Repair the manually created event
-        assertTrue(manualEvent.rRules.size == 1)
-        assertTrue(manualEvent.exceptions.first().rRules.isEmpty())
-        assertTrue(manualEvent.exceptions.first().rDates.isEmpty())
-        assertTrue(manualEvent.exceptions.first().exDates.isEmpty())
-
-        // Test event from reader, the reader will repair the event itself
-        val eventFromReader = eventReader.readEvents(StringReader(
-            "BEGIN:VCALENDAR\n" +
-                "BEGIN:VEVENT\n" +
-                "DTSTAMP:20240215T102755Z\n" +
-                "SUMMARY:recurring event\n" +
-                "DTSTART;TZID=Europe/Paris:20240219T130000\n" +
-                "DTEND;TZID=Europe/Paris:20240219T140000\n" +
-                "RRULE:FREQ=DAILY;INTERVAL=1;COUNT=5\n" +           // Should keep this RRULE
-                "UID:76c08fb1-99a3-41cf-b482-2d3b06648814\n" +
-                "END:VEVENT\n" +
-
-                // Exception for the recurring event above
-                "BEGIN:VEVENT\n" +
-                "DTSTAMP:20240215T102908Z\n" +
-                "RECURRENCE-ID;TZID=Europe/Paris:20240221T130000\n" +
-                "SUMMARY:exception of recurring event\n" +
-                "RRULE:FREQ=DAILY;COUNT=6;INTERVAL=2\n" +           // but remove this one
-                "RRULE:FREQ=DAILY;COUNT=6;INTERVAL=2\n" +           // and this one
-                "EXDATE;TZID=Europe/Paris:20240704T193000\n" +      // also this
-                "RDATE;TZID=US-EASTERN:19970714T083000\n" +         // and this
-                "DTSTART;TZID=Europe/Paris:20240221T110000\n" +
-                "DTEND;TZID=Europe/Paris:20240221T120000\n" +
-                "UID:76c08fb1-99a3-41cf-b482-2d3b06648814\n" +
-                "END:VEVENT\n" +
-                "END:VCALENDAR"
-        )).first()
-        assertTrue(eventFromReader.rRules.size == 1)
-        assertTrue(eventFromReader.exceptions.first().rRules.isEmpty())
-        assertTrue(eventFromReader.exceptions.first().rDates.isEmpty())
-        assertTrue(eventFromReader.exceptions.first().exDates.isEmpty())
     }
 
     @Test

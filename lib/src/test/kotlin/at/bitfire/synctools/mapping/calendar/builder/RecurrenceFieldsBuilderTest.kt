@@ -32,6 +32,7 @@ class RecurrenceFieldsBuilderTest {
 
     @Test
     fun `Exception event`() {
+        // Exceptions (of recurring events) must never have recurrence properties themselves.
         val result = Entity(ContentValues())
         builder.build(
             from = Event(dtStart = DtStart()).apply {
@@ -40,6 +41,25 @@ class RecurrenceFieldsBuilderTest {
                 exDates += ExDate()
             },
             main = Event(),
+            to = result
+        )
+        assertContentValuesEqual(contentValuesOf(
+            Events.RRULE to null,
+            Events.RDATE to null,
+            Events.EXRULE to null,
+            Events.EXDATE to null
+        ), result.entityValues)
+    }
+
+    @Test
+    fun `EXDATE for non-recurring event`() {
+        val main = Event(dtStart = DtStart()).apply {
+            exDates += ExDate()
+        }
+        val result = Entity(ContentValues())
+        builder.build(
+            from = main,
+            main = main,
             to = result
         )
         assertContentValuesEqual(contentValuesOf(

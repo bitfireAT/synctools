@@ -24,7 +24,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
 
         val recurring = from.rRules.isNotEmpty() || from.rDates.isNotEmpty()
         if (recurring && from === main) {
-            // only for recurring main events
+            // generate recurrence fields only for recurring main events
             val dtStart = from.dtStart
 
             // RRULE

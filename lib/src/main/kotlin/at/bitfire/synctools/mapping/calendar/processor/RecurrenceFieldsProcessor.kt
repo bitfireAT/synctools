@@ -28,28 +28,34 @@ class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: Event) {
         val values = from.entityValues
+        val rRuleField = values.getAsString(Events.RRULE)
+        val rDateField = values.getAsString(Events.RDATE)
+
+        // generate recurrence properties only for recurring main events
+        val recurring = rRuleField != null || rDateField != null
+        if (from !== main && !recurring)
+            return
+
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
 
         // RRULE
-        values.getAsString(Events.RRULE)?.let { rulesStr ->
+        if (rRuleField != null)
             try {
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
+                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
                     to.rRules += RRule(rule)
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse RRULE field, ignoring", e)
             }
-        }
 
         // RDATE
-        values.getAsString(Events.RDATE)?.let { datesStr ->
+        if (rDateField != null)
             try {
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay, tsStart) { RDate(it) }
+                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(rDateField, tzRegistry, allDay, tsStart) { RDate(it) }
                 to.rDates += rDate
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse RDATE field, ignoring", e)
             }
-        }
 
         // EXRULE
         values.getAsString(Events.EXRULE)?.let { rulesStr ->
