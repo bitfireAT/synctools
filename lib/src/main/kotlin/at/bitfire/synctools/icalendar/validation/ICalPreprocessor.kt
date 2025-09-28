@@ -6,7 +6,6 @@
 
 package at.bitfire.synctools.icalendar.validation
 
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.utils.SequenceReader
 import net.fortuna.ical4j.model.Calendar
@@ -34,6 +33,9 @@ import kotlin.sequences.map
  *
  */
 class ICalPreprocessor {
+
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
         CreatedPropertyRule(),      // make sure CREATED is UTC
@@ -74,11 +76,10 @@ class ICalPreprocessor {
     fun preprocessStream(original: Reader, chunkSize: Int = 1_000): Reader {
         val resetSupported = try {
             original.reset()
-            Log.d("StreamPreprocessor", "Reader supports reset()")
             true
         } catch(e: IOException) {
             // reset is not supported. String will be loaded into memory completely
-            Log.w("StreamPreprocessor", "Reader does not support reset()", e)
+            logger.warning("Reader does not support reset()")
             false
         }
 
