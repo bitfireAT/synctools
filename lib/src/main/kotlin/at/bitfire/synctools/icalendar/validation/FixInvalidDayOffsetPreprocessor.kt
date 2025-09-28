@@ -10,7 +10,7 @@ package at.bitfire.synctools.icalendar.validation
  * Fixes durations with day offsets with the 'T' prefix.
  * See also https://github.com/bitfireAT/ical4android/issues/77
  */
-class FixInvalidDayOffsetPreprocessor : StreamPreprocessor() {
+class FixInvalidDayOffsetPreprocessor : StreamPreprocessor {
 
     override fun regexpForProblem() = Regex(
         // Examples:
