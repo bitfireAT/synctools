@@ -6,8 +6,14 @@
 
 package at.bitfire.synctools.icalendar.validation
 
+import io.mockk.Runs
+import io.mockk.every
 import io.mockk.junit4.MockKRule
+import io.mockk.just
+import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.spyk
 import io.mockk.verify
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
@@ -28,14 +34,27 @@ class ICalPreprocessorTest {
 
 
     @Test
-    fun testPreprocessStream_appliesStreamProcessors() {
+    fun testPreprocessStream_runsApplyPreprocessors() {
+        val processor = spyk<ICalPreprocessor>()
+
+        // readText MUST be called. Otherwise the sequence is never evaluated
+        // there must be at least one line. Otherwise the sequence is empty
+        processor.preprocessStream(StringReader("\n")).use { it.readText() }
+
+        // verify that applyPreprocessors has been called
+        verify { processor.applyPreprocessors(any()) }
+    }
+
+
+    @Test
+    fun testApplyPreprocessors_appliesStreamProcessors() {
         val preprocessors = processor.streamPreprocessors
         assertTrue(preprocessors.isNotEmpty())
         processor.streamPreprocessors.forEach {
             mockkObject(it)
         }
 
-        processor.preprocessStream(StringReader(""))
+        processor.applyPreprocessors("")
 
         // verify that the required stream processors have been called
         verify {

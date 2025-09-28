@@ -53,7 +53,8 @@ class ICalPreprocessor {
     /**
      * Applies [streamPreprocessors] to a given [String] by calling `fixString()` on each of them.
      */
-    private fun applyPreprocessors(input: String): String {
+    @VisibleForTesting
+    fun applyPreprocessors(input: String): String {
         var newString = input
         for (preprocessor in streamPreprocessors)
             newString = preprocessor.fixString(newString)
