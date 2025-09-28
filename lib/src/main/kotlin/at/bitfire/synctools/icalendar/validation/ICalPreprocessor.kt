@@ -77,7 +77,7 @@ class ICalPreprocessor {
         val resetSupported = try {
             original.reset()
             true
-        } catch(e: IOException) {
+        } catch(_: IOException) {
             // reset is not supported. String will be loaded into memory completely
             logger.warning("Reader does not support reset()")
             false
