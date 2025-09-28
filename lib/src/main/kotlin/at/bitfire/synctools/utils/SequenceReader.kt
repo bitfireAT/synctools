@@ -11,20 +11,11 @@ import java.io.Reader
 /**
  * A [Reader] that allows loading data from a [Sequence] of [String]s.
  */
-class SequenceReader(private val linesProvider: () -> Sequence<String>) : Reader() {
-    constructor(lines: Sequence<String>) : this({ lines })
-
-    private var iterator = linesProvider().iterator()
+class SequenceReader(lines: Sequence<String>) : Reader() {
+    private var iterator = lines.iterator()
     private var currentLine: String? = null
     private var currentPos = 0
     private var closed = false
-
-    override fun reset() {
-        iterator = linesProvider().iterator()
-        currentLine = null
-        currentPos = 0
-        closed = false
-    }
 
     override fun read(cbuf: CharArray, off: Int, len: Int): Int {
         check(!closed) { "Reader closed" }
