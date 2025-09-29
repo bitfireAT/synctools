@@ -48,7 +48,6 @@ object EventValidator {
         val dtStart = correctStartAndEndTime(event)
         sameTypeForDtStartAndRruleUntil(dtStart, event.rRules)
         removeRRulesWithUntilBeforeDtStart(dtStart, event.rRules)
-        removeRecurrenceOfExceptions(event.exceptions)
     }
 
 
@@ -167,25 +166,6 @@ object EventValidator {
             rRules += newRRules
         }
     }
-
-
-    /**
-     * Removes all recurrence information of exceptions of (potentially recurring) events. This is:
-     * `RRULE`, `RDATE` and `EXDATE`.
-     * Note: This repair step needs to be applied after all exceptions have been found.
-     *
-     * @param exceptions exceptions of an event
-     */
-    @VisibleForTesting
-    internal fun removeRecurrenceOfExceptions(exceptions: List<Event>) {
-        for (exception in exceptions) {
-            // Drop all RRULEs, RDATEs, EXDATEs for the exception
-            exception.rRules.clear()
-            exception.rDates.clear()
-            exception.exDates.clear()
-        }
-    }
-
 
     /**
      * Will remove the RRULES of an event where UNTIL lies before DTSTART
