@@ -33,7 +33,7 @@ class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
 
         // generate recurrence properties only for recurring main events
         val recurring = rRuleField != null || rDateField != null
-        if (from !== main && !recurring)
+        if (from !== main || !recurring)
             return
 
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
