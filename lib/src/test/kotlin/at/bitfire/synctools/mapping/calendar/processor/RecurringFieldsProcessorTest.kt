@@ -33,7 +33,7 @@ class RecurringFieldsProcessorTest {
             Events.RRULE to "FREQ=DAILY;COUNT=10",
             Events.RDATE to "20251010T010203Z",
             Events.EXRULE to "FREQ=WEEKLY;COUNT=1",
-            Events.EXDATE to "2026010T010203Z"
+            Events.EXDATE to "20260201T010203Z"
         ))
         processor.process(entity, Entity(ContentValues()), result)
         // exceptions must never have recurrence properties
@@ -49,7 +49,7 @@ class RecurringFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.DTSTART to System.currentTimeMillis(),
             Events.EXRULE to "FREQ=WEEKLY;COUNT=1",
-            Events.EXDATE to "2026010T010203Z"
+            Events.EXDATE to "20260201T010203Z"
         ))
         processor.process(entity, entity, result)
         // non-recurring events must never have recurrence properties
