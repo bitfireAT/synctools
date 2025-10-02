@@ -21,7 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class RecurringFieldsProcessorTest {
+class RecurrenceFieldProcessorTest {
 
     private val processor = RecurrenceFieldsProcessor()
 
@@ -74,6 +74,29 @@ class RecurringFieldsProcessorTest {
         assertEquals(listOf(RDate(ParameterList(), "20251010T010203Z")), result.rDates)
         assertEquals("FREQ=WEEKLY;COUNT=1", result.exRules.joinToString { it.value })
         assertEquals("20260201T010203Z", result.exDates.joinToString { it.value })
+    }
+
+
+    @Test
+    fun `RRULE with UNTIL before DTSTART`() {
+        val result = Event()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
+        ))
+        processor.process(entity, entity, result)
+        assertTrue(result.rRules.isEmpty())
+    }
+
+    @Test
+    fun `EXRULE with UNTIL before DTSTART`() {
+        val result = Event()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.EXRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
+        ))
+        processor.process(entity, entity, result)
+        assertTrue(result.exRules.isEmpty())
     }
 
 }

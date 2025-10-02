@@ -42,8 +42,18 @@ class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
         // RRULE
         if (rRuleField != null)
             try {
-                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.rRules += RRule(rule)
+                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
+                    val rule = RRule(rule)
+
+                    // skip if UNTIL is before event's DTSTART
+                    val tsUntil = rule.recur.until?.time
+                    if (tsUntil != null && tsUntil <= tsStart) {
+                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
+                        continue
+                    }
+
+                    to.rRules += rule
+                }
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse RRULE field, ignoring", e)
             }
@@ -60,8 +70,18 @@ class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
         // EXRULE
         values.getAsString(Events.EXRULE)?.let { rulesStr ->
             try {
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.exRules += ExRule(null, rule)
+                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
+                    val rule = ExRule(null, rule)
+
+                    // skip if UNTIL is before event's DTSTART
+                    val tsUntil = rule.recur.until?.time
+                    if (tsUntil != null && tsUntil <= tsStart) {
+                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
+                        continue
+                    }
+
+                    to.exRules += rule
+                }
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
             }
