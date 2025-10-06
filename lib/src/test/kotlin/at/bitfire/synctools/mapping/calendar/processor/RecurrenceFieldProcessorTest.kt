@@ -92,7 +92,8 @@ class RecurrenceFieldProcessorTest {
     fun `EXRULE with UNTIL before DTSTART`() {
         val result = Event()
         val entity = Entity(contentValuesOf(
-            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000,
+            Events.RRULE to "FREQ=DAILY;COUNT=10",      // EXRULE is only processed for recurring events
             Events.EXRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
         ))
         processor.process(entity, entity, result)
