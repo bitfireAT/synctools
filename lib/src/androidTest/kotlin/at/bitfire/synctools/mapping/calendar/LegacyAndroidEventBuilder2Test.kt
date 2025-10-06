@@ -299,10 +299,10 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals(1591056000000L, entity.entityValues.getAsLong(Events.DTEND))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
         assertNull(entity.entityValues.get(Events.DURATION))
     }
 
@@ -315,7 +315,7 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals("P1D", entity.entityValues.getAsString(Events.DURATION))
         assertNull(entity.entityValues.get(Events.DTEND))
@@ -333,10 +333,10 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals(1592265600000L, entity.entityValues.getAsLong(Events.DTEND))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
         assertNull(entity.entityValues.get(Events.DURATION))
     }
 
@@ -350,7 +350,7 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals("P2D", entity.entityValues.getAsString(Events.DURATION))
         assertNull(entity.entityValues.get(Events.DTEND))
@@ -368,10 +368,10 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals(1593561600000L, entity.entityValues.getAsLong(Events.DTEND))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
         assertNull(entity.entityValues.get(Events.DURATION))
     }
 
@@ -386,7 +386,7 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals("P30D", entity.entityValues.getAsString(Events.DURATION))
         assertNull(entity.entityValues.get(Events.DTEND))
@@ -405,10 +405,10 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals(1593561600000L, entity.entityValues.getAsLong(Events.DTEND))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_END_TIMEZONE))
         assertNull(entity.entityValues.get(Events.DURATION))
     }
 
@@ -423,7 +423,7 @@ class LegacyAndroidEventBuilder2Test {
         assertEquals(1, entity.entityValues.getAsInteger(Events.ALL_DAY))
 
         assertEquals(1590969600000L, entity.entityValues.getAsLong(Events.DTSTART))
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, entity.entityValues.get(Events.EVENT_TIMEZONE))
+        assertEquals(AndroidTimeUtils.TZID_UTC, entity.entityValues.get(Events.EVENT_TIMEZONE))
 
         assertEquals("P30D", entity.entityValues.getAsString(Events.DURATION))
         assertNull(entity.entityValues.get(Events.DTEND))

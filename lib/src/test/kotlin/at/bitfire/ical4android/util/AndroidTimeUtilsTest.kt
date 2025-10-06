@@ -278,7 +278,7 @@ class AndroidTimeUtilsTest {
 
     @Test
     fun testStorageTzId_Date() =
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, AndroidTimeUtils.storageTzId(DtStart(Date("20150101"))))
+        assertEquals(AndroidTimeUtils.TZID_UTC, AndroidTimeUtils.storageTzId(DtStart(Date("20150101"))))
 
     @Test
     fun testStorageTzId_FloatingTime() =

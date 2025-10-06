@@ -16,13 +16,13 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
 import java.time.Duration
 import java.time.Period
 
+@Deprecated("Use Start/EndTimeBuilder", level = DeprecationLevel.ERROR)
 class TimeFieldsBuilder: AndroidEntityBuilder {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
@@ -30,7 +30,7 @@ class TimeFieldsBuilder: AndroidEntityBuilder {
     override fun build(from: Event, main: Event, to: Entity) {
         val values = to.entityValues
 
-        val dtStart = from.dtStart ?: throw InvalidRemoteResourceException("Events must have DTSTART")
+        val dtStart = from.requireDtStart()
         val allDay = DateUtils.isDate(dtStart)
 
         // make sure that time zone is supported by Android
@@ -46,10 +46,6 @@ class TimeFieldsBuilder: AndroidEntityBuilder {
            - rrule or rdate if the event is recurring
            - eventTimezone
            - a calendar_id */
-
-        // time fields
-        values.put(Events.DTSTART, dtStart.date.time)
-        values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.storageTzId(dtStart))
 
         var dtEnd = from.dtEnd
         AndroidTimeUtils.androidifyTimeZone(dtEnd, tzRegistry)
