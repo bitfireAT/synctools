@@ -82,10 +82,13 @@ class RecurrenceFieldProcessorTest {
         val result = Event()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
-            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T111300Z",
+            Events.EXDATE to "1759403653000"            // should be removed because the only RRULE is invalid and discarded,
+                                                        // so the whole event isn't recurring anymore
         ))
         processor.process(entity, entity, result)
         assertTrue(result.rRules.isEmpty())
+        assertTrue(result.exDates.isEmpty())
     }
 
     @Test
