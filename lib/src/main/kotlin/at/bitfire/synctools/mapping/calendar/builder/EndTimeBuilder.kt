@@ -34,17 +34,15 @@ class EndTimeBuilder: AndroidEntityBuilder {
            - DURATION when the event is recurring.
 
         So we'll skip if this event is a recurring main event (only main events can be recurring). */
-
-        val recurring = from === main && (from.rRules.isNotEmpty() || from.rDates.isNotEmpty())
-        if (recurring) {
+        if (from === main && (from.rRules.isNotEmpty() || from.rDates.isNotEmpty())) {
             values.putNull(Events.DTEND)
             return
         }
 
         val dtStart = from.requireDtStart()
         val dtEnd = from.dtEnd?.let { alignWithDtStart(it, dtStart = dtStart) }
-            ?: calculateDtEndFromDuration(dtStart, from.duration)
-            ?: calculateDtEndFromDefault(dtStart)
+            ?: calculateFromDuration(dtStart, from.duration)
+            ?: calculateFromDefault(dtStart)
 
         // end time: UNIX timestamp
         values.put(Events.DTEND, dtEnd.date.time)
@@ -112,7 +110,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
     }
 
     @VisibleForTesting
-    internal fun calculateDtEndFromDuration(dtStart: DtStart, duration: net.fortuna.ical4j.model.property.Duration?): DtEnd? {
+    internal fun calculateFromDuration(dtStart: DtStart, duration: net.fortuna.ical4j.model.property.Duration?): DtEnd? {
         if (duration == null)
             return null
 
@@ -160,7 +158,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * - when [dtStart] is a `DATE-TIME`: [dtStart]
      */
     @VisibleForTesting
-    internal fun calculateDtEndFromDefault(dtStart: DtStart): DtEnd =
+    internal fun calculateFromDefault(dtStart: DtStart): DtEnd =
         if (DateUtils.isDate(dtStart)) {
             // DATE → one day duration
             val endDate: LocalDate = dtStart.date.toLocalDate().plusDays(1)

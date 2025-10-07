@@ -63,26 +63,26 @@ class EndTimeBuilderTest {
 
 
     @Test
-    fun `calculateDtEndFromDefault (DATE)`() {
+    fun `calculateFromDefault (DATE)`() {
         assertEquals(
             DtEnd(Date("20251101")),
-            builder.calculateDtEndFromDefault(DtStart(Date("20251031")))
+            builder.calculateFromDefault(DtStart(Date("20251031")))
         )
     }
 
     @Test
-    fun `calculateDtEndFromDefault (DATE-TIME)`() {
+    fun `calculateFromDefault (DATE-TIME)`() {
         val time = DateTime("20251031T123466Z")
         assertEquals(
             DtEnd(time),
-            builder.calculateDtEndFromDefault(DtStart(time))
+            builder.calculateFromDefault(DtStart(time))
         )
     }
 
 
     @Test
-    fun `calculateDtEndFromDuration (dtStart=DATE, duration is date-based)`() {
-        val result = builder.calculateDtEndFromDuration(
+    fun `calculateFromDuration (dtStart=DATE, duration is date-based)`() {
+        val result = builder.calculateFromDuration(
             DtStart(Date("20240228")),
             Duration(null, "P1D")
         )
@@ -93,8 +93,8 @@ class EndTimeBuilderTest {
     }
 
     @Test
-    fun `calculateDtEndFromDuration (dtStart=DATE, duration is time-based)`() {
-        val result = builder.calculateDtEndFromDuration(
+    fun `calculateFromDuration (dtStart=DATE, duration is time-based)`() {
+        val result = builder.calculateFromDuration(
             DtStart(Date("20241231")),
             Duration(null, "PT25H")
         )
@@ -105,8 +105,8 @@ class EndTimeBuilderTest {
     }
 
     @Test
-    fun `calculateDtEndFromDuration (dtStart=DATE-TIME, duration is date-based)`() {
-        val result = builder.calculateDtEndFromDuration(
+    fun `calculateFromDuration (dtStart=DATE-TIME, duration is date-based)`() {
+        val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
             Duration(null, "P1D")
         )
@@ -117,8 +117,8 @@ class EndTimeBuilderTest {
     }
 
     @Test
-    fun `calculateDtEndFromDuration (dtStart=DATE-TIME, duration is time-based)`() {
-        val result = builder.calculateDtEndFromDuration(
+    fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based)`() {
+        val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
             Duration(null, "PT25H")
         )
