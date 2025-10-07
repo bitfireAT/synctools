@@ -83,25 +83,27 @@ class LegacyAndroidEventProcessor(
             to = to
         )
 
-        // exceptions of recurring main event
-        for (exception in eventAndExceptions.exceptions) {
-            val exceptionEvent = Event()
+        // Add exceptions of recurring main event
+        if (to.rRules.isNotEmpty() || to.rDates.isNotEmpty()) {
+            for (exception in eventAndExceptions.exceptions) {
+                val exceptionEvent = Event()
 
-            // convert exception to Event
-            populateEvent(
-                entity = exception,
-                main = eventAndExceptions.main,
-                to = exceptionEvent
-            )
+                // convert exception to Event
+                populateEvent(
+                    entity = exception,
+                    main = eventAndExceptions.main,
+                    to = exceptionEvent
+                )
 
-            // make sure that exception has a RECURRENCE-ID
-            val recurrenceId = exceptionEvent.recurrenceId ?: continue
+                // make sure that exception has a RECURRENCE-ID
+                val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
-            // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
-            if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                addAsExDate(exception, recurrenceId, to = to)
-            else
-                to.exceptions += exceptionEvent
+                // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
+                if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
+                    addAsExDate(exception, recurrenceId, to = to)
+                else
+                    to.exceptions += exceptionEvent
+            }
         }
     }
 
