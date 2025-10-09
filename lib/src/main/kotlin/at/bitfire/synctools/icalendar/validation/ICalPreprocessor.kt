@@ -7,15 +7,22 @@
 package at.bitfire.synctools.icalendar.validation
 
 import androidx.annotation.VisibleForTesting
+import at.bitfire.synctools.utils.SequenceReader
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
 import net.fortuna.ical4j.transform.rfc5545.DateListPropertyRule
 import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
 import net.fortuna.ical4j.transform.rfc5545.Rfc5545PropertyRule
+import java.io.BufferedReader
+import java.io.IOException
 import java.io.Reader
+import java.io.StringReader
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.collections.joinToString
+import kotlin.sequences.chunked
+import kotlin.sequences.map
 
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
@@ -26,6 +33,9 @@ import java.util.logging.Logger
  *
  */
 class ICalPreprocessor {
+
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
         CreatedPropertyRule(),      // make sure CREATED is UTC
@@ -41,17 +51,49 @@ class ICalPreprocessor {
     )
 
     /**
+     * Applies [streamPreprocessors] to a given [String] by calling `fixString()` on each of them.
+     */
+    @VisibleForTesting
+    fun applyPreprocessors(input: String): String {
+        var newString = input
+        for (preprocessor in streamPreprocessors)
+            newString = preprocessor.fixString(newString)
+        return newString
+    }
+
+    /**
      * Applies [streamPreprocessors] to a given [Reader] that reads an iCalendar object
      * in order to repair some things that must be fixed before parsing.
      *
-     * @param original    original iCalendar object
-     * @return            the potentially repaired iCalendar object
+     * The original reader content is processed in chunks of [chunkSize] lines to avoid loading
+     * the whole content into memory at once. If the given [Reader] does not support `reset()`,
+     * the whole content will be loaded into memory anyway.
+     *
+     * @param original original iCalendar object
+     * @return The potentially repaired iCalendar object.
+     * If [original] supports `reset()`,  the returned [Reader] will be a [SequenceReader].
+     * Otherwise, it will be a [StringReader].
      */
-    fun preprocessStream(original: Reader): Reader {
-        var reader = original
-        for (preprocessor in streamPreprocessors)
-            reader = preprocessor.preprocess(reader)
-        return reader
+    fun preprocessStream(original: Reader, chunkSize: Int = 1_000): Reader {
+        val resetSupported = try {
+            original.reset()
+            true
+        } catch(_: IOException) {
+            // reset is not supported. String will be loaded into memory completely
+            logger.warning("Reader does not support reset()")
+            false
+        }
+
+        if (resetSupported) {
+            val chunkedFixedLines = BufferedReader(original)
+                .lineSequence()
+                .chunked(chunkSize)
+                .map { chunk -> applyPreprocessors(chunk.joinToString("\n")) }
+            return SequenceReader(chunkedFixedLines)
+        } else {
+            // The reader doesn't support reset, so we need to load the whole content into memory
+            return StringReader(applyPreprocessors(original.readText()))
+        }
     }
 
 
