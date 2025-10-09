@@ -121,12 +121,10 @@ class Ical4jTest {
     }
 
     @Test(expected = ParserException::class)
-    fun `Unparseable timezone with RDATE with PERIOD`() {
+    fun `Unparseable event with timezone with RDATE with PERIOD`() {
         CalendarBuilder().build(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
-                        "METHOD:PUBLISH\n" +
-                        "PRODID:-//SmarterTools SmarterMail//NONSGML ical.net//EN\n" +
                         "VERSION:2.0\n" +
                         "BEGIN:VTIMEZONE\n" +
                         "TZID:Europe/Berlin\n" +
@@ -140,18 +138,9 @@ class Ical4jTest {
                         "END:STANDARD\n" +
                         "END:VTIMEZONE\n" +
                         "BEGIN:VEVENT\n" +
-                        "CLASS:PUBLIC\n" +
-                        "CREATED:20250915T094319Z\n" +
-                        "DTEND;TZID=Europe/Berlin:20250917T124500\n" +
-                        "DTSTAMP:20250915T094319Z\n" +
-                        "DTSTART;TZID=Europe/Berlin:20250917T122000\n" +
-                        "LAST-MODIFIED:20250915T110818Z\n" +
-                        "LOCATION:Somewhere\n" +
-                        "RRULE;TZID=UTC:FREQ=WEEKLY;UNTIL=20260801T102000Z\n" +
-                        "SEQUENCE:1\n" +
-                        "SUMMARY:Something\n" +
-                        "TRANSP:OPAQUE\n" +
                         "UID:3b3c1b0e-e74c-48ef-ada8-33afc543648d\n" +
+                        "DTSTART;TZID=Europe/Berlin:20250917T122000\n" +
+                        "DTEND;TZID=Europe/Berlin:20250917T124500\n" +
                         "END:VEVENT\n" +
                         "END:VCALENDAR"
             )
