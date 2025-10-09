@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
+import at.bitfire.ical4android.EventReader
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -15,8 +17,7 @@ import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert
 import org.junit.Test
 import java.io.StringReader
 import java.time.Period
@@ -40,27 +41,27 @@ class Ical4jTest {
                         "END:VCALENDAR"
             )
         ).first()
-        assertEquals("attendee1@example.virtual", e.attendees.first().getParameter<Email>(Parameter.EMAIL).value)
+        Assert.assertEquals("attendee1@example.virtual", e.attendees.first().getParameter<Email>(Parameter.EMAIL).value)
     }
 
     @Test
     fun testTemporalAmountAdapter_durationToString_DropsMinutes() {
         // https://github.com/ical4j/ical4j/issues/420
-        assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
+        Assert.assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
     }
 
     @Test(expected = AssertionError::class)
     fun testTemporalAmountAdapter_Months() {
         // https://github.com/ical4j/ical4j/issues/419
         // A month usually doesn't have 4 weeks = 4*7 days = 28 days (except February in non-leap years).
-        assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
+        Assert.assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
     }
 
     @Test(expected = AssertionError::class)
     fun testTemporalAmountAdapter_Year() {
         // https://github.com/ical4j/ical4j/issues/419
         // A year has 365 or 366 days, but never 52 weeks = 52*7 days = 364 days.
-        assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
+        Assert.assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
     }
 
     @Test(expected = AssertionError::class)
@@ -68,11 +69,10 @@ class Ical4jTest {
         val darwin = tzReg.getTimeZone("Australia/Darwin")
 
         val ts1 = 1616720400000
-        val dt1 = DateTime(ts1).apply { isUtc = true }
-        assertEquals(9.5, darwin.getOffset(ts1)/3600000.0, .01)
+        Assert.assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
 
         val dt2 = DateTime("20210326T103000", darwin)
-        assertEquals(1616720400000, dt2.time)
+        Assert.assertEquals(1616720400000, dt2.time)
     }
 
     @Test
@@ -104,7 +104,7 @@ class Ical4jTest {
         val iCalFromGoogle = CalendarBuilder().build(StringReader(vtzFromGoogle))
         val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
         val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
-        assertEquals("20210108T151500", dt.toString())
+        Assert.assertEquals("20210108T151500", dt.toString())
     }
 
     @Test
@@ -114,10 +114,48 @@ class Ical4jTest {
 
         val ts1 = 1609945200000
         val dt1 = DateTime(ts1).apply { isUtc = true }
-        assertEquals(5, karachi.getOffset(ts1)/3600000)
+        Assert.assertEquals(5, karachi.getOffset(ts1) / 3600000)
 
         val dt2 = DateTime("20210106T200000", karachi)
-        assertEquals(1609945200000, dt2.time)
+        Assert.assertEquals(1609945200000, dt2.time)
+    }
+
+    @Test(expected = ParserException::class)
+    fun `Unparseable timezone with RDATE with PERIOD`() {
+        CalendarBuilder().build(
+            StringReader(
+                "BEGIN:VCALENDAR\n" +
+                        "METHOD:PUBLISH\n" +
+                        "PRODID:-//SmarterTools SmarterMail//NONSGML ical.net//EN\n" +
+                        "VERSION:2.0\n" +
+                        "BEGIN:VTIMEZONE\n" +
+                        "TZID:Europe/Berlin\n" +
+                        "X-TZINFO:Europe/Berlin[2025b]\n" +
+                        "BEGIN:STANDARD\n" +
+                        "DTSTART:18930401T000000\n" +
+                        "RDATE;VALUE=PERIOD:18930401T000000/18930402T000000\n" +
+                        "TZNAME:Europe/Berlin(STD)\n" +
+                        "TZOFFSETFROM:+005328\n" +
+                        "TZOFFSETTO:+0100\n" +
+                        "END:STANDARD\n" +
+                        "END:VTIMEZONE\n" +
+                        "BEGIN:VEVENT\n" +
+                        "CLASS:PUBLIC\n" +
+                        "CREATED:20250915T094319Z\n" +
+                        "DTEND;TZID=Europe/Berlin:20250917T124500\n" +
+                        "DTSTAMP:20250915T094319Z\n" +
+                        "DTSTART;TZID=Europe/Berlin:20250917T122000\n" +
+                        "LAST-MODIFIED:20250915T110818Z\n" +
+                        "LOCATION:Somewhere\n" +
+                        "RRULE;TZID=UTC:FREQ=WEEKLY;UNTIL=20260801T102000Z\n" +
+                        "SEQUENCE:1\n" +
+                        "SUMMARY:Something\n" +
+                        "TRANSP:OPAQUE\n" +
+                        "UID:3b3c1b0e-e74c-48ef-ada8-33afc543648d\n" +
+                        "END:VEVENT\n" +
+                        "END:VCALENDAR"
+            )
+        )
     }
 
 }
