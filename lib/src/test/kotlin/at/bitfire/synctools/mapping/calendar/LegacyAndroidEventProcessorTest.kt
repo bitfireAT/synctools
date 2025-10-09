@@ -31,7 +31,7 @@ class LegacyAndroidEventProcessorTest {
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
 
     @Test
-    fun `Populate regular exception`() {
+    fun `Exception is processed`() {
         val result = Event()
         processor.populate(
             eventAndExceptions = EventAndExceptions(
@@ -65,7 +65,38 @@ class LegacyAndroidEventProcessorTest {
     }
 
     @Test
-    fun `Populate cancelled exception as EXDATE`() {
+    fun `Exception is ignored when there's only one invalid RRULE`() {
+        val result = Event()
+        processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.TITLE to "Factically non-recurring non-all-day event with exception",
+                    Events.DTSTART to 1594056600000L,
+                    Events.EVENT_TIMEZONE to tzVienna.id,
+                    Events.ALL_DAY to 0,
+                    Events.RRULE to "FREQ=DAILY;UNTIL=20200706T173000Z"
+                )),
+                exceptions = listOf(
+                    Entity(contentValuesOf(
+                        Events.ORIGINAL_INSTANCE_TIME to 1594143000000L,
+                        Events.ORIGINAL_ALL_DAY to 0,
+                        Events.DTSTART to 1594038600000L,
+                        Events.EVENT_TIMEZONE to tzShanghai.id,
+                        Events.ALL_DAY to 0,
+                        Events.TITLE to "Event moved to one hour later"
+                    ))
+                )
+            ),
+            to = result
+        )
+        assertEquals("Factically non-recurring non-all-day event with exception", result.summary)
+        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
+        assertTrue(result.rRules.isEmpty())
+        assertTrue(result.exceptions.isEmpty())
+    }
+
+    @Test
+    fun `Cancelled exception becomes EXDATE`() {
         val result = Event()
         processor.populate(
             eventAndExceptions = EventAndExceptions(
@@ -97,7 +128,7 @@ class LegacyAndroidEventProcessorTest {
     }
 
     @Test
-    fun `Populate cancelled exception without RECURRENCE-ID`() {
+    fun `Cancelled exception without RECURRENCE-ID is ignored`() {
         val result = Event()
         processor.populate(
             eventAndExceptions = EventAndExceptions(
