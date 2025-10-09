@@ -17,7 +17,8 @@ import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import java.io.StringReader
 import java.time.Period
@@ -41,27 +42,27 @@ class Ical4jTest {
                         "END:VCALENDAR"
             )
         ).first()
-        Assert.assertEquals("attendee1@example.virtual", e.attendees.first().getParameter<Email>(Parameter.EMAIL).value)
+        assertEquals("attendee1@example.virtual", e.attendees.first().getParameter<Email>(Parameter.EMAIL).value)
     }
 
     @Test
     fun testTemporalAmountAdapter_durationToString_DropsMinutes() {
         // https://github.com/ical4j/ical4j/issues/420
-        Assert.assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
+        assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
     }
 
     @Test(expected = AssertionError::class)
     fun testTemporalAmountAdapter_Months() {
         // https://github.com/ical4j/ical4j/issues/419
         // A month usually doesn't have 4 weeks = 4*7 days = 28 days (except February in non-leap years).
-        Assert.assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
+        assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
     }
 
     @Test(expected = AssertionError::class)
     fun testTemporalAmountAdapter_Year() {
         // https://github.com/ical4j/ical4j/issues/419
         // A year has 365 or 366 days, but never 52 weeks = 52*7 days = 364 days.
-        Assert.assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
+        assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
     }
 
     @Test(expected = AssertionError::class)
@@ -69,10 +70,10 @@ class Ical4jTest {
         val darwin = tzReg.getTimeZone("Australia/Darwin")
 
         val ts1 = 1616720400000
-        Assert.assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
+        assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
 
         val dt2 = DateTime("20210326T103000", darwin)
-        Assert.assertEquals(1616720400000, dt2.time)
+        assertEquals(1616720400000, dt2.time)
     }
 
     @Test
@@ -104,7 +105,7 @@ class Ical4jTest {
         val iCalFromGoogle = CalendarBuilder().build(StringReader(vtzFromGoogle))
         val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
         val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
-        Assert.assertEquals("20210108T151500", dt.toString())
+        assertEquals("20210108T151500", dt.toString())
     }
 
     @Test
@@ -113,11 +114,10 @@ class Ical4jTest {
         val karachi = tzReg.getTimeZone("Asia/Karachi")
 
         val ts1 = 1609945200000
-        val dt1 = DateTime(ts1).apply { isUtc = true }
-        Assert.assertEquals(5, karachi.getOffset(ts1) / 3600000)
+        assertEquals(5, karachi.getOffset(ts1) / 3600000)
 
         val dt2 = DateTime("20210106T200000", karachi)
-        Assert.assertEquals(1609945200000, dt2.time)
+        assertEquals(1609945200000, dt2.time)
     }
 
     @Test(expected = ParserException::class)
