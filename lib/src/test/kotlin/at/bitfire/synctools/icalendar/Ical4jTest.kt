@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
+import at.bitfire.ical4android.EventReader
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -68,8 +70,7 @@ class Ical4jTest {
         val darwin = tzReg.getTimeZone("Australia/Darwin")
 
         val ts1 = 1616720400000
-        val dt1 = DateTime(ts1).apply { isUtc = true }
-        assertEquals(9.5, darwin.getOffset(ts1)/3600000.0, .01)
+        assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
 
         val dt2 = DateTime("20210326T103000", darwin)
         assertEquals(1616720400000, dt2.time)
@@ -113,11 +114,37 @@ class Ical4jTest {
         val karachi = tzReg.getTimeZone("Asia/Karachi")
 
         val ts1 = 1609945200000
-        val dt1 = DateTime(ts1).apply { isUtc = true }
-        assertEquals(5, karachi.getOffset(ts1)/3600000)
+        assertEquals(5, karachi.getOffset(ts1) / 3600000)
 
         val dt2 = DateTime("20210106T200000", karachi)
         assertEquals(1609945200000, dt2.time)
+    }
+
+    @Test(expected = ParserException::class)
+    fun `Unparseable event with timezone with RDATE with PERIOD`() {
+        CalendarBuilder().build(
+            StringReader(
+                "BEGIN:VCALENDAR\n" +
+                        "VERSION:2.0\n" +
+                        "BEGIN:VTIMEZONE\n" +
+                        "TZID:Europe/Berlin\n" +
+                        "X-TZINFO:Europe/Berlin[2025b]\n" +
+                        "BEGIN:STANDARD\n" +
+                        "DTSTART:18930401T000000\n" +
+                        "RDATE;VALUE=PERIOD:18930401T000000/18930402T000000\n" +
+                        "TZNAME:Europe/Berlin(STD)\n" +
+                        "TZOFFSETFROM:+005328\n" +
+                        "TZOFFSETTO:+0100\n" +
+                        "END:STANDARD\n" +
+                        "END:VTIMEZONE\n" +
+                        "BEGIN:VEVENT\n" +
+                        "UID:3b3c1b0e-e74c-48ef-ada8-33afc543648d\n" +
+                        "DTSTART;TZID=Europe/Berlin:20250917T122000\n" +
+                        "DTEND;TZID=Europe/Berlin:20250917T124500\n" +
+                        "END:VEVENT\n" +
+                        "END:VCALENDAR"
+            )
+        )
     }
 
 }
