@@ -113,9 +113,9 @@ class TimeFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697600000L,   // 21/06/2020
-            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY,
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC,
             Events.DTEND to 1592697600000L,     // 21/06/2020
-            Events.EVENT_END_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY
+            Events.EVENT_END_TIMEZONE to AndroidTimeUtils.TZID_UTC
         ))
         processor.process(entity, entity, result)
         assertEquals(DtStart(Date("20200621")), result.dtStart)
@@ -129,9 +129,9 @@ class TimeFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697600000L,   // 21/06/2020
-            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY,
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC,
             Events.DTEND to 1592784000000L,     // 22/06/2020
-            Events.EVENT_END_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY
+            Events.EVENT_END_TIMEZONE to AndroidTimeUtils.TZID_UTC
         ))
         processor.process(entity, entity, result)
         assertEquals(DtStart(Date("20200621")), result.dtStart)
@@ -145,7 +145,7 @@ class TimeFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697600000L,   // 21/06/2020
-            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY,
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC,
             Events.DURATION to "P1W"
         ))
         processor.process(entity, entity, result)
@@ -162,7 +162,7 @@ class TimeFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697600000L,   // 21/06/2020
-            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY,
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC,
             Events.DURATION to "PT1H30M"
         ))
         processor.process(entity, entity, result)
@@ -179,7 +179,7 @@ class TimeFieldsProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697600000L,   // 21/06/2020
-            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_ALLDAY,
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC,
             Events.DURATION to "PT49H2M"
         ))
         processor.process(entity, entity, result)

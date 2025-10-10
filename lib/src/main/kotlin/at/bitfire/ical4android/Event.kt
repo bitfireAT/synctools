@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
@@ -90,5 +91,8 @@ data class Event(
             }
             return email
         }
+
+    fun requireDtStart(): DtStart =
+        dtStart ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
 
 }

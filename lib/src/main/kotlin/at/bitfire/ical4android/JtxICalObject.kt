@@ -14,7 +14,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
@@ -285,7 +285,7 @@ open class JtxICalObject(
          *
          * @return array of filled [JtxICalObject] data objects (may have size 0)
          *
-         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
+         * @throws InvalidICalendarException when the iCalendar can't be parsed
          * @throws IOException on I/O errors
          */
         fun fromReader(

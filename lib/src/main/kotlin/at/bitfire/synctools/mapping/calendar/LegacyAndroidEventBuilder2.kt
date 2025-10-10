@@ -19,17 +19,19 @@ import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DirtyAndDeletedBuilder
+import at.bitfire.synctools.mapping.calendar.builder.DurationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ETagBuilder
+import at.bitfire.synctools.mapping.calendar.builder.EndTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.calendar.builder.OriginalInstanceTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RecurrenceFieldsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.RemindersBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SequenceBuilder
+import at.bitfire.synctools.mapping.calendar.builder.StartTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.StatusBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.SyncIdBuilder
-import at.bitfire.synctools.mapping.calendar.builder.TimeFieldsBuilder
 import at.bitfire.synctools.mapping.calendar.builder.TitleBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UidBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
@@ -72,7 +74,9 @@ class LegacyAndroidEventBuilder2(
         ETagBuilder(eTag = eTag, scheduleTag = scheduleTag),
         SyncFlagsBuilder(flags),
         SequenceBuilder(),
-        TimeFieldsBuilder(),
+        StartTimeBuilder(),
+        EndTimeBuilder(),
+        DurationBuilder(),
         AllDayBuilder(),
         AccessLevelBuilder(),
         AvailabilityBuilder(),

@@ -42,7 +42,7 @@ object AndroidTimeUtils {
     /**
      * Timezone ID to store for all-day events, according to CalendarContract.Events SDK documentation.
      */
-    val TZID_ALLDAY = "UTC"
+    val TZID_UTC = "UTC"
 
     private const val RECURRENCE_LIST_TZID_SEPARATOR = ';'
     private const val RECURRENCE_LIST_VALUE_SEPARATOR = ","
@@ -136,7 +136,7 @@ object AndroidTimeUtils {
                 }
             } else
                 // DATE
-                TZID_ALLDAY
+                TZID_UTC
 
 
     // recurrence sets
