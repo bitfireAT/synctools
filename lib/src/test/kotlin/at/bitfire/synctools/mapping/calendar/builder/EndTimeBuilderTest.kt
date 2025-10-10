@@ -24,12 +24,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Period
+import java.time.ZoneId
 import java.util.LinkedList
 
 @RunWith(RobolectricTestRunner::class)
 class EndTimeBuilderTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzDefault = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
 
     private val builder = EndTimeBuilder()
@@ -62,7 +64,29 @@ class EndTimeBuilderTest {
     }
 
     @Test
-    fun `Non-recurring non-all-day event (with DTEND)`() {
+    fun `Non-recurring non-all-day event (with floating DTEND)`() {
+        val result = Entity(ContentValues())
+        val event = Event(
+            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
+            dtEnd = DtEnd(DateTime("20251011T040506"))
+        )
+        builder.build(event, event, result)
+        assertEquals(DateTime("20251011T040506", tzDefault).time, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring non-all-day event (with UTC DTEND)`() {
+        val result = Entity(ContentValues())
+        val event = Event(
+            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
+            dtEnd = DtEnd(DateTime("20251011T040506Z"))
+        )
+        builder.build(event, event, result)
+        assertEquals(1760155506000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring non-all-day event (with zoned DTEND)`() {
         val result = Entity(ContentValues())
         val event = Event(
             dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
