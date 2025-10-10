@@ -67,7 +67,6 @@ class DurationBuilder: AndroidEntityBuilder {
             // - DTSTART is DATE-TIME, DTEND is DATE → amend DTEND with time of DTSTART → DURATION is exact number of days (no time part)
             val startDate = dtStart.date.toLocalDate()
             val endDate = dtEnd.date.toLocalDate()
-            System.err.println("startDate = $startDate, endDate = $endDate")
             Duration(Period.between(startDate, endDate))
         }
     }
@@ -77,7 +76,7 @@ class DurationBuilder: AndroidEntityBuilder {
             if (allDay)
                 Period.ofDays(1)
             else
-                java.time.Duration.ofSeconds(0)
+                java.time.Duration.ZERO
         )
 
 }
