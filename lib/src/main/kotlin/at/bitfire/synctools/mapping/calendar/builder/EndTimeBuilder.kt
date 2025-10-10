@@ -23,6 +23,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class EndTimeBuilder: AndroidEntityBuilder {
 
@@ -95,13 +96,18 @@ class EndTimeBuilder: AndroidEntityBuilder {
                 return dtEnd
             } else {
                 // DTEND is DATE, DTSTART is DATE-TIME → amend with time and timezone
-                TODO()
+                val endDate = dtEnd.date.toLocalDate()
+                val startTime = (dtStart.date as DateTime).toZonedDateTime()
+                val endDateWithTime = ZonedDateTime.of(endDate, startTime.toLocalTime(), startTime.zone)
+                return DtEnd(endDateWithTime.toIcal4jDateTime())
             }
         } else {
             // DTEND is DATE-TIME
             if (DateUtils.isDate(dtStart)) {
                 // DTEND is DATE-TIME, DTSTART is DATE → only take date part
-                TODO()
+                val endDateTime = (dtEnd.date as DateTime).toZonedDateTime()
+                val endDate = endDateTime.toLocalDate()
+                return DtEnd(endDate.toIcal4jDate())
             } else {
                 // DTEND is DATE-TIME, DTSTART is DATE-TIME
                 return dtEnd
