@@ -19,6 +19,7 @@ import at.bitfire.synctools.mapping.calendar.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ColorBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.calendar.builder.DirtyAndDeletedBuilder
+import at.bitfire.synctools.mapping.calendar.builder.DurationBuilder
 import at.bitfire.synctools.mapping.calendar.builder.ETagBuilder
 import at.bitfire.synctools.mapping.calendar.builder.EndTimeBuilder
 import at.bitfire.synctools.mapping.calendar.builder.LocationBuilder
@@ -75,6 +76,7 @@ class LegacyAndroidEventBuilder2(
         SequenceBuilder(),
         StartTimeBuilder(),
         EndTimeBuilder(),
+        DurationBuilder(),
         AllDayBuilder(),
         AccessLevelBuilder(),
         AvailabilityBuilder(),

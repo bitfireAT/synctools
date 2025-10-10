@@ -105,8 +105,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
             // DTEND is DATE-TIME
             if (DateUtils.isDate(dtStart)) {
                 // DTEND is DATE-TIME, DTSTART is DATE → only take date part
-                val endDateTime = (dtEnd.date as DateTime).toZonedDateTime()
-                val endDate = endDateTime.toLocalDate()
+                val endDate = dtEnd.date.toLocalDate()
                 return DtEnd(endDate.toIcal4jDate())
             } else {
                 // DTEND is DATE-TIME, DTSTART is DATE-TIME

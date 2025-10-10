@@ -57,6 +57,22 @@ class AndroidCalendarProviderBehaviorTest {
 
 
     @Test
+    fun testInsertEventWithDurationZeroSeconds() {
+        // To make sure that it's not a problem to insert a recurring event with a duration of zero seconds.
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.DURATION to "PT0S",
+            Events.TITLE to "Event with useless RRULE",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T000000Z"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        val event2 = calendar.getEventRow(id)
+        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+    }
+
+    @Test
     fun testInsertEventWithRRuleUntilBeforeDtStart() {
         // To make sure that's not a problem to insert an (invalid/useless) RRULE with UNTIL before the event's DTSTART.
         val values = contentValuesOf(

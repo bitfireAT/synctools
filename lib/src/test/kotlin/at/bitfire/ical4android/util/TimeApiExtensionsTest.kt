@@ -184,7 +184,7 @@ class TimeApiExtensionsTest {
 
     @Test
     fun testTemporalAmount_toRfc5545Duration_Duration() {
-        assertEquals("P0S", Duration.ofDays(0).toRfc5545Duration(Instant.EPOCH))
+        assertEquals("PT0S", Duration.ofDays(0).toRfc5545Duration(Instant.EPOCH))
         assertEquals("P2W", Duration.ofDays(14).toRfc5545Duration(Instant.EPOCH))
         assertEquals("P15D", Duration.ofDays(15).toRfc5545Duration(Instant.EPOCH))
         assertEquals("P16DT1H", Duration.parse("P16DT1H").toRfc5545Duration(Instant.EPOCH))
