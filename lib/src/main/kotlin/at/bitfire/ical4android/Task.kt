@@ -8,7 +8,7 @@ package at.bitfire.ical4android
 
 import androidx.annotation.IntRange
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
@@ -107,7 +107,7 @@ data class Task(
          *
          * @return array of filled [Task] data objects (may have size 0)
          *
-         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
+         * @throws InvalidICalendarException when the iCalendar can't be parsed
          * @throws IOException on I/O errors
          */
         fun tasksFromReader(reader: Reader): List<Task> {
