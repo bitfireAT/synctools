@@ -16,6 +16,8 @@ import at.bitfire.synctools.mapping.calendar.processor.AvailabilityProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
+import at.bitfire.synctools.mapping.calendar.processor.DurationProcessor
+import at.bitfire.synctools.mapping.calendar.processor.EndTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
@@ -25,7 +27,6 @@ import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StartTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
-import at.bitfire.synctools.mapping.calendar.processor.TimeFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
@@ -56,8 +57,9 @@ class LegacyAndroidEventProcessor(
         OriginalInstanceTimeProcessor(),
         TitleProcessor(),
         LocationProcessor(),
-        TimeFieldsProcessor(),
         StartTimeProcessor(),
+        EndTimeProcessor(),
+        DurationProcessor(),
         RecurrenceFieldsProcessor(),
         DescriptionProcessor(),
         ColorProcessor(),

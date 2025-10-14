@@ -10,15 +10,18 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.AndroidTimeUtils
-import at.bitfire.synctools.exception.InvalidLocalResourceException
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.util.TimeZones
 import java.time.ZoneId
+import java.util.logging.Logger
 
-class StartTimeProcessor: AndroidEventFieldProcessor {
+class EndTimeProcessor: AndroidEventFieldProcessor {
+
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
     private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
@@ -26,15 +29,24 @@ class StartTimeProcessor: AndroidEventFieldProcessor {
         val values = from.entityValues
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
-        val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART")
+        // Skip if DTEND is not set – then usually DURATION is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT.
+        val tsEnd = values.getAsLong(Events.DTEND) ?: return
+
+        // Also skip if DTEND is not after DTSTART (not allowed in iCalendar)
+        val tsStart = values.getAsLong(Events.DTSTART) ?: return
+        if (tsEnd <= tsStart) {
+            logger.warning("Ignoring DTEND=$tsEnd that is not after DTSTART=$tsStart")
+            return
+        }
 
         if (allDay) {
-            // DTSTART with VALUE=DATE
-            to.dtStart = DtStart(Date(tsStart))
+            // DTEND with VALUE=DATE
+            to.dtEnd = DtEnd(Date(tsEnd))
 
         } else {
-            // DTSTART with VALUE=DATE-TIME
-            val tzId = values.getAsString(Events.EVENT_TIMEZONE)
+            // DTEND with VALUE=DATE-TIME
+            val tzId = values.getAsString(Events.EVENT_END_TIMEZONE)
+                ?: values.getAsString(Events.EVENT_TIMEZONE)    // if not present, assume same as DTSTART
                 ?: AndroidTimeUtils.TZID_UTC    // safe fallback (should never be used because the calendar provider requires EVENT_TIMEZONE)
 
             /* The resolved timezone may be null if there is no ical4j timezone for tzId, which can happen in rare cases
@@ -49,7 +61,7 @@ class StartTimeProcessor: AndroidEventFieldProcessor {
             else
                 (tzRegistry.getTimeZone(tzId) ?: tzRegistry.getTimeZone(ZoneId.systemDefault().id))
 
-            to.dtStart = DtStart(DateTime(tsStart).also { dateTime ->
+            to.dtEnd = DtEnd(DateTime(tsEnd).also { dateTime ->
                 if (timezone == null || TimeZones.isUtc(timezone))
                     dateTime.isUtc = true
                 else

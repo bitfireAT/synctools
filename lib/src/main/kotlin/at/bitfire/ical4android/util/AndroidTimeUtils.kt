@@ -335,7 +335,7 @@ object AndroidTimeUtils {
     // duration
 
     /**
-     * Checks and fixes [Event.duration] values with incorrect format which can't be
+     * Checks and fixes DURATION values with incorrect format which can't be
      * parsed by ical4j. Searches for values like "1H" and "3M" and
      * groups them together in a standards-compliant way.
      *
