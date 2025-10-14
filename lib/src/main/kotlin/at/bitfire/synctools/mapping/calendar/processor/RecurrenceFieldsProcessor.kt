@@ -16,6 +16,7 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -28,53 +29,83 @@ class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: Event) {
         val values = from.entityValues
-        val rRuleField = values.getAsString(Events.RRULE)
-        val rDateField = values.getAsString(Events.RDATE)
 
-        // generate recurrence properties only for recurring main events
-        val recurring = rRuleField != null || rDateField != null
-        if (from !== main || !recurring)
-            return
-
-        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
         val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
+        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
-        // RRULE
-        if (rRuleField != null)
+        // process RRULE field
+        val rRules = LinkedList<RRule>()
+        values.getAsString(Events.RRULE)?.let { rRuleField ->
             try {
-                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.rRules += RRule(rule)
+                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
+                    val rule = RRule(rule)
+
+                    // skip if UNTIL is before event's DTSTART
+                    val tsUntil = rule.recur.until?.time
+                    if (tsUntil != null && tsUntil <= tsStart) {
+                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
+                        continue
+                    }
+
+                    rRules += rule
+                }
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse RRULE field, ignoring", e)
             }
+        }
 
-        // RDATE
-        if (rDateField != null)
+        // process RDATE field
+        val rDates = LinkedList<RDate>()
+        values.getAsString(Events.RDATE)?.let { rDateField ->
             try {
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(rDateField, tzRegistry, allDay, tsStart) { RDate(it) }
-                to.rDates += rDate
+                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(rDateField, tzRegistry, allDay, tsStart) {
+                    RDate(it)
+                }
+                rDates += rDate
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse RDATE field, ignoring", e)
             }
+        }
 
         // EXRULE
-        values.getAsString(Events.EXRULE)?.let { rulesStr ->
+        val exRules = LinkedList<ExRule>()
+        values.getAsString(Events.EXRULE)?.let { exRuleField ->
             try {
-                for (rule in rulesStr.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR))
-                    to.exRules += ExRule(null, rule)
+                for (rule in exRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
+                    val rule = ExRule(null, rule)
+
+                    // skip if UNTIL is before event's DTSTART
+                    val tsUntil = rule.recur.until?.time
+                    if (tsUntil != null && tsUntil <= tsStart) {
+                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
+                        continue
+                    }
+
+                    exRules += rule
+                }
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
             }
         }
 
         // EXDATE
-        values.getAsString(Events.EXDATE)?.let { datesStr ->
+        val exDates = LinkedList<ExDate>()
+        values.getAsString(Events.EXDATE)?.let { exDateField ->
             try {
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(datesStr, tzRegistry, allDay) { ExDate(it) }
-                to.exDates += exDate
+                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(exDateField, tzRegistry, allDay) { ExDate(it) }
+                exDates += exDate
             } catch (e: Exception) {
                 logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
             }
+        }
+
+        // generate recurrence properties only for recurring main events
+        val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
+        if (from === main && recurring) {
+            to.rRules += rRules
+            to.rDates += rDates
+            to.exRules += exRules
+            to.exDates += exDates
         }
     }
 

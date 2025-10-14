@@ -47,7 +47,6 @@ object EventValidator {
     fun repair(event: Event) {
         val dtStart = correctStartAndEndTime(event)
         sameTypeForDtStartAndRruleUntil(dtStart, event.rRules)
-        removeRRulesWithUntilBeforeDtStart(dtStart, event.rRules)
     }
 
 
@@ -165,30 +164,6 @@ object EventValidator {
             // add repaired RRULEs
             rRules += newRRules
         }
-    }
-
-    /**
-     * Will remove the RRULES of an event where UNTIL lies before DTSTART
-     */
-    @VisibleForTesting
-    internal fun removeRRulesWithUntilBeforeDtStart(dtStart: DtStart, rRules: MutableList<RRule>) {
-        val iter = rRules.iterator()
-        while (iter.hasNext()) {
-            val rRule = iter.next()
-
-            // drop invalid RRULEs
-            if (hasUntilBeforeDtStart(dtStart, rRule))
-                iter.remove()
-        }
-    }
-
-    /**
-     * Checks whether UNTIL of an RRULE lies before DTSTART
-     */
-    @VisibleForTesting
-    internal fun hasUntilBeforeDtStart(dtStart: DtStart, rRule: RRule): Boolean {
-        val until = rRule.recur.until ?: return false
-        return until < dtStart.date
     }
 
 }

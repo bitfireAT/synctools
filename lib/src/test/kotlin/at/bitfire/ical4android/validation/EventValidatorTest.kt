@@ -10,15 +10,12 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.EventReader
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -223,170 +220,6 @@ class EventValidatorTest {
         ).first()
         assertEquals("FREQ=YEARLY;UNTIL=20211214T001100Z;BYMONTHDAY=15", event2.rRules.joinToString())
     }
-
-
-    // RRULE UNTIL time before DTSTART time
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartTime_RRuleNoUntil() {
-        assertFalse(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart(DateTime("20220531T010203")), RRule()
-            )
-        )
-    }
-
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartDate_RRuleUntil_TimeBeforeDtStart_UTC() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart("20220912", tzReg.getTimeZone("UTC")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220911T235959Z"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartDate_RRuleUntil_TimeBeforeDtStart_noTimezone() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart("20220912"), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220911T235959"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartDate_RRuleUntil_TimeBeforeDtStart_withTimezone() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart("20220912", tzReg.getTimeZone("America/New_York")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220911T235959", tzReg.getTimeZone("America/New_York")))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartDate_RRuleUntil_DateBeforeDtStart() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart("20220531"), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220530T000000"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartDate_RRuleUntil_TimeAfterDtStart() {
-        assertFalse(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart("20200912"), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220912T000001Z"))
-                        .build()
-                )
-            )
-        )
-    }
-
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartTime_RRuleUntil_DateBeforeDtStart() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart(DateTime("20220531T010203")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(Date("20220530"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartTime_RRuleUntil_TimeBeforeDtStart() {
-        assertTrue(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart(DateTime("20220531T010203")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220531T010202"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartTime_RRuleUntil_TimeAtDtStart() {
-        assertFalse(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart(DateTime("20220531T010203")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220531T010203"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testHasUntilBeforeDtStart_DtStartTime_RRuleUntil_TimeAfterDtStart() {
-        assertFalse(
-            EventValidator.hasUntilBeforeDtStart(
-                DtStart(DateTime("20220531T010203")), RRule(
-                    Recur.Builder()
-                        .frequency(Recur.Frequency.DAILY)
-                        .until(DateTime("20220531T010204"))
-                        .build()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun testRemoveRRulesWithUntilBeforeDtStart() {
-        val dtStart = DtStart(DateTime("20220531T125304"))
-        val rruleBefore = RRule(Recur.Builder()
-            .frequency(Recur.Frequency.DAILY)
-            .until(DateTime("20220531T125303"))
-            .build())
-        val rruleAfter = RRule(Recur.Builder()
-            .frequency(Recur.Frequency.DAILY)
-            .until(DateTime("20220531T125305"))
-            .build())
-
-        val rrules = mutableListOf(
-            rruleBefore,
-            rruleAfter
-        )
-        EventValidator.removeRRulesWithUntilBeforeDtStart(dtStart, rrules)
-        assertArrayEquals(arrayOf(
-            // rRuleBefore has been removed because RRULE UNTIL is before DTSTART
-            rruleAfter
-        ), rrules.toTypedArray())
-    }
-
 
     // helpers
 

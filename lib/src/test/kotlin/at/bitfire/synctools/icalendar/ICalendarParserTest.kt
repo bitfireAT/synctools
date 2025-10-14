@@ -6,7 +6,7 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
@@ -70,7 +70,7 @@ class ICalendarParserTest {
         // no exception called
     }
 
-    @Test(expected = InvalidRemoteResourceException::class)
+    @Test(expected = InvalidICalendarException::class)
     fun testParse_ThrowsExceptionOnInvalidInput() {
         val reader = StringReader("invalid")
         parser.parse(reader)

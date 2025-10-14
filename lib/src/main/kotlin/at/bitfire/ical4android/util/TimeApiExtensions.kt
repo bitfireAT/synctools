@@ -152,7 +152,7 @@ object TimeApiExtensions {
             var secs = seconds
 
             if (secs == 0L)
-                return "P0S"
+                return "PT0S"
 
             var weeks = secs / SECONDS_PER_WEEK
             secs -= weeks * SECONDS_PER_WEEK
