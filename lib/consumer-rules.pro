@@ -10,6 +10,9 @@
 -dontwarn org.codehaus.groovy.**
 -dontwarn org.jparsec.**
 
+# keep to be used by ical4j
+-keep class at.bitfire.ical4android.AndroidCompatTimeZoneRegistry$Factory { *; }
+
 # keep all vCard properties/parameters (used via reflection)
 -keep class ezvcard.io.scribe.** { *; }
 -keep class ezvcard.property.** { *; }
