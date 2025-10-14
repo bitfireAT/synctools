@@ -27,6 +27,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.util.logging.Logger
 
+@Deprecated("Use specific processors")
 class TimeFieldsProcessor: AndroidEventFieldProcessor {
 
     private val logger

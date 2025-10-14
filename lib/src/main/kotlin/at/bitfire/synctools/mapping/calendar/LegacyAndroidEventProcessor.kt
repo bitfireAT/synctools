@@ -23,6 +23,7 @@ import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProce
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
+import at.bitfire.synctools.mapping.calendar.processor.StartTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TimeFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
@@ -56,6 +57,7 @@ class LegacyAndroidEventProcessor(
         TitleProcessor(),
         LocationProcessor(),
         TimeFieldsProcessor(),
+        StartTimeProcessor(),
         RecurrenceFieldsProcessor(),
         DescriptionProcessor(),
         ColorProcessor(),
