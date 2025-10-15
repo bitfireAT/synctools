@@ -16,7 +16,9 @@ import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.DtEnd
+import java.time.Duration
 import java.time.Instant
+import java.time.Period
 import java.time.ZoneOffset
 
 class DurationProcessor(
@@ -28,14 +30,16 @@ class DurationProcessor(
 
         /* Skip if:
         - DTEND is set – we don't need to process DURATION anymore.
-        - DURATION is not set – then usually DTEND is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT.
-        */
+        - DURATION is not set – then usually DTEND is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT. */
         if (values.getAsLong(Events.DTEND) != null)
             return
         val durStr = values.getAsString(Events.DURATION) ?: return
         val duration = AndroidTimeUtils.parseDuration(durStr)
 
-        // check for negative duration
+        // Skip in case of zero or negative duration (analogous to DTEND being before DTSTART).
+        if ((duration is Duration && (duration.isZero || duration.isNegative)) ||
+            (duration is Period && (duration.isZero || duration.isNegative)))
+            return
 
         /* Some servers have problems with DURATION. For maximum compatibility, we always generate DTEND instead of DURATION.
         (After all, the constraint that non-recurring events have a DTEND while recurring events use DURATION is Android-specific.)
