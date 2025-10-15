@@ -9,53 +9,27 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.util.TimeZones
-import java.time.ZoneId
 
-class StartTimeProcessor: AndroidEventFieldProcessor {
-
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+class StartTimeProcessor(
+    private val tzRegistry: TimeZoneRegistry
+): AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: Event) {
         val values = from.entityValues
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
-        val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART")
+        // DATE or DATE-TIME according to allDay
+        val start = AndroidTimeField(
+            timestamp = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART"),
+            timeZone = values.getAsString(Events.EVENT_TIMEZONE),
+            allDay = allDay,
+            tzRegistry = tzRegistry
+        ).asIcal4jDate()
 
-        if (allDay) {
-            // DTSTART with VALUE=DATE
-            to.dtStart = DtStart(Date(tsStart))
-
-        } else {
-            // DTSTART with VALUE=DATE-TIME
-            val tzId = values.getAsString(Events.EVENT_TIMEZONE)
-                ?: AndroidTimeUtils.TZID_UTC    // safe fallback (should never be used because the calendar provider requires EVENT_TIMEZONE)
-
-            /* The resolved timezone may be null if there is no ical4j timezone for tzId, which can happen in rare cases
-            (for instance if Android already knows about a new timezone ID or alias that doesn't exist in our
-            ical4j version yet).
-
-            In this case, we use the system default timezone ID as fallback and hope that we have a VTIMEZONE for it.
-            If we also don't have a VTIMEZONE for the default timezone, we fall back to a UTC DATE-TIME without timezone. */
-
-            val timezone = if (tzId == AndroidTimeUtils.TZID_UTC)
-                null    // indicates UTC
-            else
-                (tzRegistry.getTimeZone(tzId) ?: tzRegistry.getTimeZone(ZoneId.systemDefault().id))
-
-            to.dtStart = DtStart(DateTime(tsStart).also { dateTime ->
-                if (timezone == null || TimeZones.isUtc(timezone))
-                    dateTime.isUtc = true
-                else
-                    dateTime.timeZone = timezone
-            })
-        }
+        to.dtStart = DtStart(start)
     }
 
 }

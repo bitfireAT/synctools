@@ -9,9 +9,9 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import at.bitfire.synctools.util.AndroidTimeUtils
+import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
@@ -20,12 +20,12 @@ import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class RecurrenceFieldsProcessor: AndroidEventFieldProcessor {
+class RecurrenceFieldsProcessor(
+    private val tzRegistry: TimeZoneRegistry
+): AndroidEventFieldProcessor {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
-
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
     override fun process(from: Entity, main: Entity, to: Event) {
         val values = from.entityValues

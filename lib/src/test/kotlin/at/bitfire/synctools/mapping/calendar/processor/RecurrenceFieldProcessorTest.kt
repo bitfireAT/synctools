@@ -13,6 +13,7 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import org.junit.Assert.assertTrue
@@ -23,7 +24,8 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class RecurrenceFieldProcessorTest {
 
-    private val processor = RecurrenceFieldsProcessor()
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val processor = RecurrenceFieldsProcessor(tzRegistry)
 
     @Test
     fun `Recurring exception`() {

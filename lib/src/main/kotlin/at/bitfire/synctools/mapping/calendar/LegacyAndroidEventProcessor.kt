@@ -33,6 +33,7 @@ import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcesso
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -50,17 +51,19 @@ class LegacyAndroidEventProcessor(
     private val accountName: String
 ) {
 
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
         MutatorsProcessor(),    // for PRODID
         UidProcessor(),
-        OriginalInstanceTimeProcessor(),
+        OriginalInstanceTimeProcessor(tzRegistry),
         TitleProcessor(),
         LocationProcessor(),
-        StartTimeProcessor(),
-        EndTimeProcessor(),
-        DurationProcessor(),
-        RecurrenceFieldsProcessor(),
+        StartTimeProcessor(tzRegistry),
+        EndTimeProcessor(tzRegistry),
+        DurationProcessor(tzRegistry),
+        RecurrenceFieldsProcessor(tzRegistry),
         DescriptionProcessor(),
         ColorProcessor(),
         AccessLevelProcessor(),

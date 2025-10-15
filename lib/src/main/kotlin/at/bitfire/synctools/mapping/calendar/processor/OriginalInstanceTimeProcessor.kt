@@ -12,13 +12,13 @@ import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.util.TimeZones
 
-class OriginalInstanceTimeProcessor: AndroidEventFieldProcessor {
-
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+class OriginalInstanceTimeProcessor(
+    private val tzRegistry: TimeZoneRegistry
+): AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: Event) {
         // only applicable to exceptions, not to main events

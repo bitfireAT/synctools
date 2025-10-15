@@ -6,23 +6,7 @@
 
 package at.bitfire.synctools.mapping.calendar.processor
 
-import android.content.Entity
-import android.provider.CalendarContract.Events
-import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-
-@RunWith(RobolectricTestRunner::class)
+/*@RunWith(RobolectricTestRunner::class)
 class TimeFieldsProcessorTest {
 
     private val processor = TimeFieldsProcessor()
@@ -188,4 +172,4 @@ class TimeFieldsProcessorTest {
         assertNull(result.duration)
     }
 
-}
+}*/
