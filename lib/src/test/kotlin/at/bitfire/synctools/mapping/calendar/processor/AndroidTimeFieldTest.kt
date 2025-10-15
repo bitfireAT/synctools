@@ -15,6 +15,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume
 import org.junit.Test
 import java.time.ZoneId
 
@@ -74,6 +75,7 @@ class AndroidTimeFieldTest {
 
     @Test
     fun `asIcal4jDate(non-all-day without timezone) returns ical4j DateTime in default zone`() {
+        Assume.assumeTrue(tzDefault.id != TimeZones.UTC_ID)     // would cause UTC DATE-TIME
         val result = AndroidTimeField(
             1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             null,

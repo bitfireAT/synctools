@@ -15,7 +15,9 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtEnd
+import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertNull
+import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -72,6 +74,8 @@ class EndTimeProcessorTest {
 
     @Test
     fun `Non-all-day event without start or end timezone`() {
+        val defaultTz = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
+        Assume.assumeTrue(defaultTz.id != TimeZones.UTC_ID)     // would cause UTC DATE-TIME
         val result = Event()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
@@ -80,7 +84,6 @@ class EndTimeProcessorTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         processor.process(entity, entity, result)
-        val defaultTz = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
         assertEquals(1592733600000L, result.dtEnd?.date?.time)
         assertEquals(defaultTz, (result.dtEnd?.date as? DateTime)?.timeZone)
     }
