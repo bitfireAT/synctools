@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
+import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.property.RDate
 import java.util.logging.Logger

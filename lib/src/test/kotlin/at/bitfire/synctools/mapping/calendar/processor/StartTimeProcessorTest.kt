@@ -11,44 +11,52 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.util.AndroidTimeUtils
+import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.property.RecurrenceId
-import org.junit.Assert.assertEquals
+import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class OriginalInstanceTimeProcessorTest {
+class StartTimeProcessorTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
 
-    private val processor = OriginalInstanceTimeProcessor(tzRegistry)
+    private val processor = StartTimeProcessor(tzRegistry)
 
     @Test
-    fun `Original event is all-day`() {
+    fun `All-day event`() {
         val result = Event()
         val entity = Entity(contentValuesOf(
-            Events.ORIGINAL_INSTANCE_TIME to 1594080000000L,
-            Events.ORIGINAL_ALL_DAY to 1
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1592697600000L,   // 21/06/2020
+            Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC
         ))
-        processor.process(entity, Entity(ContentValues()), result)
-        assertEquals(RecurrenceId(Date("20200707")), result.recurrenceId)
+        processor.process(entity, entity, result)
+        assertEquals(DtStart(Date("20200621")), result.dtStart)
     }
 
     @Test
-    fun `Original event is not all-day`() {
+    fun `Non-all-day event`() {
         val result = Event()
         val entity = Entity(contentValuesOf(
-            Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
-            Events.ORIGINAL_ALL_DAY to 0,
-            Events.EVENT_TIMEZONE to tzVienna.id
+            Events.DTSTART to 1592733600000L,   // 21/06/2020 12:00 +0200
+            Events.EVENT_TIMEZONE to "Europe/Vienna"
         ))
-        processor.process(entity, Entity(ContentValues()), result)
-        assertEquals(RecurrenceId(DateTime("20250922T161348", tzVienna)), result.recurrenceId)
+        processor.process(entity, entity, result)
+        assertEquals(DtStart(DateTime("20200621T120000", tzVienna)), result.dtStart)
+    }
+
+    @Test(expected = InvalidLocalResourceException::class)
+    fun `No start time`() {
+        val entity = Entity(ContentValues())
+        processor.process(entity, entity, Event())
     }
 
 }

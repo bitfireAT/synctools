@@ -9,8 +9,8 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.util.AndroidTimeUtils
 import java.time.ZoneId
 
 class StartTimeBuilder: AndroidEntityBuilder {

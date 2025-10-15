@@ -16,6 +16,8 @@ import at.bitfire.synctools.mapping.calendar.processor.AvailabilityProcessor
 import at.bitfire.synctools.mapping.calendar.processor.CategoriesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.ColorProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
+import at.bitfire.synctools.mapping.calendar.processor.DurationProcessor
+import at.bitfire.synctools.mapping.calendar.processor.EndTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
@@ -23,14 +25,15 @@ import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProce
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
+import at.bitfire.synctools.mapping.calendar.processor.StartTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
-import at.bitfire.synctools.mapping.calendar.processor.TimeFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -48,15 +51,19 @@ class LegacyAndroidEventProcessor(
     private val accountName: String
 ) {
 
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
         MutatorsProcessor(),    // for PRODID
         UidProcessor(),
-        OriginalInstanceTimeProcessor(),
+        OriginalInstanceTimeProcessor(tzRegistry),
         TitleProcessor(),
         LocationProcessor(),
-        TimeFieldsProcessor(),
-        RecurrenceFieldsProcessor(),
+        StartTimeProcessor(tzRegistry),
+        EndTimeProcessor(tzRegistry),
+        DurationProcessor(tzRegistry),
+        RecurrenceFieldsProcessor(tzRegistry),
         DescriptionProcessor(),
         ColorProcessor(),
         AccessLevelProcessor(),
