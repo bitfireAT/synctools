@@ -11,11 +11,16 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
+import net.fortuna.ical4j.model.Date
+import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +30,8 @@ import org.robolectric.RobolectricTestRunner
 class RecurrenceFieldProcessorTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
+
     private val processor = RecurrenceFieldsProcessor(tzRegistry)
 
     @Test
@@ -103,6 +110,81 @@ class RecurrenceFieldProcessorTest {
         ))
         processor.process(entity, entity, result)
         assertTrue(result.exRules.isEmpty())
+    }
+
+
+    @Test
+    fun `alignUntil(recurUntil=null)`() {
+        val recur = Recur.Builder()
+            .frequency(Recur.Frequency.DAILY)
+            .build()
+        val result = processor.alignUntil(
+            recur = recur,
+            startDate = mockk()
+        )
+        assertSame(recur, result)
+    }
+
+    @Test
+    fun `alignUntil(recurUntil=DATE, startDate=DATE)`() {
+        val recur = Recur.Builder()
+            .frequency(Recur.Frequency.DAILY)
+            .until(Date("20251015"))
+            .build()
+        val result = processor.alignUntil(
+            recur = recur,
+            startDate = Date()
+        )
+        assertSame(recur, result)
+    }
+
+    @Test
+    fun `alignUntil(recurUntil=DATE, startDate=DATE-TIME)`() {
+        val result = processor.alignUntil(
+            recur = Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(Date("20251015"))
+                .build(),
+            startDate = DateTime("20250101T010203", tzVienna)
+        )
+        assertEquals(
+            Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(DateTime("20251015T010203", tzVienna))
+                .build(),
+            result
+        )
+    }
+
+    @Test
+    fun `alignUntil(recurUntil=DATE-TIME, startDate=DATE)`() {
+        val result = processor.alignUntil(
+            recur = Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(DateTime("20251015T153118", tzVienna))
+                .build(),
+            startDate = Date()
+        )
+        assertEquals(
+            Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(Date("20251015"))
+                .build(),
+            result
+        )
+    }
+
+    @Test
+    fun `alignUntil(recurUntil=DATE-TIME, startDate=DATE-TIME)`() {
+        val recur = Recur.Builder()
+            .frequency(Recur.Frequency.DAILY)
+            .until(DateTime("20251015T153118", tzVienna))
+            .build()
+        val result = processor.alignUntil(
+            recur = recur,
+            startDate = DateTime()
+        )
+        assertSame(recur, result)
     }
 
 }

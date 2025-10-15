@@ -6,83 +6,13 @@
 
 package at.bitfire.ical4android.validation
 
-import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.EventReader
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistry
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.RRule
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.io.StringReader
-
-class EventValidatorTest {
+/*class EventValidatorTest {
 
     companion object {
         val tzReg: TimeZoneRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     }
     
     val eventReader = EventReader()
-
-
-    // DTSTART and DTEND
-
-    @Test
-    fun testCorrectStartAndEndTime_NoDtStart_EndDateTime() {
-        val event = Event().apply {
-            // no dtStart
-            dtEnd = DtEnd(DateTime("20000105T000000"))  // DATETIME
-        }
-        EventValidator.correctStartAndEndTime(event)
-        assertEquals(event.dtEnd!!.date, event.dtStart!!.date)
-    }
-
-    @Test
-    fun testCorrectStartAndEndTime_NoDtStart_EndDate() {
-        val event = Event().apply {
-            // no dtStart
-            dtEnd = DtEnd(Date("20000105"))  // DATE
-        }
-        EventValidator.correctStartAndEndTime(event)
-        assertEquals(event.dtEnd!!.date, event.dtStart!!.date)
-    }
-
-    @Test
-    fun testCorrectStartAndEndTime_NoDtStart_NoDtEnd() {
-        val event = Event(/* no dtStart, no dtEnd */)
-
-        val time = System.currentTimeMillis()
-        EventValidator.correctStartAndEndTime(event)
-
-        assertTrue(event.dtStart!!.date.time in (time-1000)..<(time+1000))   // within 2 seconds
-        assertNull(event.dtEnd)
-    }
-
-    @Test
-    fun testCorrectStartAndEndTime_DtEndBeforeDtStart() {
-        val event = Event().apply {
-            dtStart = DtStart(DateTime("20000105T001100"))              // DATETIME
-            dtEnd = DtEnd(DateTime("20000105T000000"))                  // DATETIME
-        }
-        assertTrue(event.dtStart!!.date.time > event.dtEnd!!.date.time)
-        EventValidator.correctStartAndEndTime(event)
-        assertNull(event.dtEnd)
-
-        val event1 = eventReader.readEvents(StringReader(
-            "BEGIN:VCALENDAR\n" +
-               "BEGIN:VEVENT\n" +
-               "UID:51d8529a-5844-4609-918b-2891b855e0e8\n" +
-               "DTSTART;VALUE=DATE:20211117\n" +                           // DATE
-               "DTEND;VALUE=DATE:20211116\n" +                             // DATE
-               "END:VEVENT\n" +
-               "END:VCALENDAR")).first()
-        assertNull(event1.dtEnd)
-    }
 
 
     // RRULE UNTIL and DTSTART of same type (DATETIME/DATE)
@@ -226,4 +156,4 @@ class EventValidatorTest {
     private fun Iterable<RRule>.joinToString() =
         this.joinToString("\n") { rRule -> rRule.value }
 
-}
+}*/

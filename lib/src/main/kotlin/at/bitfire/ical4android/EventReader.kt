@@ -8,7 +8,6 @@ package at.bitfire.ical4android
 
 import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
 import at.bitfire.ical4android.ICalendar.Companion.fromReader
-import at.bitfire.ical4android.validation.EventValidator
 import at.bitfire.synctools.icalendar.CalendarUidSplitter
 import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.data.ParserException
@@ -52,8 +51,7 @@ class EventReader {
         get() = Logger.getLogger(javaClass.name)
 
     /**
-     * Parses an iCalendar resource, applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor]
-     * and [EventValidator] to increase compatibility and extracts the VEVENTs.
+     * Parses an iCalendar resource and applies [at.bitfire.synctools.icalendar.validation.ICalPreprocessor].
      *
      * @param from        where the iCalendar is read from
      * @param properties    Known iCalendar properties (like [CALENDAR_NAME]) will be put into this map. Key: property name; value: property value
@@ -104,10 +102,6 @@ class EventReader {
 
             events += event
         }
-
-        // Try to repair all events after reading the whole iCalendar
-        for (event in events)
-            EventValidator.repair(event)
 
         return events
     }
