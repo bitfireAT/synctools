@@ -150,7 +150,7 @@ class RecurrenceFieldProcessorTest {
         assertEquals(
             Recur.Builder()
                 .frequency(Recur.Frequency.DAILY)
-                .until(DateTime("20251015T010203", tzVienna))
+                .until(DateTime("20251014T230203Z"))
                 .build(),
             result
         )
@@ -176,15 +176,20 @@ class RecurrenceFieldProcessorTest {
 
     @Test
     fun `alignUntil(recurUntil=DATE-TIME, startDate=DATE-TIME)`() {
-        val recur = Recur.Builder()
-            .frequency(Recur.Frequency.DAILY)
-            .until(DateTime("20251015T153118", tzVienna))
-            .build()
         val result = processor.alignUntil(
-            recur = recur,
+            recur = Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(DateTime("20251015T153118", tzVienna))
+                .build(),
             startDate = DateTime()
         )
-        assertSame(recur, result)
+        assertEquals(
+            Recur.Builder()
+                .frequency(Recur.Frequency.DAILY)
+                .until(DateTime("20251015T133118Z"))
+                .build(),
+            result
+        )
     }
 
 }

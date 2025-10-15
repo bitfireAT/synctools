@@ -136,6 +136,9 @@ class RecurrenceFieldsProcessor(
     /**
      * Aligns the `UNTIL` of the given recurrence info to the VALUE-type (DATE-TIME/DATE) of [startDate].
      *
+     * If the aligned `UNTIL` is a DATE-TIME, this method also makes sure that it's specified in UTC format
+     * as required by RFC 5545 3.3.10.
+     *
      * @param recur         recurrence info whose `UNTIL` shall be aligned
      * @param startDate     `DTSTART` date to compare with
      *
@@ -157,7 +160,14 @@ class RecurrenceFieldsProcessor(
             // UNTIL is DATE-TIME
             if (startDate is DateTime) {
                 // DTSTART is DATE-TIME
-                return recur
+                return if (until.isUtc)
+                    recur
+                else
+                    Recur.Builder(recur)
+                        .until(DateTime(until).apply {
+                            isUtc = true
+                        })
+                        .build()
             } else {
                 // DTSTART is DATE → only take date part
                 val untilDate = until.toLocalDate()
@@ -173,7 +183,9 @@ class RecurrenceFieldsProcessor(
                 val startTime = startDate.toZonedDateTime()
                 val untilDateWithTime = ZonedDateTime.of(untilDate, startTime.toLocalTime(), startTime.zone)
                 return Recur.Builder(recur)
-                    .until(untilDateWithTime.toIcal4jDateTime())
+                    .until(untilDateWithTime.toIcal4jDateTime(tzRegistry).apply {
+                        isUtc = true
+                    })
                     .build()
             } else {
                 // DTSTART is DATE
