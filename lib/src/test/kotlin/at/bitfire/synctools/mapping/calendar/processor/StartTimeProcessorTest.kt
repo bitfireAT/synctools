@@ -6,10 +6,12 @@
 
 package at.bitfire.synctools.mapping.calendar.processor
 
+import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.util.AndroidTimeUtils
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
@@ -49,6 +51,12 @@ class StartTimeProcessorTest {
         ))
         processor.process(entity, entity, result)
         assertEquals(DtStart(DateTime("20200621T120000", tzVienna)), result.dtStart)
+    }
+
+    @Test(expected = InvalidLocalResourceException::class)
+    fun `No start time`() {
+        val entity = Entity(ContentValues())
+        processor.process(entity, entity, Event())
     }
 
 }

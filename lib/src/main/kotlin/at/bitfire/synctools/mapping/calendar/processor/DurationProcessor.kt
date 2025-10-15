@@ -52,6 +52,7 @@ class DurationProcessor(
             val startTimeUTC = Instant.ofEpochMilli(tsStart).atOffset(ZoneOffset.UTC)
             val endDate = (startTimeUTC + duration).toLocalDate()
 
+            // DATE
             to.dtEnd = DtEnd(endDate.toIcal4jDate())
 
         } else {
