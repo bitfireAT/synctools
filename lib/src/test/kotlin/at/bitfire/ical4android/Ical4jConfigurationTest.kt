@@ -10,6 +10,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 
 import org.junit.Test
 
@@ -18,10 +19,7 @@ class Ical4jConfigurationTest {
     @Test
     fun testTimeZoneRegistryFactoryConfigured() {
         val registry = TimeZoneRegistryFactory.getInstance().createRegistry()
-        assertEquals(
-            "at.bitfire.ical4android.AndroidCompatTimeZoneRegistry",
-            registry.javaClass.name
-        )
+        assertTrue(registry is AndroidCompatTimeZoneRegistry)
     }
 
 }
