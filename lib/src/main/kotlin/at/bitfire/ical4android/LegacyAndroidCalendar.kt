@@ -6,7 +6,8 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
+import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.mapping.calendar.AndroidEventProcessor
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidRecurringCalendar
 
@@ -25,14 +26,11 @@ class LegacyAndroidCalendar(
      *
      * @return event data object
      */
-    fun getEvent(id: Long): Event? {
+    fun getEvent(id: Long): AssociatedEvents? {
         val recurringCalendar = AndroidRecurringCalendar(calendar)
         val eventAndExceptions = recurringCalendar.getById(id) ?: return null
-        return Event().also { event ->
-            val processor = LegacyAndroidEventProcessor(calendar.account.name)
-            processor.populate(eventAndExceptions, to = event)
-        }
-
+        val processor = AndroidEventProcessor(calendar.account.name)
+        return processor.populate(eventAndExceptions)
     }
 
 }

@@ -8,12 +8,25 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Transp
 
 class AvailabilityProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.opaque = from.entityValues.getAsInteger(Events.AVAILABILITY) != Events.AVAILABILITY_FREE
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        val transp = when (from.entityValues.getAsInteger(Events.AVAILABILITY)) {
+            Events.AVAILABILITY_BUSY,
+            Events.AVAILABILITY_TENTATIVE ->
+                Transp.OPAQUE
+
+            Events.AVAILABILITY_FREE ->
+                Transp.TRANSPARENT
+
+            else ->
+                null    // defaults to OPAQUE in iCalendar
+        }
+        if (transp != null)
+            to.properties += transp
     }
 
 }

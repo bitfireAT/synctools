@@ -11,6 +11,7 @@ import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import org.json.JSONException
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -20,7 +21,7 @@ class UnknownPropertiesProcessor: AndroidEventFieldProcessor {
     private val logger: Logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val extended = from.subValues.filter { it.uri == ExtendedProperties.CONTENT_URI }.map { it.values }
         val unknownProperties = extended.filter { it.getAsString(ExtendedProperties.NAME) == UnknownProperty.CONTENT_ITEM_TYPE }
         val jsonProperties = unknownProperties.mapNotNull { it.getAsString(ExtendedProperties.VALUE) }
@@ -28,7 +29,7 @@ class UnknownPropertiesProcessor: AndroidEventFieldProcessor {
             try {
                 val prop = UnknownProperty.fromJsonString(json)
                 if (!EXCLUDED.contains(prop.name))
-                    to.unknownProperties += prop
+                    to.properties += prop
             } catch (e: JSONException) {
                 logger.log(Level.WARNING, "Couldn't parse unknown properties", e)
             }

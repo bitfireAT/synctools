@@ -8,7 +8,6 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
@@ -19,6 +18,7 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
@@ -35,7 +35,7 @@ class RecurrenceFieldsProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
 
         val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
@@ -126,10 +126,10 @@ class RecurrenceFieldsProcessor(
         // generate recurrence properties only for recurring main events
         val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
         if (from === main && recurring) {
-            to.rRules += rRules
-            to.rDates += rDates
-            to.exRules += exRules
-            to.exDates += exDates
+            to.properties += rRules
+            to.properties += rDates
+            to.properties += exRules
+            to.properties += exDates
         }
     }
 

@@ -9,8 +9,8 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.mapping.calendar.AttendeeMappings
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
@@ -26,12 +26,12 @@ class AttendeesProcessor: AndroidEventFieldProcessor {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         for (row in from.subValues.filter { it.uri == Attendees.CONTENT_URI })
             populateAttendee(row.values, to)
     }
 
-    private fun populateAttendee(row: ContentValues, to: Event) {
+    private fun populateAttendee(row: ContentValues, to: VEvent) {
         logger.log(Level.FINE, "Read event attendee from calendar provider", row)
 
         try {
@@ -66,7 +66,7 @@ class AttendeesProcessor: AndroidEventFieldProcessor {
                 Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
             }
 
-            to.attendees.add(attendee)
+            to.properties += attendee
         } catch (e: URISyntaxException) {
             logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
         }

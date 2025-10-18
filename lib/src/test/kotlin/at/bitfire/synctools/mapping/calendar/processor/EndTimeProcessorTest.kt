@@ -9,11 +9,11 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertNull
@@ -35,19 +35,19 @@ class EndTimeProcessorTest {
 
     @Test
     fun `All-day event`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592697500000L,   // DTSTART is required for DTEND to be processed
             Events.DTEND to 1592697600000L,     // 21/06/2020
         ))
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(Date("20200621")), result.dtEnd)
+        assertEquals(DtEnd(Date("20200621")), result.endDate)
     }
 
     @Test
     fun `Non-all-day event with end timezone`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1592733500000L,   // DTSTART is required for DTEND to be processed
@@ -56,12 +56,12 @@ class EndTimeProcessorTest {
             Events.EVENT_END_TIMEZONE to "Europe/Vienna"
         ))
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.dtEnd)
+        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
     }
 
     @Test
     fun `Non-all-day event without end timezone`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1592733500000L,   // DTSTART is required for DTEND to be processed
@@ -69,14 +69,14 @@ class EndTimeProcessorTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.dtEnd)
+        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
     }
 
     @Test
     fun `Non-all-day event without start or end timezone`() {
         val defaultTz = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
         Assume.assumeTrue(defaultTz.id != TimeZones.UTC_ID)     // would cause UTC DATE-TIME
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1592733500000L,   // DTSTART is required for DTEND to be processed
@@ -84,8 +84,8 @@ class EndTimeProcessorTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         processor.process(entity, entity, result)
-        assertEquals(1592733600000L, result.dtEnd?.date?.time)
-        assertEquals(defaultTz, (result.dtEnd?.date as? DateTime)?.timeZone)
+        assertEquals(1592733600000L, result.endDate?.date?.time)
+        assertEquals(defaultTz, (result.endDate?.date as? DateTime)?.timeZone)
     }
 
 
@@ -93,33 +93,33 @@ class EndTimeProcessorTest {
 
     @Test
     fun `Skip if DTEND is not after DTSTART`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1592733500000L,
             Events.DTEND to 1592733500000L
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
     }
 
     @Test
     fun `Skip if DTEND is not set`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1592733500000L
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
     }
 
     @Test
     fun `Skip if DTSTART is not set`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTEND to 1592733500000L
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
     }
 
 }

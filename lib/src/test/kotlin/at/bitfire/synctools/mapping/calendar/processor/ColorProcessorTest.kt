@@ -10,8 +10,9 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.icalendar.Css3Color
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -25,30 +26,30 @@ class ColorProcessorTest {
 
     @Test
     fun `No color`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
-        assertNull(result.color)
+        assertNull(result.getProperty<Color>(Color.PROPERTY_NAME))
     }
 
     @Test
     fun `Color from index`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.EVENT_COLOR_KEY to Css3Color.silver.name
         ))
         processor.process(entity, entity, result)
-        assertEquals(Css3Color.silver, result.color)
+        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
     }
 
     @Test
     fun `Color from value`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.EVENT_COLOR to Css3Color.silver.argb
         ))
         processor.process(entity, entity, result)
-        assertEquals(Css3Color.silver, result.color)
+        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
     }
 
 }

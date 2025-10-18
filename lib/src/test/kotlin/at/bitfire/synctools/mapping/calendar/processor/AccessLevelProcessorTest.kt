@@ -11,8 +11,8 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -27,7 +27,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `No access-level`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
         assertNull(result.classification)
@@ -35,7 +35,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `No access-level, but retained classification`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
             ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
@@ -47,7 +47,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `Access-level DEFAULT`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_DEFAULT
         ))
@@ -57,7 +57,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `Access-level DEFAULT plus retained classification`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_DEFAULT
         ))
@@ -71,7 +71,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `Access-level PUBLIC`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ))
@@ -81,7 +81,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `Access-level PRIVATE`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ))
@@ -91,7 +91,7 @@ class AccessLevelProcessorTest {
 
     @Test
     fun `Access-level CONFIDENTIAL`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
         ))
