@@ -21,13 +21,13 @@ class UrlProcessor: AndroidEventFieldProcessor {
         val urlRow = extended.firstOrNull { it.getAsString(ExtendedProperties.NAME) == AndroidEvent2.EXTNAME_URL }
         val url = urlRow?.getAsString(ExtendedProperties.VALUE)
         if (url != null) {
-            val url = try {
+            val uri = try {
                 URI(url)
             } catch (_: URISyntaxException) {
                 null
             }
-            if (url != null)
-                to.properties += Url(url)
+            if (uri != null)
+                to.properties += Url(uri)
         }
     }
 

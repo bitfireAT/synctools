@@ -50,7 +50,7 @@ import java.util.LinkedList
  * @param prodIdGenerator   generator for `PRODID`
  */
 class AndroidEventProcessor(
-    private val accountName: String,
+    accountName: String,
     private val prodIdGenerator: ProdIdGenerator
 ) {
 
