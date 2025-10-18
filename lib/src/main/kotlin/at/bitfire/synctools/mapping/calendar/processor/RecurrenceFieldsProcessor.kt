@@ -160,16 +160,9 @@ class RecurrenceFieldsProcessor(
             // UNTIL is DATE-TIME
             if (startDate is DateTime) {
                 // DTSTART is DATE-TIME
-                return if (until.isUtc)
-                    recur
-                else
-                    Recur.Builder(recur)
-                        .until(DateTime(until).apply {
-                            isUtc = true
-                        })
-                        .build()
+                return recur
             } else {
-                // DTSTART is DATE → only take date part
+                // DTSTART is DATE → only take date part for UNTIL
                 val untilDate = until.toLocalDate()
                 return Recur.Builder(recur)
                     .until(untilDate.toIcal4jDate())
@@ -178,7 +171,7 @@ class RecurrenceFieldsProcessor(
         } else {
             // UNTIL is DATE
             if (startDate is DateTime) {
-                // DTSTART is DATE-TIME
+                // DTSTART is DATE-TIME → amend UNTIL to UTC DATE-TIME
                 val untilDate = until.toLocalDate()
                 val startTime = startDate.toZonedDateTime()
                 val untilDateWithTime = ZonedDateTime.of(untilDate, startTime.toLocalTime(), startTime.zone)
