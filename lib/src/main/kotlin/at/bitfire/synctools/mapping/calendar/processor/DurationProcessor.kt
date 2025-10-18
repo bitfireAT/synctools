@@ -67,7 +67,7 @@ class DurationProcessor(
             val start = startDateTime.toZonedDateTime()
             val end = start + duration
 
-            to.dtEnd = DtEnd(end.toIcal4jDateTime())
+            to.dtEnd = DtEnd(end.toIcal4jDateTime(tzRegistry))
         }
     }
 

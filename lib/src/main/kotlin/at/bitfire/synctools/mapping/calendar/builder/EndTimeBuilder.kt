@@ -86,6 +86,8 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * - DTEND and DTSTART are both either DATE or DATE-TIME → original DTEND
      * - DTEND is DATE, DTSTART is DATE-TIME → DTEND is amended to DATE-TIME with time and timezone from DTSTART
      * - DTEND is DATE-TIME, DTSTART is DATE → DTEND is reduced to its date component
+     *
+     * @see at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor.alignUntil
      */
     @VisibleForTesting
     internal fun alignWithDtStart(dtEnd: DtEnd, dtStart: DtStart): DtEnd {
