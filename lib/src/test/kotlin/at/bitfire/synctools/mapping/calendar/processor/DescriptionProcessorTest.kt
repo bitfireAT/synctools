@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -24,7 +24,7 @@ class DescriptionProcessorTest {
 
     @Test
     fun `No description`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
         assertNull(result.description)
@@ -35,7 +35,7 @@ class DescriptionProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.DESCRIPTION to "   "
         ))
-        val result = Event()
+        val result = VEvent()
         processor.process(entity, entity, result)
         assertNull(result.description)
     }
@@ -45,9 +45,9 @@ class DescriptionProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.DESCRIPTION to "Two words "
         ))
-        val result = Event()
+        val result = VEvent()
         processor.process(entity, entity, result)
-        assertEquals("Two words", result.description)
+        assertEquals("Two words", result.description.value)
     }
 
 }

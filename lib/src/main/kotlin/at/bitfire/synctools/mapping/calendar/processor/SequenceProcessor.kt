@@ -15,7 +15,7 @@ class SequenceProcessor: AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val seqNo = from.entityValues.getAsInteger(AndroidEvent2.COLUMN_SEQUENCE)
-        if (seqNo != null && seqNo > 0)
+        if (seqNo != null)
             to.properties += Sequence(seqNo)
     }
 

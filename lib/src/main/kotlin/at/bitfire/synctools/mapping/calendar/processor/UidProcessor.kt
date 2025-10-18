@@ -19,7 +19,8 @@ class UidProcessor: AndroidEventFieldProcessor {
         // take from event row or Google Calendar extended property
         val uid = from.entityValues.getAsString(Events.UID_2445) ?:
             uidFromExtendedProperties(from.subValues)
-        to.properties += Uid(uid)
+        if (uid != null)
+            to.properties += Uid(uid)
     }
 
     private fun uidFromExtendedProperties(rows: List<Entity.NamedContentValues>): String? {

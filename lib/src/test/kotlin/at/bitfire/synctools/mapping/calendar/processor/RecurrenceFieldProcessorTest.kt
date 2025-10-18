@@ -10,18 +10,21 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -36,7 +39,7 @@ class RecurrenceFieldProcessorTest {
 
     @Test
     fun `Recurring exception`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to System.currentTimeMillis(),
             Events.RRULE to "FREQ=DAILY;COUNT=10",
@@ -46,15 +49,15 @@ class RecurrenceFieldProcessorTest {
         ))
         processor.process(entity, Entity(ContentValues()), result)
         // exceptions must never have recurrence properties
-        assertTrue(result.rRules.isEmpty())
-        assertTrue(result.rDates.isEmpty())
-        assertTrue(result.exRules.isEmpty())
-        assertTrue(result.exDates.isEmpty())
+        assertNull(result.getProperty<RRule>(Property.RRULE))
+        assertNull(result.getProperty<RDate>(Property.RDATE))
+        assertNull(result.getProperty<ExRule>(Property.EXRULE))
+        assertNull(result.getProperty<ExDate>(Property.EXDATE))
     }
 
     @Test
     fun `Non-recurring main event`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to System.currentTimeMillis(),
             Events.EXRULE to "FREQ=WEEKLY;COUNT=1",
@@ -62,15 +65,15 @@ class RecurrenceFieldProcessorTest {
         ))
         processor.process(entity, entity, result)
         // non-recurring events must never have recurrence properties
-        assertTrue(result.rRules.isEmpty())
-        assertTrue(result.rDates.isEmpty())
-        assertTrue(result.exRules.isEmpty())
-        assertTrue(result.exDates.isEmpty())
+        assertNull(result.getProperty<RRule>(Property.RRULE))
+        assertNull(result.getProperty<RDate>(Property.RDATE))
+        assertNull(result.getProperty<ExRule>(Property.EXRULE))
+        assertNull(result.getProperty<ExDate>(Property.EXDATE))
     }
 
     @Test
     fun `Recurring main event`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to System.currentTimeMillis(),
             Events.RRULE to "FREQ=DAILY;COUNT=10",
@@ -79,16 +82,28 @@ class RecurrenceFieldProcessorTest {
             Events.EXDATE to "20260201T010203Z"
         ))
         processor.process(entity, entity, result)
-        assertEquals(listOf(RRule("FREQ=DAILY;COUNT=10")), result.rRules)
-        assertEquals(listOf(RDate(ParameterList(), "20251010T010203Z")), result.rDates)
-        assertEquals("FREQ=WEEKLY;COUNT=1", result.exRules.joinToString { it.value })
-        assertEquals("20260201T010203Z", result.exDates.joinToString { it.value })
+        assertEquals(
+            listOf(RRule("FREQ=DAILY;COUNT=10")),
+            result.getProperties<RRule>(Property.RRULE)
+        )
+        assertEquals(
+            listOf(RDate(ParameterList(), "20251010T010203Z")),
+            result.getProperties<RDate>(Property.RDATE)
+        )
+        assertEquals(
+            "FREQ=WEEKLY;COUNT=1",
+            result.getProperties<ExRule>(Property.EXRULE).joinToString { it.value }
+        )
+        assertEquals(
+            "20260201T010203Z",
+            result.getProperties<ExDate>(Property.EXDATE).joinToString { it.value }
+        )
     }
 
 
     @Test
     fun `RRULE with UNTIL before DTSTART`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
             Events.RRULE to "FREQ=DAILY;UNTIL=20251002T111300Z",
@@ -96,20 +111,20 @@ class RecurrenceFieldProcessorTest {
                                                         // so the whole event isn't recurring anymore
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.rRules.isEmpty())
-        assertTrue(result.exDates.isEmpty())
+        assertNull(result.getProperty<RRule>(Property.RRULE))
+        assertNull(result.getProperty<ExDate>(Property.EXDATE))
     }
 
     @Test
     fun `EXRULE with UNTIL before DTSTART`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000,
             Events.RRULE to "FREQ=DAILY;COUNT=10",      // EXRULE is only processed for recurring events
             Events.EXRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.exRules.isEmpty())
+        assertNull(result.getProperty<ExRule>(Property.EXRULE))
     }
 
 

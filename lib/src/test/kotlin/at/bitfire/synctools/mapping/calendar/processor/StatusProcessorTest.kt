@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Status
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -25,7 +25,7 @@ class StatusProcessorTest {
 
     @Test
     fun `No status`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
         assertNull(result.status)
@@ -33,7 +33,7 @@ class StatusProcessorTest {
 
     @Test
     fun `Status CONFIRMED`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.STATUS to Events.STATUS_CONFIRMED
         ))
@@ -43,7 +43,7 @@ class StatusProcessorTest {
 
     @Test
     fun `Status TENTATIVE`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.STATUS to Events.STATUS_TENTATIVE
         ))
@@ -53,7 +53,7 @@ class StatusProcessorTest {
 
     @Test
     fun `Status CANCELLED`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.STATUS to Events.STATUS_CANCELED
         ))

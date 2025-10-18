@@ -33,7 +33,8 @@ class AccessLevelProcessor: AndroidEventFieldProcessor {
             else /* Events.ACCESS_DEFAULT */ ->
                 retainedClassification(from)
         }
-        to.properties += classification
+        if (classification != null)
+            to.properties += classification
     }
 
     private fun retainedClassification(from: Entity): Clazz? {

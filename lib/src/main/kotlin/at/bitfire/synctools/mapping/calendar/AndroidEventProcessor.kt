@@ -107,7 +107,7 @@ class AndroidEventProcessor(
 
                 // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
                 if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                    addAsExDate(exception, recurrenceId, to = exceptionEvent)
+                    main.properties += asExDate(exception, recurrenceId)
                 else
                     exceptions += exceptionEvent
             }
@@ -116,14 +116,14 @@ class AndroidEventProcessor(
         return AssociatedEvents(main, exceptions)
     }
 
-    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: VEvent) {
+    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
         val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
         val list = DateList(
             if (originalAllDay) Value.DATE else Value.DATE_TIME,
             recurrenceId.timeZone
         )
         list.add(recurrenceId.date)
-        to.properties += ExDate(list).apply {
+        return ExDate(list).apply {
             // also set TZ properties of ExDate (not only the list)
             if (!originalAllDay) {
                 if (recurrenceId.isUtc)

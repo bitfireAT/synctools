@@ -9,11 +9,11 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -32,33 +32,33 @@ class DurationProcessorTest {
 
     @Test
     fun `All-day event with all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1592733600000L,   // 21/06/2020 10:00 UTC
             Events.DURATION to "P4D"
         ))
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(Date("20200625")), result.dtEnd)
+        assertEquals(DtEnd(Date("20200625")), result.endDate)
         assertNull(result.duration)
     }
 
     @Test
     fun `All-day event with non-all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1760486400000L,   // Wed Oct 15 2025 00:00:00 GMT+0000
             Events.DURATION to "PT24H"
         ))
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(Date("20251016")), result.dtEnd)
+        assertEquals(DtEnd(Date("20251016")), result.endDate)
         assertNull(result.duration)
     }
 
     @Test
     fun `Non-all-day event with all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
@@ -67,13 +67,13 @@ class DurationProcessorTest {
         ))
         // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20251027T010000", tzVienna)), result.dtEnd)
+        assertEquals(DtEnd(DateTime("20251027T010000", tzVienna)), result.endDate)
         assertNull(result.duration)
     }
 
     @Test
     fun `Non-all-day event with non-all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
@@ -82,7 +82,7 @@ class DurationProcessorTest {
         ))
         // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
         processor.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20251027T000000", tzVienna)), result.dtEnd)
+        assertEquals(DtEnd(DateTime("20251027T000000", tzVienna)), result.endDate)
         assertNull(result.duration)
     }
 
@@ -91,7 +91,7 @@ class DurationProcessorTest {
 
     @Test
     fun `Skip if DTSTART is not set`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DURATION to "PT1H"
         ))
@@ -101,39 +101,39 @@ class DurationProcessorTest {
 
     @Test
     fun `Skip if DURATION is negative all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
             Events.DURATION to "P-1D"
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
         assertNull(result.duration)
     }
 
     @Test
     fun `Skip if DURATION is zero non-all-day duration`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
             Events.DURATION to "PT0S"
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
         assertNull(result.duration)
     }
 
     @Test
     fun `Skip if DURATION is not set`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna"
         ))
         processor.process(entity, entity, result)
-        assertNull(result.dtEnd)
+        assertNull(result.endDate)
         assertNull(result.duration)
     }
 

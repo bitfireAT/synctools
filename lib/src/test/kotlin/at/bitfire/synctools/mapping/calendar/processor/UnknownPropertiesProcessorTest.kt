@@ -10,8 +10,8 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.Assert.assertEquals
@@ -27,15 +27,15 @@ class UnknownPropertiesProcessorTest {
 
     @Test
     fun `No unknown properties`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
-        assertTrue(result.unknownProperties.isEmpty())
+        assertTrue(result.properties.isEmpty())
     }
 
     @Test
     fun `Three unknown properties, one of them excluded`() {
-        val result = Event()
+        val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(     // used by ClassificationProcessor
             ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
@@ -55,7 +55,7 @@ class UnknownPropertiesProcessorTest {
             XProperty("X-PROP2", "value 2").apply {
                 parameters.add(XParameter("ARG1", "arg-value"))
             },
-        ), result.unknownProperties)
+        ), result.properties)
     }
 
 }
