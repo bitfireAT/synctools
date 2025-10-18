@@ -38,12 +38,12 @@ class SequenceBuilderTest {
     fun `SEQUENCE set`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(sequence = 3),
+            from = Event(sequence = 0),
             main = Event(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 3
+            AndroidEvent2.COLUMN_SEQUENCE to 0
         ), result.entityValues)
     }
 

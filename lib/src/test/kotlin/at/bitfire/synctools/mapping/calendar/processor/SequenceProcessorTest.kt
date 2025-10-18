@@ -37,7 +37,7 @@ class SequenceProcessorTest {
         ))
         val result = VEvent()
         processor.process(entity, entity, result)
-        assertEquals(0, result.sequence.sequenceNo)
+        assertNull(result.sequence)
     }
 
     @Test
