@@ -144,8 +144,9 @@ object AndroidTimeUtils {
      * Concatenates, if necessary, multiple RDATE/EXDATE lists and converts them to
      * a formatted string which Android calendar provider can process.
      *
-     * Android expects this format: "[TZID;]date1,date2,date3" where date is "yyyymmddThhmmss" (when
-     * TZID is given) or "yyyymmddThhmmssZ". We don't use the TZID format here because then we're limited
+     * Android [expects this format](https://android.googlesource.com/platform/frameworks/opt/calendar/+/68b3632330e7a9a4f9813b7eb671dbfd78c25bcd/src/com/android/calendarcommon2/RecurrenceSet.java#138):
+     * `[TZID;]date1,date2,date3` where date is `yyyymmddThhmmss` (when
+     * TZID is given) or `yyyymmddThhmmssZ`. We don't use the TZID format here because then we're limited
      * to one time-zone, while an iCalendar may contain multiple EXDATE/RDATE lines with different time zones.
      *
      * This method converts the values to the type of [dtStart], if necessary:
@@ -231,7 +232,7 @@ object AndroidTimeUtils {
      * constructed from these values.
      *
      * @param dbStr         formatted string from Android calendar provider (RDATE/EXDATE field)
-     *                      expected format: "[TZID;]date1,date2,date3" where date is "yyyymmddThhmmss[Z]"
+     *                      expected format: `[TZID;]date1,date2,date3` where date is `yyyymmddThhmmss[Z]`
      * @param tzRegistry    time zone registry
      * @param allDay        true: list will contain DATE values; false: list will contain DATE_TIME values
      * @param exclude       this time stamp won't be added to the [DateListProperty]
