@@ -9,15 +9,17 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Uid
 
 class UidProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         // take from event row or Google Calendar extended property
-        to.uid = from.entityValues.getAsString(Events.UID_2445) ?:
+        val uid = from.entityValues.getAsString(Events.UID_2445) ?:
             uidFromExtendedProperties(from.subValues)
+        to.properties += Uid(uid)
     }
 
     private fun uidFromExtendedProperties(rows: List<Entity.NamedContentValues>): String? {

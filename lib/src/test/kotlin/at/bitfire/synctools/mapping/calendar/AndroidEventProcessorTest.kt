@@ -12,8 +12,10 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,9 +24,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class LegacyAndroidEventProcessorTest {
+class AndroidEventProcessorTest {
 
-    private val processor = LegacyAndroidEventProcessor("account@example.com")
+    private val processor = AndroidEventProcessor("account@example.com")
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
@@ -66,8 +68,7 @@ class LegacyAndroidEventProcessorTest {
 
     @Test
     fun `Exception is ignored when there's only one invalid RRULE`() {
-        val result = Event()
-        processor.populate(
+        val result = processor.populate(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Factically non-recurring non-all-day event with exception",
@@ -86,12 +87,12 @@ class LegacyAndroidEventProcessorTest {
                         Events.TITLE to "Event moved to one hour later"
                     ))
                 )
-            ),
-            to = result
+            )
         )
-        assertEquals("Factically non-recurring non-all-day event with exception", result.summary)
-        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
-        assertTrue(result.rRules.isEmpty())
+        val main = result.main!!
+        assertEquals("Factically non-recurring non-all-day event with exception", main.summary)
+        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
+        assertTrue(main.getProperties<RRule>(Property.RRULE).isEmpty())
         assertTrue(result.exceptions.isEmpty())
     }
 

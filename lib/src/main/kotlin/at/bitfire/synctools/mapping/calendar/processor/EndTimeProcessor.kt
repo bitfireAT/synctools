@@ -8,8 +8,8 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import java.util.logging.Logger
 
@@ -20,7 +20,7 @@ class EndTimeProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
@@ -43,7 +43,7 @@ class EndTimeProcessor(
             tzRegistry = tzRegistry
         ).asIcal4jDate()
 
-        to.dtEnd = DtEnd(end)
+        to.properties += DtEnd(end)
     }
 
 }

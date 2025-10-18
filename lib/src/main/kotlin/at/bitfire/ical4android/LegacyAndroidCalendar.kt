@@ -6,7 +6,7 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.synctools.mapping.calendar.LegacyAndroidEventProcessor
+import at.bitfire.synctools.mapping.calendar.AndroidEventProcessor
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidRecurringCalendar
 
@@ -29,7 +29,7 @@ class LegacyAndroidCalendar(
         val recurringCalendar = AndroidRecurringCalendar(calendar)
         val eventAndExceptions = recurringCalendar.getById(id) ?: return null
         return Event().also { event ->
-            val processor = LegacyAndroidEventProcessor(calendar.account.name)
+            val processor = AndroidEventProcessor(calendar.account.name)
             processor.populate(eventAndExceptions, to = event)
         }
 
