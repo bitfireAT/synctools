@@ -19,9 +19,9 @@ import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DurationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.EndTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
-import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
+import at.bitfire.synctools.mapping.calendar.processor.ProdIdGenerator
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
@@ -46,17 +46,18 @@ import java.util.LinkedList
 /**
  * Mapper from Android event main + data rows to [VEvent].
  *
- * @param accountName   account name (used to generate self-attendee)
+ * @param accountName       account name (used to generate self-attendee)
+ * @param prodIdGenerator   generator for `PRODID`
  */
 class AndroidEventProcessor(
-    private val accountName: String
+    private val accountName: String,
+    private val prodIdGenerator: ProdIdGenerator
 ) {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
-        MutatorsProcessor(),    // for PRODID – TODO
         UidProcessor(),
         OriginalInstanceTimeProcessor(tzRegistry),
         TitleProcessor(),
@@ -113,7 +114,11 @@ class AndroidEventProcessor(
             }
         }
 
-        return AssociatedEvents(main, exceptions)
+        return AssociatedEvents(
+            main = main,
+            exceptions = exceptions,
+            prodId = generateProdId(eventAndExceptions.main)
+        )
     }
 
     private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
@@ -134,6 +139,12 @@ class AndroidEventProcessor(
         }
     }
 
+    private fun generateProdId(main: Entity): String {
+        val mutators: String? = main.entityValues.getAsString(Events.MUTATORS)
+        val packages: List<String> = mutators?.split(MUTATORS_SEPARATOR)?.toList() ?: emptyList()
+        return prodIdGenerator.generateProdId(packages)
+    }
+
     /**
      * Reads data of an event from the calendar provider, i.e. converts the [entity] values into a [VEvent].
      *
@@ -149,4 +160,14 @@ class AndroidEventProcessor(
         return vEvent
     }
 
+
+    companion object {
+
+        /**
+         * The [Events.MUTATORS] field contains a list of unique package names that have modified the event,
+         * separated by this separator.
+         */
+        const val MUTATORS_SEPARATOR = ','
+
+    }
 }

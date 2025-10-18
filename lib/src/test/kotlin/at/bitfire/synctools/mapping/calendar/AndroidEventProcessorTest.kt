@@ -27,7 +27,17 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class AndroidEventProcessorTest {
 
-    private val processor = AndroidEventProcessor("account@example.com")
+    private val processor = AndroidEventProcessor(
+        accountName = "account@example.com",
+        prodIdGenerator = { packages ->
+            val builder = StringBuilder(javaClass.simpleName)
+            if (packages.isNotEmpty())
+                builder .append(" (")
+                        .append(packages.joinToString(", "))
+                        .append(")")
+            builder.toString()
+        }
+    )
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
@@ -155,6 +165,34 @@ class AndroidEventProcessorTest {
         assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
         assertNull(main.getProperty<ExDate>(Property.EXDATE))
         assertTrue(result.exceptions.isEmpty())
+    }
+
+
+    @Test
+    fun `Empty packages for PRODID`() {
+        val result = processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertEquals(javaClass.simpleName, result.prodId)
+    }
+
+    @Test
+    fun `Two packages for PRODID`() {
+        val result = processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L,
+                    Events.MUTATORS to "pkg1,pkg2"
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertEquals("${javaClass.simpleName} (pkg1, pkg2)", result.prodId)
     }
 
 }
