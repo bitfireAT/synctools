@@ -5,7 +5,7 @@ androidx-annotation = "1.9.1"
 androidx-core = "1.17.0"
 androidx-test-rules = "1.7.0"
 androidx-test-runner = "1.7.0"
-dokka = "2.0.0"
+dokka = "2.1.0"
 ezvcard = "0.12.1"
 guava = "33.5.0-android"
 # noinspection GradleDependency
