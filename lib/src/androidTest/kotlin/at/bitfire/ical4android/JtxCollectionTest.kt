@@ -9,7 +9,6 @@ package at.bitfire.ical4android
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
-import android.provider.CalendarContract
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
@@ -35,7 +34,7 @@ class JtxCollectionTest {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     private lateinit var client: ContentProviderClient
 
-    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, JtxContract.JtxCollection.TEST_ACCOUNT_TYPE)
 
     private val url = "https://jtx.techbee.at"
     private val displayname = "jtx"
