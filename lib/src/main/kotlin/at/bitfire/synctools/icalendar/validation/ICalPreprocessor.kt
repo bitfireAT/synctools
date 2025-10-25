@@ -91,6 +91,9 @@ class ICalPreprocessor {
             val chunkedFixedLines = BufferedReader(original).use { reader ->
                 reader.lineSequence()
                     .chunked(chunkSize)
+                    // iCalendar uses CRLF: https://www.rfc-editor.org/rfc/rfc5545#section-3.1
+                    // but we only use \n because in tests line breaks are LF-only.
+                    // Since CRLF already contains LF, this is not an issue.
                     .map { chunk -> applyPreprocessors(chunk.joinToString("\n")) }
             }
             return SequenceReader(chunkedFixedLines)
