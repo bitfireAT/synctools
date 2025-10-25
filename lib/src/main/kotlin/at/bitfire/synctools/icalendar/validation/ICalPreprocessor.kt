@@ -83,7 +83,6 @@ class ICalPreprocessor {
             true
         } catch(_: IOException) {
             // reset is not supported. String will be loaded into memory completely
-            logger.warning("Reader does not support reset()")
             false
         }
 
@@ -95,6 +94,7 @@ class ICalPreprocessor {
             return SequenceReader(chunkedFixedLines)
         } else {
             // The reader doesn't support reset, so we need to load the whole content into memory
+            logger.warning("Reader does not support reset(). Reading complete iCalendar into memory.")
             return StringReader(applyPreprocessors(original.readText()))
         }
     }
