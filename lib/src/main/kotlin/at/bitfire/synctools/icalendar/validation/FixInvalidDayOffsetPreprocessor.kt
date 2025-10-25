@@ -6,13 +6,16 @@
 
 package at.bitfire.synctools.icalendar.validation
 
+import androidx.annotation.VisibleForTesting
+
 /**
  * Fixes durations with day offsets with the 'T' prefix.
  * See also https://github.com/bitfireAT/ical4android/issues/77
  */
 class FixInvalidDayOffsetPreprocessor : StreamPreprocessor {
 
-    override fun regexpForProblem() = Regex(
+    @VisibleForTesting
+    val regexpForProblem = Regex(
         // Examples:
         // TRIGGER:-P2DT
         // TRIGGER:-PT2D
@@ -21,11 +24,11 @@ class FixInvalidDayOffsetPreprocessor : StreamPreprocessor {
         setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE)
     )
 
-    override fun fixString(original: String): String {
-        var iCal: String = original
+    override fun fixString(lines: String): String {
+        var iCal: String = lines
 
         // Find all instances matching the defined expression
-        val found = regexpForProblem().findAll(iCal).toList()
+        val found = regexpForProblem.findAll(iCal).toList()
 
         // ... and repair them. Use reversed order so that already replaced occurrences don't interfere with the following matches.
         for (match in found.reversed()) {

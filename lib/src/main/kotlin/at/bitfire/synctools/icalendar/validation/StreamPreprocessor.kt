@@ -8,8 +8,6 @@ package at.bitfire.synctools.icalendar.validation
 
 interface StreamPreprocessor {
 
-    fun regexpForProblem(): Regex?
-
     /**
      * Fixes an iCalendar string.
      * The icalendar may not be complete, but just a chunk.
