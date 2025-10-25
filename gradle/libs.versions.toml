@@ -8,7 +8,7 @@ androidx-test-runner = "1.7.0"
 dokka = "2.1.0"
 ezvcard = "0.12.1"
 guava = "33.5.0-android"
-# noinspection GradleDependency
+# noinspection NewerVersionAvailable,GradleDependency
 ical4j = "3.2.19"   # final version; update to 4.x will require much work
 junit = "4.13.2"
 kotlin = "2.2.20"
