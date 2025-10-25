@@ -6,13 +6,8 @@
 
 package at.bitfire.synctools.icalendar.validation
 
-import io.mockk.Runs
-import io.mockk.every
 import io.mockk.junit4.MockKRule
-import io.mockk.just
-import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.runs
 import io.mockk.spyk
 import io.mockk.verify
 import net.fortuna.ical4j.data.CalendarBuilder
