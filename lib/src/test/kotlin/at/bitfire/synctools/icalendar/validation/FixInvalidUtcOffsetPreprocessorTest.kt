@@ -49,13 +49,13 @@ class FixInvalidUtcOffsetPreprocessorTest {
 
     @Test
     fun test_RegexpForProblem_TzOffsetTo_Invalid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertTrue(regex.matches("TZOFFSETTO:+5730"))
     }
 
     @Test
     fun test_RegexpForProblem_TzOffsetTo_Valid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertFalse(regex.matches("TZOFFSETTO:+005730"))
     }
 

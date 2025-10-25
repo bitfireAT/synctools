@@ -101,14 +101,14 @@ class FixInvalidDayOffsetPreprocessorTest {
 
     @Test
     fun test_RegexpForProblem_DayOffsetTo_Invalid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertTrue(regex.matches("DURATION:PT2D"))
         assertTrue(regex.matches("TRIGGER:PT1D"))
     }
 
     @Test
     fun test_RegexpForProblem_DayOffsetTo_Valid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertFalse(regex.matches("DURATION:-PT12H"))
         assertFalse(regex.matches("TRIGGER:-PT15M"))
     }
