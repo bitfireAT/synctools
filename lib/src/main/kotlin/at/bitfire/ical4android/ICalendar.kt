@@ -8,7 +8,7 @@ package at.bitfire.ical4android
 
 import at.bitfire.ical4android.ICalendar.Companion.CALENDAR_NAME
 import at.bitfire.synctools.BuildConfig
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
@@ -89,7 +89,7 @@ open class ICalendar {
          *
          * @return parsed iCalendar resource
          *
-         * @throws InvalidRemoteResourceException when the iCalendar can't be parsed
+         * @throws InvalidICalendarException when the iCalendar can't be parsed
          */
         @Deprecated("Use ICalendarParser directly")
         fun fromReader(

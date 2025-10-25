@@ -32,7 +32,7 @@ interface AndroidEntityBuilder {
      * @param main  main event
      * @param to    destination object where built values are stored (set `null` values, see note)
      *
-     * @throws at.bitfire.synctools.exception.InvalidRemoteResourceException on missing or invalid required properties (like DTSTART)
+     * @throws at.bitfire.synctools.exception.InvalidICalendarException on missing or invalid required properties (like DTSTART)
      */
     fun build(from: Event, main: Event, to: Entity)
 

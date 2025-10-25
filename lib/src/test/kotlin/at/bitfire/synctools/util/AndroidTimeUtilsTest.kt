@@ -4,8 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android.util
+package at.bitfire.synctools.util
 
+import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
@@ -278,7 +279,7 @@ class AndroidTimeUtilsTest {
 
     @Test
     fun testStorageTzId_Date() =
-        assertEquals(AndroidTimeUtils.TZID_ALLDAY, AndroidTimeUtils.storageTzId(DtStart(Date("20150101"))))
+        assertEquals(AndroidTimeUtils.TZID_UTC, AndroidTimeUtils.storageTzId(DtStart(Date("20150101"))))
 
     @Test
     fun testStorageTzId_FloatingTime() =

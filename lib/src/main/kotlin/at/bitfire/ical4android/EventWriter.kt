@@ -10,7 +10,6 @@ import at.bitfire.ical4android.ICalendar.Companion.minifyVTimeZone
 import at.bitfire.ical4android.ICalendar.Companion.softValidate
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.ical4android.util.DateUtils.isDateTime
-import at.bitfire.ical4android.validation.EventValidator
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
@@ -46,7 +45,7 @@ class EventWriter(
 
 
     /**
-     * Applies error correction over [EventValidator] to an [Event] and generates an iCalendar from it.
+     * Generates an iCalendar from the given [Event].
      *
      * @param event     event to generate iCalendar from
      * @param to        stream that the iCalendar is written to
@@ -57,8 +56,6 @@ class EventWriter(
         ical.properties += prodId.withUserAgents(event.userAgents)
 
         val dtStart = event.dtStart ?: throw InvalidLocalResourceException("Won't generate event without start time")
-
-        EventValidator.repair(event)     // repair this event before creating the VEVENT
 
         // "main event" (without exceptions)
         val components = ical.components

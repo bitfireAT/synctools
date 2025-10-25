@@ -6,7 +6,7 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.synctools.exception.InvalidRemoteResourceException
+import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.CalendarParserFactory
@@ -39,7 +39,7 @@ class ICalendarParser(
      * @param reader        where the iCalendar is read from
      * @param tzRegistry    time zone registry where VTIMEZONE definitions of the iCalendar will be put
      *
-     * @throws InvalidRemoteResourceException   when the resource is can't be parsed
+     * @throws InvalidICalendarException   when the resource is can't be parsed
      */
     fun parse(reader: Reader): Calendar {
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
@@ -54,9 +54,9 @@ class ICalendarParser(
                 /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
             ).build(preprocessed)
         } catch(e: ParserException) {
-            throw InvalidRemoteResourceException("Couldn't parse iCalendar", e)
+            throw InvalidICalendarException("Couldn't parse iCalendar", e)
         } catch(e: IllegalArgumentException) {
-            throw InvalidRemoteResourceException("iCalendar contains invalid value", e)
+            throw InvalidICalendarException("iCalendar contains invalid value", e)
         }
 
         // Pre-process calendar for increased compatibility (fixes some common errors)

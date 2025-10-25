@@ -11,7 +11,6 @@ import android.content.ContentProviderClient
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.os.ParcelFileDescriptor
-import android.provider.CalendarContract
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
@@ -45,7 +44,7 @@ class JtxICalObjectTest {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     private lateinit var client: ContentProviderClient
 
-    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, JtxContract.JtxCollection.TEST_ACCOUNT_TYPE)
     private var collection: JtxCollection<at.bitfire.ical4android.JtxICalObject>? = null
     private var sample: at.bitfire.ical4android.JtxICalObject? = null
 

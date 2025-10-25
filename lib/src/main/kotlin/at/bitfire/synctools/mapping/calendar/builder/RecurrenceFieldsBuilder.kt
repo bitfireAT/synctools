@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.Event
-import at.bitfire.ical4android.util.AndroidTimeUtils
+import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.property.RDate
 import java.util.logging.Logger
@@ -24,7 +24,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
 
         val recurring = from.rRules.isNotEmpty() || from.rDates.isNotEmpty()
         if (recurring && from === main) {
-            // only for recurring main events
+            // generate recurrence fields only for recurring main events
             val dtStart = from.dtStart
 
             // RRULE
