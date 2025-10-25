@@ -7,7 +7,8 @@
 package at.bitfire.synctools.icalendar.validation
 
 import androidx.annotation.VisibleForTesting
-import at.bitfire.synctools.utils.SequenceReader
+import com.google.common.io.CharSource
+import com.google.errorprone.annotations.MustBeClosed
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
@@ -74,10 +75,10 @@ class ICalPreprocessor {
      *
      * @param original original iCalendar object. Will be closed after processing.
      * @param chunkSize number of lines to process in one chunk. Default is `1000`.
-     * @return The potentially repaired iCalendar object.
-     * If [original] supports `reset()`,  the returned [Reader] will be a [SequenceReader].
-     * Otherwise, it will be a [StringReader].
+     * @return A reader that emits the potentially repaired iCalendar object.
+     * The returned [Reader] must be closed by the caller.
      */
+    @MustBeClosed
     fun preprocessStream(original: Reader, chunkSize: Int = 1_000): Reader {
         val resetSupported = try {
             original.reset()
@@ -88,15 +89,19 @@ class ICalPreprocessor {
         }
 
         if (resetSupported) {
-            val chunkedFixedLines = BufferedReader(original).use { reader ->
-                reader.lineSequence()
-                    .chunked(chunkSize)
-                    // iCalendar uses CRLF: https://www.rfc-editor.org/rfc/rfc5545#section-3.1
-                    // but we only use \n because in tests line breaks are LF-only.
-                    // Since CRLF already contains LF, this is not an issue.
-                    .map { chunk -> applyPreprocessors(chunk.joinToString("\n")) }
-            }
-            return SequenceReader(chunkedFixedLines)
+            val chunkedFixedLines = BufferedReader(original)
+                .lineSequence()
+                .chunked(chunkSize)
+                // iCalendar uses CRLF: https://www.rfc-editor.org/rfc/rfc5545#section-3.1
+                // but we only use \n because in tests line breaks are LF-only.
+                // Since CRLF already contains LF, this is not an issue.
+                .map { chunk ->
+                    val fixed = applyPreprocessors(chunk.joinToString("\n"))
+                    CharSource.wrap(fixed)
+                }
+                .asIterable()
+            // we don't close 'original' here because CharSource.concat() will read from it lazily
+            return CharSource.concat(chunkedFixedLines).openStream()
         } else {
             // The reader doesn't support reset, so we need to load the whole content into memory
             logger.warning("Reader does not support reset(). Reading complete iCalendar into memory.")
