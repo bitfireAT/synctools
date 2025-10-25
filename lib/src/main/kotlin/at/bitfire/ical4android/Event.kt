@@ -34,7 +34,7 @@ import java.util.LinkedList
  * - as it is extracted from an iCalendar or
  * - as it should be generated into an iCalendar.
  */
-@Deprecated("AssociatedEvents instead", replaceWith = ReplaceWith("AssociatedEvents"))
+@Deprecated("Use AssociatedEvents instead", replaceWith = ReplaceWith("AssociatedEvents", "at.bitfire.synctools.icalendar"))
 data class Event(
     override var uid: String? = null,
     override var sequence: Int? = null,
