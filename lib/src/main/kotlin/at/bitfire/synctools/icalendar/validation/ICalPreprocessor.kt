@@ -72,7 +72,8 @@ class ICalPreprocessor {
      * the whole content into memory at once. If the given [Reader] does not support `reset()`,
      * the whole content will be loaded into memory anyway.
      *
-     * @param original original iCalendar object
+     * @param original original iCalendar object. Will be closed after processing.
+     * @param chunkSize number of lines to process in one chunk. Default is `1000`.
      * @return The potentially repaired iCalendar object.
      * If [original] supports `reset()`,  the returned [Reader] will be a [SequenceReader].
      * Otherwise, it will be a [StringReader].
@@ -87,15 +88,16 @@ class ICalPreprocessor {
         }
 
         if (resetSupported) {
-            val chunkedFixedLines = BufferedReader(original)
-                .lineSequence()
-                .chunked(chunkSize)
-                .map { chunk -> applyPreprocessors(chunk.joinToString("\n")) }
+            val chunkedFixedLines = BufferedReader(original).use { reader ->
+                reader.lineSequence()
+                    .chunked(chunkSize)
+                    .map { chunk -> applyPreprocessors(chunk.joinToString("\n")) }
+            }
             return SequenceReader(chunkedFixedLines)
         } else {
             // The reader doesn't support reset, so we need to load the whole content into memory
             logger.warning("Reader does not support reset(). Reading complete iCalendar into memory.")
-            return StringReader(applyPreprocessors(original.readText()))
+            return StringReader(applyPreprocessors(original.use { it.readText() }))
         }
     }
 
