@@ -24,6 +24,7 @@ import net.fortuna.ical4j.model.component.VEvent
  * @param exceptions    exceptions (each without RECURRENCE-ID); UID must be
  *   1. the same as the UID of [main],
  *   2. the same for all exceptions.
+ * @param prodId        optional `PRODID` related to the components
  *
  * If no [main] is present, [exceptions] must not be empty.
  *
@@ -31,7 +32,8 @@ import net.fortuna.ical4j.model.component.VEvent
  */
 data class AssociatedComponents<T: CalendarComponent>(
     val main: T?,
-    val exceptions: List<T>
+    val exceptions: List<T>,
+    val prodId: String? = null
 ) {
 
     init {

@@ -9,22 +9,35 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class LegacyAndroidEventProcessorTest {
+class AndroidEventProcessorTest {
 
-    private val processor = LegacyAndroidEventProcessor("account@example.com")
+    private val processor = AndroidEventProcessor(
+        accountName = "account@example.com",
+        prodIdGenerator = { packages ->
+            val builder = StringBuilder(javaClass.simpleName)
+            if (packages.isNotEmpty())
+                builder .append(" (")
+                        .append(packages.joinToString(", "))
+                        .append(")")
+            builder.toString()
+        }
+    )
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
@@ -32,8 +45,7 @@ class LegacyAndroidEventProcessorTest {
 
     @Test
     fun `Exception is processed`() {
-        val result = Event()
-        processor.populate(
+        val result = processor.populate(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring non-all-day event with exception",
@@ -52,22 +64,21 @@ class LegacyAndroidEventProcessorTest {
                         Events.TITLE to "Event moved to one hour later"
                     ))
                 )
-            ),
-            to = result
+            )
         )
-        assertEquals("Recurring non-all-day event with exception", result.summary)
-        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
-        assertEquals("FREQ=DAILY;COUNT=10", result.rRules.first().value)
+        val main = result.main!!
+        assertEquals("Recurring non-all-day event with exception", main.summary.value)
+        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
         val exception = result.exceptions.first()
         assertEquals(RecurrenceId("20200708T013000", tzShanghai), exception.recurrenceId)
-        assertEquals(DtStart("20200706T203000", tzShanghai), exception.dtStart)
-        assertEquals("Event moved to one hour later", exception.summary)
+        assertEquals(DtStart("20200706T203000", tzShanghai), exception.startDate)
+        assertEquals("Event moved to one hour later", exception.summary.value)
     }
 
     @Test
     fun `Exception is ignored when there's only one invalid RRULE`() {
-        val result = Event()
-        processor.populate(
+        val result = processor.populate(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Factically non-recurring non-all-day event with exception",
@@ -86,19 +97,18 @@ class LegacyAndroidEventProcessorTest {
                         Events.TITLE to "Event moved to one hour later"
                     ))
                 )
-            ),
-            to = result
+            )
         )
-        assertEquals("Factically non-recurring non-all-day event with exception", result.summary)
-        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
-        assertTrue(result.rRules.isEmpty())
+        val main = result.main!!
+        assertEquals("Factically non-recurring non-all-day event with exception", main.summary.value)
+        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
+        assertTrue(main.getProperties<RRule>(Property.RRULE).isEmpty())
         assertTrue(result.exceptions.isEmpty())
     }
 
     @Test
     fun `Cancelled exception becomes EXDATE`() {
-        val result = Event()
-        processor.populate(
+        val result = processor.populate(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception",
@@ -117,20 +127,19 @@ class LegacyAndroidEventProcessorTest {
                         Events.STATUS to Events.STATUS_CANCELED
                     ))
                 )
-            ),
-            to = result
+            )
         )
-        assertEquals("Recurring all-day event with cancelled exception", result.summary)
-        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
-        assertEquals("FREQ=DAILY;COUNT=10", result.rRules.first().value)
-        assertEquals(DateTime("20200708T013000", tzShanghai), result.exDates.first().dates.first())
+        val main = result.main!!
+        assertEquals("Recurring all-day event with cancelled exception", main.summary.value)
+        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
+        assertEquals(DateTime("20200708T013000", tzShanghai), main.getProperty<ExDate>(Property.EXDATE)?.dates?.first())
         assertTrue(result.exceptions.isEmpty())
     }
 
     @Test
     fun `Cancelled exception without RECURRENCE-ID is ignored`() {
-        val result = Event()
-        processor.populate(
+        val result = processor.populate(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception and no RECURRENCE-ID",
@@ -148,14 +157,42 @@ class LegacyAndroidEventProcessorTest {
                         Events.STATUS to Events.STATUS_CANCELED
                     ))
                 )
-            ),
-            to = result
+            )
         )
-        assertEquals("Recurring all-day event with cancelled exception and no RECURRENCE-ID", result.summary)
-        assertEquals(DtStart("20200706T193000", tzVienna), result.dtStart)
-        assertEquals("FREQ=DAILY;COUNT=10", result.rRules.first().value)
-        assertTrue(result.exDates.isEmpty())
+        val main = result.main!!
+        assertEquals("Recurring all-day event with cancelled exception and no RECURRENCE-ID", main.summary.value)
+        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
+        assertNull(main.getProperty<ExDate>(Property.EXDATE))
         assertTrue(result.exceptions.isEmpty())
+    }
+
+
+    @Test
+    fun `Empty packages for PRODID`() {
+        val result = processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertEquals(javaClass.simpleName, result.prodId)
+    }
+
+    @Test
+    fun `Two packages for PRODID`() {
+        val result = processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L,
+                    Events.MUTATORS to "pkg1,pkg2"
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertEquals("${javaClass.simpleName} (pkg1, pkg2)", result.prodId)
     }
 
 }

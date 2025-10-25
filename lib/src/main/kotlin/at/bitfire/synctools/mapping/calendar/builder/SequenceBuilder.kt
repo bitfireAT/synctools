@@ -13,7 +13,9 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2
 class SequenceBuilder: AndroidEntityBuilder {
 
     override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence)
+        /* When we build the SEQUENCE column from a real event, we set the sequence to 0 (not null), so that we
+        can distinguish it from events which have been created locally and have never been uploaded yet. */
+        to.entityValues.put(AndroidEvent2.COLUMN_SEQUENCE, from.sequence ?: 0)
     }
 
 }

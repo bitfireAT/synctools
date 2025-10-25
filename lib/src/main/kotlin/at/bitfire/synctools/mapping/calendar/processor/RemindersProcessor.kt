@@ -11,8 +11,8 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
-import at.bitfire.ical4android.Event
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Description
@@ -29,12 +29,12 @@ class RemindersProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         for (row in from.subValues.filter { it.uri == Reminders.CONTENT_URI })
             populateReminder(row.values, from, to)
     }
 
-    private fun populateReminder(row: ContentValues, event: Entity, to: Event) {
+    private fun populateReminder(row: ContentValues, event: Entity, to: VEvent) {
         logger.log(Level.FINE, "Read event reminder from calendar provider", row)
 
         val eventTitle = event.entityValues.getAsString(Events.TITLE) ?: "Calendar Event Reminder"
@@ -64,7 +64,7 @@ class RemindersProcessor(
                 props += Description(eventTitle)
             }
         }
-        to.alarms += alarm
+        to.components += alarm
     }
 
 }
