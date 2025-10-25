@@ -21,9 +21,7 @@ import java.io.Reader
 import java.io.StringReader
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlin.collections.joinToString
-import kotlin.sequences.chunked
-import kotlin.sequences.map
+import javax.annotation.WillCloseWhenClosed
 
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
@@ -73,13 +71,15 @@ class ICalPreprocessor {
      * the whole content into memory at once. If the given [Reader] does not support `reset()`,
      * the whole content will be loaded into memory anyway.
      *
+     * Closing the returned [Reader] will also close the [original] reader if needed.
+     *
      * @param original original iCalendar object. Will be closed after processing.
      * @param chunkSize number of lines to process in one chunk. Default is `1000`.
      * @return A reader that emits the potentially repaired iCalendar object.
      * The returned [Reader] must be closed by the caller.
      */
     @MustBeClosed
-    fun preprocessStream(original: Reader, chunkSize: Int = 1_000): Reader {
+    fun preprocessStream(@WillCloseWhenClosed original: Reader, chunkSize: Int = 1_000): Reader {
         val resetSupported = try {
             original.reset()
             true
