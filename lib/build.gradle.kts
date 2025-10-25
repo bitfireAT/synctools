@@ -129,6 +129,9 @@ dependencies {
     // synctools.test package also provide test rules
     implementation(libs.androidx.test.rules)
 
+    // Useful annotations
+    api(libs.spotbugs.annotations)
+
     // instrumented tests
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
