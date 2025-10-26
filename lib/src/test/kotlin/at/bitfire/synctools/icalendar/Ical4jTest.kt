@@ -7,6 +7,7 @@
 package at.bitfire.synctools.icalendar
 
 import at.bitfire.ical4android.EventReader
+import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
@@ -15,6 +16,7 @@ import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
 import org.junit.Assert.assertEquals
@@ -106,6 +108,43 @@ class Ical4jTest {
         val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
         val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
         assertEquals("20210108T151500", dt.toString())
+    }
+
+    @Test
+    fun `DTSTART in America_Asuncion from KOrganizer`() {
+        // See https://github.com/bitfireAT/synctools/issues/113
+        val vtzFromKOrganizer = "BEGIN:VCALENDAR\n" +
+                "CALSCALE:GREGORIAN\n" +
+                "VERSION:2.0\n" +
+                "PRODID:-//K Desktop Environment//NONSGML KOrganizer 6.5.0 (25.08.0)//EN\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:America/Asuncion\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:-03\n" +
+                "TZOFFSETFROM:-0300\n" +
+                "TZOFFSETTO:-0300\n" +
+                "DTSTART:19700101T000000\n" +
+                "END:STANDARD\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "DTSTAMP:20250828T233827Z\n" +
+                "CREATED:20250828T233750Z\n" +
+                "UID:e5d424b9-d3f6-4ee0-bf95-da7537fca1fe\n" +
+                "LAST-MODIFIED:20250828T233827Z\n" +
+                "SUMMARY:Test Timezones\n" +
+                "RRULE:FREQ=WEEKLY;COUNT=3;BYDAY=TH\n" +
+                "DTSTART;TZID=America/Asuncion:20250828T130000\n" +
+                "DTEND;TZID=America/Asuncion:20250828T133000\n" +
+                "TRANSP:OPAQUE\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR"
+        val iCalFromKOrganizer = CalendarBuilder().build(StringReader(vtzFromKOrganizer))
+        ICalPreprocessor().preprocessCalendar(iCalFromKOrganizer)
+        val vEvent = iCalFromKOrganizer.getComponent<VEvent>(Component.VEVENT)
+        val dtStart = vEvent.startDate
+        // SHOULD BE UTC -3:
+        // assertEquals(1756396800000, dtStart.date.time)
+        // However is one hour later: 1756400400000
     }
 
     @Test
