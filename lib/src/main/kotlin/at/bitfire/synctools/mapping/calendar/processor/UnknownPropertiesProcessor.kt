@@ -8,7 +8,6 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
@@ -39,7 +38,7 @@ class UnknownPropertiesProcessor: AndroidEventFieldProcessor {
     companion object {
 
         /**
-         * These properties are not restored into the [Event.unknownProperties] list.
+         * These saved unknown properties are not restored into the [VEvent] as properties.
          * Usually they're used by other processors instead.
          *
          * In the future, this shouldn't be necessary anymore because when other builders/processors store data,

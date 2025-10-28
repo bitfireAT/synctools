@@ -15,6 +15,8 @@ import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.XParameter
+import net.fortuna.ical4j.model.property.DtStamp
+import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -59,6 +61,18 @@ class UnknownPropertiesBuilderTest {
             ),
             result.subValues.first().values
         )
+    }
+
+
+    @Test
+    fun unknownProperties() {
+        val unknown = XProperty("x-test", "value")
+        val result = builder.unknownProperties(VEvent(propertyListOf(
+            Uid(),      // processed property
+            DtStamp(),  // ignored property
+            unknown     // unknown property
+        )))
+        assertEquals(listOf(unknown), result)
     }
 
 }

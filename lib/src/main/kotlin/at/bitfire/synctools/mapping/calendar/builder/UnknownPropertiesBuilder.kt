@@ -9,10 +9,12 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Color
 import java.util.logging.Logger
 
 class UnknownPropertiesBuilder: AndroidEntityBuilder {
@@ -44,7 +46,46 @@ class UnknownPropertiesBuilder: AndroidEntityBuilder {
         )
     }
 
-    private fun unknownProperties(event: VEvent): List<Property> =
-        emptyList()     // TODO
+    @VisibleForTesting
+    internal fun unknownProperties(event: VEvent): List<Property> =
+        event.properties.filterNot {
+            KNOWN_PROPERTY_NAMES.contains(it.name.uppercase())
+        }
+
+
+    companion object {
+
+        val KNOWN_PROPERTY_NAMES = arrayOf(
+            // These properties are processed by their respective builders,
+            // so we don't touch them in this builder.
+            Property.UID,               // UidBuilder
+            Property.RECURRENCE_ID,     // OriginalInstanceTimeBuilder
+            Property.SEQUENCE,          // SequenceBuilder
+            Property.SUMMARY,           // TitleBuilder
+            Property.LOCATION,          // LocationBuilder
+            Property.URL,               // UrlBuilder
+            Property.DESCRIPTION,       // DescriptionBuilder
+            Property.CATEGORIES,        // CategoriesBuilder
+            Color.PROPERTY_NAME,        // ColorBuilder
+            Property.DTSTART,           // StartTimeBuilder
+            Property.DTEND,             // EndTimeBuilder
+            Property.DURATION,          // - " -
+            Property.RRULE,             // RecurrenceFieldsBuilder
+            Property.RDATE,             // - " -
+            Property.EXRULE,            // - " -
+            Property.EXDATE,            // - " -
+            Property.CLASS,             // AccessLevelBuilder
+            Property.STATUS,            // StatusBuilder
+            Property.TRANSP,            // AvailabilityBuilder
+            Property.ORGANIZER,         // OrganizerBuilder
+            Property.ATTENDEE,          // AttendeesBuilder
+
+            // These properties can be ignored and shall not be saved as unknown properties.
+            Property.DTSTAMP,
+            Property.LAST_MODIFIED,
+            Property.PRODID
+        )
+
+    }
 
 }
