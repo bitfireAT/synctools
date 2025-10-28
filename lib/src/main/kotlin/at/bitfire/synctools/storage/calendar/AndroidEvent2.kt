@@ -29,7 +29,7 @@ import at.bitfire.synctools.storage.calendar.AndroidEvent2.Companion.CATEGORIES_
  *
  * @throws IllegalArgumentException when [Events._ID] is not set
  */
-@Deprecated("Use Entity instead")
+@Deprecated("Use Entity / EventAndExceptions instead")
 class AndroidEvent2(
     val calendar: AndroidCalendar,
     val values: Entity
