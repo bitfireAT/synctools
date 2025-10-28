@@ -8,7 +8,7 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AttendeesProcessor
@@ -19,9 +19,9 @@ import at.bitfire.synctools.mapping.calendar.processor.DescriptionProcessor
 import at.bitfire.synctools.mapping.calendar.processor.DurationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.EndTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
-import at.bitfire.synctools.mapping.calendar.processor.MutatorsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
+import at.bitfire.synctools.mapping.calendar.processor.ProdIdGenerator
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
@@ -33,29 +33,31 @@ import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcesso
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import java.util.LinkedList
 
 /**
- * Legacy mapper from Android event main + data rows to an [Event]
- * (former "populate..." methods).
+ * Mapper from Android event main + data rows to [VEvent].
  *
- * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
- * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
- *
- * @param accountName   account name (used to generate self-attendee)
+ * @param accountName       account name (used to generate self-attendee)
+ * @param prodIdGenerator   generator for `PRODID`
  */
-class LegacyAndroidEventProcessor(
-    private val accountName: String
+class AndroidEventProcessor(
+    accountName: String,
+    private val prodIdGenerator: ProdIdGenerator
 ) {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
 
     private val fieldProcessors: Array<AndroidEventFieldProcessor> = arrayOf(
         // event row fields
-        MutatorsProcessor(),    // for PRODID
         UidProcessor(),
         OriginalInstanceTimeProcessor(tzRegistry),
         TitleProcessor(),
@@ -82,24 +84,23 @@ class LegacyAndroidEventProcessor(
     )
 
 
-    fun populate(eventAndExceptions: EventAndExceptions, to: Event) {
+    fun populate(eventAndExceptions: EventAndExceptions): AssociatedEvents {
         // main event
-        populateEvent(
+        val main = populateEvent(
             entity = eventAndExceptions.main,
-            main = eventAndExceptions.main,
-            to = to
+            main = eventAndExceptions.main
         )
 
         // Add exceptions of recurring main event
-        if (to.rRules.isNotEmpty() || to.rDates.isNotEmpty()) {
+        val rRules = main.getProperties<RRule>(Property.RRULE)
+        val rDates = main.getProperties<RDate>(Property.RDATE)
+        val exceptions = LinkedList<VEvent>()
+        if (rRules.isNotEmpty() || rDates.isNotEmpty()) {
             for (exception in eventAndExceptions.exceptions) {
-                val exceptionEvent = Event()
-
                 // convert exception to Event
-                populateEvent(
+                val exceptionEvent = populateEvent(
                     entity = exception,
-                    main = eventAndExceptions.main,
-                    to = exceptionEvent
+                    main = eventAndExceptions.main
                 )
 
                 // make sure that exception has a RECURRENCE-ID
@@ -107,21 +108,27 @@ class LegacyAndroidEventProcessor(
 
                 // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
                 if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                    addAsExDate(exception, recurrenceId, to = to)
+                    main.properties += asExDate(exception, recurrenceId)
                 else
-                    to.exceptions += exceptionEvent
+                    exceptions += exceptionEvent
             }
         }
+
+        return AssociatedEvents(
+            main = main,
+            exceptions = exceptions,
+            prodId = generateProdId(eventAndExceptions.main)
+        )
     }
 
-    private fun addAsExDate(entity: Entity, recurrenceId: RecurrenceId, to: Event) {
+    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
         val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
         val list = DateList(
             if (originalAllDay) Value.DATE else Value.DATE_TIME,
             recurrenceId.timeZone
         )
         list.add(recurrenceId.date)
-        to.exDates += ExDate(list).apply {
+        return ExDate(list).apply {
             // also set TZ properties of ExDate (not only the list)
             if (!originalAllDay) {
                 if (recurrenceId.isUtc)
@@ -132,18 +139,35 @@ class LegacyAndroidEventProcessor(
         }
     }
 
+    private fun generateProdId(main: Entity): String {
+        val mutators: String? = main.entityValues.getAsString(Events.MUTATORS)
+        val packages: List<String> = mutators?.split(MUTATORS_SEPARATOR)?.toList() ?: emptyList()
+        return prodIdGenerator.generateProdId(packages)
+    }
+
     /**
-     * Reads data of an event from the calendar provider, i.e. converts the [entity] values into
-     * an [Event] data object.
+     * Reads data of an event from the calendar provider, i.e. converts the [entity] values into a [VEvent].
      *
      * @param entity            event row as returned by the calendar provider
      * @param main              main event row as returned by the calendar provider
-     * @param to                destination data object
+     *
+     * @return generated data object
      */
-    private fun populateEvent(entity: Entity, main: Entity, to: Event) {
-        // new processors
+    private fun populateEvent(entity: Entity, main: Entity): VEvent {
+        val vEvent = VEvent()
         for (processor in fieldProcessors)
-            processor.process(from = entity, main = main, to = to)
+            processor.process(from = entity, main = main, to = vEvent)
+        return vEvent
     }
 
+
+    companion object {
+
+        /**
+         * The [Events.MUTATORS] field contains a list of unique package names that have modified the event,
+         * separated by this separator.
+         */
+        const val MUTATORS_SEPARATOR = ','
+
+    }
 }

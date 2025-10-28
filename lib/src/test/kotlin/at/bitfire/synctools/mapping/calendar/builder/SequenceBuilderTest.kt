@@ -30,20 +30,33 @@ class SequenceBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to null
+            AndroidEvent2.COLUMN_SEQUENCE to 0
         ), result.entityValues)
     }
 
     @Test
-    fun `SEQUENCE set`() {
+    fun `SEQUENCE is 0`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(sequence = 3),
+            from = Event(sequence = 0),
             main = Event(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 3
+            AndroidEvent2.COLUMN_SEQUENCE to 0
+        ), result.entityValues)
+    }
+
+    @Test
+    fun `SEQUENCE is 1`() {
+        val result = Entity(ContentValues())
+        builder.build(
+            from = Event(sequence = 1),
+            main = Event(),
+            to = result
+        )
+        assertContentValuesEqual(contentValuesOf(
+            AndroidEvent2.COLUMN_SEQUENCE to 1
         ), result.entityValues)
     }
 

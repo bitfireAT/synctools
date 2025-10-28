@@ -8,13 +8,13 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import java.time.Duration
 import java.time.Instant
@@ -25,7 +25,7 @@ class DurationProcessor(
     private val tzRegistry: TimeZoneRegistry
 ): AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
 
         /* Skip if:
@@ -53,7 +53,7 @@ class DurationProcessor(
             val endDate = (startTimeUTC + duration).toLocalDate()
 
             // DATE
-            to.dtEnd = DtEnd(endDate.toIcal4jDate())
+            to.properties += DtEnd(endDate.toIcal4jDate())
 
         } else {
             // DATE-TIME
@@ -67,7 +67,7 @@ class DurationProcessor(
             val start = startDateTime.toZonedDateTime()
             val end = start + duration
 
-            to.dtEnd = DtEnd(end.toIcal4jDateTime(tzRegistry))
+            to.properties += DtEnd(end.toIcal4jDateTime(tzRegistry))
         }
     }
 

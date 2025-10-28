@@ -114,8 +114,6 @@ class AndroidEvent2(
 
     companion object {
 
-        const val MUTATORS_SEPARATOR = ','
-
         /**
          * Custom sync column to store the last known ETag of an event.
          */
