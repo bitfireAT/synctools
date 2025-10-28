@@ -7,7 +7,7 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 
 interface AndroidEntityBuilder {
 
@@ -34,6 +34,6 @@ interface AndroidEntityBuilder {
      *
      * @throws at.bitfire.synctools.exception.InvalidICalendarException on missing or invalid required properties (like DTSTART)
      */
-    fun build(from: Event, main: Event, to: Entity)
+    fun build(from: VEvent, main: VEvent, to: Entity)
 
 }

@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.content.Entity
 import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AllDayBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
@@ -38,6 +39,7 @@ import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
+import net.fortuna.ical4j.model.component.VEvent
 
 /**
  * Legacy mapper from an [Event] data object to Android content provider data rows
@@ -45,13 +47,10 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
- *
- * Note: "Legacy" will be removed from the class name as soon as the [Event] dependency is
- * replaced by [at.bitfire.synctools.icalendar.AssociatedEvents].
  */
-class LegacyAndroidEventBuilder2(
+class AndroidEventBuilder(
     calendar: AndroidCalendar,
-    private val event: Event,
+    private val events: AssociatedEvents,
 
     // AndroidEvent-level fields
     syncId: String?,
@@ -92,18 +91,20 @@ class LegacyAndroidEventBuilder2(
         UrlBuilder()
     )
 
-    fun build() =
-        EventAndExceptions(
-            main = buildEvent(null),
-            exceptions = event.exceptions.map { exception ->
-                buildEvent(exception)
+    fun build(): EventAndExceptions {
+        val mainVEvent = events.main!!  // TODO: create main VEvent if missing
+        return EventAndExceptions(
+            main = buildEvent(from = mainVEvent, main = mainVEvent),
+            exceptions = events.exceptions.map { exception ->
+                buildEvent(from = exception, main = mainVEvent)
             }
         )
+    }
 
-    fun buildEvent(recurrence: Event?): Entity {
+    fun buildEvent(from: VEvent, main: VEvent): Entity {
         val entity = Entity(ContentValues())
         for (builder in fieldBuilders)
-            builder.build(from = recurrence ?: event, main = event, to = entity)
+            builder.build(from = from, main = main, to = entity)
         return entity
     }
 
