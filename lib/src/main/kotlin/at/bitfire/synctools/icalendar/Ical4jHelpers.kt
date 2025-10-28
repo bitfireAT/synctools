@@ -7,10 +7,13 @@
 package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.BuildConfig
+import at.bitfire.synctools.exception.InvalidICalendarException
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
@@ -42,3 +45,6 @@ val CalendarComponent.recurrenceId: RecurrenceId?
 
 val CalendarComponent.sequence: Sequence?
     get() = getProperty(Property.SEQUENCE)
+
+fun VEvent.requireDtStart(): DtStart =
+    startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")

@@ -45,6 +45,7 @@ import java.util.logging.Logger
 /**
  * Generates an [Event] from an iCalendar in a [Reader] source.
  */
+@Deprecated("Use ICalendarParser and CalendarUidSplitter instead")
 class EventReader {
 
     private val logger

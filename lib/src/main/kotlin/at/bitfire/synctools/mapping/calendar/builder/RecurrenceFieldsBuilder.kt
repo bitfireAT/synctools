@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import at.bitfire.synctools.icalendar.requireDtStart
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.Property
