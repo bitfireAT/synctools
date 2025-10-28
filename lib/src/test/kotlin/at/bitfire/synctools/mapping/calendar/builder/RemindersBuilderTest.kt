@@ -10,11 +10,13 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.DtEnd
@@ -38,10 +40,10 @@ class RemindersBuilderTest {
     fun `No trigger`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm()
+            from = VEvent().apply {
+                components += VAlarm()
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result,
@@ -54,12 +56,12 @@ class RemindersBuilderTest {
     fun `Trigger TYPE is AUDIO`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
                     properties += Action.AUDIO
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result,
@@ -72,12 +74,12 @@ class RemindersBuilderTest {
     fun `Trigger TYPE is DISPLAY`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
                     properties += Action.DISPLAY
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result,
@@ -90,12 +92,12 @@ class RemindersBuilderTest {
     fun `Trigger TYPE is EMAIL`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
                     properties += Action.EMAIL
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result,
@@ -108,12 +110,12 @@ class RemindersBuilderTest {
     fun `Trigger TYPE is custom`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
                     properties += Action("X-CUSTOM")
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result,
@@ -126,10 +128,10 @@ class RemindersBuilderTest {
     fun `Trigger is relative to start and a DURATION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(Period.ofDays(-1))
+            from = VEvent().apply {
+                components += VAlarm(Period.ofDays(-1))
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result, Reminders.MINUTES to 1440)
@@ -139,10 +141,10 @@ class RemindersBuilderTest {
     fun `Trigger is relative to start and a DURATION less than one minute`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofSeconds(-10))
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofSeconds(-10))
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertReminder(result, Reminders.MINUTES to 0)
@@ -152,10 +154,10 @@ class RemindersBuilderTest {
     fun `Trigger is relative to start and a positive DURATION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                alarms += VAlarm(java.time.Duration.ofMinutes(10))
+            from = VEvent().apply {
+                components += VAlarm(java.time.Duration.ofMinutes(10))
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         // positive duration -> reminder is AFTER reference time -> negative minutes field
@@ -166,14 +168,15 @@ class RemindersBuilderTest {
     fun `Trigger is relative to end and a DURATION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-                dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-                alarms += VAlarm(Period.ofDays(-1)).apply {
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20200621T120000", tzVienna)),
+                DtEnd(DateTime("20200621T140000", tzVienna))
+            ), ComponentList(listOf(
+                VAlarm(Period.ofDays(-1)).apply {
                     trigger.parameters.add(Related.END)
                 }
-            },
-            main = Event(),
+            ))),
+            main = VEvent(),
             to = result
         )
         assertReminder(result, Reminders.MINUTES to 1320)
@@ -183,14 +186,15 @@ class RemindersBuilderTest {
     fun `Trigger is relative to end and a DURATION less than one minute`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-                dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-                alarms += VAlarm(java.time.Duration.ofSeconds(-7240)).apply {
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20200621T120000", tzVienna)),
+                DtEnd(DateTime("20200621T140000", tzVienna))
+            ), ComponentList(listOf(
+                VAlarm(java.time.Duration.ofSeconds(-7240)).apply {
                     trigger.parameters.add(Related.END)
                 }
-            },
-            main = Event(),
+            ))),
+            main = VEvent(),
             to = result
         )
         assertReminder(result, Reminders.MINUTES to 0)
@@ -200,14 +204,15 @@ class RemindersBuilderTest {
     fun `Trigger is relative to end and a positive DURATION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-                dtEnd = DtEnd(DateTime("20200621T140000", tzVienna))
-                alarms += VAlarm(java.time.Duration.ofMinutes(10)).apply {
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20200621T120000", tzVienna)),
+                DtEnd(DateTime("20200621T140000", tzVienna))
+            ), ComponentList(listOf(
+                VAlarm(java.time.Duration.ofMinutes(10)).apply {
                     trigger.parameters.add(Related.END)
                 }
-            },
-            main = Event(),
+            ))),
+            main = VEvent(),
             to = result
         )
         // positive duration -> reminder is AFTER reference time -> negative minutes field
@@ -218,11 +223,12 @@ class RemindersBuilderTest {
     fun `Trigger is absolute`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-                alarms += VAlarm(DateTime("20200621T110000", tzVienna))
-            },
-            main = Event(),
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20200621T120000", tzVienna))
+            ), ComponentList(listOf(
+                VAlarm(DateTime("20200621T110000", tzVienna))
+            ))),
+            main = VEvent(),
             to = result
         )
         // positive duration -> reminder is AFTER reference time -> negative minutes field
@@ -233,11 +239,12 @@ class RemindersBuilderTest {
     fun `Trigger is absolute and in other time zone`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                dtStart = DtStart(DateTime("20200621T120000", tzVienna))
-                alarms += VAlarm(DateTime("20200621T110000", tzShanghai))
-            },
-            main = Event(),
+            from = VEvent(propertyListOf(
+                DtStart(DateTime("20200621T120000", tzVienna))
+            ), ComponentList(listOf(
+                VAlarm(DateTime("20200621T110000", tzShanghai))
+            ))),
+            main = VEvent(),
             to = result
         )
         assertReminder(result, Reminders.MINUTES to 420)

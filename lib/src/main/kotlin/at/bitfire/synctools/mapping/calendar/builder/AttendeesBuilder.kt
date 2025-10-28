@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
+import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.mapping.calendar.AttendeeMappings
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import net.fortuna.ical4j.model.Parameter
@@ -66,7 +67,8 @@ class AttendeesBuilder(
         return values
     }
 
-    private fun organizerEmail(event: VEvent): String? {
+    @VisibleForTesting
+    internal fun organizerEmail(event: VEvent): String? {
         event.organizer?.let { organizer ->
             val uri = organizer.calAddress
             return if (uri.scheme.equals("mailto", true))

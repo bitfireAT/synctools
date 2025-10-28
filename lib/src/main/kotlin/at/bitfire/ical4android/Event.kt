@@ -35,7 +35,7 @@ import java.util.LinkedList
 @Deprecated(
     "Use AssociatedEvents instead",
     replaceWith = ReplaceWith("AssociatedEvents", "at.bitfire.synctools.icalendar"),
-    level = DeprecationLevel.ERROR
+    level = DeprecationLevel.WARNING
 )
 data class Event(
     override var uid: String? = null,

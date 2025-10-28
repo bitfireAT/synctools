@@ -10,18 +10,20 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.test.assertContentValuesEqual
 import io.mockk.every
 import io.mockk.mockk
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.Organizer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -41,10 +43,10 @@ class AttendeesBuilderTest {
     fun `Attendee is email address`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee1@example.com")
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee1@example.com")
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_EMAIL to "attendee1@example.com")
@@ -54,10 +56,10 @@ class AttendeesBuilderTest {
     fun `Attendee is HTTPS URL`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("https://example.com/principals/attendee")
+            from = VEvent().apply {
+                properties += Attendee("https://example.com/principals/attendee")
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result,
@@ -70,12 +72,12 @@ class AttendeesBuilderTest {
     fun `Attendee is custom URI with EMAIL parameter`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("sample:uri").apply {
+            from = VEvent().apply {
+                properties += Attendee("sample:uri").apply {
                     parameters.add(Email("attendee1@example.com"))
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result,
@@ -89,12 +91,12 @@ class AttendeesBuilderTest {
     fun `Attendee has CN parameter`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(Cn("Sample Attendee"))
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_NAME to "Sample Attendee")
@@ -107,15 +109,15 @@ class AttendeesBuilderTest {
             for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
                 val reqParticipant = Entity(ContentValues())
                 builder.build(
-                    from = Event().apply {
-                        attendees += Attendee("mailto:attendee@example.com").apply {
+                    from = VEvent().apply {
+                        properties += Attendee("mailto:attendee@example.com").apply {
                             if (cuType != null)
                                 parameters.add(cuType)
                             if (role != null)
                                 parameters.add(role)
                         }
                     },
-                    main = Event(),
+                    main = VEvent(),
                     to = reqParticipant
                 )
                 assertAttendee(reqParticipant,
@@ -127,14 +129,14 @@ class AttendeesBuilderTest {
             // OPT-PARTICIPANT
             val optParticipant = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
                             parameters.add(cuType)
                         parameters.add(Role.OPT_PARTICIPANT)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = optParticipant
             )
             assertAttendee(optParticipant,
@@ -145,14 +147,14 @@ class AttendeesBuilderTest {
             // NON-PARTICIPANT
             val nonParticipant = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
                             parameters.add(cuType)
                         parameters.add(Role.NON_PARTICIPANT)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = nonParticipant
             )
             assertAttendee(nonParticipant,
@@ -168,14 +170,14 @@ class AttendeesBuilderTest {
         for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
             val reqParticipant = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         parameters.add(CuType.UNKNOWN)
                         if (role != null)
                             parameters.add(role)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = reqParticipant
             )
             assertAttendee(
@@ -188,13 +190,13 @@ class AttendeesBuilderTest {
         // OPT-PARTICIPANT
         val optParticipant = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.UNKNOWN)
                     parameters.add(Role.OPT_PARTICIPANT)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = optParticipant
         )
         assertAttendee(
@@ -206,13 +208,13 @@ class AttendeesBuilderTest {
         // NON-PARTICIPANT
         val nonParticipant = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.UNKNOWN)
                     parameters.add(Role.NON_PARTICIPANT)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = nonParticipant
         )
         assertAttendee(
@@ -228,14 +230,14 @@ class AttendeesBuilderTest {
         for (role in arrayOf(Role.REQ_PARTICIPANT, Role("x-custom-role"), null)) {
             val reqParticipant = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         parameters.add(CuType.GROUP)
                         if (role != null)
                             parameters.add(role)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = reqParticipant
             )
             assertAttendee(
@@ -248,13 +250,13 @@ class AttendeesBuilderTest {
         // OPT-PARTICIPANT
         val optParticipant = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.GROUP)
                     parameters.add(Role.OPT_PARTICIPANT)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = optParticipant
         )
         assertAttendee(
@@ -266,13 +268,13 @@ class AttendeesBuilderTest {
         // NON-PARTICIPANT
         val nonParticipant = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.GROUP)
                     parameters.add(Role.NON_PARTICIPANT)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = nonParticipant
         )
         assertAttendee(
@@ -287,14 +289,14 @@ class AttendeesBuilderTest {
         for (role in arrayOf(null, Role.REQ_PARTICIPANT, Role.OPT_PARTICIPANT, Role.NON_PARTICIPANT, Role("X-CUSTOM-ROLE"))) {
             val result = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         parameters.add(CuType.RESOURCE)
                         if (role != null)
                             parameters.add(role)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = result
             )
             assertAttendee(
@@ -307,13 +309,13 @@ class AttendeesBuilderTest {
         // CHAIR
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(CuType.RESOURCE)
                     parameters.add(Role.CHAIR)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(
@@ -328,14 +330,14 @@ class AttendeesBuilderTest {
         for (role in arrayOf(null, Role.CHAIR, Role.REQ_PARTICIPANT, Role.OPT_PARTICIPANT, Role.NON_PARTICIPANT, Role("X-CUSTOM-ROLE"))) {
             val result = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         parameters.add(CuType.ROOM)
                         if (role != null)
                             parameters.add(role)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = result
             )
             assertAttendee(
@@ -351,14 +353,14 @@ class AttendeesBuilderTest {
         for (cuType in arrayOf(null, CuType.INDIVIDUAL, CuType.UNKNOWN, CuType.GROUP, CuType("x-custom-cutype"))) {
             val result = Entity(ContentValues())
             builder.build(
-                from = Event().apply {
-                    attendees += Attendee("mailto:attendee@example.com").apply {
+                from = VEvent().apply {
+                    properties += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
                             parameters.add(cuType)
                         parameters.add(Role.CHAIR)
                     }
                 },
-                main = Event(),
+                main = VEvent(),
                 to = result
             )
             assertAttendee(
@@ -373,10 +375,10 @@ class AttendeesBuilderTest {
     fun `Attendee is ORGANIZER`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee(URI("mailto", accountName, null))
+            from = VEvent().apply {
+                properties += Attendee(URI("mailto", accountName, null))
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(
@@ -391,10 +393,10 @@ class AttendeesBuilderTest {
     fun `Attendee has no participation status`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com")
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com")
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_INVITED)
@@ -404,12 +406,12 @@ class AttendeesBuilderTest {
     fun `Attendee has participation status NEEDS-ACTION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat.NEEDS_ACTION)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_INVITED)
@@ -419,12 +421,12 @@ class AttendeesBuilderTest {
     fun `Attendee has participation status ACCEPTED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat.ACCEPTED)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_ACCEPTED)
@@ -434,12 +436,12 @@ class AttendeesBuilderTest {
     fun `Attendee has participation status DECLINED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat.DECLINED)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_DECLINED)
@@ -449,12 +451,12 @@ class AttendeesBuilderTest {
     fun `Attendee has participation status TENTATIVE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat.TENTATIVE)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_TENTATIVE)
@@ -464,12 +466,12 @@ class AttendeesBuilderTest {
     fun `Attendee has participation status DELEGATED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat.DELEGATED)
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_NONE)
@@ -479,15 +481,37 @@ class AttendeesBuilderTest {
     fun `Attendee has custom participation status`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                attendees += Attendee("mailto:attendee@example.com").apply {
+            from = VEvent().apply {
+                properties += Attendee("mailto:attendee@example.com").apply {
                     parameters.add(PartStat("X-WILL-ASK"))
                 }
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertAttendee(result, Attendees.ATTENDEE_STATUS to Attendees.ATTENDEE_STATUS_INVITED)
+    }
+
+
+    @Test
+    fun testOrganizerEmail_None() {
+        assertNull(builder.organizerEmail(VEvent()))
+    }
+
+    @Test
+    fun testOrganizerEmail_EmailParameter() {
+        assertEquals("organizer@example.com", builder.organizerEmail(VEvent().apply {
+            properties += Organizer("SomeFancyOrganizer").apply {
+                parameters.add(Email("organizer@example.com"))
+            }
+        }))
+    }
+
+    @Test
+    fun testOrganizerEmail_MailtoValue() {
+        assertEquals("organizer@example.com", builder.organizerEmail(VEvent().apply {
+            properties += Organizer("mailto:organizer@example.com")
+        }))
     }
 
 

@@ -10,8 +10,8 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,7 +24,7 @@ class SyncIdBuilderTest {
     @Test
     fun `Main event only sets _SYNC_ID`() {
         val result = Entity(ContentValues())
-        val event = Event()
+        val event = VEvent()
         builder.build(
             from = event,
             main = event,
@@ -40,8 +40,8 @@ class SyncIdBuilderTest {
     fun `Exception only sets ORIGINAL_SYNC_ID`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(

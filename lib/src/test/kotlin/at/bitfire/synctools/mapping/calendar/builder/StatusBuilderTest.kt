@@ -9,7 +9,8 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Status
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -27,8 +28,8 @@ class StatusBuilderTest {
     fun `No STATUS`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.STATUS))
@@ -39,8 +40,8 @@ class StatusBuilderTest {
     fun `STATUS is CONFIRMED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(status = Status.VEVENT_CONFIRMED),
-            main = Event(),
+            from = VEvent(propertyListOf(Status.VEVENT_CONFIRMED)),
+            main = VEvent(),
             to = result
         )
         assertEquals(Events.STATUS_CONFIRMED, result.entityValues.getAsInteger(Events.STATUS))
@@ -50,8 +51,8 @@ class StatusBuilderTest {
     fun `STATUS is CANCELLED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(status = Status.VEVENT_CANCELLED),
-            main = Event(),
+            from = VEvent(propertyListOf(Status.VEVENT_CANCELLED)),
+            main = VEvent(),
             to = result
         )
         assertEquals(Events.STATUS_CANCELED, result.entityValues.getAsInteger(Events.STATUS))
@@ -61,8 +62,8 @@ class StatusBuilderTest {
     fun `STATUS is TENTATIVE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(status = Status.VEVENT_TENTATIVE),
-            main = Event(),
+            from = VEvent(propertyListOf(Status.VEVENT_TENTATIVE)),
+            main = VEvent(),
             to = result
         )
         assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
@@ -72,8 +73,8 @@ class StatusBuilderTest {
     fun `STATUS is invalid (for VEVENT)`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(status = Status.VTODO_IN_PROCESS),
-            main = Event(),
+            from = VEvent(propertyListOf(Status.VTODO_IN_PROCESS)),
+            main = VEvent(),
             to = result
         )
         assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))

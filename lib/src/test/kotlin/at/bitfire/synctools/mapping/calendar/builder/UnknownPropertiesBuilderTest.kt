@@ -10,9 +10,10 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.Assert.assertEquals
@@ -30,8 +31,8 @@ class UnknownPropertiesBuilderTest {
     fun `No unknown properties`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.subValues.isEmpty())
@@ -41,13 +42,13 @@ class UnknownPropertiesBuilderTest {
     fun `Unknown property with value and parameters`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event().apply {
-                unknownProperties += XProperty("X-Some-Property", "Some Value").apply {
+            from = VEvent(propertyListOf(
+                XProperty("X-Some-Property", "Some Value").apply {
                     parameters.add(XParameter("Param1", "Value1"))
                     parameters.add(XParameter("Param2", "Value2"))
                 }
-            },
-            main = Event(),
+            )),
+            main = VEvent(),
             to = result
         )
         assertEquals(1, result.subValues.size)

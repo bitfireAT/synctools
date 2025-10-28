@@ -222,7 +222,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:-P1DT1H1M29S
 		val (ref, min) = ICalendar.vAlarmToMin(
             VAlarm(Duration.parse("-P1DT1H1M29S")),
-			Event(), false
+			DtStart(), null, null, false
 		)!!
         assertEquals(Related.START, ref)
         assertEquals(60 * 24 + 60 + 1, min)
@@ -233,7 +233,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:-PT3600S
 		val (ref, min) = ICalendar.vAlarmToMin(
             VAlarm(Duration.parse("-PT3600S")),
-			Event(), false
+			DtStart(), null, null, false
 		)!!
         assertEquals(Related.START, ref)
         assertEquals(60, min)
@@ -244,7 +244,7 @@ class ICalendarTest {
 		// TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
 		val (ref, min) = ICalendar.vAlarmToMin(
             VAlarm(Duration.parse("P1DT1H1M30S")),
-			Event(), false
+			DtStart(), null, null, false
 		)!!
         assertEquals(Related.START, ref)
         assertEquals(-(60 * 24 + 60 + 1), min)
@@ -255,7 +255,7 @@ class ICalendarTest {
 		// TRIGGER;REL=END:-P1DT1H1M30S (caller accepts Related.END)
 		val alarm = VAlarm(Duration.parse("-P1DT1H1M30S"))
 		alarm.trigger.parameters.add(Related.END)
-		val (ref, min) = ICalendar.vAlarmToMin(alarm, Event(), true)!!
+		val (ref, min) = ICalendar.vAlarmToMin(alarm, DtStart(), null, null, true)!!
         assertEquals(Related.END, ref)
         assertEquals(60 * 24 + 60 + 1, min)
 	}
@@ -265,10 +265,13 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event()
-		event.dtStart = DtStart(DateTime(currentTime))
-		event.dtEnd = DtEnd(DateTime(currentTime + 180 * 1000))    // 180 sec later
-		val (ref, min) = ICalendar.vAlarmToMin(alarm, event, false)!!
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm,
+			DtStart(DateTime(currentTime)),
+			DtEnd(DateTime(currentTime + 180 * 1000)),    // 180 sec later
+			null,
+			false
+		)!!
         assertEquals(Related.START, ref)
 		// duration of event: 180 s (3 min), 65 s before that -> alarm 1:55 min before start
         assertEquals(-1, min)
@@ -279,9 +282,7 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event()
-		event.dtEnd = DtEnd(DateTime(currentTime))
-        assertNull(ICalendar.vAlarmToMin(alarm, event, false))
+        assertNull(ICalendar.vAlarmToMin(alarm, DtStart(), DtEnd(DateTime(currentTime)), null, false))
 	}
 
 	@Test
@@ -289,9 +290,7 @@ class ICalendarTest {
 		// event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
 		val alarm = VAlarm(Duration.parse("-PT65S"))
 		alarm.trigger.parameters.add(Related.END)
-		val event = Event()
-		event.dtStart = DtStart(DateTime(currentTime))
-        assertNull(ICalendar.vAlarmToMin(alarm, event, false))
+        assertNull(ICalendar.vAlarmToMin(alarm, DtStart(DateTime(currentTime)), null, null, false))
 	}
 
 	@Test
@@ -299,21 +298,23 @@ class ICalendarTest {
 		// task with TRIGGER;REL=END:-P1DT1H1M30S (caller doesn't accept Related.END; alarm *after* end)
 		val alarm = VAlarm(Duration.parse("P1DT1H1M30S"))
 		alarm.trigger.parameters.add(Related.END)
-		val task = Task()
-		task.dtStart = DtStart(DateTime(currentTime))
-		task.due = Due(DateTime(currentTime + 90 * 1000))    // 90 sec (should be rounded down to 1 min) later
-		val (ref, min) = ICalendar.vAlarmToMin(alarm, task, false)!!
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm,
+			DtStart(DateTime(currentTime)),
+			Due(DateTime(currentTime + 90 * 1000)),    // 90 sec (should be rounded down to 1 min) later
+			null,
+			false
+		)!!
         assertEquals(Related.START, ref)
         assertEquals(-(60 * 24 + 60 + 1 + 1) /* duration of event: */ - 1, min)
 	}
 
 	@Test
 	fun testVAlarm_TriggerPeriod() {
-		val event = Event()
-		event.dtStart = DtStart(net.fortuna.ical4j.model.Date(currentTime))
 		val (ref, min) = ICalendar.vAlarmToMin(
             VAlarm(Period.parse("-P1W1D")),
-			event, false
+			DtStart(net.fortuna.ical4j.model.Date(currentTime)), null, null,
+			false
 		)!!
         assertEquals(Related.START, ref)
         assertEquals(8 * 24 * 60, min)
@@ -322,11 +323,9 @@ class ICalendarTest {
 	@Test
 	fun testVAlarm_TriggerAbsoluteValue() {
 		// TRIGGER;VALUE=DATE-TIME:<xxxx>
-		val event = Event()
-		event.dtStart = DtStart(DateTime(currentTime))
 		val alarm = VAlarm(DateTime(currentTime - 89 * 1000))    // 89 sec (should be cut off to 1 min) before event
 		alarm.trigger.parameters.add(Related.END)	// not useful for DATE-TIME values, should be ignored
-		val (ref, min) = ICalendar.vAlarmToMin(alarm, event, false)!!
+		val (ref, min) = ICalendar.vAlarmToMin(alarm, DtStart(DateTime(currentTime)), null, null, false)!!
         assertEquals(Related.START, ref)
         assertEquals(1, min)
 	}

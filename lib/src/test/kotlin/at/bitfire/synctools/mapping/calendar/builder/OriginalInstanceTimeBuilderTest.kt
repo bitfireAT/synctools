@@ -10,10 +10,11 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -33,7 +34,7 @@ class OriginalInstanceTimeBuilderTest {
     @Test
     fun `Main event`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart())
+        val event = VEvent(propertyListOf(DtStart()))
         builder.build(
             from = event,
             main = event,
@@ -49,15 +50,14 @@ class OriginalInstanceTimeBuilderTest {
     fun `Exception (RECURRENCE-ID is DATE, main DTSTART is DATE)`() {
         val result = Entity(ContentValues())
         builder.build(
-            main = Event(dtStart = DtStart(Date("20200706"))).apply {
-                // add RRULE to make event recurring
-                rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            },
-            from = Event(
-                recurrenceId = RecurrenceId(Date("20200707")),
-                dtStart = DtStart("20200706T123000", tzVienna),
-                summary = "Today not an all-day event"
-            ),
+            main = VEvent(propertyListOf(
+                DtStart(Date("20200706")),
+                RRule("FREQ=WEEKLY;COUNT=3")    // add RRULE to make event recurring
+            )),
+            from = VEvent(propertyListOf(
+                RecurrenceId(Date("20200707")),
+                DtStart("20200706T123000", tzVienna)
+            )),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -70,15 +70,14 @@ class OriginalInstanceTimeBuilderTest {
     fun `Exception (RECURRENCE-ID is DATE, main DTSTART is DATE-TIME)`() {
         val result = Entity(ContentValues())
         builder.build(
-            main = Event(dtStart = DtStart("20200706T193000", tzVienna)).apply {
-                // add RRULE to make event recurring
-                rRules += RRule("FREQ=DAILY;COUNT=10")
-            },
-            from = Event(
-                recurrenceId = RecurrenceId(Date("20200707")),  // invalid! should be rewritten to DateTime("20200707T193000", tzVienna)
-                dtStart = DtStart("20200706T203000", tzShanghai),
-                summary = "Event moved to one hour later"
-            ),
+            main = VEvent(propertyListOf(
+                DtStart("20200706T193000", tzVienna),
+                RRule("FREQ=DAILY;COUNT=10")    // add RRULE to make event recurring
+            )),
+            from = VEvent(propertyListOf(
+                RecurrenceId(Date("20200707")),  // invalid! should be rewritten to DateTime("20200707T193000", tzVienna)
+                DtStart("20200706T203000", tzShanghai)
+            )),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -91,15 +90,14 @@ class OriginalInstanceTimeBuilderTest {
     fun `Exception (RECURRENCE-ID is DATE-TIME, main DTSTART is DATE)`() {
         val result = Entity(ContentValues())
         builder.build(
-            main = Event(dtStart = DtStart(Date("20200706"))).apply {
-                // add RRULE to make event recurring
-                rRules += RRule("FREQ=WEEKLY;COUNT=3")
-            },
-            from = Event(
-                recurrenceId = RecurrenceId("20200707T000000", tzVienna),   // invalid! should be rewritten to Date("20200707")
-                dtStart = DtStart("20200706T123000", tzVienna),
-                summary = "Today not an all-day event"
-            ),
+            main = VEvent(propertyListOf(
+                DtStart(Date("20200706")),
+                RRule("FREQ=WEEKLY;COUNT=3")      // add RRULE to make event recurring
+            )),
+            from = VEvent(propertyListOf(
+                RecurrenceId("20200707T000000", tzVienna),   // invalid! should be rewritten to Date("20200707")
+                DtStart("20200706T123000", tzVienna)
+            )),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -112,15 +110,14 @@ class OriginalInstanceTimeBuilderTest {
     fun `Exception (RECURRENCE-ID is DATE-TIME, main DTSTART is DATE-TIME)`() {
         val result = Entity(ContentValues())
         builder.build(
-            main = Event(dtStart = DtStart("20200706T193000", tzVienna)).apply {
-                // add RRULE to make event recurring
-                rRules += RRule("FREQ=DAILY;COUNT=10")
-            },
-            from = Event(
-                recurrenceId = RecurrenceId("20200707T193000", tzVienna),
-                dtStart = DtStart("20200706T203000", tzShanghai),
-                summary = "Event moved to one hour later"
-            ),
+            main = VEvent(propertyListOf(
+                DtStart("20200706T193000", tzVienna),
+                RRule("FREQ=DAILY;COUNT=10")      // add RRULE to make event recurring
+            )),
+            from = VEvent(propertyListOf(
+                RecurrenceId("20200707T193000", tzVienna),
+                DtStart("20200706T203000", tzShanghai)
+            )),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
