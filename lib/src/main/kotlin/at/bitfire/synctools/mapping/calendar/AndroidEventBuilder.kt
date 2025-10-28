@@ -49,7 +49,6 @@ import net.fortuna.ical4j.model.component.VEvent
  */
 class AndroidEventBuilder(
     calendar: AndroidCalendar,
-    private val events: AssociatedEvents,
 
     // AndroidEvent-level fields
     syncId: String?,
@@ -90,8 +89,8 @@ class AndroidEventBuilder(
         UrlBuilder()
     )
 
-    fun build(): EventAndExceptions {
-        val mainVEvent = events.main!!  // TODO: create main VEvent if missing
+    fun build(events: AssociatedEvents): EventAndExceptions {
+        val mainVEvent = events.main ?: createMainFromExceptions(events.exceptions)
         return EventAndExceptions(
             main = buildEvent(from = mainVEvent, main = mainVEvent),
             exceptions = events.exceptions.map { exception ->
@@ -105,6 +104,22 @@ class AndroidEventBuilder(
         for (builder in fieldBuilders)
             builder.build(from = from, main = main, to = entity)
         return entity
+    }
+
+    /**
+     * It is possible that a user receives only exceptions of an event, but not the main event itself.
+     * This happens when there's a recurring event that is not visible for the user, but the user is invited to
+     * a single recurrence. However, we always need a main event for Android, so we make up one from the
+     * exceptions.
+     */
+    private fun createMainFromExceptions(exceptions: List<VEvent>): VEvent {
+        // Should in the future be replaced by a real event that has a title like "(unknown event)".
+        // This main event should also have a special extended property that indicates that the event
+        // must not actually be generated as main VEvent when the event is locally edited and then uploaded.
+
+        // Currently, we just use the first exception as a main event, too. This is not correct and
+        // should be fixed.
+        return exceptions.firstOrNull() ?: VEvent()
     }
 
 }
