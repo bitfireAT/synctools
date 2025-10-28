@@ -116,6 +116,7 @@ dependencies {
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core)
     implementation(libs.guava)
+    implementation(libs.spotbugs.annotations)
 
     // ical4j/ez-vcard
     api(libs.ical4j)

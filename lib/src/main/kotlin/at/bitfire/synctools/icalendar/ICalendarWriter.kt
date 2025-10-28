@@ -20,6 +20,7 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.Version
 import java.io.Writer
+import javax.annotation.WillNotClose
 
 /**
  * Writes an ical4j [net.fortuna.ical4j.model.Calendar] to a stream that contains an iCalendar
@@ -33,7 +34,7 @@ class ICalendarWriter {
      * @param event     event to generate iCalendar from
      * @param to        stream that the iCalendar is written to
      */
-    fun write(event: AssociatedComponents<*>, to: Writer) {
+    fun write(event: AssociatedComponents<*>, @WillNotClose to: Writer) {
         val ical = Calendar()
         ical.properties += Version.VERSION_2_0
 

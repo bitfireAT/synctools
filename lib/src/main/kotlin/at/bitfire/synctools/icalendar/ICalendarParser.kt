@@ -17,6 +17,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import java.io.Reader
 import java.util.logging.Level
 import java.util.logging.Logger
+import javax.annotation.WillNotClose
 
 /**
  * Custom iCalendar parser that applies error correction using [ICalPreprocessor].
@@ -41,7 +42,7 @@ class ICalendarParser(
      *
      * @throws InvalidICalendarException   when the resource is can't be parsed
      */
-    fun parse(reader: Reader): Calendar {
+    fun parse(@WillNotClose reader: Reader): Calendar {
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
         val preprocessed = preprocessor.preprocessStream(reader)
 
