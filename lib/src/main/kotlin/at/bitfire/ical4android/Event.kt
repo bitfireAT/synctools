@@ -8,10 +8,8 @@ package at.bitfire.ical4android
 
 import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
-import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtEnd
@@ -34,7 +32,11 @@ import java.util.LinkedList
  * - as it is extracted from an iCalendar or
  * - as it should be generated into an iCalendar.
  */
-@Deprecated("Use AssociatedEvents instead", replaceWith = ReplaceWith("AssociatedEvents", "at.bitfire.synctools.icalendar"))
+@Deprecated(
+    "Use AssociatedEvents instead",
+    replaceWith = ReplaceWith("AssociatedEvents", "at.bitfire.synctools.icalendar"),
+    level = DeprecationLevel.ERROR
+)
 data class Event(
     override var uid: String? = null,
     override var sequence: Int? = null,
@@ -78,19 +80,6 @@ data class Event(
     val categories: LinkedList<String> = LinkedList(),
     val unknownProperties: LinkedList<Property> = LinkedList()
 ) : ICalendar() {
-
-    val organizerEmail: String?
-        get() {
-            var email: String? = null
-            organizer?.let { organizer ->
-                val uri = organizer.calAddress
-                email = if (uri.scheme.equals("mailto", true))
-                    uri.schemeSpecificPart
-                else
-                    organizer.getParameter<Email>(Parameter.EMAIL)?.value
-            }
-            return email
-        }
 
     fun requireDtStart(): DtStart =
         dtStart ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
