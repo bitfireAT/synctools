@@ -28,7 +28,7 @@ import java.io.Writer
 class ICalendarWriter {
 
     /**
-     * Generates an iCalendar from the given [at.bitfire.ical4android.Event].
+     * Generates an iCalendar from the given [AssociatedComponents].
      *
      * @param event     event to generate iCalendar from
      * @param to        stream that the iCalendar is written to

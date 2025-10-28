@@ -6,19 +6,20 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.EventReader
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
+import net.fortuna.ical4j.model.property.Attendee
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -32,7 +33,7 @@ class Ical4jTest {
     @Test
     fun testEmailParameter() {
         // https://github.com/ical4j/ical4j/issues/418
-        val e = EventReader().readEvents(
+        val event = ICalendarParser().parse(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
                         "VERSION:2.0\n" +
@@ -43,8 +44,9 @@ class Ical4jTest {
                         "END:VEVENT\n" +
                         "END:VCALENDAR"
             )
-        ).first()
-        assertEquals("attendee1@example.virtual", e.attendees.first().getParameter<Email>(Parameter.EMAIL).value)
+        ).getComponent<VEvent>(Component.VEVENT)
+        val attendee = event.getProperty<Attendee>(Property.ATTENDEE)
+        assertEquals("attendee1@example.virtual", attendee.getParameter<Email>(Parameter.EMAIL).value)
     }
 
     @Test
