@@ -10,9 +10,9 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import java.util.logging.Logger
 
 class UnknownPropertiesBuilder: AndroidEntityBuilder {
@@ -20,8 +20,8 @@ class UnknownPropertiesBuilder: AndroidEntityBuilder {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun build(from: Event, main: Event, to: Entity) {
-        for (property in from.unknownProperties) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        for (property in unknownProperties(from)) {
             val values = buildUnknownProperty(property)
             if (values != null)
                 to.addSubValue(ExtendedProperties.CONTENT_URI, values)
@@ -43,5 +43,8 @@ class UnknownPropertiesBuilder: AndroidEntityBuilder {
             ExtendedProperties.VALUE to UnknownProperty.toJsonString(property)
         )
     }
+
+    private fun unknownProperties(event: VEvent): List<Property> =
+        emptyList()     // TODO
 
 }

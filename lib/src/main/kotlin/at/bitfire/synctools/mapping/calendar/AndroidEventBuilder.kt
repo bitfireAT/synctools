@@ -8,7 +8,6 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AllDayBuilder
@@ -42,7 +41,7 @@ import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import net.fortuna.ical4j.model.component.VEvent
 
 /**
- * Legacy mapper from an [Event] data object to Android content provider data rows
+ * Legacy mapper from an [AssociatedEvents] data object to Android content provider data rows
  * (former "build..." methods).
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID

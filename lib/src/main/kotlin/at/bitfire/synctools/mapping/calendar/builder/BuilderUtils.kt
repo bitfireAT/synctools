@@ -6,16 +6,9 @@
 
 package at.bitfire.synctools.mapping.calendar.builder
 
-import android.content.Entity
-import android.provider.CalendarContract.Events
+import at.bitfire.synctools.exception.InvalidICalendarException
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.DtStart
 
-class CalendarIdBuilder(
-    private val calendarId: Long
-): AndroidEntityBuilder {
-
-    override fun build(from: VEvent, main: VEvent, to: Entity) {
-        to.entityValues.put(Events.CALENDAR_ID, calendarId)
-    }
-
-}
+fun VEvent.requireDtStart(): DtStart =
+    startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")

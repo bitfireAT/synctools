@@ -9,18 +9,21 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import java.time.Period
 
 class DurationBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
         /* The calendar provider requires
@@ -28,14 +31,16 @@ class DurationBuilder: AndroidEntityBuilder {
             - DURATION when the event is recurring.
 
         So we'll skip if this event is not a recurring main event (only main events can be recurring). */
-        if (from !== main || (from.rRules.isEmpty() && from.rDates.isEmpty())) {
+        val rRules = from.getProperties<RRule>(Property.RRULE)
+        val rDates = from.getProperties<RDate>(Property.RDATE)
+        if (from !== main || (rRules.isEmpty() && rDates.isEmpty())) {
             values.putNull(Events.DURATION)
             return
         }
 
         val dtStart = from.requireDtStart()
         val duration = from.duration
-            ?: calculateFromDtEnd(dtStart, from.dtEnd)
+            ?: calculateFromDtEnd(dtStart, from.endDate)
             ?: defaultDuration(DateUtils.isDate(dtStart))
 
         /* [RFC 5545 3.8.2.5]

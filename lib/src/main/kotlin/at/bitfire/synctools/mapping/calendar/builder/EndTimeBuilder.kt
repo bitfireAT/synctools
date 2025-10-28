@@ -9,7 +9,6 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
@@ -17,8 +16,12 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
 import java.time.Duration
 import java.time.LocalDate
 import java.time.Period
@@ -27,7 +30,7 @@ import java.time.ZonedDateTime
 
 class EndTimeBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
         /* The calendar provider requires
@@ -35,13 +38,15 @@ class EndTimeBuilder: AndroidEntityBuilder {
            - DURATION when the event is recurring.
 
         So we'll skip if this event is a recurring main event (only main events can be recurring). */
-        if (from === main && (from.rRules.isNotEmpty() || from.rDates.isNotEmpty())) {
+        val rRules = from.getProperties<RRule>(Property.RRULE)
+        val rDates = from.getProperties<RDate>(Property.RDATE)
+        if (from === main && (rRules.isNotEmpty() || rDates.isNotEmpty())) {
             values.putNull(Events.DTEND)
             return
         }
 
         val dtStart = from.requireDtStart()
-        val dtEnd = from.dtEnd?.let { alignWithDtStart(it, dtStart = dtStart) }
+        val dtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
             ?: calculateFromDuration(dtStart, from.duration)
             ?: calculateFromDefault(dtStart)
 

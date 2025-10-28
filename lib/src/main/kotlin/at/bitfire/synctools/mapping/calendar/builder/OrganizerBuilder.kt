@@ -8,9 +8,11 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
+import net.fortuna.ical4j.model.property.Attendee
 import java.util.logging.Logger
 
 class OrganizerBuilder(
@@ -20,9 +22,9 @@ class OrganizerBuilder(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
-        val groupScheduled = from.attendees.isNotEmpty()
+        val groupScheduled = from.getProperties<Attendee>(Property.ATTENDEE).isNotEmpty()
         if (groupScheduled) {
             values.put(Events.HAS_ATTENDEE_DATA, 1)
             values.put(Events.ORGANIZER, from.organizer?.let { organizer ->

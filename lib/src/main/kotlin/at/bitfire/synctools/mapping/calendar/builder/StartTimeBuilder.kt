@@ -8,14 +8,14 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.util.AndroidTimeUtils
+import net.fortuna.ical4j.model.component.VEvent
 import java.time.ZoneId
 
 class StartTimeBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
         val dtStart = from.requireDtStart()
