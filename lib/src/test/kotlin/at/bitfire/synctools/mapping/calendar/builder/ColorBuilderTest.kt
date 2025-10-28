@@ -35,9 +35,6 @@ class ColorBuilderTest {
 
     @Test
     fun `No COLOR`() {
-        val color = Css3Color.darkseagreen
-        every { builder.hasColor(color.name) } returns false
-
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(),
@@ -56,7 +53,7 @@ class ColorBuilderTest {
     @Test
     fun `COLOR is darkseagreen`() {
         val color = Css3Color.darkseagreen
-        every { builder.hasColor(color.name) } returns false
+        every { builder.hasColor(color.name) } returns true
 
         val result = Entity(ContentValues())
         builder.build(
