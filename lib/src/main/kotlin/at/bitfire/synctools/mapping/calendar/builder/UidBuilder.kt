@@ -13,7 +13,8 @@ import net.fortuna.ical4j.model.component.VEvent
 class UidBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        to.entityValues.put(Events.UID_2445, from.uid?.value)
+        // always take UID from main event because exceptions must have the same UID anyway
+        to.entityValues.put(Events.UID_2445, main.uid?.value)
     }
 
 }

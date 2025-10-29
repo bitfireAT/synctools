@@ -16,20 +16,37 @@ import net.fortuna.ical4j.model.property.Uid
 class UidProcessor: AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        // take from event row or Google Calendar extended property
-        val uid = from.entityValues.getAsString(Events.UID_2445) ?:
-            uidFromExtendedProperties(from.subValues)
+        // Always take the UID from the main event because exceptions must have the same UID anyway.
+        val uid = uidFromEntity(main)
         if (uid != null)
             to.properties += Uid(uid)
     }
 
-    private fun uidFromExtendedProperties(rows: List<Entity.NamedContentValues>): String? {
-        val uidRow = rows.firstOrNull {
-            it.uri == ExtendedProperties.CONTENT_URI &&
-            it.values.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_ICAL_UID
+
+    companion object {
+
+        /**
+         * Gets the UID from:
+         *
+         * - main event row (because exceptions must have the same UID anyway) or
+         * - main event's Google Calendar extended property.
+         *
+         * @param entity    Android event to extract the UID from
+         *
+         * @return UID (or *null* if [entity] doesn't have an UID)
+         */
+        fun uidFromEntity(entity: Entity): String? =
+            entity.entityValues.getAsString(Events.UID_2445)
+                ?: uidFromExtendedProperties(entity.subValues)
+
+        private fun uidFromExtendedProperties(rows: List<Entity.NamedContentValues>): String? {
+            val uidRow = rows.firstOrNull {
+                it.uri == ExtendedProperties.CONTENT_URI &&
+                it.values.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_ICAL_UID
+            }
+            return uidRow?.values?.getAsString(ExtendedProperties.VALUE)
         }
 
-        return uidRow?.values?.getAsString(ExtendedProperties.VALUE)
     }
 
 }

@@ -9,11 +9,10 @@ package at.bitfire.synctools.storage.calendar
 import android.content.Entity
 
 /**
- * Represents a set of local events (like [at.bitfire.synctools.storage.calendar.AndroidEvent] values)
- * and associated exception events that are stored together in one iCalendar object on the server. It consists of
+ * Represents a set of a local Android event and associated exception events that are stored together. It consists of
  *
- * - a main component (like a main event),
- * - optional exceptions of this main component (exception instances).
+ * - a (potentially recurring) main event,
+ * - optional exceptions of this main event (exception instances, only useful if main event is recurring).
  */
 data class EventAndExceptions(
     val main: Entity,
