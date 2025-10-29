@@ -26,7 +26,7 @@ import javax.annotation.WillNotClose
  * Writes an ical4j [net.fortuna.ical4j.model.Calendar] to a stream that contains an iCalendar
  * (VCALENDAR with respective components and optional VTIMEZONEs).
  */
-class ICalendarWriter {
+class ICalendarGenerator {
 
     /**
      * Generates an iCalendar from the given [AssociatedComponents].
