@@ -91,7 +91,7 @@ class AndroidRecurringCalendar(
      * @param whereArgs     arguments for selection
      * @param body          callback that is called for each event (including exceptions)
      */
-    fun iterateEventAndExceptions(where: String, whereArgs: Array<String>?, body: (EventAndExceptions) -> Unit) {
+    fun iterateEventAndExceptions(where: String?, whereArgs: Array<String>?, body: (EventAndExceptions) -> Unit) {
         // iterate through main events and attach exceptions
         calendar.iterateEvents(where, whereArgs) { main ->
             val mainEventId = main.entityValues.getAsLong(Events._ID)
