@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.component.VEvent
@@ -39,7 +39,7 @@ class CategoriesBuilderTest {
         assertEquals(1, result.subValues.size)
         assertContentValuesEqual(
             contentValuesOf(
-                ExtendedProperties.NAME to AndroidEvent.EXTNAME_CATEGORIES,
+                ExtendedProperties.NAME to EventsContract.EXTNAME_CATEGORIES,
                 ExtendedProperties.VALUE to "Cat 1\\Cat2"
             ),
             result.subValues.first().values

@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Categories
@@ -38,7 +38,7 @@ class CategoriesProcessorTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to AndroidEvent.EXTNAME_CATEGORIES,
+            ExtendedProperties.NAME to EventsContract.EXTNAME_CATEGORIES,
             ExtendedProperties.VALUE to "Cat 1\\Cat 2"
         ))
         processor.process(entity, entity, result)

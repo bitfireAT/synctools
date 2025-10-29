@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.component.VEvent
 
 class UrlBuilder: AndroidEntityBuilder {
@@ -20,7 +20,7 @@ class UrlBuilder: AndroidEntityBuilder {
             to.addSubValue(
                 ExtendedProperties.CONTENT_URI,
                 contentValuesOf(
-                    ExtendedProperties.NAME to AndroidEvent.EXTNAME_URL,
+                    ExtendedProperties.NAME to EventsContract.EXTNAME_URL,
                     ExtendedProperties.VALUE to uri
                 )
             )

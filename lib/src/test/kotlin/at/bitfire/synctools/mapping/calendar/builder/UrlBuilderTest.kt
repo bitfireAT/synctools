@@ -11,7 +11,7 @@ import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.icalendar.propertyListOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Url
@@ -38,7 +38,7 @@ class UrlBuilderTest {
         assertEquals(1, result.subValues.size)
         assertContentValuesEqual(
             contentValuesOf(
-                ExtendedProperties.NAME to AndroidEvent.EXTNAME_URL,
+                ExtendedProperties.NAME to EventsContract.EXTNAME_URL,
                 ExtendedProperties.VALUE to "https://example.com"
             ),
             result.subValues.first().values
