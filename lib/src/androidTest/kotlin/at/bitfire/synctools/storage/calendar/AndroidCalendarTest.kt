@@ -21,6 +21,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
+import at.bitfire.synctools.test.assertEntitiesEqual
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -63,27 +64,21 @@ class AndroidCalendarTest {
 
     @Test
     fun testAddEvent_and_GetEvent() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event"
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val id = calendar.addEvent(entity)
 
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!
-        assertEquals(id, result.id)
-        assertEquals(now, result.dtStart)
-        assertEquals(now + 3600000, result.dtEnd)
-        assertEquals("Some Event", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
     }
 
     @Test
@@ -97,17 +92,16 @@ class AndroidCalendarTest {
             .withSelection("${Events._SYNC_ID}=?", arrayOf("testAddEvent_toBatch_AsSecondOperation"))
 
         // second operation (event row index > 0)
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event"
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val idx = batch.nextBackrefIdx()
         calendar.addEvent(entity, batch)
 
@@ -116,12 +110,7 @@ class AndroidCalendarTest {
 
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!
-        assertEquals(id, result.id)
-        assertEquals(now, result.dtStart)
-        assertEquals(now + 3600000, result.dtEnd)
-        assertEquals("Some Event", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
     }
 
     @Test
@@ -146,8 +135,14 @@ class AndroidCalendarTest {
         )))
         val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((now + 3600000).toString()))
         assertEquals(2, result.size)
-        assertEquals(setOf(id2, id3), result.map { it.id }.toSet())
-        assertEquals(setOf("Some Other Event 1", "Some Other Event 2"), result.map { it.title }.toSet())
+        assertEquals(
+            setOf(id2, id3),
+            result.map { it.entityValues.getAsLong(Events._ID) }.toSet()
+        )
+        assertEquals(
+            setOf("Some Other Event 1", "Some Other Event 2"),
+            result.map { it.entityValues.getAsString(Events.TITLE) }.toSet()
+        )
     }
 
     @Test
@@ -303,48 +298,46 @@ class AndroidCalendarTest {
 
         calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"))
 
-        assertEquals("New Title", calendar.getEvent(id)!!.title)
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
     }
 
     @Test
     fun testUpdateEvent_NoRebuild() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event",
-            Events.STATUS to null
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+            //Events.STATUS to null
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val id = calendar.addEvent(entity)
 
-        values.put(Events.TITLE, "New Title")
+        // update with modified title
+        entity.entityValues.put(Events.TITLE, "New Title")
         assertEquals(id, calendar.updateEvent(id, entity))
 
         val result = calendar.getEvent(id)!!
-        assertEquals("New Title", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
     }
 
     @Test
     fun testUpdateEvent_Rebuild() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event 1",
             Events.STATUS to Events.STATUS_CONFIRMED
-        )
-        val id = calendar.addEvent(Entity(values))
+        ))
+        val id = calendar.addEvent(entity)
 
-        values.put(Events.TITLE, "New Title")
-        values.putNull(Events.STATUS)
-        val newId = calendar.updateEvent(id, Entity(values))
+        entity.entityValues.put(Events.TITLE, "New Title")
+        entity.entityValues.putNull(Events.STATUS)          // triggers re-build
+        val newId = calendar.updateEvent(id, entity)
         assertNotEquals(newId, id)
 
         // old event is deleted
@@ -352,8 +345,11 @@ class AndroidCalendarTest {
 
         // new event doesn't have status
         val newEvent = calendar.getEvent(newId)!!
-        assertEquals("New Title", newEvent.title)
-        assertNull(newEvent.status)
+        assertNull(newEvent.entityValues.getAsInteger(Events.STATUS))   // verify that it's null
+        val expected = Entity(ContentValues(entity.entityValues).apply {
+            remove(Events.STATUS)       // is null in provider and thus not returned by getEvent
+        })
+        assertEntitiesEqual(expected, newEvent, onlyFieldsInExpected = true)
     }
 
     @Test
@@ -371,7 +367,7 @@ class AndroidCalendarTest {
             arrayOf(now.toString())
         )
 
-        assertEquals("New Title", calendar.getEvent(id)!!.title)
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
     }
 
     @Test
