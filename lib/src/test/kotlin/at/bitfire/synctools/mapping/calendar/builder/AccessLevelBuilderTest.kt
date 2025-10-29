@@ -11,9 +11,10 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -29,8 +30,8 @@ class AccessLevelBuilderTest {
     fun `No classification`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -43,8 +44,8 @@ class AccessLevelBuilderTest {
     fun `Classification is PUBLIC`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz.PUBLIC),
-            main = Event(),
+            from = VEvent(propertyListOf(Clazz.PUBLIC)),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -57,8 +58,8 @@ class AccessLevelBuilderTest {
     fun `Classification is PRIVATE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz.PRIVATE),
-            main = Event(),
+            from = VEvent(propertyListOf(Clazz.PRIVATE)),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -71,8 +72,8 @@ class AccessLevelBuilderTest {
     fun `Classification is CONFIDENTIAL`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz.CONFIDENTIAL),
-            main = Event(),
+            from = VEvent(propertyListOf(Clazz.CONFIDENTIAL)),
+            main = VEvent(),
             to = result
         )
 
@@ -94,8 +95,8 @@ class AccessLevelBuilderTest {
     fun `Classification is custom value`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(classification = Clazz("TOP-SECRET")),
-            main = Event(),
+            from = VEvent(propertyListOf(Clazz("TOP-SECRET"))),
+            main = VEvent(),
             to = result
         )
 

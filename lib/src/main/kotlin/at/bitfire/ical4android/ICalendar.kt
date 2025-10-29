@@ -23,11 +23,11 @@ import net.fortuna.ical4j.model.component.Daylight
 import net.fortuna.ical4j.model.component.Observance
 import net.fortuna.ical4j.model.component.Standard
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
-import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.Color
+import net.fortuna.ical4j.model.property.DateProperty
+import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
@@ -261,9 +261,10 @@ open class ICalendar {
         /**
          * Calculates the minutes before/after an event/task a given alarm occurs.
          *
-         * @param alarm the alarm to calculate the minutes from
-         * @param reference reference [VEvent] or [VToDo] to take start/end time from (required for calculations)
-         * @param allowRelEnd *true*: caller accepts minutes related to the end;
+         * @param alarm         the alarm to calculate the minutes from
+         * @param refStart      reference `DTSTART` from the calendar component
+         * @param refEnd        reference `DTEND` (`VEVENT`) or `DUE` (`VTODO`) from the calendar component
+         * @param allowRelEnd   *true*: caller accepts minutes related to the end;
          * *false*: caller only accepts minutes related to the start
          *
          * Android's alarm granularity is minutes. This methods calculates with milliseconds, but the result
@@ -276,44 +277,35 @@ open class ICalendar {
          *
          * May be *null* if there's not enough information to calculate the number of minutes.
          */
-        fun vAlarmToMin(alarm: VAlarm, reference: ICalendar, allowRelEnd: Boolean): Pair<Related, Int>? {
+        fun vAlarmToMin(
+            alarm: VAlarm,
+            refStart: DtStart?,
+            refEnd: DateProperty?,
+            refDuration: net.fortuna.ical4j.model.property.Duration?,
+            allowRelEnd: Boolean
+        ): Pair<Related, Int>? {
             val trigger = alarm.trigger ?: return null
 
             val minutes: Int    // minutes before/after the event
             var related = trigger.getParameter<Related>(Parameter.RELATED) ?: Related.START
 
             // event/task start time
-            val start: java.util.Date?
-            var end: java.util.Date?
-            when (reference) {
-                is Event -> {
-                    start = reference.dtStart?.date
-                    end = reference.dtEnd?.date
-                }
-                is Task -> {
-                    start = reference.dtStart?.date
-                    end = reference.due?.date
-                }
-                else -> throw IllegalArgumentException("reference must be Event or Task")
-            }
+            val start: java.util.Date? = refStart?.date
+            var end: java.util.Date? = refEnd?.date
 
             // event/task end time
             if (end == null && start != null) {
-                val duration = when (reference) {
-                    is Event -> reference.duration?.duration
-                    is Task -> reference.duration?.duration
-                    else -> throw IllegalArgumentException("reference must be Event or Task")
-                }
+                val duration = refDuration?.duration
                 if (duration != null)
                     end = java.util.Date.from(start.toInstant() + duration)
             }
 
             // event/task duration
             val duration: Duration? =
-                    if (start != null && end != null)
-                        Duration.between(start.toInstant(), end.toInstant())
-                    else
-                        null
+                if (start != null && end != null)
+                    Duration.between(start.toInstant(), end.toInstant())
+                else
+                    null
 
             val triggerDur = trigger.duration
             val triggerTime = trigger.dateTime

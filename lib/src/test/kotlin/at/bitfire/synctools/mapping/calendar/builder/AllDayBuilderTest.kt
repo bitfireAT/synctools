@@ -10,10 +10,11 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,8 +29,8 @@ class AllDayBuilderTest {
     fun `No DTSTART`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -41,8 +42,8 @@ class AllDayBuilderTest {
     fun `DTSTART is DATE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(dtStart = DtStart(Date())),
-            main = Event(),
+            from = VEvent(propertyListOf(DtStart(Date()))),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -54,8 +55,8 @@ class AllDayBuilderTest {
     fun `DTSTART is DATE-TIME`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(dtStart = DtStart(DateTime())),
-            main = Event(),
+            from = VEvent(propertyListOf(DtStart(DateTime()))),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(

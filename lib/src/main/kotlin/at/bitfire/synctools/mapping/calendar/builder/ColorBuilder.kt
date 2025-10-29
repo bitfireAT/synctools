@@ -10,21 +10,22 @@ import android.content.Entity
 import android.provider.CalendarContract.Colors
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Color
 
 class ColorBuilder(
     private val calendar: AndroidCalendar
 ): AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
-        val color = from.color
-        if (color != null && hasColor(color.name)) {
+        val color = from.getProperty<Color>(Color.PROPERTY_NAME)?.value
+        if (color != null && hasColor(color)) {
             // set event color (if it's available for this account)
-            values.put(Events.EVENT_COLOR_KEY, color.name)
+            values.put(Events.EVENT_COLOR_KEY, color)
         } else {
             // reset color index and value
             values.putNull(Events.EVENT_COLOR_KEY)

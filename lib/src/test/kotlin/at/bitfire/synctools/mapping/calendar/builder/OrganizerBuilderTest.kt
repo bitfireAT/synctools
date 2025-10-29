@@ -10,8 +10,9 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Organizer
@@ -29,8 +30,8 @@ class OrganizerBuilderTest {
     fun `Event is not group-scheduled`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(organizer = Organizer("mailto:organizer@example.com")),
-            main = Event(),
+            from = VEvent(propertyListOf(Organizer("mailto:organizer@example.com"))),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -43,11 +44,11 @@ class OrganizerBuilderTest {
     fun `ORGANIZER is email address`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(organizer = Organizer("mailto:organizer@example.com")).apply {
+            from = VEvent(propertyListOf(Organizer("mailto:organizer@example.com"))).apply {
                 // at least one attendee to make event group-scheduled
-                attendees += Attendee("mailto:attendee@example.com")
+                properties += Attendee("mailto:attendee@example.com")
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -60,11 +61,11 @@ class OrganizerBuilderTest {
     fun `ORGANIZER is custom URI`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(organizer = Organizer("local-id:user")).apply {
+            from = VEvent(propertyListOf(Organizer("local-id:user"))).apply {
                 // at least one attendee to make event group-scheduled
-                attendees += Attendee("mailto:attendee@example.com")
+                properties += Attendee("mailto:attendee@example.com")
             },
-            main = Event(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -77,15 +78,13 @@ class OrganizerBuilderTest {
     fun `ORGANIZER is custom URI with email parameter`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(
-                organizer = Organizer("local-id:user").apply {
+            from = VEvent(propertyListOf(
+                Organizer("local-id:user").apply {
                     parameters.add(Email("organizer@example.com"))
-                }
-            ).apply {
-                // at least one attendee to make event group-scheduled
-                attendees += Attendee("mailto:attendee@example.com")
-            },
-            main = Event(),
+                },
+                Attendee("mailto:attendee@example.com")
+            )),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(

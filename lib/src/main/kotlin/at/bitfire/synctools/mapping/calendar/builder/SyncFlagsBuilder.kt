@@ -7,14 +7,14 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import net.fortuna.ical4j.model.component.VEvent
 
 class SyncFlagsBuilder(
     private val flags: Int
 ): AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         to.entityValues.put(AndroidEvent2.COLUMN_FLAGS, flags)
     }
 

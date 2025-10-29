@@ -10,11 +10,12 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
@@ -35,12 +36,13 @@ class RecurrenceFieldsBuilderTest {
         // Exceptions (of recurring events) must never have recurrence properties themselves.
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(dtStart = DtStart()).apply {
-                rRules += RRule("FREQ=DAILY;COUNT=1")
-                rDates += RDate()
-                exDates += ExDate()
-            },
-            main = Event(),
+            from = VEvent(propertyListOf(
+                DtStart(),
+                RRule("FREQ=DAILY;COUNT=1"),
+                RDate(),
+                ExDate()
+            )),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
@@ -53,9 +55,10 @@ class RecurrenceFieldsBuilderTest {
 
     @Test
     fun `EXDATE for non-recurring event`() {
-        val main = Event(dtStart = DtStart()).apply {
-            exDates += ExDate()
-        }
+        val main = VEvent(propertyListOf(
+            DtStart(),
+            ExDate()
+        ))
         val result = Entity(ContentValues())
         builder.build(
             from = main,
@@ -73,9 +76,10 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `Single RRULE`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart()).apply {
-            rRules += RRule("FREQ=DAILY;COUNT=10")
-        }
+        val event = VEvent(propertyListOf(
+            DtStart(),
+            RRule("FREQ=DAILY;COUNT=10")
+        ))
         builder.build(
             from = event,
             main = event,
@@ -92,10 +96,11 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `Multiple RRULEs`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart()).apply {
-            rRules += RRule("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU")
-            rRules += RRule("FREQ=YEARLY;BYMONTH=10;BYDAY=1SU")
-        }
+        val event = VEvent(propertyListOf(
+            DtStart(),
+            RRule("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU"),
+            RRule("FREQ=YEARLY;BYMONTH=10;BYDAY=1SU")
+        ))
         builder.build(
             from = event,
             main = event,
@@ -112,11 +117,12 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `Single RDATE`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart(Date("20250917"))).apply {
-            rDates += RDate(DateList().apply {
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20250917")),
+            RDate(DateList().apply {
                 add(Date("20250918"))
             })
-        }
+        ))
         builder.build(
             from = event,
             main = event,
@@ -133,12 +139,13 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `RDATE with infinite RRULE present`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart(Date("20250917"))).apply {
-            rRules += RRule("FREQ=DAILY")
-            rDates += RDate(DateList().apply {
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20250917")),
+            RRule("FREQ=DAILY"),
+            RDate(DateList().apply {
                 add(Date("20250918"))
             })
-        }
+        ))
         builder.build(
             from = event,
             main = event,
@@ -155,10 +162,11 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `Single EXRULE`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart()).apply {
-            rRules += RRule("FREQ=DAILY")
-            exRules += ExRule(ParameterList(), "FREQ=WEEKLY")
-        }
+        val event = VEvent(propertyListOf(
+            DtStart(),
+            RRule("FREQ=DAILY"),
+            ExRule(ParameterList(), "FREQ=WEEKLY")
+        ))
         builder.build(
             from = event,
             main = event,
@@ -175,10 +183,11 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `Single EXDATE`() {
         val result = Entity(ContentValues())
-        val event = Event(dtStart = DtStart(Date("20250918"))).apply {
-            rRules += RRule("FREQ=DAILY")
-            exDates += ExDate(DateList("20250920", Value.DATE))
-        }
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20250918")),
+            RRule("FREQ=DAILY"),
+            ExDate(DateList("20250920", Value.DATE))
+        ))
         builder.build(
             from = event,
             main = event,

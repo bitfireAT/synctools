@@ -8,13 +8,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 
 class CalendarIdBuilder(
     private val calendarId: Long
 ): AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         to.entityValues.put(Events.CALENDAR_ID, calendarId)
     }
 

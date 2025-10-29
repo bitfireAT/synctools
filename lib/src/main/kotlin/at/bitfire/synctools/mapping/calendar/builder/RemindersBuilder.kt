@@ -10,20 +10,20 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.ICalendar
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
 import java.util.Locale
 
 class RemindersBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         for (reminder in from.alarms)
             to.addSubValue(Reminders.CONTENT_URI, buildReminder(reminder, from))
     }
 
-    private fun buildReminder(alarm: VAlarm, event: Event): ContentValues {
+    private fun buildReminder(alarm: VAlarm, event: VEvent): ContentValues {
         val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
             Action.DISPLAY.value,
             Action.AUDIO.value -> Reminders.METHOD_ALERT    // will trigger an alarm on the Android device
@@ -34,7 +34,13 @@ class RemindersBuilder: AndroidEntityBuilder {
             else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
         }
 
-        val minutes = ICalendar.vAlarmToMin(alarm, event, false)?.second ?: Reminders.MINUTES_DEFAULT
+        val minutes = ICalendar.vAlarmToMin(
+            alarm = alarm,
+            refStart = event.startDate,
+            refEnd = event.endDate,
+            refDuration = event.duration,
+            allowRelEnd = false
+        )?.second ?: Reminders.MINUTES_DEFAULT
 
         return contentValuesOf(
             Reminders.METHOD to method,
