@@ -18,6 +18,7 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,6 +43,21 @@ class AndroidEventProcessorTest {
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzShanghai = tzRegistry.getTimeZone("Asia/Shanghai")!!
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+
+
+    @Test
+    fun `Generated event has DTSTAMP`() {
+        val result = processor.populate(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertNotNull(result.main?.dateStamp?.date)
+    }
+
 
     @Test
     fun `Exception is processed`() {
