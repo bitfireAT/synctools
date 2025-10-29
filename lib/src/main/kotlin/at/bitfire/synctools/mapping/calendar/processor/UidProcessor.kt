@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.AndroidEvent
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Uid
 
@@ -26,7 +26,7 @@ class UidProcessor: AndroidEventFieldProcessor {
     private fun uidFromExtendedProperties(rows: List<Entity.NamedContentValues>): String? {
         val uidRow = rows.firstOrNull {
             it.uri == ExtendedProperties.CONTENT_URI &&
-            it.values.getAsString(ExtendedProperties.NAME) == AndroidEvent2.EXTNAME_ICAL_UID
+            it.values.getAsString(ExtendedProperties.NAME) == AndroidEvent.EXTNAME_ICAL_UID
         }
 
         return uidRow?.values?.getAsString(ExtendedProperties.VALUE)

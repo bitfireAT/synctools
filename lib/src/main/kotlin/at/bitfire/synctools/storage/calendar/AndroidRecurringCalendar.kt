@@ -75,11 +75,31 @@ class AndroidRecurringCalendar(
      * @return event and exceptions
      */
     fun getById(mainEventId: Long): EventAndExceptions? {
-        val mainEvent = calendar.getEventEntity(mainEventId) ?: return null
+        val mainEvent = calendar.getEvent(mainEventId) ?: return null
         return EventAndExceptions(
             main = mainEvent,
-            exceptions = calendar.findEventEntities("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+            exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
         )
+    }
+
+    /**
+     * Iterates through events together with their exceptions from the content provider.
+     *
+     * Note that the exceptions may contain deleted events.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     * @param body          callback that is called for each event (including exceptions)
+     */
+    fun iterateEventAndExceptions(where: String, whereArgs: Array<String>, body: (EventAndExceptions) -> Unit) {
+        // iterate through main events and attach exceptions
+        calendar.iterateEvents(where, whereArgs) { main ->
+            val mainEventId = main.entityValues.getAsLong(Events._ID)
+            body(EventAndExceptions(
+                main = main,
+                exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+            ))
+        }
     }
 
     /**

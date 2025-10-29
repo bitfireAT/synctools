@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.processor
 import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.AndroidEvent
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -33,7 +33,7 @@ class SequenceProcessorTest {
     @Test
     fun `Sequence is 0`() {
         val entity = Entity(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 0
+            AndroidEvent.COLUMN_SEQUENCE to 0
         ))
         val result = VEvent()
         processor.process(entity, entity, result)
@@ -43,7 +43,7 @@ class SequenceProcessorTest {
     @Test
     fun `Sequence is 1`() {
         val entity = Entity(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 1
+            AndroidEvent.COLUMN_SEQUENCE to 1
         ))
         val result = VEvent()
         processor.process(entity, entity, result)

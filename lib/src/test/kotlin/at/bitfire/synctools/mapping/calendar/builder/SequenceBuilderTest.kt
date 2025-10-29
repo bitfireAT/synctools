@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.icalendar.propertyListOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.AndroidEvent
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Sequence
@@ -32,7 +32,7 @@ class SequenceBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 0
+            AndroidEvent.COLUMN_SEQUENCE to 0
         ), result.entityValues)
     }
 
@@ -45,7 +45,7 @@ class SequenceBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 0
+            AndroidEvent.COLUMN_SEQUENCE to 0
         ), result.entityValues)
     }
 
@@ -58,7 +58,7 @@ class SequenceBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 1
+            AndroidEvent.COLUMN_SEQUENCE to 1
         ), result.entityValues)
     }
 

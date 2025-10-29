@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.AndroidEvent
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -37,7 +37,7 @@ class UrlProcessorTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
+            ExtendedProperties.NAME to AndroidEvent.EXTNAME_URL,
             ExtendedProperties.VALUE to "invalid\\uri"
         ))
         processor.process(entity, entity, result)
@@ -49,7 +49,7 @@ class UrlProcessorTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
+            ExtendedProperties.NAME to AndroidEvent.EXTNAME_URL,
             ExtendedProperties.VALUE to "https://example.com"
         ))
         processor.process(entity, entity, result)
