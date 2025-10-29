@@ -38,7 +38,6 @@ class ICalendarParser(
      * 2. The parsed calendar is preprocessed with [ICalPreprocessor.preprocessCalendar].
      *
      * @param reader        where the iCalendar is read from
-     * @param tzRegistry    time zone registry where VTIMEZONE definitions of the iCalendar will be put
      *
      * @throws InvalidICalendarException   when the resource is can't be parsed
      */

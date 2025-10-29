@@ -8,14 +8,14 @@ androidx-test-runner = "1.7.0"
 dokka = "2.1.0"
 ezvcard = "0.12.1"
 guava = "33.5.0-android"
-# noinspection GradleDependency
+# noinspection NewerVersionAvailable
 ical4j = "3.2.19"   # final version; update to 4.x will require much work
 junit = "4.13.2"
 kotlin = "2.2.21"
 mockk = "1.14.6"
 roboelectric = "4.16"
 slf4j = "2.0.17"
-spotbugs = "4.9.8"
+spotbugs-annotations = "4.9.8"
 
 [libraries]
 android-desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "android-desugar" }
@@ -32,7 +32,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 roboelectric = { module = "org.robolectric:robolectric", version.ref = "roboelectric" }
 slf4j-jdk = { module = "org.slf4j:slf4j-jdk14", version.ref = "slf4j" }
-spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs" }
+spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs-annotations" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
