@@ -11,7 +11,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -46,7 +46,7 @@ class UidProcessorTest {
     fun `UID from extended row`() {
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to AndroidEvent2.EXTNAME_ICAL_UID,
+            ExtendedProperties.NAME to EventsContract.EXTNAME_ICAL_UID,
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = VEvent()
@@ -60,7 +60,7 @@ class UidProcessorTest {
             Events.UID_2445 to "from-event"
         ))
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to AndroidEvent2.EXTNAME_ICAL_UID,
+            ExtendedProperties.NAME to EventsContract.EXTNAME_ICAL_UID,
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = VEvent()

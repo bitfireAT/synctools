@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Test
@@ -31,8 +31,8 @@ class ETagBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_ETAG to "ETag",
-            AndroidEvent2.COLUMN_SCHEDULE_TAG to "ScheduleTag"
+            EventsContract.COLUMN_ETAG to "ETag",
+            EventsContract.COLUMN_SCHEDULE_TAG to "ScheduleTag"
         ), result.entityValues)
     }
 
@@ -45,8 +45,8 @@ class ETagBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_ETAG to null,
-            AndroidEvent2.COLUMN_SCHEDULE_TAG to null
+            EventsContract.COLUMN_ETAG to null,
+            EventsContract.COLUMN_SCHEDULE_TAG to null
         ), result.entityValues)
     }
 

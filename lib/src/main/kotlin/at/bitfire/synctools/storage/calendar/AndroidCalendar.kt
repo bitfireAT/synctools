@@ -18,6 +18,7 @@ import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Instances
 import android.provider.CalendarContract.Reminders
+import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
@@ -26,8 +27,8 @@ import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
 
 /**
- * Represents a locally stored calendar, containing [AndroidEvent2] objects.  Communicates with
- * the Android Contacts Provider which uses an SQLite database to store the events.
+ * Represents a locally stored calendar containing events, each represented by an [Entity]. Communicates with
+ * the Android calendar provider which uses an SQLite database to store the events.
  *
  * Methods that use [ContentValues] operate directly on rows of the [Events] table.
  * Methods that use [Entity] operate on [EventsEntity] URIs to access the [Events] rows together with
@@ -71,7 +72,7 @@ class AndroidCalendar(
         get() = values.getAsString(Calendars._SYNC_ID)
 
 
-    // CRUD AndroidEvent
+    // CRUD events
 
     /**
      * Inserts an event to the calendar provider.
@@ -95,7 +96,7 @@ class AndroidCalendar(
         }
     }
 
-    internal fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
+    fun addEvent(entity: Entity, batch: CalendarBatchOperation) {
         // insert event row
         val eventRowIdx = batch.nextBackrefIdx()
         batch += CpoBuilder.newInsert(eventsUri).withValues(entity.entityValues)
@@ -104,7 +105,7 @@ class AndroidCalendar(
         for (row in entity.subValues)
             batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(row.values)
-                .withValueBackReference(AndroidEvent2.DATA_ROW_EVENT_ID, eventRowIdx)
+                .withValueBackReference(EventsContract.DATA_ROW_EVENT_ID, eventRowIdx)
     }
 
     /**
@@ -120,13 +121,13 @@ class AndroidCalendar(
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun findEvent(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): AndroidEvent2? {
+    fun findEvent(where: String?, whereArgs: Array<String>?, sortOrder: String? = null): Entity? {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.query(eventEntitiesUri, null, protectedWhere, protectedWhereArgs, sortOrder)?.use { cursor ->
                 val iter = EventsEntity.newEntityIterator(cursor, client)
                 if (iter.hasNext())
-                    return AndroidEvent2(this, iter.next())
+                    return iter.next()
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query events", e)
@@ -146,24 +147,7 @@ class AndroidCalendar(
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun findEvents(where: String?, whereArgs: Array<String>?) =
-        findEventEntities(where, whereArgs).map { entity ->
-            AndroidEvent2(this, entity)
-        }
-
-    /**
-     * Queries events from this calendar.
-     *
-     * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
-     *
-     * @param where     selection
-     * @param whereArgs arguments for selection
-     *
-     * @return events from this calendar which match the selection
-     *
-     * @throws LocalStorageException when the content provider returns an error
-     */
-    fun findEventEntities(where: String?, whereArgs: Array<String>?): List<Entity> {
+    fun findEvents(where: String?, whereArgs: Array<String>?): List<Entity> {
         val entities = LinkedList<Entity>()
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
@@ -203,12 +187,7 @@ class AndroidCalendar(
      *
      * @return event (or `null` if not found)
      */
-    fun getEvent(id: Long): AndroidEvent2? {
-        val values = getEventEntity(id) ?: return null
-        return AndroidEvent2(this, values)
-    }
-
-    fun getEventEntity(id: Long, where: String? = null, whereArgs: Array<String>? = null): Entity? {
+    fun getEvent(id: Long, where: String? = null, whereArgs: Array<String>? = null): Entity? {
         try {
             client.query(eventEntityUri(id), null, where, whereArgs, null)?.use { cursor ->
                 val iterator = EventsEntity.newEntityIterator(cursor, client)
@@ -353,7 +332,7 @@ class AndroidCalendar(
      * @return `null` if an event update was enqueued so that its ID won't change;
      * otherwise (if re-build is needed) the result index of the new event ID.
      */
-    internal fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation): Int? {
+    fun updateEvent(id: Long, entity: Entity, batch: CalendarBatchOperation): Int? {
         val workaround = getStatusUpdateWorkaround(id, entity.entityValues)
         if (workaround == StatusUpdateWorkaround.REBUILD_EVENT) {
             deleteEvent(id, batch)
@@ -382,7 +361,7 @@ class AndroidCalendar(
         for (row in entity.subValues)
             batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(ContentValues(row.values).apply {
-                    put(AndroidEvent2.DATA_ROW_EVENT_ID, id)      // always keep reference to main row ID
+                    put(EventsContract.DATA_ROW_EVENT_ID, id)      // always keep reference to main row ID
                 })
 
         return null
@@ -406,9 +385,9 @@ class AndroidCalendar(
                 "${ExtendedProperties.EVENT_ID}=? AND ${ExtendedProperties.NAME} IN (?,?,?,?)",
                 arrayOf(
                     eventId.toString(),
-                    AndroidEvent2.EXTNAME_CATEGORIES,
-                    AndroidEvent2.EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
-                    AndroidEvent2.EXTNAME_URL,
+                    EventsContract.EXTNAME_CATEGORIES,
+                    EventsContract.EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                    EventsContract.EXTNAME_URL,
                     UnknownProperty.CONTENT_ITEM_TYPE
                 )
             )
@@ -425,6 +404,7 @@ class AndroidCalendar(
      *
      * @return whether the event can't be updated/needs to be re-created; or `null` if existing values couldn't be determined
      */
+    @VisibleForTesting
     internal fun getStatusUpdateWorkaround(id: Long, newValues: ContentValues): StatusUpdateWorkaround {
         // No workaround needed if STATUS is a) not updated at all, or b) updated to a non-null value.
         if (!newValues.containsKey(Events.STATUS) || newValues.getAsInteger(Events.STATUS) != null)
@@ -477,7 +457,6 @@ class AndroidCalendar(
     internal fun deleteEvent(id: Long, batch: CalendarBatchOperation) {
         batch += CpoBuilder.newDelete(eventUri(id))
     }
-
 
 
     // event instances (these methods operate directly with event IDs and without the events

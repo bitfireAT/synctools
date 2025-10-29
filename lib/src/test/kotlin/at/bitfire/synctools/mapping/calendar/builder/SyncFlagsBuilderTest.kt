@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Test
@@ -30,7 +30,7 @@ class SyncFlagsBuilderTest {
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_FLAGS to 123
+            EventsContract.COLUMN_FLAGS to 123
         ), result.entityValues)
     }
 
