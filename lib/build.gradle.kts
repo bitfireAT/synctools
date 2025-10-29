@@ -117,6 +117,8 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.guava)
 
+    compileOnly(libs.spotbugs.annotations)
+
     // ical4j/ez-vcard
     api(libs.ical4j)
     implementation(libs.slf4j.jdk)       // ical4j uses slf4j, this module uses java.util.Logger
