@@ -19,21 +19,29 @@ object EventsContract {
 
     /**
      * Custom sync column to store the last known ETag of an event.
+     *
+     * Type: [String]
      */
     const val COLUMN_ETAG = CalendarContract.Events.SYNC_DATA1
 
     /**
      * Custom sync column to store sync flags of an event.
+     *
+     * Type: [Int]
      */
     const val COLUMN_FLAGS = CalendarContract.Events.SYNC_DATA2
 
     /**
      * Custom sync column to store the SEQUENCE of an event.
+     *
+     * Type: [Int]
      */
     const val COLUMN_SEQUENCE = CalendarContract.Events.SYNC_DATA3
 
     /**
      * Custom sync column to store the Schedule-Tag of an event.
+     *
+     * Type: [String]
      */
     const val COLUMN_SCHEDULE_TAG = CalendarContract.Events.SYNC_DATA4
 
