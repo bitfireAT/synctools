@@ -22,7 +22,7 @@ import org.junit.Test
 import java.io.StringWriter
 import java.time.Duration
 
-class ICalendarWriterTest {
+class ICalendarGeneratorTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin")!!
@@ -30,7 +30,7 @@ class ICalendarWriterTest {
     private val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
 
     private val userAgent = "TestUA/1.0"
-    private val writer = ICalendarWriter()
+    private val writer = ICalendarGenerator()
 
     @Test
     fun `Write event with exceptions and various timezones`() {
