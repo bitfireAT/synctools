@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
@@ -28,10 +29,12 @@ import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StartTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.StatusProcessor
 import at.bitfire.synctools.mapping.calendar.processor.TitleProcessor
+import at.bitfire.synctools.mapping.calendar.processor.UidGenerator
 import at.bitfire.synctools.mapping.calendar.processor.UidProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UnknownPropertiesProcessor
 import at.bitfire.synctools.mapping.calendar.processor.UrlProcessor
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
+import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
@@ -47,11 +50,13 @@ import java.util.LinkedList
  * Mapper from Android event main + data rows to [VEvent].
  *
  * @param accountName       account name (used to generate self-attendee)
- * @param prodIdGenerator   generator for `PRODID`
+ * @param uidGenerator      generates a new `UID`, if necessary
+ * @param prodIdGenerator   generates the `PRODID` to use
  */
 class AndroidEventProcessor(
     accountName: String,
-    private val prodIdGenerator: ProdIdGenerator
+    private val prodIdGenerator: ProdIdGenerator,
+    private val uidGenerator: UidGenerator
 ) {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
@@ -84,14 +89,23 @@ class AndroidEventProcessor(
     )
 
 
-    fun populate(eventAndExceptions: EventAndExceptions): AssociatedEvents {
-        // main event
+    /**
+     * Maps an Android event with its exceptions to VEVENTs.
+     *
+     * VEVENTs must have a valid UID, so this method (or better so say, the [UidProcessor] that it calls)
+     * generates an UID by calling [uidGenerator], if necessary.
+     */
+    fun toVEvents(eventAndExceptions: EventAndExceptions): AssociatedEvents {
+        // make sure that main event has a UID
+        provideUid(eventAndExceptions.main)
+
+        // map main event
         val main = populateEvent(
             entity = eventAndExceptions.main,
             main = eventAndExceptions.main
         )
 
-        // Add exceptions of recurring main event
+        // add exceptions of recurring main event
         val rRules = main.getProperties<RRule>(Property.RRULE)
         val rDates = main.getProperties<RDate>(Property.RDATE)
         val exceptions = LinkedList<VEvent>()
@@ -158,6 +172,37 @@ class AndroidEventProcessor(
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = vEvent)
         return vEvent
+    }
+
+    /**
+     * Makes sure that the event has a UID ([Events.UID_2445] in the main event row).
+     *
+     * If the event doesn't have a UID, a new one is generated using [uidGenerator] and
+     * put into [entity].
+     *
+     * @param entity    event to be checked (**will be modified** if it doesn't already have a UID)
+     */
+    private fun provideUid(entity: Entity) {
+        val mainValues = entity.entityValues
+        if (mainValues.getAsString(Events.UID_2445) != null) {
+            // UID already present, nothing to do
+            return
+        }
+
+        // have a look at extended properties (Google Calendar)
+        val googleCalendarUid = entity.subValues.firstOrNull {
+            it.uri == ExtendedProperties.CONTENT_URI &&
+            it.values.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_GOOGLE_CALENDAR_UID
+        }?.values?.getAsString(ExtendedProperties.VALUE)
+        if (googleCalendarUid != null) {
+            // copy to UID_2445 so that it will be processed by UidProcessor and return
+            mainValues.put(Events.UID_2445, googleCalendarUid)
+            return
+        }
+
+        // still no UID, generate one
+        val newUid = uidGenerator.createUid()
+        mainValues.put(Events.UID_2445, newUid)
     }
 
 

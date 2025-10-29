@@ -47,7 +47,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Generated event has DTSTAMP`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.DTSTART to 1594056600000L
@@ -61,7 +61,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Exception is processed`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring non-all-day event with exception",
@@ -94,7 +94,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Exception is ignored when there's only one invalid RRULE`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Factically non-recurring non-all-day event with exception",
@@ -124,7 +124,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Cancelled exception becomes EXDATE`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception",
@@ -155,7 +155,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Cancelled exception without RECURRENCE-ID is ignored`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception and no RECURRENCE-ID",
@@ -186,7 +186,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Empty packages for PRODID`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.DTSTART to 1594056600000L
@@ -199,7 +199,7 @@ class AndroidEventProcessorTest {
 
     @Test
     fun `Two packages for PRODID`() {
-        val result = processor.populate(
+        val result = processor.process(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.DTSTART to 1594056600000L,

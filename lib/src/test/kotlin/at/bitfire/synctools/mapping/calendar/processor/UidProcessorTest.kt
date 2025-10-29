@@ -46,7 +46,7 @@ class UidProcessorTest {
     fun `UID from extended row`() {
         val entity = Entity(ContentValues())
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to EventsContract.EXTNAME_ICAL_UID,
+            ExtendedProperties.NAME to EventsContract.EXTNAME_GOOGLE_CALENDAR_UID,
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = VEvent()
@@ -60,7 +60,7 @@ class UidProcessorTest {
             Events.UID_2445 to "from-event"
         ))
         entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
-            ExtendedProperties.NAME to EventsContract.EXTNAME_ICAL_UID,
+            ExtendedProperties.NAME to EventsContract.EXTNAME_GOOGLE_CALENDAR_UID,
             ExtendedProperties.VALUE to "from-extended"
         ))
         val result = VEvent()
