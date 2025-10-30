@@ -68,6 +68,25 @@ class AndroidRecurringCalendar(
     }
 
     /**
+     * Find first event (including exceptions) that matches the query from the content provider.
+     *
+     * Note that the exceptions may contain deleted events.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     */
+    fun findEventAndExceptions(where: String?, whereArgs: Array<String>?): EventAndExceptions? {
+        val main = calendar.findEvent(where, whereArgs) ?: return null
+
+        // attach exceptions
+        val mainEventId = main.entityValues.getAsLong(Events._ID)
+        return EventAndExceptions(
+            main = main,
+            exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+        )
+    }
+
+    /**
      * Retrieves an event and its exceptions from the content provider (associated by [Events.ORIGINAL_ID]).
      *
      * @param mainEventId   [Events._ID] of the main event
