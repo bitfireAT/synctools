@@ -6,10 +6,14 @@
 
 package at.bitfire.synctools.mapping.calendar
 
+import android.content.ContentValues
 import android.content.Entity
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
+import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
+import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
@@ -18,6 +22,7 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -30,14 +35,7 @@ class AndroidEventProcessorTest {
 
     private val processor = AndroidEventProcessor(
         accountName = "account@example.com",
-        prodIdGenerator = { packages ->
-            val builder = StringBuilder(javaClass.simpleName)
-            if (packages.isNotEmpty())
-                builder .append(" (")
-                        .append(packages.joinToString(", "))
-                        .append(")")
-            builder.toString()
-        }
+        prodIdGenerator = DefaultProdIdGenerator(javaClass.simpleName)
     )
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
@@ -45,23 +43,11 @@ class AndroidEventProcessorTest {
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
 
 
-    @Test
-    fun `Generated event has DTSTAMP`() {
-        val result = processor.process(
-            eventAndExceptions = EventAndExceptions(
-                main = Entity(contentValuesOf(
-                    Events.DTSTART to 1594056600000L
-                )),
-                exceptions = emptyList()
-            )
-        )
-        assertNotNull(result.main?.dateStamp?.date)
-    }
-
+    // mapToVEvents → MappingResult.associatedEvents
 
     @Test
-    fun `Exception is processed`() {
-        val result = processor.process(
+    fun `mapToVEvents processes exceptions`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring non-all-day event with exception",
@@ -81,7 +67,7 @@ class AndroidEventProcessorTest {
                     ))
                 )
             )
-        )
+        ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring non-all-day event with exception", main.summary.value)
         assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
@@ -93,8 +79,8 @@ class AndroidEventProcessorTest {
     }
 
     @Test
-    fun `Exception is ignored when there's only one invalid RRULE`() {
-        val result = processor.process(
+    fun `mapToVEvents ignores exception when there's only one invalid RRULE`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Factically non-recurring non-all-day event with exception",
@@ -114,7 +100,7 @@ class AndroidEventProcessorTest {
                     ))
                 )
             )
-        )
+        ).associatedEvents
         val main = result.main!!
         assertEquals("Factically non-recurring non-all-day event with exception", main.summary.value)
         assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
@@ -123,8 +109,8 @@ class AndroidEventProcessorTest {
     }
 
     @Test
-    fun `Cancelled exception becomes EXDATE`() {
-        val result = processor.process(
+    fun `mapToVEvents rewrites cancelled exception to EXDATE`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception",
@@ -144,7 +130,7 @@ class AndroidEventProcessorTest {
                     ))
                 )
             )
-        )
+        ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring all-day event with cancelled exception", main.summary.value)
         assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
@@ -154,8 +140,8 @@ class AndroidEventProcessorTest {
     }
 
     @Test
-    fun `Cancelled exception without RECURRENCE-ID is ignored`() {
-        val result = processor.process(
+    fun `mapToVEvents ignores cancelled exception without RECURRENCE-ID`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.TITLE to "Recurring all-day event with cancelled exception and no RECURRENCE-ID",
@@ -174,7 +160,7 @@ class AndroidEventProcessorTest {
                     ))
                 )
             )
-        )
+        ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring all-day event with cancelled exception and no RECURRENCE-ID", main.summary.value)
         assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
@@ -185,21 +171,35 @@ class AndroidEventProcessorTest {
 
 
     @Test
-    fun `Empty packages for PRODID`() {
-        val result = processor.process(
+    fun `mapToVEvents generates DTSTAMP`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.DTSTART to 1594056600000L
                 )),
                 exceptions = emptyList()
             )
-        )
+        ).associatedEvents
+        assertNotNull(result.main?.dateStamp?.date)
+    }
+
+
+    @Test
+    fun `mapToVEvents generates PRODID (no packages)`() {
+        val result = processor.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )),
+                exceptions = emptyList()
+            )
+        ).associatedEvents
         assertEquals(javaClass.simpleName, result.prodId)
     }
 
     @Test
-    fun `Two packages for PRODID`() {
-        val result = processor.process(
+    fun `mapToVEvents generates PRODID (two packages)`() {
+        val result = processor.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
                 main = Entity(contentValuesOf(
                     Events.DTSTART to 1594056600000L,
@@ -207,8 +207,153 @@ class AndroidEventProcessorTest {
                 )),
                 exceptions = emptyList()
             )
-        )
+        ).associatedEvents
         assertEquals("${javaClass.simpleName} (pkg1, pkg2)", result.prodId)
+    }
+
+
+    // mapToVEvents → MappingResult.uid
+
+    @Test
+    fun `mapToVEvents generates UID when necessary`() {
+        val result = processor.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertTrue(result.generatedUid)
+        assertNotNull(result.uid)
+        assertEquals(result.uid, result.associatedEvents.main?.uid?.value)
+    }
+
+    @Test
+    fun `mapToVEvents takes UID from main event row`() {
+        val result = processor.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L,
+                    Events.UID_2445 to "sample-uid"
+                )),
+                exceptions = emptyList()
+            )
+        )
+        assertFalse(result.generatedUid)
+        assertEquals("sample-uid", result.uid)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+    }
+
+    @Test
+    fun `mapToVEvents takes UID from Google Calendar data row`() {
+        val result = processor.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L
+                )).apply {
+                    addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
+                        ExtendedProperties.NAME to EventsContract.EXTNAME_GOOGLE_CALENDAR_UID,
+                        ExtendedProperties.VALUE to "sample-uid"
+                    ))
+                },
+                exceptions = emptyList()
+            )
+        )
+        assertFalse(result.generatedUid)
+        assertEquals("sample-uid", result.uid)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+    }
+
+    @Test
+    fun `mapToVEvents prefers UID from main event row over Google Calendar data row`() {
+        val result = processor.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.DTSTART to 1594056600000L,
+                    Events.UID_2445 to "sample-uid"
+                )).apply {
+                    addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(
+                        ExtendedProperties.NAME to EventsContract.EXTNAME_GOOGLE_CALENDAR_UID,
+                        ExtendedProperties.VALUE to "google-calendar"
+                    ))
+                },
+                exceptions = emptyList()
+            )
+        )
+        assertFalse(result.generatedUid)
+        assertEquals("sample-uid", result.uid)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+    }
+
+
+    // increaseSequence
+
+    fun `increaseSequence on newly created event`() {
+        // In case of newly created events, it doesn't matter whether they're group-scheduled or not.
+        val main = Entity(ContentValues(
+            /* SEQUENCE colum has never been set yet and thus is null */
+        ))
+        val result = processor.increaseSequence(main)
+
+        // SEQUENCE column remains null for mapping ...
+        assertNull(main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but SEQUENCE shall be set to 0 after upload
+        assertEquals(0, result)
+    }
+
+    fun `increaseSequence on group-scheduled event (as ORGANIZER)`() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1,
+            Events.IS_ORGANIZER to 1
+        )).apply {
+            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
+                Attendees.ATTENDEE_EMAIL to "test@example.com"
+            ))
+        }
+        val result = processor.increaseSequence(main)
+        assertEquals(2, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        assertEquals(2, result)
+    }
+
+    fun `increaseSequence on group-scheduled event (not as ORGANIZER)`() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1,
+            Events.IS_ORGANIZER to 0
+        )).apply {
+            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
+                Attendees.ATTENDEE_EMAIL to "test@example.com"
+            ))
+        }
+        val result = processor.increaseSequence(main)
+        // SEQUENCE column remains 1 for mapping, ...
+        assertEquals(1, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but don't increase after upload.
+        assertNull(result)
+    }
+
+    fun `increaseSequence on non-group-scheduled event (without SEQUENCE)`() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 0
+        ))
+        val result = processor.increaseSequence(main)
+
+        // SEQUENCE column remains 0 for mapping (will be mapped to no SEQUENCE property), ...
+        assertNull(main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but don't increase after upload.
+        assertNull(result)
+    }
+
+    fun `increaseSequence on non-group-scheduled event (with SEQUENCE)`() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1
+        ))
+        val result = processor.increaseSequence(main)
+
+        // SEQUENCE column remains 1 for mapping, ...
+        assertEquals(1, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... and increase after upload.
+        assertEquals(2, result)
     }
 
 }

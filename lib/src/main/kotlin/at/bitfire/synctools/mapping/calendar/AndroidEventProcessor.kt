@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
+import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.processor.AccessLevelProcessor
 import at.bitfire.synctools.mapping.calendar.processor.AndroidEventFieldProcessor
@@ -23,7 +24,6 @@ import at.bitfire.synctools.mapping.calendar.processor.EndTimeProcessor
 import at.bitfire.synctools.mapping.calendar.processor.LocationProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OrganizerProcessor
 import at.bitfire.synctools.mapping.calendar.processor.OriginalInstanceTimeProcessor
-import at.bitfire.synctools.mapping.calendar.processor.ProdIdGenerator
 import at.bitfire.synctools.mapping.calendar.processor.RecurrenceFieldsProcessor
 import at.bitfire.synctools.mapping.calendar.processor.RemindersProcessor
 import at.bitfire.synctools.mapping.calendar.processor.SequenceProcessor
@@ -196,36 +196,43 @@ class AndroidEventProcessor(
      *
      * @return updated sequence (or *null* if sequence was not increased/modified)
      */
-    private fun increaseSequence(main: Entity): Int? {
+    @VisibleForTesting
+    internal fun increaseSequence(main: Entity): Int? {
         val mainValues = main.entityValues
-
-        val weAreOrganizer: Boolean by lazy {
-            mainValues.getAsInteger(Events.IS_ORGANIZER) == 1
-        }
-        val groupScheduled: Boolean by lazy {
-            main.subValues.any { it.uri == CalendarContract.Attendees.CONTENT_URI }
-        }
-
         val currentSeq = mainValues.getAsInteger(EventsContract.COLUMN_SEQUENCE)
-        return when {
-            currentSeq == null -> {
-                /* First upload, request to set to 0 in calendar provider after upload.
-                We can let it empty in the Entity because then no SEQUENCE property will be generated,
-                which is equal to SEQUENCE:0. */
-                0
-            }
-            // currentSequence != null for the following branches
-            groupScheduled && weAreOrganizer -> {
+
+        if (currentSeq == null) {
+            /* First upload, request to set to 0 in calendar provider after upload.
+            We can let it empty in the Entity because then no SEQUENCE property will be generated,
+            which is equal to SEQUENCE:0. */
+            return 0
+        }
+
+        val groupScheduled = main.subValues.any { it.uri == CalendarContract.Attendees.CONTENT_URI }
+        if (groupScheduled) {
+            val weAreOrganizer = mainValues.getAsInteger(Events.IS_ORGANIZER) == 1
+
+            return if (weAreOrganizer) {
                 /* Upload of a group-scheduled event and we are the organizer, so we increase the SEQUENCE.
                 We also have to store it into the Entity so that it the new value will be mapped. */
                 (currentSeq + 1).also { newSeq ->
                     mainValues.put(EventsContract.COLUMN_SEQUENCE, newSeq)
                 }
-            }
-            else -> {
-                /* Standard upload (either not group-scheduled or we are not the organizer). We don't
-                increase the SEQUENCE and so we don't have to modify the Entity, too. */
+            } else
+                /* Upload of a group-scheduled event and we are not the organizer, so we don't increase the SEQUENCE. */
                 null
+
+        } else /* not group-scheduled */  {
+            return if (currentSeq == 0) {
+                /* The event was uploaded once and has SEQUENCE of 0 (which is mapped to an empty SEQUENCE property).
+                We don't need to increase the SEQUENCE because the event is not group-scheduled. */
+                null
+            } else {
+                /* Upload of a non-group-scheduled event where a SEQUENCE > 0 is present. Increase by one after upload.
+                We also have to store it into the Entity so that it the new value will be mapped. */
+                (currentSeq + 1).also { newSeq ->
+                    mainValues.put(EventsContract.COLUMN_SEQUENCE, newSeq)
+                }
             }
         }
     }
@@ -239,7 +246,9 @@ class AndroidEventProcessor(
      * @return generated data object
      */
     private fun populateEvent(entity: Entity, main: Entity): VEvent {
-        val vEvent = VEvent()
+        // initialization adds DTSTAMP
+        val vEvent = VEvent(/* initialise = */ true)
+
         for (processor in fieldProcessors)
             processor.process(from = entity, main = main, to = vEvent)
         return vEvent
