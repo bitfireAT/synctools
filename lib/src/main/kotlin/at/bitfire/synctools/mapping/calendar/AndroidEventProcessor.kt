@@ -124,7 +124,7 @@ class AndroidEventProcessor(
         val updatedSequence = increaseSequence(eventAndExceptions.main)
 
         // map main event
-        val main = populateEvent(
+        val main = mapEvent(
             entity = eventAndExceptions.main,
             main = eventAndExceptions.main
         )
@@ -136,7 +136,7 @@ class AndroidEventProcessor(
         if (rRules.isNotEmpty() || rDates.isNotEmpty()) {
             for (exception in eventAndExceptions.exceptions) {
                 // convert exception to Event
-                val exceptionEvent = populateEvent(
+                val exceptionEvent = mapEvent(
                     entity = exception,
                     main = eventAndExceptions.main
                 )
@@ -252,7 +252,7 @@ class AndroidEventProcessor(
      *
      * @return generated data object
      */
-    private fun populateEvent(entity: Entity, main: Entity): VEvent {
+    private fun mapEvent(entity: Entity, main: Entity): VEvent {
         // initialization adds DTSTAMP
         val vEvent = VEvent(/* initialise = */ true)
 
@@ -264,7 +264,7 @@ class AndroidEventProcessor(
     /**
      * Makes sure that the event has a UID ([Events.UID_2445] in the main event row).
      *
-     * If the event doesn't have a UID, a new one is generated using [uidGenerator] and
+     * If the event doesn't have a UID, a new one is generated using [generateUid] and
      * put into [main].
      *
      * @param main  event to be checked (**will be modified** if it doesn't already have a UID)

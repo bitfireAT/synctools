@@ -70,6 +70,8 @@ object EventsContract {
     /**
      * Google Calendar uses an extended property called `iCalUid` for storing the event's UID, instead of the
      * standard [CalendarContract.EventsColumns.UID_2445].
+     *
+     * See also: https://github.com/bitfireAT/ical4android/issues/125
      */
     const val EXTNAME_GOOGLE_CALENDAR_UID = "iCalUid"
 

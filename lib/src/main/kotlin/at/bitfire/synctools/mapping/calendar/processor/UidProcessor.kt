@@ -11,7 +11,7 @@ import android.provider.CalendarContract.Events
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Uid
 
-class UidProcessor(): AndroidEventFieldProcessor {
+class UidProcessor: AndroidEventFieldProcessor {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         // Should always be available because AndroidEventProcessor ensures there's a UID to be RFC 5545-compliant.
