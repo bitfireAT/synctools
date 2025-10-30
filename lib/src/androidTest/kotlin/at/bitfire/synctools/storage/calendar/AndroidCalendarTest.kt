@@ -114,6 +114,26 @@ class AndroidCalendarTest {
     }
 
     @Test
+    fun testFindEvent() {
+        // no result
+        assertNull(calendar.findEvent("${Events.DTSTART}=?", arrayOf(now.toString())))
+
+        // insert event
+        val entity = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        ))
+        calendar.addEvent(entity)
+
+        // not it finds a result
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf(now.toString()))
+        assertEquals(1, result.size)
+        assertEntitiesEqual(entity, result.first(), onlyFieldsInExpected = true)
+    }
+
+    @Test
     fun testFindEvents() {
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
