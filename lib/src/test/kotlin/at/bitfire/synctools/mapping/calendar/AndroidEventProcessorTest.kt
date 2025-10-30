@@ -292,7 +292,7 @@ class AndroidEventProcessorTest {
     fun `increaseSequence on newly created event`() {
         // In case of newly created events, it doesn't matter whether they're group-scheduled or not.
         val main = Entity(ContentValues(
-            /* SEQUENCE colum has never been set yet and thus is null */
+            /* SEQUENCE column has never been set yet and thus is null */
         ))
         val result = processor.increaseSequence(main)
 

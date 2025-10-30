@@ -106,7 +106,7 @@ class AndroidEventProcessor(
     /**
      * Maps an Android event with its exceptions to VEVENTs.
      *
-     * VEVENTs must have a valid `UID`, so this method (or better so say, the [UidProcessor] that it calls)
+     * VEVENTs must have a valid `UID`, so this method (or better to say, the [UidProcessor] that it calls)
      * generates an UID, if necessary. If an `UID` was generated, it is noted in the result.
      *
      * This method also increases the `SEQUENCE`, if necessary, so that the mapped `SEQUENCE`
@@ -221,7 +221,7 @@ class AndroidEventProcessor(
 
             return if (weAreOrganizer) {
                 /* Upload of a group-scheduled event and we are the organizer, so we increase the SEQUENCE.
-                We also have to store it into the Entity so that it the new value will be mapped. */
+                We also have to store it into the Entity so that the new value will be mapped. */
                 (currentSeq + 1).also { newSeq ->
                     mainValues.put(EventsContract.COLUMN_SEQUENCE, newSeq)
                 }
@@ -236,7 +236,7 @@ class AndroidEventProcessor(
                 null
             } else {
                 /* Upload of a non-group-scheduled event where a SEQUENCE > 0 is present. Increase by one after upload.
-                We also have to store it into the Entity so that it the new value will be mapped. */
+                We also have to store it into the Entity so that the new value will be mapped. */
                 (currentSeq + 1).also { newSeq ->
                     mainValues.put(EventsContract.COLUMN_SEQUENCE, newSeq)
                 }
