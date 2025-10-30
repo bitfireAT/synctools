@@ -50,7 +50,7 @@ import java.util.UUID
 /**
  * Mapper from Android event main + data rows to [VEvent].
  *
- * @param accountName       account name (used to generate self-attendee)
+ * @param accountName       account name (used to generate reminder email address)
  * @param prodIdGenerator   generates the `PRODID` to use
  */
 class AndroidEventProcessor(
@@ -210,7 +210,14 @@ class AndroidEventProcessor(
 
         val groupScheduled = main.subValues.any { it.uri == CalendarContract.Attendees.CONTENT_URI }
         if (groupScheduled) {
-            val weAreOrganizer = mainValues.getAsInteger(Events.IS_ORGANIZER) == 1
+            /* Note: Events.IS_ORGANIZER is defined in CalendarDatabaseHelper.java as
+            COALESCE(Events.IS_ORGANIZER, Events.ORGANIZER = Calendars.OWNER_ACCOUNT), so it's non-null when it's
+            - either explicitly set for an event,
+            - or the event's ORGANIZER is the same as the calendar's OWNER_ACCOUNT. */
+            val weAreOrganizer = when (mainValues.getAsInteger(Events.IS_ORGANIZER)) {
+                null, 0 -> false
+                /* explicitly set to non-zero, or 1 by provider calculation */ else -> true
+            }
 
             return if (weAreOrganizer) {
                 /* Upload of a group-scheduled event and we are the organizer, so we increase the SEQUENCE.
