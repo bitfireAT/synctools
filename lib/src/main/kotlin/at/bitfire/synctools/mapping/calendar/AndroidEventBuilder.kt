@@ -79,7 +79,7 @@ class AndroidEventBuilder(
         AvailabilityBuilder(),
         RecurrenceFieldsBuilder(),
         OriginalInstanceTimeBuilder(),
-        OrganizerBuilder(calendar.ownerAccount),
+        OrganizerBuilder(calendar.ownerAccount ?: calendar.account.name),
         UidBuilder(),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),

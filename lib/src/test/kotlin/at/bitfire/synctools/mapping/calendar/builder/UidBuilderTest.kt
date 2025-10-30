@@ -39,9 +39,10 @@ class UidBuilderTest {
     @Test
     fun `UID is set`() {
         val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(Uid("some-uid")))
         builder.build(
-            from = VEvent(propertyListOf(Uid("some-uid"))),
-            main = VEvent(),
+            from = event,
+            main = event,
             to = result
         )
         assertContentValuesEqual(contentValuesOf(

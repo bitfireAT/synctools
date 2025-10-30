@@ -386,7 +386,7 @@ class AndroidCalendar(
                 arrayOf(
                     eventId.toString(),
                     EventsContract.EXTNAME_CATEGORIES,
-                    EventsContract.EXTNAME_ICAL_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
+                    EventsContract.EXTNAME_GOOGLE_CALENDAR_UID,       // UID is stored in UID_2445, don't leave iCalUid rows in events that we have written
                     EventsContract.EXTNAME_URL,
                     UnknownProperty.CONTENT_ITEM_TYPE
                 )
