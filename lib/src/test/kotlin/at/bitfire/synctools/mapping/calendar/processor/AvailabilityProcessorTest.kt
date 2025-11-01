@@ -29,6 +29,7 @@ class AvailabilityProcessorTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
+        // OPAQUE is default value
         assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
@@ -39,7 +40,8 @@ class AvailabilityProcessorTest {
             Events.AVAILABILITY to Events.AVAILABILITY_BUSY
         ))
         processor.process(entity, entity, result)
-        assertEquals(Transp.OPAQUE, result.getProperty<Transp>(Property.TRANSP))
+        // OPAQUE is default value
+        assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
     @Test
@@ -59,7 +61,8 @@ class AvailabilityProcessorTest {
             Events.AVAILABILITY to Events.AVAILABILITY_TENTATIVE
         ))
         processor.process(entity, entity, result)
-        assertEquals(Transp.OPAQUE, result.getProperty<Transp>(Property.TRANSP))
+        // OPAQUE is default value
+        assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
 }

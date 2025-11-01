@@ -9,12 +9,10 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.icalendar.propertyListOf
-import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Transp
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,7 +32,7 @@ class AvailabilityBuilderTest {
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.AVAILABILITY))
-        assertNull(result.entityValues.get(Events.AVAILABILITY))
+        assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.get(Events.AVAILABILITY))
     }
 
     @Test
@@ -45,9 +43,7 @@ class AvailabilityBuilderTest {
             main = VEvent(),
             to = result
         )
-        assertContentValuesEqual(contentValuesOf(
-            Events.AVAILABILITY to Events.AVAILABILITY_BUSY
-        ), result.entityValues)
+        assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.get(Events.AVAILABILITY))
     }
 
     @Test
@@ -58,9 +54,7 @@ class AvailabilityBuilderTest {
             main = VEvent(),
             to = result
         )
-        assertContentValuesEqual(contentValuesOf(
-            Events.AVAILABILITY to Events.AVAILABILITY_FREE
-        ), result.entityValues)
+        assertEquals(Events.AVAILABILITY_FREE, result.entityValues.get(Events.AVAILABILITY))
     }
 
 }
