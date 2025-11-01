@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SequenceUpdaterTest {
 
-    val sequenceUpdater = SequenceUpdater()
+    private val sequenceUpdater = SequenceUpdater()
 
     @Test
     fun testIncreaseSequence_NewEvent() {

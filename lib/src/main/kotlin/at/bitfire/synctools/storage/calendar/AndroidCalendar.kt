@@ -305,7 +305,6 @@ class AndroidCalendar(
      *
      * @param id        event ID
      * @param values    new values
-     * @param batch
      * @param batch     batch operation in which the update is enqueued
      */
     fun updateEventRow(id: Long, values: ContentValues, batch: CalendarBatchOperation) {
@@ -457,7 +456,7 @@ class AndroidCalendar(
      */
     fun updateEventRows(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
         try {
-            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(null, null)
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
             client.update(eventsUri, values, protectedWhere, protectedWhereArgs)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
