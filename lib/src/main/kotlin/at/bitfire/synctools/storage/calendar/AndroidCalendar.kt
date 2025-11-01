@@ -291,6 +291,22 @@ class AndroidCalendar(
     }
 
     /**
+     * Updates a specific event's main row with the given values. Doesn't influence data rows.
+     *
+     * This method always uses the update method of the content provider and does not
+     * re-create rows, as it is required for some operations (see [updateEvent] and [getStatusUpdateWorkaround]
+     * for more information).
+     *
+     * @param id        event ID
+     * @param values    new values
+     * @param batch
+     * @param batch     batch operation in which the update is enqueued
+     */
+    fun updateEventRow(id: Long, values: ContentValues, batch: CalendarBatchOperation) {
+        batch += CpoBuilder.newUpdate(eventUri(id)).withValues(values)
+    }
+
+    /**
      * Updates an event and applies the eventStatus=null workaround, if necessary.
      *
      * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
@@ -326,8 +342,8 @@ class AndroidCalendar(
      * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
      *
      * @param id        ID of the event to update
-     * @param batch     batch operation in which the update is enqueued
      * @param entity    new values of the event
+     * @param batch     batch operation in which the update is enqueued
      *
      * @return `null` if an event update was enqueued so that its ID won't change;
      * otherwise (if re-build is needed) the result index of the new event ID.

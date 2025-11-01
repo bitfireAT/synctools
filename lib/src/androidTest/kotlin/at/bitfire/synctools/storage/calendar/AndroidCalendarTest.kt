@@ -322,6 +322,22 @@ class AndroidCalendarTest {
     }
 
     @Test
+    fun testUpdateEventRowBatch() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        val batch = CalendarBatchOperation(calendar.client)
+        calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"), batch)
+        batch.commit()
+
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
+    }
+
+    @Test
     fun testUpdateEvent_NoRebuild() {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,

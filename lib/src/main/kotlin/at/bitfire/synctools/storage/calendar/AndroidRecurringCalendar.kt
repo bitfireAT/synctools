@@ -15,6 +15,8 @@ import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.containsNotNull
+import java.util.logging.Level
+import java.util.logging.Logger
 
 /**
  * Adds support for [EventAndExceptions] data objects to [AndroidCalendar].
@@ -35,6 +37,9 @@ import at.bitfire.synctools.storage.containsNotNull
 class AndroidRecurringCalendar(
     val calendar: AndroidCalendar
 ) {
+
+    val logger: Logger
+        get() = Logger.getLogger(javaClass.name)
 
     /**
      * Inserts an event and all its exceptions. Input data is first cleaned up using [cleanUp].
@@ -211,6 +216,7 @@ class AndroidRecurringCalendar(
         if (syncId == null || !recurring) {
             // 1. main event doesn't have sync id → exceptions wouldn't be associated to main event by calendar provider, so ignore them
             // 2. main event not recurring → exceptions are useless, ignore them
+            logger.log(Level.WARNING, "Droping exceptions of event because event is not recurring or _SYNC_ID is not set", main)
             return EventAndExceptions(main = main, exceptions = emptyList())
         }
 
