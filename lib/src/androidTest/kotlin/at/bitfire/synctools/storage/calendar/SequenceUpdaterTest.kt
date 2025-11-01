@@ -11,6 +11,7 @@ import android.content.ContentProviderClient
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract
+import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
@@ -19,6 +20,8 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -56,6 +59,79 @@ class SequenceUpdaterTest {
         client.closeCompat()
     }
 
+    // increaseSequence
+
+    @Test
+    fun testIncreaseSequence_NewEvent() {
+        // In case of newly created events, it doesn't matter whether they're group-scheduled or not.
+        val main = Entity(ContentValues(
+            /* SEQUENCE column has never been set yet and thus is null */
+        ))
+        val result = sequenceUpdater.increaseSequence(main)
+
+        // SEQUENCE column remains null for mapping ...
+        assertNull(main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but SEQUENCE shall be set to 0 after upload
+        assertEquals(0, result)
+    }
+
+    @Test
+    fun testIncreaseSequence_GroupScheduledEvent_AsOrganizer() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1,
+            Events.IS_ORGANIZER to 1
+        )).apply {
+            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
+                Attendees.ATTENDEE_EMAIL to "test@example.com"
+            ))
+        }
+        val result = sequenceUpdater.increaseSequence(main)
+        assertEquals(2, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        assertEquals(2, result)
+    }
+
+    @Test
+    fun testIncreaseSequence_GroupScheduledEvent_NotAsOrganizer() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1,
+            Events.IS_ORGANIZER to 0
+        )).apply {
+            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
+                Attendees.ATTENDEE_EMAIL to "test@example.com"
+            ))
+        }
+        val result = sequenceUpdater.increaseSequence(main)
+        // SEQUENCE column remains 1 for mapping, ...
+        assertEquals(1, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but don't increase after upload.
+        assertNull(result)
+    }
+
+    @Test
+    fun testIncreaseSequence_NonGroupScheduledEvent_WithoutSequence() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 0
+        ))
+        val result = sequenceUpdater.increaseSequence(main)
+
+        // SEQUENCE column remains 0 for mapping (will be mapped to no SEQUENCE property), ...
+        assertEquals(0, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... but don't increase after upload.
+        assertNull(result)
+    }
+
+    @Test
+    fun testIncreaseSequence_NonGroupScheduledEvent_WithSequence() {
+        val main = Entity(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1
+        ))
+        val result = sequenceUpdater.increaseSequence(main)
+
+        // SEQUENCE column is increased to 2 for mapping, ...
+        assertEquals(2, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
+        // ... and increased after upload.
+        assertEquals(2, result)
+    }
 
     @Test
     fun testProcessDeletedExceptions() {
