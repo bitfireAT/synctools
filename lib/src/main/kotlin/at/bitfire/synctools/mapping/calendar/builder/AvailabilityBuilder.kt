@@ -15,15 +15,12 @@ class AvailabilityBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
         val availability = when (from.transparency) {
-            Transp.OPAQUE ->
-                Events.AVAILABILITY_BUSY
-
             Transp.TRANSPARENT ->
                 Events.AVAILABILITY_FREE
 
-            // Default value in iCalendar is OPAQUE, but we set it to null to indicate that it was not set in the iCalendar.
-            else ->
-                null
+            // Default value in iCalendar is OPAQUE
+            else /* including Transp.OPAQUE */ ->
+                Events.AVAILABILITY_BUSY
         }
         to.entityValues.put(
             Events.AVAILABILITY,
