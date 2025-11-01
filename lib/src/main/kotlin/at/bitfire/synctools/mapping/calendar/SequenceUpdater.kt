@@ -8,7 +8,6 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.Entity
 import android.provider.CalendarContract
-import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.storage.calendar.EventsContract
 
 /**
@@ -24,8 +23,7 @@ class SequenceUpdater {
      *
      * @return updated sequence (or *null* if sequence was not increased/modified)
      */
-    @VisibleForTesting
-    internal fun increaseSequence(main: Entity): Int? {
+    fun increaseSequence(main: Entity): Int? {
         val mainValues = main.entityValues
         val currentSeq = mainValues.getAsInteger(EventsContract.COLUMN_SEQUENCE)
 

@@ -483,8 +483,8 @@ class AndroidCalendar(
     }
 
 
-    // event instances (these methods operate directly with event IDs and without the events
-    // themselves and thus belong to the calendar class)
+    // Event instances (these methods operate directly with event IDs without additional logic
+    // and thus belong to the calendar class, not to AndroidRecurringCalendar)
 
     /**
      * Finds the amount of instances this event has. Exceptions generate their own instances and are
@@ -554,7 +554,7 @@ class AndroidCalendar(
      * Marks dirty events
      *
      * - which are not already marked as deleted AND
-     * - which don't have valid instances
+     * - which don't have any instances
      *
      * as deleted.
      */
