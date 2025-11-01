@@ -19,12 +19,14 @@ import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Instances
 import android.provider.CalendarContract.Reminders
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import java.util.LinkedList
+import java.util.logging.Logger
 
 /**
  * Represents a locally stored calendar containing events, each represented by an [Entity]. Communicates with
@@ -43,6 +45,9 @@ class AndroidCalendar(
     internal val provider: AndroidCalendarProvider,
     private val values: ContentValues
 ) {
+
+    val logger: Logger
+        get() = Logger.getLogger(javaClass.name)
 
     /** see [Calendars._ID] */
     val id: Long = values.getAsLong(Calendars._ID)
@@ -170,7 +175,8 @@ class AndroidCalendar(
      */
     fun findEventRow(projection: Array<String>?, where: String?, whereArgs: Array<String>?): ContentValues? {
         try {
-            client.query(eventsUri, projection, where, whereArgs, null)?.use { cursor ->
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventsUri, projection, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
                 if (cursor.moveToNext())
                     return cursor.toContentValues()
             }
@@ -291,6 +297,22 @@ class AndroidCalendar(
     }
 
     /**
+     * Updates a specific event's main row with the given values. Doesn't influence data rows.
+     *
+     * This method always uses the update method of the content provider and does not
+     * re-create rows, as it is required for some operations (see [updateEvent] and [getStatusUpdateWorkaround]
+     * for more information).
+     *
+     * @param id        event ID
+     * @param values    new values
+     * @param batch     batch operation in which the update is enqueued
+     */
+    fun updateEventRow(id: Long, values: ContentValues, batch: CalendarBatchOperation) {
+        batch += CpoBuilder.newUpdate(eventUri(id))
+            .withValues(values)
+    }
+
+    /**
      * Updates an event and applies the eventStatus=null workaround, if necessary.
      *
      * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
@@ -326,8 +348,8 @@ class AndroidCalendar(
      * While the event row can be updated, sub-values (data rows) are always deleted and created from scratch.
      *
      * @param id        ID of the event to update
-     * @param batch     batch operation in which the update is enqueued
      * @param entity    new values of the event
+     * @param batch     batch operation in which the update is enqueued
      *
      * @return `null` if an event update was enqueued so that its ID won't change;
      * otherwise (if re-build is needed) the result index of the new event ID.
@@ -434,7 +456,8 @@ class AndroidCalendar(
      */
     fun updateEventRows(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
         try {
-            client.update(eventsUri, values, where, whereArgs)
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.update(eventsUri, values, protectedWhere, protectedWhereArgs)
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
@@ -459,8 +482,8 @@ class AndroidCalendar(
     }
 
 
-    // event instances (these methods operate directly with event IDs and without the events
-    // themselves and thus belong to the calendar class)
+    // Event instances (these methods operate directly with event IDs without additional logic
+    // and thus belong to the calendar class, not to AndroidRecurringCalendar)
 
     /**
      * Finds the amount of instances this event has. Exceptions generate their own instances and are
@@ -524,6 +547,38 @@ class AndroidCalendar(
         }
 
         return numDirectInstances + numExInstances
+    }
+
+    /**
+     * Marks dirty events
+     *
+     * - which are not already marked as deleted AND
+     * - which don't have any instances
+     *
+     * as deleted.
+     */
+    fun deleteDirtyEventsWithoutInstances() {
+        val batch = CalendarBatchOperation(client)
+
+        // Iterate dirty main events without exceptions
+        iterateEventRows(
+            arrayOf(Events._ID),
+            "${Events.DIRTY} AND NOT ${Events.DELETED} AND ${Events.ORIGINAL_ID} IS NULL",
+            null
+        ) { values ->
+            val eventId = values.getAsLong(Events._ID)
+
+            // get number of instances
+            val numEventInstances = numInstances(eventId)
+
+            // delete event if there are no instances
+            if (numEventInstances == 0) {
+                logger.warning("Marking event #$eventId without instances as deleted")
+                updateEventRow(eventId, contentValuesOf(Events.DELETED to 1), batch)
+            }
+        }
+
+        batch.commit()
     }
 
 

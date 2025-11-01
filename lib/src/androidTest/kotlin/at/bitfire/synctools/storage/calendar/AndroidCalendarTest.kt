@@ -44,7 +44,7 @@ class AndroidCalendarTest {
     lateinit var calendar: AndroidCalendar
 
     @Before
-    fun prepare() {
+    fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
 
@@ -322,6 +322,22 @@ class AndroidCalendarTest {
     }
 
     @Test
+    fun testUpdateEventRowBatch() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        val batch = CalendarBatchOperation(calendar.client)
+        calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"), batch)
+        batch.commit()
+
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
+    }
+
+    @Test
     fun testUpdateEvent_NoRebuild() {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -557,6 +573,96 @@ class AndroidCalendarTest {
         )))
         assertEquals(5 - 1, calendar.numDirectInstances(id))
         assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
+    }
+
+    @Test
+    fun testDeleteDirtyEventsWithoutInstances_NoInstances() {
+        // create recurring event with only deleted/cancelled instances
+        val now = System.currentTimeMillis()
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events._SYNC_ID to "event-without-instances",
+                Events.CALENDAR_ID to calendar.id,
+                Events.ALL_DAY to 0,
+                Events.DTSTART to now,
+                Events.DURATION to "PT1H",
+                Events.RRULE to "FREQ=DAILY;COUNT=3",
+                Events.DIRTY to 1
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(     // first instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now,
+                    Events.DTEND to now + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                )),
+                Entity(contentValuesOf(     // second instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now + 86400000,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now + 86400000,
+                    Events.DTEND to now + 86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                )),
+                Entity(contentValuesOf(     // third and last instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now + 2*86400000,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now + 2*86400000,
+                    Events.DTEND to now + 2*86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                ))
+            )
+        ))
+        assertEquals(0, calendar.numInstances(id))
+
+        // this method should mark the event as deleted
+        calendar.deleteDirtyEventsWithoutInstances()
+
+        // verify that event is now marked as deleted
+        val result = calendar.getEventRow(id)!!
+        assertEquals(1, result.getAsInteger(Events.DELETED))
+    }
+
+    @Test
+    fun testDeleteDirtyEventsWithoutInstances_OneInstanceRemaining() {
+        // create recurring event with only deleted/cancelled instances
+        val syncId = "event-with-instances"
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events._SYNC_ID to syncId,
+                Events.DTSTART to 1642640523000,
+                Events.DURATION to "PT1H",
+                Events.TITLE to "Event with 2 instances, one of them cancelled",
+                Events.RRULE to "FREQ=DAILY;COUNT=2",
+                Events.DIRTY to 1
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(     // first instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to syncId,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000,
+                    Events.DTSTART to 1642640523000 + 86400000,
+                    Events.DTEND to 1642640523000 + 86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                ))
+                // however second instance is NOT cancelled
+            )
+        ))
+        assertEquals(1, calendar.numInstances(id))
+
+        // this method should mark the event as deleted
+        calendar.deleteDirtyEventsWithoutInstances()
+
+        // verify that event is still marked as dirty, but not as deleted
+        val result = calendar.getEventRow(id)!!
+        assertEquals(1, result.getAsInteger(Events.DIRTY))
+        assertEquals(0, result.getAsInteger(Events.DELETED))
     }
 
 }

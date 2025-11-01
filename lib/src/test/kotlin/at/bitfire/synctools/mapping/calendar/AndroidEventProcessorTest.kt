@@ -6,9 +6,7 @@
 
 package at.bitfire.synctools.mapping.calendar
 
-import android.content.ContentValues
 import android.content.Entity
-import android.provider.CalendarContract.Attendees
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
@@ -284,76 +282,6 @@ class AndroidEventProcessorTest {
         assertFalse(result.generatedUid)
         assertEquals("sample-uid", result.uid)
         assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
-    }
-
-
-    // increaseSequence
-
-    fun `increaseSequence on newly created event`() {
-        // In case of newly created events, it doesn't matter whether they're group-scheduled or not.
-        val main = Entity(ContentValues(
-            /* SEQUENCE column has never been set yet and thus is null */
-        ))
-        val result = processor.increaseSequence(main)
-
-        // SEQUENCE column remains null for mapping ...
-        assertNull(main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
-        // ... but SEQUENCE shall be set to 0 after upload
-        assertEquals(0, result)
-    }
-
-    fun `increaseSequence on group-scheduled event (as ORGANIZER)`() {
-        val main = Entity(contentValuesOf(
-            EventsContract.COLUMN_SEQUENCE to 1,
-            Events.IS_ORGANIZER to 1
-        )).apply {
-            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
-                Attendees.ATTENDEE_EMAIL to "test@example.com"
-            ))
-        }
-        val result = processor.increaseSequence(main)
-        assertEquals(2, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
-        assertEquals(2, result)
-    }
-
-    fun `increaseSequence on group-scheduled event (not as ORGANIZER)`() {
-        val main = Entity(contentValuesOf(
-            EventsContract.COLUMN_SEQUENCE to 1,
-            Events.IS_ORGANIZER to 0
-        )).apply {
-            addSubValue(Attendees.CONTENT_URI, contentValuesOf(
-                Attendees.ATTENDEE_EMAIL to "test@example.com"
-            ))
-        }
-        val result = processor.increaseSequence(main)
-        // SEQUENCE column remains 1 for mapping, ...
-        assertEquals(1, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
-        // ... but don't increase after upload.
-        assertNull(result)
-    }
-
-    fun `increaseSequence on non-group-scheduled event (without SEQUENCE)`() {
-        val main = Entity(contentValuesOf(
-            EventsContract.COLUMN_SEQUENCE to 0
-        ))
-        val result = processor.increaseSequence(main)
-
-        // SEQUENCE column remains 0 for mapping (will be mapped to no SEQUENCE property), ...
-        assertNull(main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
-        // ... but don't increase after upload.
-        assertNull(result)
-    }
-
-    fun `increaseSequence on non-group-scheduled event (with SEQUENCE)`() {
-        val main = Entity(contentValuesOf(
-            EventsContract.COLUMN_SEQUENCE to 1
-        ))
-        val result = processor.increaseSequence(main)
-
-        // SEQUENCE column remains 1 for mapping, ...
-        assertEquals(1, main.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE))
-        // ... and increase after upload.
-        assertEquals(2, result)
     }
 
 }
