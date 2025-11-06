@@ -23,7 +23,7 @@ class FixInvalidUtcOffsetPreprocessor: StreamPreprocessor {
         get() = Logger.getLogger(javaClass.name)
 
     @VisibleForTesting
-    val regexpForProblem = Regex("^(TZOFFSET(FROM|TO):[+\\-]?)((18|19|[2-6]\\d)\\d\\d)$",
+    internal val regexpForProblem = Regex("^(TZOFFSET(FROM|TO):[+\\-]?)((18|19|[2-6]\\d)\\d\\d)$",
         setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
 
     override fun repairLine(line: String) =

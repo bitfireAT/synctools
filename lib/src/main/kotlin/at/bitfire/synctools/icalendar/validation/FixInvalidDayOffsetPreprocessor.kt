@@ -15,7 +15,7 @@ import androidx.annotation.VisibleForTesting
 class FixInvalidDayOffsetPreprocessor : StreamPreprocessor {
 
     @VisibleForTesting
-    val regexpForProblem = Regex(
+    internal val regexpForProblem = Regex(
         // Examples:
         // TRIGGER:-P2DT
         // TRIGGER:-PT2D
