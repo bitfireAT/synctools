@@ -18,6 +18,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
+import at.bitfire.synctools.storage.calendar.AndroidRecurringCalendar
+import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import org.junit.Assert
 import org.junit.rules.RuleChain
 import org.junit.rules.TestRule
@@ -55,7 +57,7 @@ class InitCalendarProviderRule private constructor() : TestRule {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    val account = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val account = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
 
     // TestRule implementation
@@ -94,35 +96,40 @@ class InitCalendarProviderRule private constructor() : TestRule {
             calendarOrNull != null
         }
         val calendar = calendarOrNull!!
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
 
         try {
             // insert recurring event and query instances until the result is correct (max 50 times)
             tryUntilTrue {
                 val syncId = "test-sync-id"
-                val id = calendar.addEvent(Entity(contentValuesOf(
-                    Events.CALENDAR_ID to calendar.id,
-                    Events._SYNC_ID to syncId,
-                    Events.DTSTART to 1642640523000,
-                    Events.DURATION to "PT1H",
-                    Events.TITLE to "Event with 5 instances, two of them are exceptions",
-                    Events.RRULE to "FREQ=DAILY;COUNT=5"
-                )))
-                calendar.addEvent(Entity(contentValuesOf(
-                    Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_SYNC_ID to syncId,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
-                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
-                    Events.TITLE to "Exception on 3rd day",
-                )))
-                calendar.addEvent(Entity(contentValuesOf(
-                    Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_SYNC_ID to syncId,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
-                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
-                    Events.TITLE to "Exception on 5th day",
-                )))
+                val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+                    main = Entity(contentValuesOf(
+                        Events.CALENDAR_ID to calendar.id,
+                        Events._SYNC_ID to syncId,
+                        Events.DTSTART to 1642640523000,
+                        Events.DURATION to "PT1H",
+                        Events.TITLE to "Event with 5 instances, two of them are exceptions",
+                        Events.RRULE to "FREQ=DAILY;COUNT=5"
+                    )),
+                    exceptions = listOf(
+                        Entity(contentValuesOf(
+                            Events.CALENDAR_ID to calendar.id,
+                            Events.ORIGINAL_SYNC_ID to syncId,
+                            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+                            Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+                            Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                            Events.TITLE to "Exception on 3rd day",
+                        )),
+                        Entity(contentValuesOf(
+                            Events.CALENDAR_ID to calendar.id,
+                            Events.ORIGINAL_SYNC_ID to syncId,
+                            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
+                            Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+                            Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                            Events.TITLE to "Exception on 5th day",
+                        ))
+                    )
+                ))
                 calendar.numDirectInstances(id) == 3
             }
 

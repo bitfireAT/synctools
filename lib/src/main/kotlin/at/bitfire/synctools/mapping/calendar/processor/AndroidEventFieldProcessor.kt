@@ -7,14 +7,14 @@
 package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import net.fortuna.ical4j.model.component.VEvent
 
 interface AndroidEventFieldProcessor {
 
     /**
      * Takes specific data from an event (= event row plus data rows, taken from the content provider)
-     * and maps it to the [Event] data class.
+     * and maps it into the given [VEvent].
      *
      * If [from] references the same object as [main], this method is called for a main event (not an exception).
      * If [from] references another object as [main], this method is called for an exception (not a main event).
@@ -35,6 +35,6 @@ interface AndroidEventFieldProcessor {
      *
      * @throws InvalidLocalResourceException on missing or invalid required fields (like [android.provider.CalendarContract.Events.DTSTART])
      */
-    fun process(from: Entity, main: Entity, to: Event)
+    fun process(from: Entity, main: Entity, to: VEvent)
 
 }

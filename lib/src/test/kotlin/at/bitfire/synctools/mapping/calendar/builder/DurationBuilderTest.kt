@@ -9,10 +9,11 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
@@ -24,7 +25,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Period
-import java.util.LinkedList
 
 @RunWith(RobolectricTestRunner::class)
 class DurationBuilderTest {
@@ -37,13 +37,11 @@ class DurationBuilderTest {
     @Test
     fun `Not a main event`() {
         val result = Entity(ContentValues())
-        builder.build(Event(
-            dtStart = DtStart(Date("20251010")),
-            dtEnd = DtEnd(Date("20251011")),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        ), Event(), result)
+        builder.build(VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251011")),
+            RRule("FREQ=DAILY;COUNT=5")
+        )), VEvent(), result)
         assertTrue(result.entityValues.containsKey(Events.DURATION))
         assertNull(result.entityValues.get(Events.DURATION))
     }
@@ -51,10 +49,10 @@ class DurationBuilderTest {
     @Test
     fun `Not a recurring event`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            duration = Duration(Period.ofDays(2))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(2))
+        ))
         builder.build(event, event, result)
         assertTrue(result.entityValues.containsKey(Events.DURATION))
         assertNull(result.entityValues.get(Events.DURATION))
@@ -64,13 +62,11 @@ class DurationBuilderTest {
     @Test
     fun `Recurring all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            duration = Duration(Period.ofDays(3)),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(3)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertEquals("P3D", result.entityValues.get(Events.DURATION))
     }
@@ -78,13 +74,11 @@ class DurationBuilderTest {
     @Test
     fun `Recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            duration = Duration(java.time.Duration.ofMinutes(90)),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(90)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertEquals("PT1H30M", result.entityValues.get(Events.DURATION))
     }
@@ -92,13 +86,11 @@ class DurationBuilderTest {
     @Test
     fun `Recurring all-day event (with DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            dtEnd = DtEnd(Date("20251017")),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251017")),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertEquals("P1W", result.entityValues.get(Events.DURATION))
     }
@@ -106,13 +98,11 @@ class DurationBuilderTest {
     @Test
     fun `Recurring non-all-day event (with DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            dtEnd = DtEnd(DateTime("20251011T020304", tzVienna)),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251011T020304", tzVienna)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertEquals("P1DT1H1M1S", result.entityValues.get(Events.DURATION))
     }
@@ -120,11 +110,9 @@ class DurationBuilderTest {
     @Test
     fun `Recurring all-day event (neither DURATION nor DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            RRule("FREQ=DAILY;COUNT=5"))
         )
         builder.build(event, event, result)
         assertEquals("P1D", result.entityValues.get(Events.DURATION))
@@ -133,12 +121,10 @@ class DurationBuilderTest {
     @Test
     fun `Recurring non-all-day event (neither DURATION nor DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertEquals("PT0S", result.entityValues.get(Events.DURATION))
     }

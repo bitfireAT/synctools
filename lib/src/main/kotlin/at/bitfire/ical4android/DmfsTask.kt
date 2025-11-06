@@ -388,7 +388,13 @@ abstract class DmfsTask(
     protected open fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
         val task = requireNotNull(task)
         for (alarm in task.alarms) {
-            val (alarmRef, minutes) = ICalendar.vAlarmToMin(alarm, task, true) ?: continue
+            val (alarmRef, minutes) = ICalendar.vAlarmToMin(
+                alarm = alarm,
+                refStart = task.dtStart,
+                refEnd = task.due,
+                refDuration = task.duration,
+                allowRelEnd = true
+            ) ?: continue
             val ref = when (alarmRef) {
                 Related.END ->
                     Alarm.ALARM_REFERENCE_DUE_DATE

@@ -12,9 +12,12 @@ import android.content.Entity
 import android.os.RemoteException
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.containsNotNull
+import java.util.logging.Level
+import java.util.logging.Logger
 
 /**
  * Adds support for [EventAndExceptions] data objects to [AndroidCalendar].
@@ -35,6 +38,9 @@ import at.bitfire.synctools.storage.containsNotNull
 class AndroidRecurringCalendar(
     val calendar: AndroidCalendar
 ) {
+
+    val logger: Logger
+        get() = Logger.getLogger(javaClass.name)
 
     /**
      * Inserts an event and all its exceptions. Input data is first cleaned up using [cleanUp].
@@ -68,6 +74,25 @@ class AndroidRecurringCalendar(
     }
 
     /**
+     * Find first event (including exceptions) that matches the query from the content provider.
+     *
+     * Note that the exceptions may contain deleted events.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     */
+    fun findEventAndExceptions(where: String?, whereArgs: Array<String>?): EventAndExceptions? {
+        val main = calendar.findEvent(where, whereArgs) ?: return null
+
+        // attach exceptions
+        val mainEventId = main.entityValues.getAsLong(Events._ID)
+        return EventAndExceptions(
+            main = main,
+            exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+        )
+    }
+
+    /**
      * Retrieves an event and its exceptions from the content provider (associated by [Events.ORIGINAL_ID]).
      *
      * @param mainEventId   [Events._ID] of the main event
@@ -75,11 +100,31 @@ class AndroidRecurringCalendar(
      * @return event and exceptions
      */
     fun getById(mainEventId: Long): EventAndExceptions? {
-        val mainEvent = calendar.getEventEntity(mainEventId) ?: return null
+        val mainEvent = calendar.getEvent(mainEventId) ?: return null
         return EventAndExceptions(
             main = mainEvent,
-            exceptions = calendar.findEventEntities("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+            exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
         )
+    }
+
+    /**
+     * Iterates through events together with their exceptions from the content provider.
+     *
+     * Note that the exceptions may contain deleted events.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     * @param body          callback that is called for each event (including exceptions)
+     */
+    fun iterateEventAndExceptions(where: String?, whereArgs: Array<String>?, body: (EventAndExceptions) -> Unit) {
+        // iterate through main events and attach exceptions
+        calendar.iterateEvents(where, whereArgs) { main ->
+            val mainEventId = main.entityValues.getAsLong(Events._ID)
+            body(EventAndExceptions(
+                main = main,
+                exceptions = calendar.findEvents("${Events.ORIGINAL_ID}=?", arrayOf(mainEventId.toString()))
+            ))
+        }
     }
 
     /**
@@ -172,6 +217,7 @@ class AndroidRecurringCalendar(
         if (syncId == null || !recurring) {
             // 1. main event doesn't have sync id → exceptions wouldn't be associated to main event by calendar provider, so ignore them
             // 2. main event not recurring → exceptions are useless, ignore them
+            logger.log(Level.WARNING, "Dropping exceptions of event because event is not recurring or _SYNC_ID is not set", main)
             return EventAndExceptions(main = main, exceptions = emptyList())
         }
 
@@ -241,5 +287,84 @@ class AndroidRecurringCalendar(
             result.addSubValue(subValue.uri, subValue.values)
         return result
     }
+
+
+    // helpers for dirty/deleted events and exceptions
+
+    /**
+     * Iterates through all exceptions in [calendar] that are marked as deleted.
+     * For every found exception:
+     *
+     * - the SEQUENCE field of the main event is increased by one,
+     * - the main event is marked as dirty (so that it will be synced),
+     * - and then the exception is actually deleted (so that it won't show up anymore during sync).
+     */
+    fun processDeletedExceptions() {
+        val batch = CalendarBatchOperation(calendar.client)
+
+        // iterate through deleted exceptions
+        calendar.iterateEventRows(
+            arrayOf(Events._ID, Events.ORIGINAL_ID),
+            "${Events.DELETED} AND ${Events.ORIGINAL_ID} IS NOT NULL", null
+        ) { values ->
+            val exceptionId = values.getAsLong(Events._ID)          // can't be null (by definition)
+            val mainId = values.getAsLong(Events.ORIGINAL_ID)       // can't be null (by query)
+            logger.fine("Found deleted exception #$exceptionId, removing it and marking original event #$mainId as dirty")
+
+            // main event: get current sequence
+            val mainValues = calendar.getEventRow(mainId, arrayOf(EventsContract.COLUMN_SEQUENCE))
+            val mainSeq = mainValues?.getAsInteger(EventsContract.COLUMN_SEQUENCE) ?: 0
+
+            // increase sequence and mark as dirty
+            calendar.updateEventRow(mainId, contentValuesOf(
+                EventsContract.COLUMN_SEQUENCE to mainSeq + 1,
+                Events.DIRTY to 1
+            ), batch)
+
+            // actually remove deleted exception
+            calendar.deleteEvent(exceptionId, batch)
+        }
+
+        batch.commit()
+    }
+
+    /**
+     * Iterates through all exceptions in [calendar] that are marked as dirty
+     * and not marked as deleted.
+     *
+     * For every found exception:
+     *
+     * - the SEQUENCE field of the exception is increased by one,
+     * - the exception is marked as not dirty anymore,
+     * - but the main event is marked as dirty (so that it will be synced).
+     */
+    fun processDirtyExceptions() {
+        val batch = CalendarBatchOperation(calendar.client)
+
+        // iterate through dirty exceptions
+        calendar.iterateEventRows(
+            arrayOf(Events._ID, Events.ORIGINAL_ID, EventsContract.COLUMN_SEQUENCE),
+            "${Events.DIRTY} AND NOT ${Events.DELETED} AND ${Events.ORIGINAL_ID} IS NOT NULL", null
+        ) { values ->
+            val exceptionId = values.getAsLong(Events._ID)          // can't be null (by definition)
+            val mainId = values.getAsLong(Events.ORIGINAL_ID)       // can't be null (by query)
+            val exceptionSeq = values.getAsInteger(EventsContract.COLUMN_SEQUENCE) ?: 0
+            logger.fine("Found dirty exception $exceptionId, increasing SEQUENCE and marking main event $mainId as dirty")
+
+            // mark main event as dirty
+            calendar.updateEventRow(mainId, contentValuesOf(
+                Events.DIRTY to 1
+            ), batch)
+
+            // increase exception SEQUENCE and set DIRTY to 0
+            calendar.updateEventRow(exceptionId, contentValuesOf(
+                EventsContract.COLUMN_SEQUENCE to exceptionSeq + 1,
+                Events.DIRTY to 0
+            ), batch)
+        }
+
+        batch.commit()
+    }
+
 
 }

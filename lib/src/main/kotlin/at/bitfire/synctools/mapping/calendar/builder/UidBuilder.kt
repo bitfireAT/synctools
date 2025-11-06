@@ -8,12 +8,14 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 
 class UidBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.UID_2445, from.uid)
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        // Always take UID from main event because exceptions must have the same UID anyway.
+        // Note: RFC 5545 requires UID for VEVENTs, however the obsoleted RFC 2445 does not.
+        to.entityValues.put(Events.UID_2445, main.uid?.value)
     }
 
 }

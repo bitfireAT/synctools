@@ -8,14 +8,23 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Transp
 
 class AvailabilityBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        val availability = when (from.transparency) {
+            Transp.TRANSPARENT ->
+                Events.AVAILABILITY_FREE
+
+            // Default value in iCalendar is OPAQUE
+            else /* including Transp.OPAQUE */ ->
+                Events.AVAILABILITY_BUSY
+        }
         to.entityValues.put(
             Events.AVAILABILITY,
-            if (from.opaque) Events.AVAILABILITY_BUSY else Events.AVAILABILITY_FREE
+            availability
         )
     }
 

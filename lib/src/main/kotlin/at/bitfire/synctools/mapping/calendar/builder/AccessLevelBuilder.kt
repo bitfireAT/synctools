@@ -10,13 +10,13 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
 import at.bitfire.ical4android.UnknownProperty
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
 
 class AccessLevelBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         val accessLevel: Int
         val retainValue: Boolean
 

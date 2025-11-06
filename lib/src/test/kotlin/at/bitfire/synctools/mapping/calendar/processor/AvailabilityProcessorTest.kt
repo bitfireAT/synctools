@@ -10,9 +10,11 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Transp
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,40 +26,43 @@ class AvailabilityProcessorTest {
 
     @Test
     fun `No availability`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        // OPAQUE is default value
+        assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
     @Test
     fun `Availability BUSY`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_BUSY
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        // OPAQUE is default value
+        assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
     @Test
     fun `Availability FREE`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_FREE
         ))
         processor.process(entity, entity, result)
-        assertFalse(result.opaque)
+        assertEquals(Transp.TRANSPARENT, result.getProperty<Transp>(Property.TRANSP))
     }
 
     @Test
     fun `Availability TENTATIVE`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.AVAILABILITY to Events.AVAILABILITY_TENTATIVE
         ))
         processor.process(entity, entity, result)
-        assertTrue(result.opaque)
+        // OPAQUE is default value
+        assertNull(result.getProperty<Transp>(Property.TRANSP))
     }
 
 }

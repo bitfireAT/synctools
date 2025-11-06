@@ -9,9 +9,11 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.icalendar.propertyListOf
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Sequence
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,25 +27,38 @@ class SequenceBuilderTest {
     fun `No SEQUENCE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to null
+            EventsContract.COLUMN_SEQUENCE to 0
         ), result.entityValues)
     }
 
     @Test
-    fun `SEQUENCE set`() {
+    fun `SEQUENCE is 0`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(sequence = 3),
-            main = Event(),
+            from = VEvent(propertyListOf(Sequence(0))),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_SEQUENCE to 3
+            EventsContract.COLUMN_SEQUENCE to 0
+        ), result.entityValues)
+    }
+
+    @Test
+    fun `SEQUENCE is 1`() {
+        val result = Entity(ContentValues())
+        builder.build(
+            from = VEvent(propertyListOf(Sequence(1))),
+            main = VEvent(),
+            to = result
+        )
+        assertContentValuesEqual(contentValuesOf(
+            EventsContract.COLUMN_SEQUENCE to 1
         ), result.entityValues)
     }
 

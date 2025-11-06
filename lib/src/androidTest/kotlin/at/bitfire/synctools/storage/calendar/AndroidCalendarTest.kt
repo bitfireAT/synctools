@@ -21,6 +21,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
+import at.bitfire.synctools.test.assertEntitiesEqual
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -43,7 +44,7 @@ class AndroidCalendarTest {
     lateinit var calendar: AndroidCalendar
 
     @Before
-    fun prepare() {
+    fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
 
@@ -63,27 +64,21 @@ class AndroidCalendarTest {
 
     @Test
     fun testAddEvent_and_GetEvent() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event"
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val id = calendar.addEvent(entity)
 
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!
-        assertEquals(id, result.id)
-        assertEquals(now, result.dtStart)
-        assertEquals(now + 3600000, result.dtEnd)
-        assertEquals("Some Event", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
     }
 
     @Test
@@ -97,17 +92,16 @@ class AndroidCalendarTest {
             .withSelection("${Events._SYNC_ID}=?", arrayOf("testAddEvent_toBatch_AsSecondOperation"))
 
         // second operation (event row index > 0)
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event"
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val idx = batch.nextBackrefIdx()
         calendar.addEvent(entity, batch)
 
@@ -116,12 +110,27 @@ class AndroidCalendarTest {
 
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!
-        assertEquals(id, result.id)
-        assertEquals(now, result.dtStart)
-        assertEquals(now + 3600000, result.dtEnd)
-        assertEquals("Some Event", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
+    }
+
+    @Test
+    fun testFindEvent() {
+        // no result
+        assertNull(calendar.findEvent("${Events.DTSTART}=?", arrayOf(now.toString())))
+
+        // insert event
+        val entity = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event"
+        ))
+        calendar.addEvent(entity)
+
+        // not it finds a result
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf(now.toString()))
+        assertEquals(1, result.size)
+        assertEntitiesEqual(entity, result.first(), onlyFieldsInExpected = true)
     }
 
     @Test
@@ -146,8 +155,14 @@ class AndroidCalendarTest {
         )))
         val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((now + 3600000).toString()))
         assertEquals(2, result.size)
-        assertEquals(setOf(id2, id3), result.map { it.id }.toSet())
-        assertEquals(setOf("Some Other Event 1", "Some Other Event 2"), result.map { it.title }.toSet())
+        assertEquals(
+            setOf(id2, id3),
+            result.map { it.entityValues.getAsLong(Events._ID) }.toSet()
+        )
+        assertEquals(
+            setOf("Some Other Event 1", "Some Other Event 2"),
+            result.map { it.entityValues.getAsString(Events.TITLE) }.toSet()
+        )
     }
 
     @Test
@@ -303,48 +318,62 @@ class AndroidCalendarTest {
 
         calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"))
 
-        assertEquals("New Title", calendar.getEvent(id)!!.title)
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
+    }
+
+    @Test
+    fun testUpdateEventRowBatch() {
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Some Event 1"
+        )))
+
+        val batch = CalendarBatchOperation(calendar.client)
+        calendar.updateEventRow(id, contentValuesOf(Events.TITLE to "New Title"), batch)
+        batch.commit()
+
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
     }
 
     @Test
     fun testUpdateEvent_NoRebuild() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event",
-            Events.STATUS to null
-        )
-        val entity = Entity(values)
-        val reminder = contentValuesOf(
-            Reminders.MINUTES to 123
-        )
-        entity.subValues.add(Entity.NamedContentValues(Reminders.CONTENT_URI, reminder))
+            //Events.STATUS to null
+        )).apply {
+            addSubValue(Reminders.CONTENT_URI, contentValuesOf(
+                Reminders.MINUTES to 123
+            ))
+        }
         val id = calendar.addEvent(entity)
 
-        values.put(Events.TITLE, "New Title")
+        // update with modified title
+        entity.entityValues.put(Events.TITLE, "New Title")
         assertEquals(id, calendar.updateEvent(id, entity))
 
         val result = calendar.getEvent(id)!!
-        assertEquals("New Title", result.title)
-        assertEquals(1, result.reminders.size)
-        assertEquals(123, result.reminders.first().getAsInteger(Reminders.MINUTES))
+        assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
     }
 
     @Test
     fun testUpdateEvent_Rebuild() {
-        val values = contentValuesOf(
+        val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to now,
             Events.DTEND to now + 3600000,
             Events.TITLE to "Some Event 1",
             Events.STATUS to Events.STATUS_CONFIRMED
-        )
-        val id = calendar.addEvent(Entity(values))
+        ))
+        val id = calendar.addEvent(entity)
 
-        values.put(Events.TITLE, "New Title")
-        values.putNull(Events.STATUS)
-        val newId = calendar.updateEvent(id, Entity(values))
+        entity.entityValues.put(Events.TITLE, "New Title")
+        entity.entityValues.putNull(Events.STATUS)          // triggers re-build
+        val newId = calendar.updateEvent(id, entity)
         assertNotEquals(newId, id)
 
         // old event is deleted
@@ -352,8 +381,11 @@ class AndroidCalendarTest {
 
         // new event doesn't have status
         val newEvent = calendar.getEvent(newId)!!
-        assertEquals("New Title", newEvent.title)
-        assertNull(newEvent.status)
+        assertNull(newEvent.entityValues.getAsInteger(Events.STATUS))   // verify that it's null
+        val expected = Entity(ContentValues(entity.entityValues).apply {
+            remove(Events.STATUS)       // is null in provider and thus not returned by getEvent
+        })
+        assertEntitiesEqual(expected, newEvent, onlyFieldsInExpected = true)
     }
 
     @Test
@@ -371,7 +403,7 @@ class AndroidCalendarTest {
             arrayOf(now.toString())
         )
 
-        assertEquals("New Title", calendar.getEvent(id)!!.title)
+        assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
     }
 
     @Test
@@ -541,6 +573,96 @@ class AndroidCalendarTest {
         )))
         assertEquals(5 - 1, calendar.numDirectInstances(id))
         assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
+    }
+
+    @Test
+    fun testDeleteDirtyEventsWithoutInstances_NoInstances() {
+        // create recurring event with only deleted/cancelled instances
+        val now = System.currentTimeMillis()
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events._SYNC_ID to "event-without-instances",
+                Events.CALENDAR_ID to calendar.id,
+                Events.ALL_DAY to 0,
+                Events.DTSTART to now,
+                Events.DURATION to "PT1H",
+                Events.RRULE to "FREQ=DAILY;COUNT=3",
+                Events.DIRTY to 1
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(     // first instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now,
+                    Events.DTEND to now + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                )),
+                Entity(contentValuesOf(     // second instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now + 86400000,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now + 86400000,
+                    Events.DTEND to now + 86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                )),
+                Entity(contentValuesOf(     // third and last instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to now + 2*86400000,
+                    Events.ORIGINAL_ALL_DAY to 0,
+                    Events.DTSTART to now + 2*86400000,
+                    Events.DTEND to now + 2*86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                ))
+            )
+        ))
+        assertEquals(0, calendar.numInstances(id))
+
+        // this method should mark the event as deleted
+        calendar.deleteDirtyEventsWithoutInstances()
+
+        // verify that event is now marked as deleted
+        val result = calendar.getEventRow(id)!!
+        assertEquals(1, result.getAsInteger(Events.DELETED))
+    }
+
+    @Test
+    fun testDeleteDirtyEventsWithoutInstances_OneInstanceRemaining() {
+        // create recurring event with only deleted/cancelled instances
+        val syncId = "event-with-instances"
+        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events._SYNC_ID to syncId,
+                Events.DTSTART to 1642640523000,
+                Events.DURATION to "PT1H",
+                Events.TITLE to "Event with 2 instances, one of them cancelled",
+                Events.RRULE to "FREQ=DAILY;COUNT=2",
+                Events.DIRTY to 1
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(     // first instance: cancelled
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to syncId,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000,
+                    Events.DTSTART to 1642640523000 + 86400000,
+                    Events.DTEND to 1642640523000 + 86400000 + 3600000,
+                    Events.STATUS to Events.STATUS_CANCELED
+                ))
+                // however second instance is NOT cancelled
+            )
+        ))
+        assertEquals(1, calendar.numInstances(id))
+
+        // this method should mark the event as deleted
+        calendar.deleteDirtyEventsWithoutInstances()
+
+        // verify that event is still marked as dirty, but not as deleted
+        val result = calendar.getEventRow(id)!!
+        assertEquals(1, result.getAsInteger(Events.DIRTY))
+        assertEquals(0, result.getAsInteger(Events.DELETED))
     }
 
 }

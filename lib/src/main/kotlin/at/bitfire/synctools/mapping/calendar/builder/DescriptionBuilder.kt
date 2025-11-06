@@ -8,13 +8,13 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.vcard4android.Utils.trimToNull
+import net.fortuna.ical4j.model.component.VEvent
 
 class DescriptionBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
-        to.entityValues.put(Events.DESCRIPTION, from.description.trimToNull())
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        to.entityValues.put(Events.DESCRIPTION, from.description?.value.trimToNull())
     }
 
 }

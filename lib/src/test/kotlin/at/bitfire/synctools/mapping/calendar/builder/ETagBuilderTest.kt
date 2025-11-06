@@ -9,9 +9,9 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -24,15 +24,15 @@ class ETagBuilderTest {
     @Test
     fun `Main event sets ETag`() {
         val result = Entity(ContentValues())
-        val event = Event()
+        val event = VEvent()
         builder.build(
             from = event,
             main = event,
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_ETAG to "ETag",
-            AndroidEvent2.COLUMN_SCHEDULE_TAG to "ScheduleTag"
+            EventsContract.COLUMN_ETAG to "ETag",
+            EventsContract.COLUMN_SCHEDULE_TAG to "ScheduleTag"
         ), result.entityValues)
     }
 
@@ -40,13 +40,13 @@ class ETagBuilderTest {
     fun `Exception doesn't set ETag`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertContentValuesEqual(contentValuesOf(
-            AndroidEvent2.COLUMN_ETAG to null,
-            AndroidEvent2.COLUMN_SCHEDULE_TAG to null
+            EventsContract.COLUMN_ETAG to null,
+            EventsContract.COLUMN_SCHEDULE_TAG to null
         ), result.entityValues)
     }
 

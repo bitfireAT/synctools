@@ -8,7 +8,7 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.content.Entity
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.mapping.calendar.builder.AccessLevelBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AllDayBuilder
 import at.bitfire.synctools.mapping.calendar.builder.AndroidEntityBuilder
@@ -38,20 +38,17 @@ import at.bitfire.synctools.mapping.calendar.builder.UnknownPropertiesBuilder
 import at.bitfire.synctools.mapping.calendar.builder.UrlBuilder
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
+import net.fortuna.ical4j.model.component.VEvent
 
 /**
- * Legacy mapper from an [Event] data object to Android content provider data rows
+ * Legacy mapper from an [AssociatedEvents] data object to Android content provider data rows
  * (former "build..." methods).
  *
  * Important: To use recurrence exceptions, you MUST set _SYNC_ID and ORIGINAL_SYNC_ID
  * in populateEvent() / buildEvent. Setting _ID and ORIGINAL_ID is not sufficient.
- *
- * Note: "Legacy" will be removed from the class name as soon as the [Event] dependency is
- * replaced by [at.bitfire.synctools.icalendar.AssociatedEvents].
  */
-class LegacyAndroidEventBuilder2(
+class AndroidEventBuilder(
     calendar: AndroidCalendar,
-    private val event: Event,
 
     // AndroidEvent-level fields
     syncId: String?,
@@ -82,7 +79,7 @@ class LegacyAndroidEventBuilder2(
         AvailabilityBuilder(),
         RecurrenceFieldsBuilder(),
         OriginalInstanceTimeBuilder(),
-        OrganizerBuilder(calendar.ownerAccount),
+        OrganizerBuilder(calendar.ownerAccount ?: calendar.account.name),
         UidBuilder(),
         // sub-rows (alphabetically, by class name)
         AttendeesBuilder(calendar),
@@ -92,19 +89,37 @@ class LegacyAndroidEventBuilder2(
         UrlBuilder()
     )
 
-    fun build() =
-        EventAndExceptions(
-            main = buildEvent(null),
-            exceptions = event.exceptions.map { exception ->
-                buildEvent(exception)
+    fun build(events: AssociatedEvents): EventAndExceptions {
+        val mainVEvent = events.main ?: createMainFromExceptions(events.exceptions)
+        return EventAndExceptions(
+            main = buildEvent(from = mainVEvent, main = mainVEvent),
+            exceptions = events.exceptions.map { exception ->
+                buildEvent(from = exception, main = mainVEvent)
             }
         )
+    }
 
-    fun buildEvent(recurrence: Event?): Entity {
+    fun buildEvent(from: VEvent, main: VEvent): Entity {
         val entity = Entity(ContentValues())
         for (builder in fieldBuilders)
-            builder.build(from = recurrence ?: event, main = event, to = entity)
+            builder.build(from = from, main = main, to = entity)
         return entity
+    }
+
+    /**
+     * It is possible that a user receives only exceptions of an event, but not the main event itself.
+     * This happens when there's a recurring event that is not visible for the user, but the user is invited to
+     * a single recurrence. However, we always need a main event for Android, so we make up one from the
+     * exceptions.
+     */
+    private fun createMainFromExceptions(exceptions: List<VEvent>): VEvent {
+        // Should in the future be replaced by a real event that has a title like "(unknown event)".
+        // This main event should also have a special extended property that indicates that the event
+        // must not actually be generated as main VEvent when the event is locally edited and then uploaded.
+
+        // Currently, we just use the first exception as a main event, too. This is not correct and
+        // should be fixed.
+        return exceptions.firstOrNull() ?: VEvent()
     }
 
 }

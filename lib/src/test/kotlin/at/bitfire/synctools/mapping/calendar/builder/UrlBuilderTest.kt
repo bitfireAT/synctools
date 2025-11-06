@@ -10,9 +10,11 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.icalendar.propertyListOf
+import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Url
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,14 +31,14 @@ class UrlBuilderTest {
     fun `URL is URI`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(url = URI("https://example.com")),
-            main = Event(),
+            from = VEvent(propertyListOf(Url(URI("https://example.com")))),
+            main = VEvent(),
             to = result
         )
         assertEquals(1, result.subValues.size)
         assertContentValuesEqual(
             contentValuesOf(
-                ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
+                ExtendedProperties.NAME to EventsContract.EXTNAME_URL,
                 ExtendedProperties.VALUE to "https://example.com"
             ),
             result.subValues.first().values
@@ -47,8 +49,8 @@ class UrlBuilderTest {
     fun `No URL`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.subValues.isEmpty())

@@ -23,18 +23,19 @@ fun assertContentValuesEqual(expected: ContentValues, actual: ContentValues, onl
 
     // keys are equal → assert key values (in String representation)
     for (key in expectedKeys)
-        assertEquals(message, expected.getAsString(key),  actual.getAsString(key))
+        assertEquals("$key", expected.getAsString(key),  actual.getAsString(key))
 }
 
 fun assertEntitiesEqual(expected: Entity, actual: Entity, onlyFieldsInExpected: Boolean = false) {
-    assertContentValuesEqual(expected.entityValues, actual.entityValues, onlyFieldsInExpected)
+    assertContentValuesEqual(expected.entityValues, actual.entityValues, onlyFieldsInExpected, "entityValues")
 
-    assertEquals(expected.subValues.size, actual.subValues.size)
+    assertEquals("subValues.size", expected.subValues.size, actual.subValues.size)
     for (expectedValue in expected.subValues)
         assertContentValuesEqual(
             expectedValue.values,
             actual.subValues.first { it.uri == expectedValue.uri }.values,
-            onlyFieldsInExpected
+            onlyFieldsInExpected,
+            "subValues"
         )
 }
 

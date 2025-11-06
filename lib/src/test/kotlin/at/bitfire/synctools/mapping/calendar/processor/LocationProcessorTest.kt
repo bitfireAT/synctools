@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -24,7 +24,7 @@ class LocationProcessorTest {
 
     @Test
     fun `No event location`() {
-        val result = Event()
+        val result = VEvent()
         val entity = Entity(ContentValues())
         processor.process(entity, entity, result)
         assertNull(result.location)
@@ -35,7 +35,7 @@ class LocationProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.EVENT_LOCATION to "   "
         ))
-        val result = Event()
+        val result = VEvent()
         processor.process(entity, entity, result)
         assertNull(result.location)
     }
@@ -45,9 +45,9 @@ class LocationProcessorTest {
         val entity = Entity(contentValuesOf(
             Events.EVENT_LOCATION to "Two words "
         ))
-        val result = Event()
+        val result = VEvent()
         processor.process(entity, entity, result)
-        assertEquals("Two words", result.location)
+        assertEquals("Two words", result.location.value)
     }
 
 }

@@ -8,13 +8,13 @@ package at.bitfire.synctools.mapping.calendar.processor
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Status
 
 class StatusProcessor: AndroidEventFieldProcessor {
 
-    override fun process(from: Entity, main: Entity, to: Event) {
-        to.status = when (from.entityValues.getAsInteger(Events.STATUS)) {
+    override fun process(from: Entity, main: Entity, to: VEvent) {
+        val status = when (from.entityValues.getAsInteger(Events.STATUS)) {
             Events.STATUS_CONFIRMED ->
                 Status.VEVENT_CONFIRMED
 
@@ -27,6 +27,8 @@ class StatusProcessor: AndroidEventFieldProcessor {
             else ->
                 null
         }
+        if (status != null)
+            to.properties += status
     }
 
 }

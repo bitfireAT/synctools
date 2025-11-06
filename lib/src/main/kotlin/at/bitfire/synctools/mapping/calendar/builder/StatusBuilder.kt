@@ -8,12 +8,12 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Status
 
 class StatusBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
         to.entityValues.put(Events.STATUS, when (from.status) {
             Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
             Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED

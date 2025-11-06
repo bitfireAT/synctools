@@ -9,19 +9,19 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.Event
-import at.bitfire.synctools.storage.calendar.AndroidEvent2
+import at.bitfire.synctools.storage.calendar.EventsContract
+import net.fortuna.ical4j.model.component.VEvent
 
 class UrlBuilder: AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
-        val uri = from.url
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        val uri = from.url?.value
         if (uri != null)
             to.addSubValue(
                 ExtendedProperties.CONTENT_URI,
                 contentValuesOf(
-                    ExtendedProperties.NAME to AndroidEvent2.EXTNAME_URL,
-                    ExtendedProperties.VALUE to uri.toString()
+                    ExtendedProperties.NAME to EventsContract.EXTNAME_URL,
+                    ExtendedProperties.VALUE to uri
                 )
             )
     }

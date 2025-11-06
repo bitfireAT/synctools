@@ -9,7 +9,9 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Description
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -26,8 +28,8 @@ class DescriptionBuilderTest {
     fun `No DESCRIPTION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.DESCRIPTION))
@@ -38,8 +40,8 @@ class DescriptionBuilderTest {
     fun `DESCRIPTION is blank`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(description = ""),
-            main = Event(),
+            from = VEvent(propertyListOf(Description(""))),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.DESCRIPTION))
@@ -50,8 +52,8 @@ class DescriptionBuilderTest {
     fun `DESCRIPTION is text`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(description = "Event Details"),
-            main = Event(),
+            from = VEvent(propertyListOf(Description("Event Details"))),
+            main = VEvent(),
             to = result
         )
         assertEquals("Event Details", result.entityValues.getAsString(Events.DESCRIPTION))

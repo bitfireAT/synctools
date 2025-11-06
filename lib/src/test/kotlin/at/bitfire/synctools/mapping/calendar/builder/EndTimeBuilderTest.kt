@@ -9,10 +9,11 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Duration
@@ -25,7 +26,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Period
 import java.time.ZoneId
-import java.util.LinkedList
 
 @RunWith(RobolectricTestRunner::class)
 class EndTimeBuilderTest {
@@ -39,13 +39,11 @@ class EndTimeBuilderTest {
     @Test
     fun `Recurring event`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            dtEnd = DtEnd(Date("20251011")),
-            rRules = LinkedList<RRule>().apply {
-                add(RRule("FREQ=DAILY;COUNT=5"))
-            }
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251011")),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
         builder.build(event, event, result)
         assertTrue(result.entityValues.containsKey(Events.DTEND))
         assertNull(result.entityValues.get(Events.DTEND))
@@ -55,10 +53,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring all-day event (with DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            dtEnd = DtEnd(Date("20251011"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251011"))
+        ))
         builder.build(event, event, result)
         assertEquals(1760140800000, result.entityValues.get(Events.DTEND))
     }
@@ -66,10 +64,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring non-all-day event (with floating DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            dtEnd = DtEnd(DateTime("20251011T040506"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251011T040506"))
+        ))
         builder.build(event, event, result)
         assertEquals(DateTime("20251011T040506", tzDefault).time, result.entityValues.get(Events.DTEND))
     }
@@ -77,10 +75,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring non-all-day event (with UTC DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            dtEnd = DtEnd(DateTime("20251011T040506Z"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251011T040506Z"))
+        ))
         builder.build(event, event, result)
         assertEquals(1760155506000, result.entityValues.get(Events.DTEND))
     }
@@ -88,10 +86,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring non-all-day event (with zoned DTEND)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            dtEnd = DtEnd(DateTime("20251011T040506", tzVienna))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251011T040506", tzVienna))
+        ))
         builder.build(event, event, result)
         assertEquals(1760148306000, result.entityValues.get(Events.DTEND))
     }
@@ -99,10 +97,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010")),
-            duration = Duration(Period.ofDays(3))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(3))
+        ))
         builder.build(event, event, result)
         assertEquals(1760313600000, result.entityValues.get(Events.DTEND))
     }
@@ -110,10 +108,10 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna)),
-            duration = Duration(java.time.Duration.ofMinutes(90))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(90))
+        ))
         builder.build(event, event, result)
         assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
     }
@@ -121,9 +119,9 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring all-day event (neither DTEND nor DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010"))
+        ))
         builder.build(event, event, result)
         // default duration 1 day
         assertEquals(1760140800000, result.entityValues.get(Events.DTEND))
@@ -132,9 +130,9 @@ class EndTimeBuilderTest {
     @Test
     fun `Non-recurring non-all-day event (neither DTEND nor DURATION)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna))
+        ))
         builder.build(event, event, result)
         // default duration 0 seconds
         assertEquals(1760050923000, result.entityValues.get(Events.DTEND))

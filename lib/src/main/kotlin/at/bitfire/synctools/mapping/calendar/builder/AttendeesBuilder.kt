@@ -9,10 +9,12 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
-import at.bitfire.ical4android.Event
+import androidx.annotation.VisibleForTesting
 import at.bitfire.synctools.mapping.calendar.AttendeeMappings
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
@@ -22,14 +24,14 @@ class AttendeesBuilder(
     private val calendar: AndroidCalendar
 ): AndroidEntityBuilder {
 
-    override fun build(from: Event, main: Event, to: Entity) {
-        for (attendee in from.attendees)
+    override fun build(from: VEvent, main: VEvent, to: Entity) {
+        for (attendee in from.getProperties<Attendee>(Property.ATTENDEE))
             to.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee, from))
     }
 
-    private fun buildAttendee(attendee: Attendee, event: Event): ContentValues {
+    private fun buildAttendee(attendee: Attendee, event: VEvent): ContentValues {
         val values = ContentValues()
-        val organizer = event.organizerEmail ?:
+        val organizer = organizerEmail(event) ?:
             /* no ORGANIZER, use current account owner as ORGANIZER */
             calendar.ownerAccount ?: calendar.account.name
 
@@ -63,6 +65,18 @@ class AttendeesBuilder(
         values.put(Attendees.ATTENDEE_STATUS, status)
 
         return values
+    }
+
+    @VisibleForTesting
+    internal fun organizerEmail(event: VEvent): String? {
+        event.organizer?.let { organizer ->
+            val uri = organizer.calAddress
+            return if (uri.scheme.equals("mailto", true))
+                uri.schemeSpecificPart
+            else
+                organizer.getParameter<Email>(Parameter.EMAIL)?.value
+        }
+        return null
     }
 
 }

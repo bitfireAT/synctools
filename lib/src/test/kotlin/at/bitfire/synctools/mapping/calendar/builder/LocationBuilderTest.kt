@@ -9,7 +9,9 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
+import at.bitfire.synctools.icalendar.propertyListOf
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.Location
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -26,8 +28,8 @@ class LocationBuilderTest {
     fun `No LOCATION`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(),
-            main = Event(),
+            from = VEvent(),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.EVENT_LOCATION))
@@ -38,8 +40,8 @@ class LocationBuilderTest {
     fun `LOCATION is blank`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(location = ""),
-            main = Event(),
+            from = VEvent(propertyListOf(Location(""))),
+            main = VEvent(),
             to = result
         )
         assertTrue(result.entityValues.containsKey(Events.EVENT_LOCATION))
@@ -50,8 +52,8 @@ class LocationBuilderTest {
     fun `LOCATION is text`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = Event(location = "Event Location"),
-            main = Event(),
+            from = VEvent(propertyListOf(Location("Event Location"))),
+            main = VEvent(),
             to = result
         )
         assertEquals("Event Location", result.entityValues.getAsString(Events.EVENT_LOCATION))

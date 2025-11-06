@@ -8,10 +8,10 @@ androidx-test-runner = "1.7.0"
 dokka = "2.1.0"
 ezvcard = "0.12.1"
 guava = "33.5.0-android"
-# noinspection NewerVersionAvailable,GradleDependency
+# noinspection NewerVersionAvailable
 ical4j = "3.2.19"   # final version; update to 4.x will require much work
 junit = "4.13.2"
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 mockk = "1.14.6"
 roboelectric = "4.16"
 slf4j = "2.0.17"

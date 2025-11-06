@@ -9,11 +9,12 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.Event
 import at.bitfire.synctools.exception.InvalidICalendarException
+import at.bitfire.synctools.icalendar.propertyListOf
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -33,7 +34,7 @@ class StartTimeBuilderTest {
     @Test(expected = InvalidICalendarException::class)
     fun `No start time`() {
         val result = Entity(ContentValues())
-        val event = Event()
+        val event = VEvent()
         builder.build(event, event, result)
     }
 
@@ -41,9 +42,9 @@ class StartTimeBuilderTest {
     @Test
     fun `All-day event`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(Date("20251010"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010"))
+        ))
         builder.build(event, event, result)
         assertEquals(1760054400000, result.entityValues.get(Events.DTSTART))
     }
@@ -51,9 +52,9 @@ class StartTimeBuilderTest {
     @Test
     fun `Non-all-day event (floating DTSTART)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203"))
+        ))
         builder.build(event, event, result)
         assertEquals(DateTime("20251010T010203", tzDefault).time, result.entityValues.get(Events.DTSTART))
     }
@@ -61,9 +62,9 @@ class StartTimeBuilderTest {
     @Test
     fun `Non-all-day event (UTC DTSTART)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203Z"))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203Z"))
+        ))
         builder.build(event, event, result)
         assertEquals(1760058123000L, result.entityValues.get(Events.DTSTART))
     }
@@ -71,9 +72,9 @@ class StartTimeBuilderTest {
     @Test
     fun `Non-all-day event (zoned DTSTART)`() {
         val result = Entity(ContentValues())
-        val event = Event(
-            dtStart = DtStart(DateTime("20251010T010203", tzVienna))
-        )
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna))
+        ))
         builder.build(event, event, result)
         assertEquals(1760050923000, result.entityValues.get(Events.DTSTART))
     }
