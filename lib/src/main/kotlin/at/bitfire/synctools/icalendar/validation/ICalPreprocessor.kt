@@ -44,17 +44,17 @@ class ICalPreprocessor {
     )
 
     /**
-     * Applies [streamPreprocessors] to some given [lines] by calling `fixString()` repeatedly on each of them.
-     * @param lines original iCalendar object as string. This may not contain the full iCalendar,
-     * but only a part of it.
-     * @return The repaired iCalendar object as string.
+     * Applies [streamPreprocessors] to a given iCalendar [line].
+     *
+     * @param line original line (taken from an iCalendar)
+     * @return the potentially repaired iCalendar line
      */
     @VisibleForTesting
-    fun applyPreprocessors(lines: String): String {
-        var newString = lines
+    fun applyPreprocessors(line: String): String {
+        var newLine = line
         for (preprocessor in streamPreprocessors)
-            newString = preprocessor.repairLine(newString)
-        return newString
+            newLine = preprocessor.repairLine(newLine)
+        return newLine
     }
 
     /**
