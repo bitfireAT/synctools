@@ -63,6 +63,12 @@ class ICalPreprocessorTest {
     }
 
     @Test
+    fun testPreprocessStream_joinsLinesCorrectly() {
+        val result = processor.preprocessStream(StringReader("BEGIN:VCALENDAR\nBEGIN:VEVENT")).readText()
+        assertEquals("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\n", result)
+    }
+
+    @Test
     fun testPreprocessStream_runsApplyPreprocessors() {
         val processor = spyk<ICalPreprocessor>()
 
