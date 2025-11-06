@@ -11,9 +11,10 @@ interface StreamPreprocessor {
     /**
      * Fixes an iCalendar string.
      *
-     * @param lines The iCalendar lines to fix. Those may be the full iCalendar file, or just a part of it.
-     * @return The fixed version of [lines].
+     * @param line      full line of an iCalendar lines to validate / fix
+     *
+     * @return the potentially fixed version of [line]
      */
-    fun fixString(lines: String): String
+    fun repairLine(line: String): String
 
 }

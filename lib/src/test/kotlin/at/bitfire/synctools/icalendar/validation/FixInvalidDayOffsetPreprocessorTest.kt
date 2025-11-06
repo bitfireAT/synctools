@@ -25,7 +25,7 @@ class FixInvalidDayOffsetPreprocessorTest {
      */
     private fun assertFixedEquals(expected: String, testValue: String, parseDuration: Boolean = true) {
         // Fix the duration string
-        val fixed = processor.fixString(testValue)
+        val fixed = processor.repairLine(testValue)
 
         // Test the duration can now be parsed
         if (parseDuration)
@@ -39,15 +39,15 @@ class FixInvalidDayOffsetPreprocessorTest {
     }
 
     @Test
-    fun test_FixString_NoOccurrence() {
+    fun test_repairLine_NoOccurrence() {
         assertEquals(
             "Some String",
-            processor.fixString("Some String"),
+            processor.repairLine("Some String"),
         )
     }
 
     @Test
-    fun test_FixString_SucceedsAsValueOnCorrectProperties() {
+    fun test_repairLine_SucceedsAsValueOnCorrectProperties() {
         // By RFC 5545 the only properties allowed to hold DURATION as a VALUE are:
         // DURATION, REFRESH, RELATED, TRIGGER
         assertFixedEquals("DURATION;VALUE=DURATION:P1D", "DURATION;VALUE=DURATION:PT1D")
@@ -57,18 +57,18 @@ class FixInvalidDayOffsetPreprocessorTest {
     }
 
     @Test
-    fun test_FixString_FailsAsValueOnWrongProperty() {
+    fun test_repairLine_FailsAsValueOnWrongProperty() {
         // The update from RFC 2445 to RFC 5545 disallows using DURATION as a VALUE in FREEBUSY
         assertFixedEquals("FREEBUSY;VALUE=DURATION:PT1D", "FREEBUSY;VALUE=DURATION:PT1D", parseDuration = false)
     }
 
     @Test
-    fun test_FixString_FailsIfNotAtStartOfLine() {
+    fun test_repairLine_FailsIfNotAtStartOfLine() {
         assertFixedEquals("xxDURATION;VALUE=DURATION:PT1D", "xxDURATION;VALUE=DURATION:PT1D", parseDuration = false)
     }
 
     @Test
-    fun test_FixString_DayOffsetFrom_Invalid() {
+    fun test_repairLine_DayOffsetFrom_Invalid() {
         assertFixedEquals("DURATION:-P1D", "DURATION:-PT1D")
         assertFixedEquals("TRIGGER:-P2D", "TRIGGER:-PT2D")
 
@@ -77,24 +77,24 @@ class FixInvalidDayOffsetPreprocessorTest {
     }
 
     @Test
-    fun test_FixString_DayOffsetFrom_Valid() {
+    fun test_repairLine_DayOffsetFrom_Valid() {
         assertFixedEquals("DURATION:-PT12H", "DURATION:-PT12H")
         assertFixedEquals("TRIGGER:-PT12H", "TRIGGER:-PT12H")
     }
 
     @Test
-    fun test_FixString_DayOffsetFromMultiple_Invalid() {
+    fun test_repairLine_DayOffsetFromMultiple_Invalid() {
         assertFixedEquals("DURATION:-P1D\nTRIGGER:-P2D", "DURATION:-PT1D\nTRIGGER:-PT2D")
         assertFixedEquals("DURATION:-P1D\nTRIGGER:-P2D", "DURATION:-P1DT\nTRIGGER:-P2DT")
     }
 
     @Test
-    fun test_FixString_DayOffsetFromMultiple_Valid() {
+    fun test_repairLine_DayOffsetFromMultiple_Valid() {
         assertFixedEquals("DURATION:-PT12H\nTRIGGER:-PT12H", "DURATION:-PT12H\nTRIGGER:-PT12H")
     }
 
     @Test
-    fun test_FixString_DayOffsetFromMultiple_Mixed() {
+    fun test_repairLine_DayOffsetFromMultiple_Mixed() {
         assertFixedEquals("DURATION:-P1D\nDURATION:-PT12H\nTRIGGER:-P2D", "DURATION:-PT1D\nDURATION:-PT12H\nTRIGGER:-PT2D")
         assertFixedEquals("DURATION:-P1D\nDURATION:-PT12H\nTRIGGER:-P2D", "DURATION:-P1DT\nDURATION:-PT12H\nTRIGGER:-P2DT")
     }

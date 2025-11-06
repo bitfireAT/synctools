@@ -6,13 +6,15 @@
 
 package at.bitfire.synctools.icalendar.validation
 
+import com.google.common.io.CharStreams
 import org.junit.Test
 import java.io.Reader
+import java.io.Writer
 import java.util.UUID
 
 class ICalPreprocessorInstrumentedTest {
 
-    class VCalendarReaderGenerator(val eventCount: Int = Int.MAX_VALUE) : Reader() {
+    private class VCalendarReaderGenerator(val eventCount: Int) : Reader() {
         private var stage = 0 // 0 = header, 1 = events, 2 = footer, 3 = done
         private var eventIdx = 0
         private var current: String? = null
@@ -87,8 +89,15 @@ class ICalPreprocessorInstrumentedTest {
     @Test
     fun testParse_SuperLargeFiles() {
         val preprocessor = ICalPreprocessor()
-        val reader = VCalendarReaderGenerator()
-        preprocessor.preprocessStream(reader)
-        // no exception called
-    }
+        val reader = VCalendarReaderGenerator(eventCount = 100_000)
+        preprocessor.preprocessStream(reader).use { preprocessed ->
+            // consume preprocessed stream
+            val start = System.currentTimeMillis()
+            CharStreams.copy(preprocessed, Writer.nullWriter())
+            val end = System.currentTimeMillis()
+
+            // no exception called
+            System.err.println("testParse_SuperLargeFiles took ${(end - start) / 1000} seconds")
+        }
+   }
 }

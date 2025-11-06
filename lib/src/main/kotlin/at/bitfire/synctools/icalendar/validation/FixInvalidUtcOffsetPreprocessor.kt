@@ -26,8 +26,8 @@ class FixInvalidUtcOffsetPreprocessor: StreamPreprocessor {
     val regexpForProblem = Regex("^(TZOFFSET(FROM|TO):[+\\-]?)((18|19|[2-6]\\d)\\d\\d)$",
         setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
 
-    override fun fixString(lines: String) =
-        lines.replace(regexpForProblem) {
+    override fun repairLine(line: String) =
+        line.replace(regexpForProblem) {
             logger.log(Level.FINE, "Applying Synology WebDAV fix to invalid utc-offset", it.value)
             "${it.groupValues[1]}00${it.groupValues[3]}"
         }

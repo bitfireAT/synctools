@@ -24,8 +24,8 @@ class FixInvalidDayOffsetPreprocessor : StreamPreprocessor {
         setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE)
     )
 
-    override fun fixString(lines: String): String {
-        var iCal: String = lines
+    override fun repairLine(line: String): String {
+        var iCal: String = line
 
         // Find all instances matching the defined expression
         val found = regexpForProblem.findAll(iCal).toList()

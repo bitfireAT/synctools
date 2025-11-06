@@ -54,7 +54,7 @@ class ICalPreprocessorTest {
         // verify that the required stream processors have been called
         verify {
             processor.streamPreprocessors.forEach {
-                it.fixString(any())
+                it.repairLine(any())
             }
         }
     }
