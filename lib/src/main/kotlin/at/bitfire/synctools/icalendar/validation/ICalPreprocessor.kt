@@ -61,25 +61,32 @@ class ICalPreprocessor {
      * Applies [streamPreprocessors] to a given [Reader] that reads an iCalendar object
      * in order to repair some things that must be fixed before parsing.
      *
-     * The original reader content is processed in chunks of [chunkSize] lines to avoid loading
-     * the whole content into memory at once. If the given [Reader] does not support `reset()`,
-     * the whole content will be loaded into memory anyway.
+     * The original reader content is processed line by line to avoid loading
+     * the whole content into memory at once.
      *
-     * Closing the returned [Reader] will also close the [original] reader if needed.
+     * This method works in a streaming way, so **[original] must not be closed before
+     * the result of this method is consumed** like that:
      *
-     * @param original original iCalendar object. Will be closed after processing.
-     * @return A reader that emits the potentially repaired iCalendar object.
+     * ~~~
+     * someSource.reader().use { original ->
+     *   val repaired = preprocessStream(original)
+     *   // closing original here would render repaired unusable, too
+     *   parse(repaired)
+     * } // use will close original
+     * ~~~
+     *
+     * @param original  original iCalendar object (must be closed by caller _after_ consuming the result of this method)
+     * @return potentially repaired iCalendar object (doesn't need to be closed separately)
      */
     fun preprocessStream(@WillNotClose original: Reader): Reader {
-        val chunkedFixedLines = BufferedReader(original)
+        val repairedLines = BufferedReader(original)
             .lineSequence()
             .map { line ->      // BufferedReader provides line without line break
                 val fixed = applyPreprocessors(line)
                 CharSource.wrap(fixed + "\r\n")     // iCalendar uses CR+LF
             }
             .asIterable()
-        // we don't close 'original' here because CharSource.concat() will read from it lazily
-        return CharSource.concat(chunkedFixedLines).openStream()
+        return CharSource.concat(repairedLines).openStream()
     }
 
 
