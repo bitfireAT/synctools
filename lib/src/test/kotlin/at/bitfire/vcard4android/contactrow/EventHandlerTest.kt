@@ -53,10 +53,10 @@ class EventHandlerTest {
     fun testStartDate_WithTime() {
         val contact = Contact()
         EventHandler.handle(ContentValues().apply {
-            put(Event.START_DATE, "19531015T231000Z")
+            put(Event.START_DATE, "1953-10-15T23:10:00Z")
         }, contact)
         assertEquals(
-            ZonedDateTime.of(1984, 8,  20, 23, 10, 0, 0, ZoneId.of(ZoneOffset.UTC.id)),
+            ZonedDateTime.of(1953, 10,  15, 23, 10, 0, 0, ZoneId.of(ZoneOffset.UTC.id)),
             contact.customDates[0].property.date
         )
     }
