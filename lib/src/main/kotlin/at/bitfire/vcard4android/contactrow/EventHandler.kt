@@ -16,7 +16,6 @@ import ezvcard.property.Anniversary
 import ezvcard.property.Birthday
 import ezvcard.util.PartialDate
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
 import java.time.temporal.Temporal
