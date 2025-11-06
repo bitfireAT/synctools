@@ -38,7 +38,7 @@ object EventHandler: DataRowHandler() {
                 // Some server providers (e.g. t-mobile) include time information
                 // This is allowed by RFC2426: https://www.rfc-editor.org/rfc/rfc2426#section-3.1.5
                 // And RFC6350: https://www.rfc-editor.org/rfc/rfc6350#section-6.2.5
-                full = ZonedDateTime.parse(dateStr).toLocalDate()
+                full = ZonedDateTime.parse(dateStr)
             } catch (_: DateTimeParseException) {
                 try {
                     partial = PartialDate.parse(dateStr)
