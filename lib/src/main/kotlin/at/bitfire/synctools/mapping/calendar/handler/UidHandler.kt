@@ -14,7 +14,7 @@ import net.fortuna.ical4j.model.property.Uid
 class UidHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        // Should always be available because AndroidEventProcessor ensures there's a UID to be RFC 5545-compliant.
+        // Should always be available because AndroidEventHandler ensures there's a UID to be RFC 5545-compliant.
         // However technically it can be null (and no UID is OK according to RFC 2445).
         val uid = main.entityValues.getAsString(Events.UID_2445)
         if (uid != null)

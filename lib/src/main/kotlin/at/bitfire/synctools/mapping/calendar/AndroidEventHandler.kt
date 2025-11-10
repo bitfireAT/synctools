@@ -220,7 +220,7 @@ class AndroidEventHandler(
             it.values.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_GOOGLE_CALENDAR_UID
         }?.values?.getAsString(ExtendedProperties.VALUE)
         if (googleCalendarUid != null) {
-            // copy to UID_2445 so that it will be processed by UidProcessor and return
+            // copy to UID_2445 so that it will be processed by UidHandler and return
             mainValues.put(Events.UID_2445, googleCalendarUid)
             return googleCalendarUid
         }

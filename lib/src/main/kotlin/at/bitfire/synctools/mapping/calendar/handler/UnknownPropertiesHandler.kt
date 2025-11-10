@@ -39,9 +39,9 @@ class UnknownPropertiesHandler: AndroidEventFieldHandler {
 
         /**
          * These saved unknown properties are not restored into the [VEvent] as properties.
-         * Usually they're used by other processors instead.
+         * Usually they're used by other handlers instead.
          *
-         * In the future, this shouldn't be necessary anymore because when other builders/processors store data,
+         * In the future, this shouldn't be necessary anymore because when other builders/handlers store data,
          * they shouldn't use an unknown property, but instead define their own extended property.
          */
         val EXCLUDED = arrayOf(Property.CLASS)

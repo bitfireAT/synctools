@@ -37,7 +37,7 @@ class UnknownPropertiesHandlerTest {
     fun `Three unknown properties, one of them excluded`() {
         val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
-        entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(     // used by ClassificationProcessor
+        entity.addSubValue(ExtendedProperties.CONTENT_URI, contentValuesOf(     // used by ClassificationHandler
             ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
             ExtendedProperties.VALUE to "[\"CLASS\", \"CONFIDENTIAL\"]"
         ))

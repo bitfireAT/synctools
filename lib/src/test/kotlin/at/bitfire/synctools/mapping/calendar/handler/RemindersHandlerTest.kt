@@ -48,7 +48,7 @@ class RemindersHandlerTest {
     fun `Email reminder (account name is not an email address)`() {
         // test account name that doesn't look like an email address
         val nonEmailAccountName = "ical4android"
-        val processor2 = RemindersHandler(nonEmailAccountName)
+        val handler2 = RemindersHandler(nonEmailAccountName)
 
         val entity = Entity(ContentValues())
         entity.addSubValue(Reminders.CONTENT_URI, contentValuesOf(
@@ -56,7 +56,7 @@ class RemindersHandlerTest {
             Reminders.MINUTES to 10
         ))
         val result = VEvent()
-        processor2.process(entity, entity, result)
+        handler2.process(entity, entity, result)
         val alarm = result.alarms.first()
         assertEquals(Action.DISPLAY, alarm.action)
         assertNotNull(alarm.description)
