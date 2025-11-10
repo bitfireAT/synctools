@@ -19,12 +19,27 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class EventHandlerTest {
+
+    @Test
+    fun test_parseStartDate_ISO_UTC_DateTime() {
+        assertEquals(
+            OffsetDateTime.of(1953, 10,  15, 23, 10, 0, 0, ZoneOffset.UTC),
+            EventHandler.parseStartDate("1953-10-15T23:10:00Z")
+        )
+    }
+
+    @Test
+    fun test_parseStartDate_ISO_Date() {
+        assertEquals(
+            LocalDate.of(1953, 10,  15),
+            EventHandler.parseStartDate("1953-10-15")
+        )
+    }
 
     @Test
     fun testStartDate_Empty() {
@@ -45,18 +60,6 @@ class EventHandlerTest {
         }, contact)
         assertEquals(
             LocalDate.of(1984, 8,  20),
-            contact.customDates[0].property.date
-        )
-    }
-
-    @Test
-    fun testStartDate_WithTime() {
-        val contact = Contact()
-        EventHandler.handle(ContentValues().apply {
-            put(Event.START_DATE, "1953-10-15T23:10:00Z")
-        }, contact)
-        assertEquals(
-            ZonedDateTime.of(1953, 10,  15, 23, 10, 0, 0, ZoneId.of(ZoneOffset.UTC.id)),
             contact.customDates[0].property.date
         )
     }
