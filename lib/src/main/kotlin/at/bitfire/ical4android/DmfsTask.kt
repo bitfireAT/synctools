@@ -75,11 +75,11 @@ abstract class DmfsTask(
     var id: Long? = null
 
 
-    constructor(taskList: DmfsTaskList<DmfsTask>, values: ContentValues): this(taskList) {
+    constructor(taskList: DmfsTaskList<*>, values: ContentValues): this(taskList) {
         id = values.getAsLong(Tasks._ID)
     }
 
-    constructor(taskList: DmfsTaskList<DmfsTask>, task: Task): this(taskList) {
+    constructor(taskList: DmfsTaskList<*>, task: Task): this(taskList) {
         this.task = task
     }
 
