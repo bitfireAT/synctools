@@ -11,7 +11,6 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
-import androidx.annotation.CallSuper
 import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation
@@ -20,6 +19,7 @@ import at.bitfire.synctools.storage.TasksBatchOperation
 import at.bitfire.synctools.storage.toContentValues
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
+import org.dmfs.tasks.contract.TaskContract.TaskListColumns
 import org.dmfs.tasks.contract.TaskContract.TaskLists
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.io.FileNotFoundException
@@ -32,7 +32,7 @@ import java.util.logging.Logger
  * Represents a locally stored task list, containing [DmfsTask]s (tasks).
  * Communicates with tasks.org-compatible content providers (currently tasks.org and OpenTasks) to store the tasks.
  */
-abstract class DmfsTaskList<out T : DmfsTask>(
+open class DmfsTaskList<out T : DmfsTask>(
     val account: Account,
     val provider: ContentProviderClient,
     val providerName: TaskProvider.ProviderName,
@@ -42,6 +42,7 @@ abstract class DmfsTaskList<out T : DmfsTask>(
 
     var syncId: String? = null
     var name: String? = null
+    var accessLevel: Int? = null
     var color: Int? = null
     var isSynced = false
     var isVisible = false
@@ -56,10 +57,10 @@ abstract class DmfsTaskList<out T : DmfsTask>(
      *
      * @param values  values from tasks provider
      */
-    @CallSuper
-    protected open fun populate(values: ContentValues) {
+    private fun populate(values: ContentValues) {
         syncId = values.getAsString(TaskLists._SYNC_ID)
         name = values.getAsString(TaskLists.LIST_NAME)
+        accessLevel = values.getAsInteger(TaskListColumns.ACCESS_LEVEL)
         color = values.getAsInteger(TaskLists.LIST_COLOR)
         values.getAsInteger(TaskLists.SYNC_ENABLED)?.let { isSynced = it != 0 }
         values.getAsInteger(TaskLists.VISIBLE)?.let { isVisible = it != 0 }
