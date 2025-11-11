@@ -11,6 +11,7 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation
@@ -151,6 +152,22 @@ open class DmfsTaskList<out T : DmfsTask>(
     fun findById(id: Long) = queryTasks("${Tasks._ID}=?", arrayOf(id.toString())).firstOrNull()
         ?: throw FileNotFoundException()
 
+    fun readSyncState(): String? = try {
+        provider.query(taskListSyncUri(), arrayOf(COLUMN_SYNC_STATE), null, null, null)?.use { cursor ->
+            if (cursor.moveToNext())
+                return cursor.getString(0)
+            else
+                null
+        }
+    } catch (e: Exception) {
+        logger.log(Level.WARNING, "Couldn't read sync state", e)
+        null
+    }
+
+    fun writeSyncState(state: String?) {
+        val values = contentValuesOf(COLUMN_SYNC_STATE to state.toString())
+        provider.update(taskListSyncUri(), values, null, null)
+    }
 
     fun taskListSyncUri() =
         ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account)
@@ -168,6 +185,8 @@ open class DmfsTaskList<out T : DmfsTask>(
     fun tasksPropertiesSyncUri() = TaskContract.Properties.getContentUri(providerName.authority).asSyncAdapter(account)
 
     companion object {
+
+        private const val COLUMN_SYNC_STATE = TaskLists.SYNC_VERSION
 
         private val logger
             get() = Logger.getLogger(DmfsTaskList::class.java.name)
