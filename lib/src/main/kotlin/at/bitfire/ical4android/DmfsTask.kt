@@ -69,10 +69,6 @@ abstract class DmfsTask(
     val taskList: DmfsTaskList<DmfsTask>
 ) {
 
-    companion object {
-        const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
-    }
-
     protected val logger = Logger.getLogger(javaClass.name)
     protected val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
@@ -604,6 +600,10 @@ abstract class DmfsTask(
     protected fun taskSyncURI(loadProperties: Boolean = false): Uri {
         val id = requireNotNull(id)
         return ContentUris.withAppendedId(taskList.tasksSyncUri(loadProperties), id)
+    }
+
+    companion object {
+        const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
     }
 
 }
