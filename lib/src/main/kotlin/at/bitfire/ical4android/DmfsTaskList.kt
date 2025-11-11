@@ -40,73 +40,6 @@ abstract class DmfsTaskList<out T : DmfsTask>(
     val id: Long
 ) {
 
-    companion object {
-
-        private val logger
-            get() = Logger.getLogger(DmfsTaskList::class.java.name)
-
-        fun create(account: Account, provider: ContentProviderClient, providerName: TaskProvider.ProviderName, info: ContentValues): Uri {
-            info.put(TaskContract.ACCOUNT_NAME, account.name)
-            info.put(TaskContract.ACCOUNT_TYPE, account.type)
-
-            val url = TaskLists.getContentUri(providerName.authority).asSyncAdapter(account)
-            logger.log(Level.FINE, "Creating ${providerName.authority} task list", info)
-            return provider.insert(url, info)
-                ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
-        }
-
-        fun <T : DmfsTaskList<DmfsTask>> findByID(
-            account: Account,
-            provider: ContentProviderClient,
-            providerName: TaskProvider.ProviderName,
-            factory: DmfsTaskListFactory<T>,
-            id: Long
-        ): T {
-            provider.query(
-                ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account),
-                null,
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                if (cursor.moveToNext()) {
-                    val taskList = factory.newInstance(account, provider, providerName, id)
-                    taskList.populate(cursor.toContentValues())
-                    return taskList
-                }
-            }
-            throw FileNotFoundException()
-        }
-
-        fun <T : DmfsTaskList<DmfsTask>> find(
-            account: Account,
-            factory: DmfsTaskListFactory<T>,
-            provider: ContentProviderClient,
-            providerName: TaskProvider.ProviderName,
-            where: String?,
-            whereArgs: Array<String>?
-        ): List<T> {
-            val taskLists = LinkedList<T>()
-            provider.query(
-                TaskLists.getContentUri(providerName.authority).asSyncAdapter(account),
-                null,
-                where,
-                whereArgs,
-                null
-            )?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    val values = cursor.toContentValues()
-                    val taskList =
-                        factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
-                    taskList.populate(values)
-                    taskLists += taskList
-                }
-            }
-            return taskLists
-        }
-
-    }
-
     var syncId: String? = null
     var name: String? = null
     var color: Int? = null
@@ -232,5 +165,72 @@ abstract class DmfsTaskList<out T : DmfsTask>(
     }
 
     fun tasksPropertiesSyncUri() = TaskContract.Properties.getContentUri(providerName.authority).asSyncAdapter(account)
+
+    companion object {
+
+        private val logger
+            get() = Logger.getLogger(DmfsTaskList::class.java.name)
+
+        fun create(account: Account, provider: ContentProviderClient, providerName: TaskProvider.ProviderName, info: ContentValues): Uri {
+            info.put(TaskContract.ACCOUNT_NAME, account.name)
+            info.put(TaskContract.ACCOUNT_TYPE, account.type)
+
+            val url = TaskLists.getContentUri(providerName.authority).asSyncAdapter(account)
+            logger.log(Level.FINE, "Creating ${providerName.authority} task list", info)
+            return provider.insert(url, info)
+                ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
+        }
+
+        fun <T : DmfsTaskList<DmfsTask>> findByID(
+            account: Account,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            factory: DmfsTaskListFactory<T>,
+            id: Long
+        ): T {
+            provider.query(
+                ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account),
+                null,
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToNext()) {
+                    val taskList = factory.newInstance(account, provider, providerName, id)
+                    taskList.populate(cursor.toContentValues())
+                    return taskList
+                }
+            }
+            throw FileNotFoundException()
+        }
+
+        fun <T : DmfsTaskList<DmfsTask>> find(
+            account: Account,
+            factory: DmfsTaskListFactory<T>,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            where: String?,
+            whereArgs: Array<String>?
+        ): List<T> {
+            val taskLists = LinkedList<T>()
+            provider.query(
+                TaskLists.getContentUri(providerName.authority).asSyncAdapter(account),
+                null,
+                where,
+                whereArgs,
+                null
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val values = cursor.toContentValues()
+                    val taskList =
+                        factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
+                    taskList.populate(values)
+                    taskLists += taskList
+                }
+            }
+            return taskLists
+        }
+
+    }
 
 }
