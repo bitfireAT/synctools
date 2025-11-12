@@ -7,15 +7,18 @@
 package at.bitfire.synctools.icalendar.validation
 
 import androidx.annotation.VisibleForTesting
+import com.google.common.io.CharSource
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
 import net.fortuna.ical4j.transform.rfc5545.DateListPropertyRule
 import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
 import net.fortuna.ical4j.transform.rfc5545.Rfc5545PropertyRule
+import java.io.BufferedReader
 import java.io.Reader
 import java.util.logging.Level
 import java.util.logging.Logger
+import javax.annotation.WillNotClose
 
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
@@ -41,17 +44,49 @@ class ICalPreprocessor {
     )
 
     /**
+     * Applies [streamPreprocessors] to a given iCalendar [line].
+     *
+     * @param line original line (taken from an iCalendar)
+     * @return the potentially repaired iCalendar line
+     */
+    @VisibleForTesting
+    fun applyPreprocessors(line: String): String {
+        var newLine = line
+        for (preprocessor in streamPreprocessors)
+            newLine = preprocessor.repairLine(newLine)
+        return newLine
+    }
+
+    /**
      * Applies [streamPreprocessors] to a given [Reader] that reads an iCalendar object
      * in order to repair some things that must be fixed before parsing.
      *
-     * @param original    original iCalendar object
-     * @return            the potentially repaired iCalendar object
+     * The original reader content is processed line by line to avoid loading
+     * the whole content into memory at once.
+     *
+     * This method works in a streaming way, so **[original] must not be closed before
+     * the result of this method is consumed** like that:
+     *
+     * ~~~
+     * someSource.reader().use { original ->
+     *   val repaired = preprocessStream(original)
+     *   // closing original here would render repaired unusable, too
+     *   parse(repaired)
+     * } // use will close original
+     * ~~~
+     *
+     * @param original  original iCalendar object (must be closed by caller _after_ consuming the result of this method)
+     * @return potentially repaired iCalendar object (doesn't need to be closed separately)
      */
-    fun preprocessStream(original: Reader): Reader {
-        var reader = original
-        for (preprocessor in streamPreprocessors)
-            reader = preprocessor.preprocess(reader)
-        return reader
+    fun preprocessStream(@WillNotClose original: Reader): Reader {
+        val repairedLines = BufferedReader(original)
+            .lineSequence()
+            .map { line ->      // BufferedReader provides line without line break
+                val fixed = applyPreprocessors(line)
+                CharSource.wrap(fixed + "\r\n")     // iCalendar uses CR+LF
+            }
+            .asIterable()
+        return CharSource.concat(repairedLines).openStream()
     }
 
 
