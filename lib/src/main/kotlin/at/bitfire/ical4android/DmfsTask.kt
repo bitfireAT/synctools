@@ -152,8 +152,7 @@ abstract class DmfsTask(
             throw FileNotFoundException("Couldn't find task #$id")
         }
 
-    @CallSuper
-    protected open fun populateTask(values: ContentValues) {
+    protected fun populateTask(values: ContentValues) {
         val task = requireNotNull(task)
 
         task.uid = values.getAsString(Tasks._UID)
