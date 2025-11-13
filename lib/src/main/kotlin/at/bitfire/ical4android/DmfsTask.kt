@@ -64,7 +64,7 @@ import java.util.logging.Logger
  * The SEQUENCE field is stored in [Tasks.SYNC_VERSION], so don't use [Tasks.SYNC_VERSION]
  * for anything else.
  */
-abstract class DmfsTask(
+open class DmfsTask(
     val taskList: DmfsTaskList<DmfsTask>
 ) {
 

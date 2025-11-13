@@ -12,6 +12,7 @@ import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.DmfsTaskFactory
 import at.bitfire.ical4android.DmfsTaskList
 import at.bitfire.ical4android.Task
+import java.util.UUID
 
 class TestTask: DmfsTask {
 
@@ -19,7 +20,7 @@ class TestTask: DmfsTask {
         : super(taskList, values)
 
     constructor(taskList: TestTaskList, task: Task)
-        : super(taskList, task)
+        : super(taskList, task, UUID.randomUUID().toString(), null, null, 0)
 
     object Factory: DmfsTaskFactory<TestTask> {
         override fun fromProvider(taskList: DmfsTaskList<DmfsTask>, values: ContentValues) =
