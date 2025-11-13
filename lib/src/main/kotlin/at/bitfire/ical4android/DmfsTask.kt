@@ -269,7 +269,7 @@ abstract class DmfsTask(
         values.getAsString(Tasks.RRULE)?.let { task.rRule = RRule(it) }
     }
 
-    protected open fun populateProperty(row: ContentValues) {
+    protected fun populateProperty(row: ContentValues) {
         logger.log(Level.FINER, "Found property", row)
 
         val task = requireNotNull(task)
@@ -289,7 +289,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun populateAlarm(row: ContentValues) {
+    protected fun populateAlarm(row: ContentValues) {
         val task = requireNotNull(task)
         val props = PropertyList<Property>()
 
@@ -317,7 +317,7 @@ abstract class DmfsTask(
         task.alarms += VAlarm(props)
     }
 
-    protected open fun populateRelatedTo(row: ContentValues) {
+    protected fun populateRelatedTo(row: ContentValues) {
         val uid = row.getAsString(Relation.RELATED_UID)
         if (uid == null) {
             logger.warning("Task relation doesn't refer to same task list; can't be synchronized")
@@ -382,7 +382,7 @@ abstract class DmfsTask(
         return ContentUris.withAppendedId(Tasks.getContentUri(taskList.providerName.authority), existingId)
     }
 
-    protected open fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
         insertAlarms(batch, idxTask)
         insertCategories(batch, idxTask)
         insertComment(batch, idxTask)
@@ -390,7 +390,7 @@ abstract class DmfsTask(
         insertUnknownProperties(batch, idxTask)
     }
 
-    protected open fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
         val task = requireNotNull(task)
         for (alarm in task.alarms) {
             val (alarmRef, minutes) = ICalendar.vAlarmToMin(
@@ -432,7 +432,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
         for (category in requireNotNull(task).categories) {
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
                     .withTaskId(Category.TASK_ID, idxTask)
@@ -443,7 +443,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
         val comment = requireNotNull(task).comment ?: return
         val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
             .withTaskId(Comment.TASK_ID, idxTask)
@@ -453,7 +453,7 @@ abstract class DmfsTask(
         batch += builder
     }
 
-    protected open fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
         for (relatedTo in requireNotNull(task).relatedTo) {
             val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
                 RelType.CHILD ->
@@ -473,7 +473,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
         for (property in requireNotNull(task).unknownProperties) {
             if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
                 logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
