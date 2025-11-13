@@ -10,7 +10,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
 import android.os.RemoteException
-import androidx.annotation.CallSuper
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
@@ -73,14 +72,25 @@ abstract class DmfsTask(
     protected val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
+    var syncId: String? = null
+    var eTag: String? = null
+    var flags: Int = 0
 
 
     constructor(taskList: DmfsTaskList<*>, values: ContentValues): this(taskList) {
         id = values.getAsLong(Tasks._ID)
+        syncId = values.getAsString(Tasks._SYNC_ID)
+        eTag = values.getAsString(COLUMN_ETAG)
+        flags = values.getAsInteger(COLUMN_FLAGS)
     }
 
-    constructor(taskList: DmfsTaskList<*>, task: Task): this(taskList) {
+    constructor(taskList: DmfsTaskList<*>, task: Task, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int): this(taskList) {
+        if (scheduleTag != null)
+            logger.fine("Schedule-Tag for tasks not supported yet, won't save")
         this.task = task
+        this.syncId = syncId
+        this.eTag = eTag
+        this.flags = flags
     }
 
 
@@ -356,8 +366,8 @@ abstract class DmfsTask(
 
         // remove associated rows which are added later again
         batch += CpoBuilder
-                .newDelete(taskList.tasksPropertiesSyncUri())
-                .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
+            .newDelete(taskList.tasksPropertiesSyncUri())
+            .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
 
         // update task
         val uri = taskSyncURI()
@@ -409,13 +419,13 @@ abstract class DmfsTask(
             }
 
             val builder = CpoBuilder
-                    .newInsert(taskList.tasksPropertiesSyncUri())
-                    .withTaskId(Alarm.TASK_ID, idxTask)
-                    .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
-                    .withValue(Alarm.MINUTES_BEFORE, minutes)
-                    .withValue(Alarm.REFERENCE, ref)
-                    .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
-                    .withValue(Alarm.ALARM_TYPE, alarmType)
+                .newInsert(taskList.tasksPropertiesSyncUri())
+                .withTaskId(Alarm.TASK_ID, idxTask)
+                .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
+                .withValue(Alarm.MINUTES_BEFORE, minutes)
+                .withValue(Alarm.REFERENCE, ref)
+                .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
+                .withValue(Alarm.ALARM_TYPE, alarmType)
 
             logger.log(Level.FINE, "Inserting alarm", builder.build())
             batch += builder
@@ -483,8 +493,7 @@ abstract class DmfsTask(
         return taskList.provider.delete(taskSyncURI(), null, null)
     }
 
-    @CallSuper
-    protected open fun buildTask(builder: CpoBuilder, update: Boolean) {
+    protected fun buildTask(builder: CpoBuilder, update: Boolean) {
         if (!update)
             builder .withValue(Tasks.LIST_ID, taskList.id)
 
@@ -499,9 +508,14 @@ abstract class DmfsTask(
                 .withValue(Tasks.TASK_COLOR, task.color)
                 .withValue(Tasks.URL, task.url)
 
+                .withValue(Tasks._SYNC_ID, syncId)
+                .withValue(COLUMN_FLAGS, flags)
+                .withValue(COLUMN_ETAG, eTag)
+
                 // parent_id will be re-calculated when the relation row is inserted (if there is any)
                 .withValue(Tasks.PARENT_ID, null)
 
+        // organizer
         task.organizer?.let { organizer ->
             val uri = organizer.calAddress
             val email = if (uri.scheme.equals("mailto", true))
@@ -514,6 +528,7 @@ abstract class DmfsTask(
                 logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
         }
 
+        // Priority, classification
         builder .withValue(Tasks.PRIORITY, task.priority)
                 .withValue(Tasks.CLASSIFICATION, when (task.classification) {
                     Clazz.PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
@@ -527,6 +542,7 @@ abstract class DmfsTask(
                 .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
                 .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
 
+        // Status
         val status = when (task.status) {
             Status.VTODO_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
             Status.VTODO_COMPLETED  -> Tasks.STATUS_COMPLETED
@@ -535,6 +551,7 @@ abstract class DmfsTask(
         }
         builder.withValue(Tasks.STATUS, status)
 
+        // Time related
         val allDay = task.isAllDay()
         if (allDay) {
             builder .withValue(Tasks.IS_ALLDAY, 1)
@@ -545,7 +562,6 @@ abstract class DmfsTask(
             builder .withValue(Tasks.IS_ALLDAY, 0)
                     .withValue(Tasks.TZ, getTimeZone().id)
         }
-
         builder .withValue(Tasks.CREATED, task.createdAt)
                 .withValue(Tasks.LAST_MODIFIED, task.lastModified)
 
@@ -565,6 +581,7 @@ abstract class DmfsTask(
                             null
                         else
                             AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
+
         logger.log(Level.FINE, "Built task object", builder.build())
     }
 
@@ -603,6 +620,10 @@ abstract class DmfsTask(
 
     companion object {
         const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
+
+        const val COLUMN_ETAG = Tasks.SYNC1
+
+        const val COLUMN_FLAGS = Tasks.SYNC2
     }
 
 }
