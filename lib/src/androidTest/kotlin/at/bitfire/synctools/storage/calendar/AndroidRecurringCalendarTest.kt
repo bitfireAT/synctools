@@ -107,6 +107,21 @@ class AndroidRecurringCalendarTest {
     }
 
     @Test
+    fun testFindEventAndExceptions() {
+        TODO()
+    }
+
+    @Test
+    fun testGetById() {
+        TODO()
+    }
+
+    @Test
+    fun testIterateEventAndExceptions() {
+        TODO()
+    }
+
+    @Test
     fun testUpdateEventAndExceptions_NoRebuild() {
         // Create initial event
         val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
