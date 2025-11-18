@@ -65,7 +65,7 @@ import java.util.logging.Logger
  * for anything else.
  */
 open class DmfsTask(
-    val taskList: DmfsTaskList<DmfsTask>
+    val taskList: DmfsTaskList<*>
 ) {
 
     protected val logger = Logger.getLogger(javaClass.name)
