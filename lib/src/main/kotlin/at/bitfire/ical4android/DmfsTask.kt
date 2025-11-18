@@ -81,7 +81,7 @@ open class DmfsTask(
         id = values.getAsLong(Tasks._ID)
         syncId = values.getAsString(Tasks._SYNC_ID)
         eTag = values.getAsString(COLUMN_ETAG)
-        flags = values.getAsInteger(COLUMN_FLAGS)
+        flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
     }
 
     constructor(taskList: DmfsTaskList<*>, task: Task, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int): this(taskList) {
