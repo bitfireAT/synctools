@@ -165,7 +165,7 @@ open class DmfsTaskList<out T : DmfsTask>(
     }
 
     fun writeSyncState(state: String?) {
-        val values = contentValuesOf(COLUMN_SYNC_STATE to state.toString())
+        val values = contentValuesOf(COLUMN_SYNC_STATE to state)
         provider.update(taskListSyncUri(), values, null, null)
     }
 
