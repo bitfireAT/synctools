@@ -7,12 +7,10 @@
 package at.bitfire.ical4android.impl
 
 import android.content.ContentValues
-
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.DmfsTaskFactory
 import at.bitfire.ical4android.DmfsTaskList
 import at.bitfire.ical4android.Task
-import java.util.UUID
 
 class TestTask: DmfsTask {
 
