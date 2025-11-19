@@ -154,7 +154,7 @@ object TimeApiExtensions {
             if (secs == 0L)
                 return "PT0S"
 
-            var weeks = secs / SECONDS_PER_WEEK
+            val weeks = secs / SECONDS_PER_WEEK
             secs -= weeks * SECONDS_PER_WEEK
 
             var days = secs / SECONDS_PER_DAY
@@ -170,7 +170,6 @@ object TimeApiExtensions {
                 return "P${weeks}W"
 
             days += weeks * DAYS_PER_WEEK
-            weeks = 0
 
             if (days != 0L)
                 builder.append("${days}D")

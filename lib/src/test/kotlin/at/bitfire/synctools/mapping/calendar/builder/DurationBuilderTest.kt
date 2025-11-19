@@ -142,6 +142,41 @@ class DurationBuilderTest {
     }
 
 
+    // alignWithDtStart
+
+    @Test
+    fun `alignWithDtStart (DTSTART all-day, DURATION all-day)`() {
+        assertEquals(
+            Period.ofDays(1),       // may not be 24 hours (for instance on DST switch)
+            builder.alignWithDtStart(Period.ofDays(1), DtStart(Date()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART non-all-day, DURATION all-day)`() {
+        assertEquals(
+            java.time.Duration.ofDays(1),   // exactly 24 hours
+            builder.alignWithDtStart(Period.ofDays(1), DtStart(DateTime()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART all-day, DURATION non-all-day)`() {
+        assertEquals(
+            Period.ofDays(1),       // may not be 24 hours (for instance on DST switch)
+            builder.alignWithDtStart(java.time.Duration.ofDays(1), DtStart(Date()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART non-all-day, DURATION non-all-day)`() {
+        assertEquals(
+            java.time.Duration.ofDays(1),   // exactly 24 hours
+            builder.alignWithDtStart(Period.ofDays(1), DtStart(DateTime()))
+        )
+    }
+
+
     // calculateFromDtEnd
 
     @Test
