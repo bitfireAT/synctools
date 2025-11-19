@@ -164,7 +164,7 @@ class DurationBuilderTest {
     fun `alignWithDtStart (DTSTART all-day, DURATION non-all-day)`() {
         assertEquals(
             Period.ofDays(1),       // may not be 24 hours (for instance on DST switch)
-            builder.alignWithDtStart(java.time.Duration.ofDays(1), DtStart(Date()))
+            builder.alignWithDtStart(java.time.Duration.ofHours(25), DtStart(Date()))
         )
     }
 
@@ -172,7 +172,7 @@ class DurationBuilderTest {
     fun `alignWithDtStart (DTSTART non-all-day, DURATION non-all-day)`() {
         assertEquals(
             java.time.Duration.ofDays(1),   // exactly 24 hours
-            builder.alignWithDtStart(Period.ofDays(1), DtStart(DateTime()))
+            builder.alignWithDtStart(java.time.Duration.ofHours(24), DtStart(DateTime()))
         )
     }
 
