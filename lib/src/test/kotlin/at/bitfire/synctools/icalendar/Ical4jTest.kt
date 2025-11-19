@@ -8,7 +8,9 @@ package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.data.ParserException
+import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
@@ -20,18 +22,20 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.ProdId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import java.io.StringReader
+import java.io.StringWriter
 import java.time.Period
 
 class Ical4jTest {
 
-    val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
 
     @Test
-    fun testEmailParameter() {
+    fun `ATTENDEE with EMAIL parameter`() {
         // https://github.com/ical4j/ical4j/issues/418
         val event = ICalendarParser().parse(
             StringReader(
@@ -47,69 +51,6 @@ class Ical4jTest {
         ).getComponent<VEvent>(Component.VEVENT)
         val attendee = event.getProperty<Attendee>(Property.ATTENDEE)
         assertEquals("attendee1@example.virtual", attendee.getParameter<Email>(Parameter.EMAIL).value)
-    }
-
-    @Test
-    fun testTemporalAmountAdapter_durationToString_DropsMinutes() {
-        // https://github.com/ical4j/ical4j/issues/420
-        assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
-    }
-
-    @Test(expected = AssertionError::class)
-    fun testTemporalAmountAdapter_Months() {
-        // https://github.com/ical4j/ical4j/issues/419
-        // A month usually doesn't have 4 weeks = 4*7 days = 28 days (except February in non-leap years).
-        assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
-    }
-
-    @Test(expected = AssertionError::class)
-    fun testTemporalAmountAdapter_Year() {
-        // https://github.com/ical4j/ical4j/issues/419
-        // A year has 365 or 366 days, but never 52 weeks = 52*7 days = 364 days.
-        assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
-    }
-
-    @Test(expected = AssertionError::class)
-    fun testTzDarwin() {
-        val darwin = tzReg.getTimeZone("Australia/Darwin")
-
-        val ts1 = 1616720400000
-        assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
-
-        val dt2 = DateTime("20210326T103000", darwin)
-        assertEquals(1616720400000, dt2.time)
-    }
-
-    @Test
-    fun testTzDublin_negativeDst() {
-        // https://github.com/ical4j/ical4j/issues/493
-        // fixed by enabling net.fortuna.ical4j.timezone.offset.negative_dst_supported in ical4j.properties
-        val vtzFromGoogle = "BEGIN:VCALENDAR\n" +
-                "CALSCALE:GREGORIAN\n" +
-                "VERSION:2.0\n" +
-                "PRODID:-//Google Inc//Google Calendar 70.9054//EN\n" +
-                "BEGIN:VTIMEZONE\n" +
-                "TZID:Europe/Dublin\n" +
-                "BEGIN:STANDARD\n" +
-                "TZOFFSETFROM:+0000\n" +
-                "TZOFFSETTO:+0100\n" +
-                "TZNAME:IST\n" +
-                "DTSTART:19700329T010000\n" +
-                "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\n" +
-                "END:STANDARD\n" +
-                "BEGIN:DAYLIGHT\n" +
-                "TZOFFSETFROM:+0100\n" +
-                "TZOFFSETTO:+0000\n" +
-                "TZNAME:GMT\n" +
-                "DTSTART:19701025T020000\n" +
-                "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n" +
-                "END:DAYLIGHT\n" +
-                "END:VTIMEZONE\n" +
-                "END:VCALENDAR"
-        val iCalFromGoogle = CalendarBuilder().build(StringReader(vtzFromGoogle))
-        val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
-        val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
-        assertEquals("20210108T151500", dt.toString())
     }
 
     @Test
@@ -150,7 +91,83 @@ class Ical4jTest {
     }
 
     @Test
-    fun testTzKarachi() {
+    fun `PRODID is folded when exactly max line length`() {
+        val calendar = Calendar().apply {
+            properties += ProdId("01234567890123456789012345678901234567890123456789012345678901234567")
+        }
+        val writer = StringWriter()
+        CalendarOutputter().output(calendar, writer)
+        assertEquals("BEGIN:VCALENDAR\r\n" +
+                "PRODID:01234567890123456789012345678901234567890123456789012345678901234567\r\n" +
+                " \r\n" +
+                "END:VCALENDAR\r\n", writer.toString())
+    }
+
+    @Test
+    fun `TemporalAmountAdapter durationToString drops minutes`() {
+        // https://github.com/ical4j/ical4j/issues/420
+        assertEquals("P1DT1H4M", TemporalAmountAdapter.parse("P1DT1H4M").toString())
+    }
+
+    @Test(expected = AssertionError::class)
+    fun `TemporalAmountAdapter months`() {
+        // https://github.com/ical4j/ical4j/issues/419
+        // A month usually doesn't have 4 weeks = 4*7 days = 28 days (except February in non-leap years).
+        assertNotEquals("P4W", TemporalAmountAdapter(Period.ofMonths(1)).toString())
+    }
+
+    @Test(expected = AssertionError::class)
+    fun `TemporalAmountAdapter year`() {
+        // https://github.com/ical4j/ical4j/issues/419
+        // A year has 365 or 366 days, but never 52 weeks = 52*7 days = 364 days.
+        assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
+    }
+
+    @Test(expected = AssertionError::class)
+    fun `TZ Darwin`() {
+        val darwin = tzReg.getTimeZone("Australia/Darwin")
+
+        val ts1 = 1616720400000
+        assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
+
+        val dt2 = DateTime("20210326T103000", darwin)
+        assertEquals(1616720400000, dt2.time)
+    }
+
+    @Test
+    fun `TZ Dublin with negative DST`() {
+        // https://github.com/ical4j/ical4j/issues/493
+        // fixed by enabling net.fortuna.ical4j.timezone.offset.negative_dst_supported in ical4j.properties
+        val vtzFromGoogle = "BEGIN:VCALENDAR\n" +
+                "CALSCALE:GREGORIAN\n" +
+                "VERSION:2.0\n" +
+                "PRODID:-//Google Inc//Google Calendar 70.9054//EN\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Europe/Dublin\n" +
+                "BEGIN:STANDARD\n" +
+                "TZOFFSETFROM:+0000\n" +
+                "TZOFFSETTO:+0100\n" +
+                "TZNAME:IST\n" +
+                "DTSTART:19700329T010000\n" +
+                "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\n" +
+                "END:STANDARD\n" +
+                "BEGIN:DAYLIGHT\n" +
+                "TZOFFSETFROM:+0100\n" +
+                "TZOFFSETTO:+0000\n" +
+                "TZNAME:GMT\n" +
+                "DTSTART:19701025T020000\n" +
+                "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n" +
+                "END:DAYLIGHT\n" +
+                "END:VTIMEZONE\n" +
+                "END:VCALENDAR"
+        val iCalFromGoogle = CalendarBuilder().build(StringReader(vtzFromGoogle))
+        val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
+        val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
+        assertEquals("20210108T151500", dt.toString())
+    }
+
+    @Test
+    fun `TZ Karachi`() {
         // https://github.com/ical4j/ical4j/issues/491
         val karachi = tzReg.getTimeZone("Asia/Karachi")
 
