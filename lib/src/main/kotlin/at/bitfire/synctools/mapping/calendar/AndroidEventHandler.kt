@@ -39,6 +39,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
@@ -172,7 +173,7 @@ class AndroidEventHandler(
         }
     }
 
-    private fun generateProdId(main: Entity): String {
+    private fun generateProdId(main: Entity): ProdId {
         val mutators: String? = main.entityValues.getAsString(Events.MUTATORS)
         val packages: List<String> = mutators?.split(MUTATORS_SEPARATOR)?.toList() ?: emptyList()
         return prodIdGenerator.generateProdId(packages)

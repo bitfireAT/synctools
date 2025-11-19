@@ -6,6 +6,9 @@
 
 package at.bitfire.synctools.mapping.calendar
 
+import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.property.ProdId
+
 fun interface ProdIdGenerator {
 
     /**
@@ -13,24 +16,30 @@ fun interface ProdIdGenerator {
      *
      * @param packages  package names that have modified/generated the iCalendar (like `com.example.app.calendar`; may be empty)
      *
-     * @return the full `PRODID` string, with the package names and probably additional information added
-     * (like `MyApp/1.0 (com.example.app.calendar)`)
+     * @return the generated `PRODID` property, with possible additional information (like `PRODID:MyApp/1.0`)
      */
-    fun generateProdId(packages: List<String>): String
+    fun generateProdId(packages: List<String>): ProdId
 
 }
 
 class DefaultProdIdGenerator(
-    private val baseId: String
+    private val prodId: String
 ): ProdIdGenerator {
 
-    override fun generateProdId(packages: List<String>): String {
-        val builder = StringBuilder(baseId)
-        if (packages.isNotEmpty())
-            builder .append(" (")
-                .append(packages.joinToString(", "))
-                .append(")")
-        return builder.toString()
+    override fun generateProdId(packages: List<String>): ProdId {
+        val params = ParameterList()
+
+        // check compatibility first
+        /*if (packages.isNotEmpty()) {
+            val packagesStr = packages.joinToString(",")
+            params.add(XParameter(PARAMETER_MUTATORS, packagesStr))
+        }*/
+
+        return ProdId(params, prodId)
     }
+
+    /*companion object {
+        const val PARAMETER_MUTATORS = "x-mutators"
+    }*/
 
 }
