@@ -72,6 +72,18 @@ class DurationBuilderTest {
     }
 
     @Test
+    fun `Recurring all-day event (with zero seconds DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(java.time.Duration.ofSeconds(0)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        assertEquals("P0D", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
     fun `Recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -129,6 +141,8 @@ class DurationBuilderTest {
         assertEquals("PT0S", result.entityValues.get(Events.DURATION))
     }
 
+
+    // calculateFromDtEnd
 
     @Test
     fun `calculateFromDtEnd (dtStart=DATE, DtEnd=DATE)`() {

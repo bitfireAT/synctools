@@ -48,8 +48,12 @@ class DurationBuilder: AndroidEntityBuilder {
         > When the "DURATION" property relates to a "DTSTART" property that is specified as a DATE value, then the
         >"DURATION" property MUST be specified as a "dur-day" or "dur-week" value.
 
-        The calendar provider automatically converts the DURATION of an all-day event to unit: days,
-        so we don't have to take care of that. */
+        The calendar provider theoretically converts the DURATION of an all-day event to unit "days",
+        so we wouldn't have to take care of that. However it expects seconds to be in "P<n>S" format,
+        whereas we provide an RFC 5545-compliant "PT<n>S", which causes the provider to crash:
+        https://github.com/bitfireAT/synctools/issues/144. So we must convert it ourselves to be on the safe side. */
+
+        // TODO: adapt DURATION according to DATE/DATE-TIME
 
         // TemporalAmount can have months and years, but the RFC 5545 must only contain weeks, days and time.
         // So we have to recalculate the months/years to days according to their position in the calendar.
