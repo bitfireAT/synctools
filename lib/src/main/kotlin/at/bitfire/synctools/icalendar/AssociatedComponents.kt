@@ -8,6 +8,7 @@ package at.bitfire.synctools.icalendar
 
 import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.ProdId
 
 /**
  * Represents a set of components (like VEVENT) stored in a calendar object resource as defined
@@ -33,7 +34,7 @@ import net.fortuna.ical4j.model.component.VEvent
 data class AssociatedComponents<T: CalendarComponent>(
     val main: T?,
     val exceptions: List<T>,
-    val prodId: String? = null
+    val prodId: ProdId? = null
 ) {
 
     init {

@@ -17,7 +17,6 @@ import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.Version
 import java.io.Writer
 import javax.annotation.WillNotClose
@@ -40,7 +39,7 @@ class ICalendarGenerator {
 
         // add PRODID
         if (event.prodId != null)
-            ical.properties += ProdId(event.prodId)
+            ical.properties += event.prodId
 
         // keep record of used timezones and earliest DTSTART to generate minified VTIMEZONEs
         var earliestStart: Date? = null

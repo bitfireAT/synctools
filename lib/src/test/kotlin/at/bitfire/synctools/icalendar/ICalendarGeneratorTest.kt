@@ -13,6 +13,7 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStamp
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Uid
@@ -29,7 +30,7 @@ class ICalendarGeneratorTest {
     private val tzLondon = tzRegistry.getTimeZone("Europe/London")!!
     private val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
 
-    private val userAgent = "TestUA/1.0"
+    private val userAgent = ProdId("TestUA/1.0")
     private val writer = ICalendarGenerator()
 
     @Test

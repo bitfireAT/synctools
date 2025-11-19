@@ -17,6 +17,7 @@ import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
@@ -192,7 +193,7 @@ class AndroidEventHandlerTest {
                 exceptions = emptyList()
             )
         ).associatedEvents
-        assertEquals(javaClass.simpleName, result.prodId)
+        assertEquals(ProdId(javaClass.simpleName), result.prodId)
     }
 
     @Test
@@ -206,7 +207,7 @@ class AndroidEventHandlerTest {
                 exceptions = emptyList()
             )
         ).associatedEvents
-        assertEquals("${javaClass.simpleName} (pkg1, pkg2)", result.prodId)
+        assertEquals(ProdId(javaClass.simpleName), result.prodId)
     }
 
 
