@@ -60,7 +60,7 @@ class DurationBuilder: AndroidEntityBuilder {
         So we have to recalculate the months/years to days according to their position in the calendar.
 
         The calendar provider accepts every DURATION that `com.android.calendarcommon2.Duration` can parse,
-        which is weeks, days, hours, minutes and seconds. */
+        which is weeks, days, hours, minutes and seconds, like for the RFC 5545 duration. */
         val durationStr = alignedDuration.toRfc5545Duration(dtStart.date.toInstant())
         values.put(Events.DURATION, durationStr)
     }
@@ -81,7 +81,7 @@ class DurationBuilder: AndroidEntityBuilder {
         if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
             return if (amount is java.time.Duration) {
-                // amount is Duration, change to Period of seconds instead
+                // amount is Duration, change to Period of days instead
                 Period.ofDays(amount.toDays().toInt())
             } else {
                 // amount is already Period
