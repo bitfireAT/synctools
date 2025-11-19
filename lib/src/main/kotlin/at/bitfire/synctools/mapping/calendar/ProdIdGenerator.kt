@@ -12,11 +12,11 @@ import net.fortuna.ical4j.model.property.ProdId
 fun interface ProdIdGenerator {
 
     /**
-     * Generates a `PRODID` string using additional package names.
+     * Generates a `PRODID` string, possibly using additional package names.
      *
-     * @param packages  package names that have modified/generated the iCalendar (like `com.example.app.calendar`; may be empty)
+     * @param packages  package names that have modified the entry in the local storage (like `com.example.app.calendar`; may be empty)
      *
-     * @return the generated `PRODID` property, with possible additional information (like `PRODID:MyApp/1.0`)
+     * @return the generated `PRODID` property, possibly including additional information (like `PRODID:MyApp/1.0`)
      */
     fun generateProdId(packages: List<String>): ProdId
 
