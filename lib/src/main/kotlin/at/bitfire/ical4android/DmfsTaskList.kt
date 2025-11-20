@@ -11,7 +11,7 @@ import android.content.ContentProviderClient
 import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
-import androidx.annotation.CallSuper
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.DmfsTaskList.Companion.find
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation
@@ -20,6 +20,7 @@ import at.bitfire.synctools.storage.TasksBatchOperation
 import at.bitfire.synctools.storage.toContentValues
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
+import org.dmfs.tasks.contract.TaskContract.TaskListColumns
 import org.dmfs.tasks.contract.TaskContract.TaskLists
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.io.FileNotFoundException
@@ -32,7 +33,7 @@ import java.util.logging.Logger
  * Represents a locally stored task list, containing [DmfsTask]s (tasks).
  * Communicates with tasks.org-compatible content providers (currently tasks.org and OpenTasks) to store the tasks.
  */
-abstract class DmfsTaskList<out T : DmfsTask>(
+open class DmfsTaskList<out T : DmfsTask>(
     val account: Account,
     val provider: ContentProviderClient,
     val providerName: TaskProvider.ProviderName,
@@ -40,75 +41,9 @@ abstract class DmfsTaskList<out T : DmfsTask>(
     val id: Long
 ) {
 
-    companion object {
-
-        private val logger
-            get() = Logger.getLogger(DmfsTaskList::class.java.name)
-
-        fun create(account: Account, provider: ContentProviderClient, providerName: TaskProvider.ProviderName, info: ContentValues): Uri {
-            info.put(TaskContract.ACCOUNT_NAME, account.name)
-            info.put(TaskContract.ACCOUNT_TYPE, account.type)
-
-            val url = TaskLists.getContentUri(providerName.authority).asSyncAdapter(account)
-            logger.log(Level.FINE, "Creating ${providerName.authority} task list", info)
-            return provider.insert(url, info)
-                ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
-        }
-
-        fun <T : DmfsTaskList<DmfsTask>> findByID(
-            account: Account,
-            provider: ContentProviderClient,
-            providerName: TaskProvider.ProviderName,
-            factory: DmfsTaskListFactory<T>,
-            id: Long
-        ): T {
-            provider.query(
-                ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account),
-                null,
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                if (cursor.moveToNext()) {
-                    val taskList = factory.newInstance(account, provider, providerName, id)
-                    taskList.populate(cursor.toContentValues())
-                    return taskList
-                }
-            }
-            throw FileNotFoundException()
-        }
-
-        fun <T : DmfsTaskList<DmfsTask>> find(
-            account: Account,
-            factory: DmfsTaskListFactory<T>,
-            provider: ContentProviderClient,
-            providerName: TaskProvider.ProviderName,
-            where: String?,
-            whereArgs: Array<String>?
-        ): List<T> {
-            val taskLists = LinkedList<T>()
-            provider.query(
-                TaskLists.getContentUri(providerName.authority).asSyncAdapter(account),
-                null,
-                where,
-                whereArgs,
-                null
-            )?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    val values = cursor.toContentValues()
-                    val taskList =
-                        factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
-                    taskList.populate(values)
-                    taskLists += taskList
-                }
-            }
-            return taskLists
-        }
-
-    }
-
     var syncId: String? = null
     var name: String? = null
+    var accessLevel: Int? = null
     var color: Int? = null
     var isSynced = false
     var isVisible = false
@@ -123,10 +58,10 @@ abstract class DmfsTaskList<out T : DmfsTask>(
      *
      * @param values  values from tasks provider
      */
-    @CallSuper
-    protected open fun populate(values: ContentValues) {
+    private fun populate(values: ContentValues) {
         syncId = values.getAsString(TaskLists._SYNC_ID)
         name = values.getAsString(TaskLists.LIST_NAME)
+        accessLevel = values.getAsInteger(TaskListColumns.ACCESS_LEVEL)
         color = values.getAsInteger(TaskLists.LIST_COLOR)
         values.getAsInteger(TaskLists.SYNC_ENABLED)?.let { isSynced = it != 0 }
         values.getAsInteger(TaskLists.VISIBLE)?.let { isVisible = it != 0 }
@@ -217,6 +152,22 @@ abstract class DmfsTaskList<out T : DmfsTask>(
     fun findById(id: Long) = queryTasks("${Tasks._ID}=?", arrayOf(id.toString())).firstOrNull()
         ?: throw FileNotFoundException()
 
+    fun readSyncState(): String? = try {
+        provider.query(taskListSyncUri(), arrayOf(COLUMN_SYNC_STATE), null, null, null)?.use { cursor ->
+            if (cursor.moveToNext())
+                return cursor.getString(0)
+            else
+                null
+        }
+    } catch (e: Exception) {
+        logger.log(Level.WARNING, "Couldn't read sync state", e)
+        null
+    }
+
+    fun writeSyncState(state: String?) {
+        val values = contentValuesOf(COLUMN_SYNC_STATE to state)
+        provider.update(taskListSyncUri(), values, null, null)
+    }
 
     fun taskListSyncUri() =
         ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account)
@@ -232,5 +183,74 @@ abstract class DmfsTaskList<out T : DmfsTask>(
     }
 
     fun tasksPropertiesSyncUri() = TaskContract.Properties.getContentUri(providerName.authority).asSyncAdapter(account)
+
+    companion object {
+
+        private const val COLUMN_SYNC_STATE = TaskLists.SYNC_VERSION
+
+        private val logger
+            get() = Logger.getLogger(DmfsTaskList::class.java.name)
+
+        fun create(account: Account, provider: ContentProviderClient, providerName: TaskProvider.ProviderName, info: ContentValues): Uri {
+            info.put(TaskContract.ACCOUNT_NAME, account.name)
+            info.put(TaskContract.ACCOUNT_TYPE, account.type)
+
+            val url = TaskLists.getContentUri(providerName.authority).asSyncAdapter(account)
+            logger.log(Level.FINE, "Creating ${providerName.authority} task list", info)
+            return provider.insert(url, info)
+                ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
+        }
+
+        fun <T : DmfsTaskList<DmfsTask>> findByID(
+            account: Account,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            factory: DmfsTaskListFactory<T>,
+            id: Long
+        ): T {
+            provider.query(
+                ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account),
+                null,
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToNext()) {
+                    val taskList = factory.newInstance(account, provider, providerName, id)
+                    taskList.populate(cursor.toContentValues())
+                    return taskList
+                }
+            }
+            throw FileNotFoundException()
+        }
+
+        fun <T : DmfsTaskList<DmfsTask>> find(
+            account: Account,
+            factory: DmfsTaskListFactory<T>,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            where: String?,
+            whereArgs: Array<String>?
+        ): List<T> {
+            val taskLists = LinkedList<T>()
+            provider.query(
+                TaskLists.getContentUri(providerName.authority).asSyncAdapter(account),
+                null,
+                where,
+                whereArgs,
+                null
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val values = cursor.toContentValues()
+                    val taskList =
+                        factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
+                    taskList.populate(values)
+                    taskLists += taskList
+                }
+            }
+            return taskLists
+        }
+
+    }
 
 }
