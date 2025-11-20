@@ -72,6 +72,18 @@ class DurationBuilderTest {
     }
 
     @Test
+    fun `Recurring all-day event (with zero seconds DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(java.time.Duration.ofSeconds(0)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        assertEquals("P0D", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
     fun `Recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -129,6 +141,43 @@ class DurationBuilderTest {
         assertEquals("PT0S", result.entityValues.get(Events.DURATION))
     }
 
+
+    // alignWithDtStart
+
+    @Test
+    fun `alignWithDtStart (DTSTART all-day, DURATION all-day)`() {
+        assertEquals(
+            Period.ofDays(1),       // may not be 24 hours (for instance on DST switch)
+            builder.alignWithDtStart(Period.ofDays(1), DtStart(Date()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART non-all-day, DURATION all-day)`() {
+        assertEquals(
+            java.time.Duration.ofDays(1),   // exactly 24 hours
+            builder.alignWithDtStart(Period.ofDays(1), DtStart(DateTime()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART all-day, DURATION non-all-day)`() {
+        assertEquals(
+            Period.ofDays(1),       // may not be 24 hours (for instance on DST switch)
+            builder.alignWithDtStart(java.time.Duration.ofHours(25), DtStart(Date()))
+        )
+    }
+
+    @Test
+    fun `alignWithDtStart (DTSTART non-all-day, DURATION non-all-day)`() {
+        assertEquals(
+            java.time.Duration.ofDays(1),   // exactly 24 hours
+            builder.alignWithDtStart(java.time.Duration.ofHours(24), DtStart(DateTime()))
+        )
+    }
+
+
+    // calculateFromDtEnd
 
     @Test
     fun `calculateFromDtEnd (dtStart=DATE, DtEnd=DATE)`() {
