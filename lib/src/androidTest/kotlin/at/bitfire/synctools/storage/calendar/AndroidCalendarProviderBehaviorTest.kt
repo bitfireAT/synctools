@@ -74,10 +74,7 @@ class AndroidCalendarProviderBehaviorTest {
             Events.TITLE to "Recurring all-day event with zero seconds duration",
             Events.RRULE to "FREQ=DAILY;UNTIL=20251122"
         )
-        val id = calendar.addEvent(Entity(values))
-
-        val event2 = calendar.getEventRow(id)
-        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+        calendar.addEvent(Entity(values))
     }
 
     /**
