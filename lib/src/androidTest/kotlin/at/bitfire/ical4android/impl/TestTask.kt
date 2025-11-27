@@ -7,7 +7,6 @@
 package at.bitfire.ical4android.impl
 
 import android.content.ContentValues
-
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.DmfsTaskFactory
 import at.bitfire.ical4android.DmfsTaskList
@@ -19,7 +18,7 @@ class TestTask: DmfsTask {
         : super(taskList, values)
 
     constructor(taskList: TestTaskList, task: Task)
-        : super(taskList, task)
+        : super(taskList, task, "6c2710c3-f82c-4dfa-8738-186b82c35c08", null, 0)
 
     object Factory: DmfsTaskFactory<TestTask> {
         override fun fromProvider(taskList: DmfsTaskList<DmfsTask>, values: ContentValues) =
