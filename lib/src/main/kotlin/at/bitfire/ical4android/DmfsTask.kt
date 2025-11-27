@@ -84,9 +84,7 @@ open class DmfsTask(
         flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
     }
 
-    constructor(taskList: DmfsTaskList<*>, task: Task, syncId: String?, eTag: String?, scheduleTag: String?, flags: Int): this(taskList) {
-        if (scheduleTag != null)
-            logger.fine("Schedule-Tag for tasks not supported yet, won't save")
+    constructor(taskList: DmfsTaskList<*>, task: Task, syncId: String?, eTag: String?, flags: Int): this(taskList) {
         this.task = task
         this.syncId = syncId
         this.eTag = eTag
