@@ -19,9 +19,27 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 @RunWith(RobolectricTestRunner::class)
 class EventHandlerTest {
+
+    @Test
+    fun test_parseStartDate_ISO_UTC_DateTime() {
+        assertEquals(
+            OffsetDateTime.of(1953, 10,  15, 23, 10, 0, 0, ZoneOffset.UTC),
+            EventHandler.parseStartDate("1953-10-15T23:10:00Z")
+        )
+    }
+
+    @Test
+    fun test_parseStartDate_ISO_Date() {
+        assertEquals(
+            LocalDate.of(1953, 10,  15),
+            EventHandler.parseStartDate("1953-10-15")
+        )
+    }
 
     @Test
     fun testStartDate_Empty() {
