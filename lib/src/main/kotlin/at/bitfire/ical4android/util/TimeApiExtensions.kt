@@ -124,8 +124,7 @@ object TimeApiExtensions {
                     this.negated()
                 else
                     this
-            else ->
-                this    // never called
+            else -> throw IllegalArgumentException("TemporalAmount must be Period or Duration")
         }
 
     fun TemporalAmount.toDuration(position: Instant): Duration =

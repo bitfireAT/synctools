@@ -56,7 +56,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
 
         // ignore DTEND when not after DTSTART and use default duration, if necessary
         val dtEnd = calculatedDtEnd
-            ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if its after DTSTART [1]
+            ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if it's after DTSTART [1]
             ?: calculateFromDefault(dtStart)
 
         /**
