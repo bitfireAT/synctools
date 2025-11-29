@@ -50,8 +50,14 @@ class EndTimeBuilder: AndroidEntityBuilder {
         val calculatedDtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
             ?: calculateFromDuration(dtStart, from.duration)
 
-        val dtEnd = calculatedDtEnd?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }
+        val dtEnd = calculatedDtEnd
+            ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if its after DTSTART [1]
             ?: calculateFromDefault(dtStart)
+
+        /**
+         * [1] RFC 5545 3.8.2.2 Date-Time End:
+         * […] its value MUST be later in time than the value of the "DTSTART" property.
+         */
 
         // end time: UNIX timestamp
         values.put(Events.DTEND, dtEnd.date.time)

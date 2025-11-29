@@ -130,6 +130,18 @@ class EndTimeBuilderTest {
     }
 
     @Test
+    fun `Non-recurring all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251012")),
+            Duration(Period.ofDays(-3))     // invalid negative duration, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration for all-day events: one day
+        assertEquals(1760313600000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
     fun `Non-recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -137,6 +149,18 @@ class EndTimeBuilderTest {
             Duration(java.time.Duration.ofMinutes(90))
         ))
         builder.build(event, event, result)
+        assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring non-all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T023203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(-90)) // invalid negative duration, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration for non-all-day events: PT0S
         assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
     }
 

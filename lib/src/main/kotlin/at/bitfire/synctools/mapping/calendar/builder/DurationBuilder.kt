@@ -42,8 +42,20 @@ class DurationBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
-        val duration = from.duration
+        val calculatedDuration = from.duration
             ?: calculateFromDtEnd(dtStart, from.endDate)
+
+        val duration = calculatedDuration
+            .takeUnless {                          // ignore negative duration
+                when (val d = it?.duration) {
+                    is Period ->
+                        d.isNegative
+                    is java.time.Duration ->
+                        d.isNegative
+                    else ->
+                        /* never used */ false
+                }
+            }
             ?: defaultDuration(DateUtils.isDate(dtStart))
 
         /* [RFC 5545 3.8.2.5]
