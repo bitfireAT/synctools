@@ -58,6 +58,43 @@ class AndroidCalendarProviderBehaviorTest {
 
 
     /**
+     * To make sure that's not a problem to insert an event with DTEND = DTSTART.
+     */
+    @Test
+    fun testInsertEventWithDtEndEqualsDtStart() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.DTEND to 1759403653000,
+            Events.TITLE to "Event with DTSTART = DTEND"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        // Google Calendar 2025.44.1-827414499-release correctly shows this event [2025/11/29]
+
+        val event2 = calendar.getEventRow(id)
+        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+    }
+
+    /**
+     * To make sure that's not a problem to insert an (invalid/useless) RRULE with UNTIL before the event's DTSTART.
+     */
+    @Test
+    fun testInsertEventWithRRuleUntilBeforeDtStart() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with useless RRULE",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T000000Z"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        val event2 = calendar.getEventRow(id)
+        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+    }
+
+    /**
      * To verify that it's a problem to insert a recurring all-day event with a duration of zero seconds.
      * See:
      *
@@ -106,24 +143,6 @@ class AndroidCalendarProviderBehaviorTest {
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
             Events.DURATION to "PT0S",
             Events.TITLE to "Recurring non-all-day event with zero seconds duration",
-            Events.RRULE to "FREQ=DAILY;UNTIL=20251002T000000Z"
-        )
-        val id = calendar.addEvent(Entity(values))
-
-        val event2 = calendar.getEventRow(id)
-        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
-    }
-
-    /**
-     * To make sure that's not a problem to insert an (invalid/useless) RRULE with UNTIL before the event's DTSTART.
-     */
-    @Test
-    fun testInsertEventWithRRuleUntilBeforeDtStart() {
-        val values = contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
-            Events.DURATION to "PT1H",
-            Events.TITLE to "Event with useless RRULE",
             Events.RRULE to "FREQ=DAILY;UNTIL=20251002T000000Z"
         )
         val id = calendar.addEvent(Entity(values))
