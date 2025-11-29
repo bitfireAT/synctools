@@ -42,9 +42,12 @@ class DurationBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
+
+        // calculate DURATION from DTEND - DTSTART, if necessary
         val calculatedDuration = from.duration
             ?: calculateFromDtEnd(dtStart, from.endDate)
 
+        // ignore potentially negative duration and use default duration, if necessary
         val duration = calculatedDuration
             .takeUnless {                          // ignore negative duration
                 when (val d = it?.duration) {

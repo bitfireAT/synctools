@@ -47,9 +47,12 @@ class EndTimeBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
+
+        // potentially calculate DTEND from DTSTART + DURATION, and always align with DTSTART value type
         val calculatedDtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
             ?: calculateFromDuration(dtStart, from.duration)
 
+        // ignore DTEND when not after DTSTART and use default duration, if necessary
         val dtEnd = calculatedDtEnd
             ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if its after DTSTART [1]
             ?: calculateFromDefault(dtStart)
