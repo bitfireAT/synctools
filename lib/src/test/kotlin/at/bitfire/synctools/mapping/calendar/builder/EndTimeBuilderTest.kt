@@ -133,11 +133,10 @@ class EndTimeBuilderTest {
     fun `Non-recurring all-day event (with negative DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(Date("20251012")),
-            Duration(Period.ofDays(-3))     // invalid negative duration, should be ignored
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(-3))     // invalid negative DURATION will be treated as positive
         ))
         builder.build(event, event, result)
-        // default duration for all-day events: one day
         assertEquals(1760313600000, result.entityValues.get(Events.DTEND))
     }
 
@@ -156,11 +155,10 @@ class EndTimeBuilderTest {
     fun `Non-recurring non-all-day event (with negative DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(DateTime("20251010T023203", tzVienna)),
-            Duration(java.time.Duration.ofMinutes(-90)) // invalid negative duration, should be ignored
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(-90))     // invalid negative DURATION will be treated as positive
         ))
         builder.build(event, event, result)
-        // default duration for non-all-day events: PT0S
         assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
     }
 
@@ -283,6 +281,18 @@ class EndTimeBuilderTest {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
             Duration(null, "PT25H")
+        )
+        assertEquals(
+            DtEnd(DateTime("20250102T055623", tzVienna)),
+            result
+        )
+    }
+
+    @Test
+    fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based and negative)`() {
+        val result = builder.calculateFromDuration(
+            DtStart(DateTime("20250101T045623", tzVienna)),
+            Duration(null, "PT-25H")
         )
         assertEquals(
             DtEnd(DateTime("20250102T055623", tzVienna)),

@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
@@ -49,7 +50,8 @@ class EndTimeBuilder: AndroidEntityBuilder {
         val dtStart = from.requireDtStart()
 
         // potentially calculate DTEND from DTSTART + DURATION, and always align with DTSTART value type
-        val calculatedDtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
+        val calculatedDtEnd = from.getEndDate(/* don't let ical4j calculate DTEND from DURATION */ false)
+            ?.let { alignWithDtStart(it, dtStart = dtStart) }
             ?: calculateFromDuration(dtStart, from.duration)
 
         // ignore DTEND when not after DTSTART and use default duration, if necessary
@@ -138,7 +140,8 @@ class EndTimeBuilder: AndroidEntityBuilder {
         if (duration == null)
             return null
 
-        val dur = duration.duration
+        val dur = duration.duration.abs()   // always take positive temporal amount
+
         return if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
             if (dur is Period) {

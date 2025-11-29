@@ -112,12 +112,11 @@ class DurationBuilderTest {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
             DtStart(Date("20251017")),
-            DtEnd(Date("20251010")),    // before DTSTART, should be ignored
+            DtEnd(Date("20251010")),    // calculates to P-1W, which will be changed to P1W
             RRule("FREQ=DAILY;COUNT=5")
         ))
         builder.build(event, event, result)
-        // default duration for all-day events: one day
-        assertEquals("P1D", result.entityValues.get(Events.DURATION))
+        assertEquals("P1W", result.entityValues.get(Events.DURATION))
     }
 
     @Test
@@ -137,12 +136,11 @@ class DurationBuilderTest {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
             DtStart(DateTime("20251010T010203", tzVienna)),
-            DtEnd(DateTime("20251009T010203", tzVienna)),   // before DTSTART, should be ignored
+            DtEnd(DateTime("20251010T000203", tzVienna)),   // calculates to PT-1H, will be rewritten to PT1H
             RRule("FREQ=DAILY;COUNT=5")
         ))
         builder.build(event, event, result)
-        // default duration for non-all-day events: PT0S
-        assertEquals("PT0S", result.entityValues.get(Events.DURATION))
+        assertEquals("PT1H", result.entityValues.get(Events.DURATION))
     }
 
     @Test
@@ -212,7 +210,7 @@ class DurationBuilderTest {
             DtEnd(Date("20240330"))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
     }
@@ -224,7 +222,7 @@ class DurationBuilderTest {
             DtEnd(DateTime("20240330T123412", tzVienna))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
     }
@@ -236,7 +234,7 @@ class DurationBuilderTest {
             DtEnd(Date("20240330"))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
     }
@@ -248,7 +246,7 @@ class DurationBuilderTest {
             DtEnd(DateTime("20240728T010203Z"))     // GMT+1 with DST → 2 hours difference
         )
         assertEquals(
-            Duration(java.time.Duration.ofHours(2)),
+            java.time.Duration.ofHours(2),
             result
         )
     }

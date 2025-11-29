@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android.util
 
+import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.requireTimeZone
 import at.bitfire.ical4android.util.TimeApiExtensions.toDuration
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
@@ -168,6 +169,39 @@ class TimeApiExtensionsTest {
         assertEquals(
             DateTime("20200705T010203Z"),
             ZonedDateTime.of(2020, 7, 5, 1, 2, 3, 0, ZoneOffset.UTC).toIcal4jDateTime(tzRegistry)
+        )
+    }
+
+
+    @Test
+    fun testTemporalAmount_abs_Duration_negative() {
+        assertEquals(
+            Duration.ofMinutes(1),
+            Duration.ofMinutes(-1).abs()
+        )
+    }
+
+    @Test
+    fun testTemporalAmount_abs_Duration_positive() {
+        assertEquals(
+            Duration.ofDays(1),
+            Duration.ofDays(1).abs()
+        )
+    }
+
+    @Test
+    fun testTemporalAmount_abs_Period_negative() {
+        assertEquals(
+            Period.ofWeeks(1),
+            Period.ofWeeks(-1).abs()
+        )
+    }
+
+    @Test
+    fun testTemporalAmount_abs_Period_positive() {
+        assertEquals(
+            Period.ofDays(1),
+            Period.ofDays(1).abs()
         )
     }
 
