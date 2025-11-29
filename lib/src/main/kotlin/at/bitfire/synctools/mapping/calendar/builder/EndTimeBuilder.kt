@@ -47,8 +47,10 @@ class EndTimeBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
-        val dtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
+        val calculatedDtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
             ?: calculateFromDuration(dtStart, from.duration)
+
+        val dtEnd = calculatedDtEnd?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }
             ?: calculateFromDefault(dtStart)
 
         // end time: UNIX timestamp
