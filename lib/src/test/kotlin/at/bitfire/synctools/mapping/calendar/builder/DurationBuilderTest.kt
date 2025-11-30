@@ -108,6 +108,19 @@ class DurationBuilderTest {
     }
 
     @Test
+    fun `Recurring all-day event (with DTEND before START)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251017")),
+            DtEnd(Date("20251010")),    // DTEND before DTSTART should be ignored
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        // default duration for all-day events: one day
+        assertEquals("P1D", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
     fun `Recurring non-all-day event (with DTEND)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -117,6 +130,19 @@ class DurationBuilderTest {
         ))
         builder.build(event, event, result)
         assertEquals("P1DT1H1M1S", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
+    fun `Recurring non-all-day event (with DTEND before DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251010T000203", tzVienna)),   // DTEND before DTSTART should be ignored
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        // default duration for non-all-day events: zero seconds
+        assertEquals("PT0S", result.entityValues.get(Events.DURATION))
     }
 
     @Test
@@ -186,9 +212,18 @@ class DurationBuilderTest {
             DtEnd(Date("20240330"))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
+    }
+
+    @Test
+    fun `calculateFromDtEnd (dtStart=DATE, DtEnd before dtStart)`() {
+        val result = builder.calculateFromDtEnd(
+            DtStart(Date("20240328")),
+            DtEnd(Date("20240327"))
+        )
+        assertNull(result)
     }
 
     @Test
@@ -198,9 +233,18 @@ class DurationBuilderTest {
             DtEnd(DateTime("20240330T123412", tzVienna))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
+    }
+
+    @Test
+    fun `calculateFromDtEnd (dtStart=DATE-TIME, DtEnd before dtStart)`() {
+        val result = builder.calculateFromDtEnd(
+            DtStart(DateTime("20240328T010203", tzVienna)),
+            DtEnd(DateTime("20240328T000000", tzVienna))
+        )
+        assertNull(result)
     }
 
     @Test
@@ -210,7 +254,7 @@ class DurationBuilderTest {
             DtEnd(Date("20240330"))
         )
         assertEquals(
-            Duration(Period.ofDays(2)),
+            Period.ofDays(2),
             result
         )
     }
@@ -222,7 +266,7 @@ class DurationBuilderTest {
             DtEnd(DateTime("20240728T010203Z"))     // GMT+1 with DST → 2 hours difference
         )
         assertEquals(
-            Duration(java.time.Duration.ofHours(2)),
+            java.time.Duration.ofHours(2),
             result
         )
     }

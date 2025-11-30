@@ -112,6 +112,21 @@ object TimeApiExtensions {
 
     /***** Durations *****/
 
+    /**
+     * Returns the absolute (positive) temporal amount.
+     */
+    fun TemporalAmount.abs(): TemporalAmount =
+        when (this) {
+            is Duration ->
+                this.abs()
+            is Period ->
+                if (this.isNegative)
+                    this.negated()
+                else
+                    this
+            else -> throw IllegalArgumentException("TemporalAmount must be Period or Duration")
+        }
+
     fun TemporalAmount.toDuration(position: Instant): Duration =
         when (this) {
             is Duration -> this
