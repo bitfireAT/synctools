@@ -145,6 +145,19 @@ class DurationBuilderTest {
     }
 
     @Test
+    fun `Recurring all-day event (with DTEND equals START)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251017")),
+            DtEnd(Date("20251017")),    // DTEND equals DTSTART should be ignored
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        // default duration for all-day events: one day
+        assertEquals("P1D", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
     fun `Recurring non-all-day event (with DTEND)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -162,6 +175,19 @@ class DurationBuilderTest {
         val event = VEvent(propertyListOf(
             DtStart(DateTime("20251010T010203", tzVienna)),
             DtEnd(DateTime("20251010T000203", tzVienna)),   // DTEND before DTSTART should be ignored
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        // default duration for non-all-day events: zero seconds
+        assertEquals("PT0S", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
+    fun `Recurring non-all-day event (with DTEND equals DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            DtEnd(DateTime("20251010T010203", tzVienna)),   // DTEND equals DTSTART should be ignored
             RRule("FREQ=DAILY;COUNT=5")
         ))
         builder.build(event, event, result)
