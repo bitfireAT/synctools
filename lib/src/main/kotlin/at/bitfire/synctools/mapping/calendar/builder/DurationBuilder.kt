@@ -109,7 +109,7 @@ class DurationBuilder: AndroidEntityBuilder {
      * Calculates the DURATION from DTEND - DTSTART, if possible.
      *
      * @param dtStart   start date/date-time
-     * @param dtEnd     (optional) end date/date-time (ignored if it's not before [dtStart])
+     * @param dtEnd     (optional) end date/date-time (ignored if not after [dtStart])
      *
      * @return duration or `null` if no valid end time was available
      */

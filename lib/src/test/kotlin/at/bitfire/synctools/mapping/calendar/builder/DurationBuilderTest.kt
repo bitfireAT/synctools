@@ -72,6 +72,18 @@ class DurationBuilderTest {
     }
 
     @Test
+    fun `Recurring all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(-3)),    // invalid negative DURATION will be treated as positive
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        assertEquals("P3D", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
     fun `Recurring all-day event (with zero seconds DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -89,6 +101,18 @@ class DurationBuilderTest {
         val event = VEvent(propertyListOf(
             DtStart(DateTime("20251010T010203", tzVienna)),
             Duration(java.time.Duration.ofMinutes(90)),
+            RRule("FREQ=DAILY;COUNT=5")
+        ))
+        builder.build(event, event, result)
+        assertEquals("PT1H30M", result.entityValues.get(Events.DURATION))
+    }
+
+    @Test
+    fun `Recurring non-all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(-90)),    // invalid negative DURATION will be treated as positive
             RRule("FREQ=DAILY;COUNT=5")
         ))
         builder.build(event, event, result)
