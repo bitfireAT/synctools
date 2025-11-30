@@ -107,7 +107,7 @@ class DurationBuilder: AndroidEntityBuilder {
 
     @VisibleForTesting
     internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): TemporalAmount? {
-        if (dtEnd == null)
+        if (dtEnd == null || dtEnd.date.toInstant() <= dtStart.date.toInstant())
             return null
 
         return if (DateUtils.isDateTime(dtStart) && DateUtils.isDateTime(dtEnd)) {
