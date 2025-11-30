@@ -45,7 +45,7 @@ class DurationBuilder: AndroidEntityBuilder {
 
         // calculate DURATION from DTEND - DTSTART, if necessary
         val calculatedDuration = from.duration?.duration
-            ?: calculateFromDtEnd(dtStart, from.endDate)
+            ?: calculateFromDtEnd(dtStart, from.endDate)    // ignores DTEND < DTSTART
 
         // use default duration, if necessary
         val duration = calculatedDuration?.abs()    // always use positive duration
@@ -105,6 +105,14 @@ class DurationBuilder: AndroidEntityBuilder {
         }
     }
 
+    /**
+     * Calculates the DURATION from DTEND - DTSTART, if possible.
+     *
+     * @param dtStart   start date/date-time
+     * @param dtEnd     (optional) end date/date-time (ignored if it's not before [dtStart])
+     *
+     * @return duration or `null` if no valid end time was available
+     */
     @VisibleForTesting
     internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): TemporalAmount? {
         if (dtEnd == null || dtEnd.date.toInstant() <= dtStart.date.toInstant())

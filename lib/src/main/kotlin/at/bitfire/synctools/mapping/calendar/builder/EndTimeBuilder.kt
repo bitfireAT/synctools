@@ -29,6 +29,7 @@ import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.TemporalAmount
 
 class EndTimeBuilder: AndroidEntityBuilder {
 
@@ -52,7 +53,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
         // potentially calculate DTEND from DTSTART + DURATION, and always align with DTSTART value type
         val calculatedDtEnd = from.getEndDate(/* don't let ical4j calculate DTEND from DURATION */ false)
             ?.let { alignWithDtStart(it, dtStart = dtStart) }
-            ?: calculateFromDuration(dtStart, from.duration)
+            ?: calculateFromDuration(dtStart, from.duration?.duration)
 
         // ignore DTEND when not after DTSTART and use default duration, if necessary
         val dtEnd = calculatedDtEnd
@@ -135,12 +136,20 @@ class EndTimeBuilder: AndroidEntityBuilder {
         }
     }
 
+    /**
+     * Calculates the DTEND from DTSTART + DURATION, if possible.
+     *
+     * @param dtStart   start date/date-time
+     * @param duration  (optional) duration
+     *
+     * @return end date/date-time (same value type as [dtStart]) or `null` if [duration] was not given
+     */
     @VisibleForTesting
-    internal fun calculateFromDuration(dtStart: DtStart, duration: net.fortuna.ical4j.model.property.Duration?): DtEnd? {
+    internal fun calculateFromDuration(dtStart: DtStart, duration: TemporalAmount?): DtEnd? {
         if (duration == null)
             return null
 
-        val dur = duration.duration.abs()   // always take positive temporal amount
+        val dur = duration.abs()   // always take positive temporal amount
 
         return if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE

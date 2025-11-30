@@ -244,7 +244,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE, duration is date-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(Date("20240228")),
-            Duration(null, "P1D")
+            java.time.Duration.ofDays(1)
         )
         assertEquals(
             DtEnd(Date("20240229")),    // leap day
@@ -256,7 +256,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE, duration is time-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(Date("20241231")),
-            Duration(null, "PT25H")
+            java.time.Duration.ofHours(25)
         )
         assertEquals(
             DtEnd(Date("20250101")),
@@ -268,7 +268,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE-TIME, duration is date-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
-            Duration(null, "P1D")
+            java.time.Duration.ofDays(1)
         )
         assertEquals(
             DtEnd(DateTime("20250102T045623", tzVienna)),
@@ -280,7 +280,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
-            Duration(null, "PT25H")
+            java.time.Duration.ofHours(25)
         )
         assertEquals(
             DtEnd(DateTime("20250102T055623", tzVienna)),
@@ -292,7 +292,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based and negative)`() {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
-            Duration(null, "PT-25H")
+            java.time.Duration.ofHours(-25)
         )
         assertEquals(
             DtEnd(DateTime("20250102T055623", tzVienna)),
