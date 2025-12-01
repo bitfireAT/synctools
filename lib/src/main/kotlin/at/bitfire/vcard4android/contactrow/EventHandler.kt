@@ -24,7 +24,7 @@ import java.time.temporal.Temporal
 
 object EventHandler : DataRowHandler() {
 
-    // source: https://cs.android.com/android/platform/superproject/main/+/main:packages/apps/Contacts/src/com/android/contacts/util/CommonDateUtils.java;drc=61197364367c9e404c7da6900658f1b16c42d0da;l=25
+    // source: https://android.googlesource.com/platform/packages/apps/Contacts/+/c326c157541978c180be4e3432327eceb1e66637/src/com/android/contacts/util/CommonDateUtils.java#25
     private val acceptableFormats: List<Pair<DateTimeFormatter, (String, DateTimeFormatter) -> Temporal>> = listOf(
         // Formats provided by Android's CommonDateUtils
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX") to OffsetDateTime::parse,
