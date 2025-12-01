@@ -222,7 +222,10 @@ class AndroidRecurringCalendar(
         if (syncId == null || !recurring) {
             // 1. main event doesn't have sync id → exceptions wouldn't be associated to main event by calendar provider, so ignore them
             // 2. main event not recurring → exceptions are useless, ignore them
-            logger.log(Level.WARNING, "Dropping exceptions of event because event is not recurring or _SYNC_ID is not set", main)
+
+            if (original.exceptions.isNotEmpty())
+                logger.log(Level.WARNING, "Dropping exceptions of event because event is not recurring or _SYNC_ID is not set", main)
+
             return EventAndExceptions(main = main, exceptions = emptyList())
         }
 
