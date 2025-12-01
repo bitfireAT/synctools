@@ -7,6 +7,7 @@
 package at.bitfire.synctools.mapping.calendar
 
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.ProdId
 
 fun interface ProdIdGenerator {
@@ -29,17 +30,16 @@ class DefaultProdIdGenerator(
     override fun generateProdId(packages: List<String>): ProdId {
         val params = ParameterList()
 
-        // check compatibility first
-        /*if (packages.isNotEmpty()) {
+        if (packages.isNotEmpty()) {
             val packagesStr = packages.joinToString(",")
             params.add(XParameter(PARAMETER_MUTATORS, packagesStr))
-        }*/
+        }
 
         return ProdId(params, prodId)
     }
 
-    /*companion object {
+    companion object {
         const val PARAMETER_MUTATORS = "x-mutators"
-    }*/
+    }
 
 }
