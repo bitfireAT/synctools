@@ -29,20 +29,39 @@ class EventHandlerTest {
     // https://android.googlesource.com/platform/packages/apps/Contacts/+/refs/tags/android-13.0.0_r49/src/com/android/contacts/util/CommonDateUtils.java
 
     @Test
-    fun test_parseStartDate_ISO_DATE_AND_TIME_FORMAT_DateTime() {
+    fun test_parseFullDate_ISO_DATE_AND_TIME_FORMAT_DateTime() {
         assertEquals(
             OffsetDateTime.of(1953, 10,  15, 23, 10, 0, 0, ZoneOffset.UTC),
-            EventHandler.parseStartDate("1953-10-15T23:10:00Z")
+            EventHandler.parseFullDate("1953-10-15T23:10:00Z")
         )
     }
 
     @Test
-    fun test_parseStartDate_FULL_DATE_FORMAT_Date() {
+    fun test_parseFullDate_FULL_DATE_FORMAT_Date() {
         assertEquals(
             LocalDate.of(1953, 10,  15),
-            EventHandler.parseStartDate("1953-10-15")
+            EventHandler.parseFullDate("1953-10-15")
         )
     }
+
+
+    @Test
+    fun test_parsePartialDate_NO_YEAR_DATE_FORMAT() {
+        assertEquals(
+            PartialDate.builder().month(10).date(15).build(),
+            EventHandler.parsePartialDate("--10-15")
+        )
+    }
+
+    @Test
+    fun test_parsePartialDate_NO_YEAR_DATE_AND_TIME_FORMAT() {
+        // Partial date does not support nanoseconds, so they will be removed
+        assertEquals(
+            PartialDate.builder().month(8).date(20).hour(23).minute(10).second(12).offset(ZoneOffset.UTC).build(),
+            EventHandler.parsePartialDate("--08-20T23:10:12.345Z")
+        )
+    }
+
 
     @Test
     fun testStartDate_Empty() {

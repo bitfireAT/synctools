@@ -24,14 +24,23 @@ import java.time.temporal.Temporal
 
 object EventHandler : DataRowHandler() {
 
-    // source: https://android.googlesource.com/platform/packages/apps/Contacts/+/c326c157541978c180be4e3432327eceb1e66637/src/com/android/contacts/util/CommonDateUtils.java#25
-    private val acceptableFormats: List<Pair<DateTimeFormatter, (String, DateTimeFormatter) -> Temporal>> = listOf(
-        // Formats provided by Android's CommonDateUtils
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX") to OffsetDateTime::parse,
-        DateTimeFormatter.ofPattern("yyyy-MM-dd") to LocalDate::parse,
-        // Additional common formats
-        DateTimeFormatter.ISO_OFFSET_DATE_TIME to OffsetDateTime::parse, // "yyyy-MM-dd'T'HH:mm:ssXXX"
+    // CommonDateUtils: https://android.googlesource.com/platform/packages/apps/Contacts/+/c326c157541978c180be4e3432327eceb1e66637/src/com/android/contacts/util/CommonDateUtils.java#25
+
+    /**
+     * Date formats for full date with time. Converts to [OffsetDateTime].
+     */
+    private val fullDateTimeFormats = listOf(
+        // Provided by Android's CommonDateUtils
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
+        // "yyyy-MM-dd'T'HH:mm:ssXXX"
+        DateTimeFormatter.ISO_OFFSET_DATE_TIME,
     )
+
+    /**
+     * Date format for full date without time. Converts to [LocalDate].
+     */
+    private val fullDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
 
     override fun forMimeType() = Event.CONTENT_ITEM_TYPE
 
@@ -40,19 +49,26 @@ object EventHandler : DataRowHandler() {
      * Returns the parsed [Temporal] if successful, or `null` if none of the formats match.
      * @param dateString The date string to parse.
      * @return If format is:
-     * - `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` or `yyyy-MM-dd'T'HH:mm:ssXXX` -> [OffsetDateTime]
-     * - `yyyy-MM-dd` -> [LocalDate]
+     * - `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` or `yyyy-MM-dd'T'HH:mm:ssXXX` ([fullDateTimeFormats]) -> [OffsetDateTime]
+     * - `yyyy-MM-dd` ([fullDateFormat]) -> [LocalDate]
      * - else -> `null`
      */
     @VisibleForTesting
-    internal fun parseStartDate(dateString: String): Temporal? {
-        for ((formatter, parse) in acceptableFormats) {
+    internal fun parseFullDate(dateString: String): Temporal? {
+        for (formatter in fullDateTimeFormats) {
             try {
-                return parse(dateString, formatter)
+                return OffsetDateTime.parse(dateString, formatter)
             } catch (_: DateTimeParseException) {
                 // ignore: given date is not valid
                 continue
             }
+        }
+
+        // try parsing as full date only (no time)
+        try {
+            return LocalDate.parse(dateString, fullDateFormat)
+        } catch (_: DateTimeParseException) {
+            // ignore: given date is not valid
         }
 
         // could not parse date
@@ -72,6 +88,8 @@ object EventHandler : DataRowHandler() {
     internal fun parsePartialDate(dateString: String): PartialDate? {
         var dateString = dateString // to allow modification
         return try {
+            // convert Android partial date/date-time to vCard partial date/date-time so that it can be parsed by ez-vcard
+
             if (dateString.endsWith('Z')) {
                 // 'Z' is not supported for suffix in PartialDate, replace with actual offset
                 dateString = dateString.removeSuffix("Z") + "+00:00"
@@ -95,7 +113,7 @@ object EventHandler : DataRowHandler() {
         super.handle(values, contact)
 
         val dateStr = values.getAsString(Event.START_DATE) ?: return
-        val full: Temporal? = parseStartDate(dateStr)
+        val full: Temporal? = parseFullDate(dateStr)
         val partial: PartialDate? = if (full == null) {
             parsePartialDate(dateStr)
         } else {
