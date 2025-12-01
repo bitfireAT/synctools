@@ -62,6 +62,30 @@ class EndTimeBuilderTest {
     }
 
     @Test
+    fun `Non-recurring all-day event (with DTEND before DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251001"))     // before DTSTART, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration: one day → 20251011
+        assertEquals(1760140800000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring all-day event (with DTEND equals DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            DtEnd(Date("20251010"))     // equals DTSTART, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration: one day → 20251011
+        assertEquals(1760140800000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
     fun `Non-recurring non-all-day event (with floating DTEND)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -95,6 +119,30 @@ class EndTimeBuilderTest {
     }
 
     @Test
+    fun `Non-recurring non-all-day event (with zoned DTEND before DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251011T040506", tzVienna)),
+            DtEnd(DateTime("20251010T040506", tzVienna))    // before DTSTART, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration: 0 sec -> DTEND == DTSTART in calendar provider
+        assertEquals(1760148306000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring non-all-day event (with zoned DTEND equals DTSTART)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251011T040506", tzVienna)),
+            DtEnd(DateTime("20251011T040506", tzVienna))    // equals DTSTART, should be ignored
+        ))
+        builder.build(event, event, result)
+        // default duration: 0 sec -> DTEND == DTSTART in calendar provider
+        assertEquals(1760148306000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
     fun `Non-recurring all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -106,11 +154,33 @@ class EndTimeBuilderTest {
     }
 
     @Test
+    fun `Non-recurring all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(Date("20251010")),
+            Duration(Period.ofDays(-3))     // invalid negative DURATION will be treated as positive
+        ))
+        builder.build(event, event, result)
+        assertEquals(1760313600000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
     fun `Non-recurring non-all-day event (with DURATION)`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
             DtStart(DateTime("20251010T010203", tzVienna)),
             Duration(java.time.Duration.ofMinutes(90))
+        ))
+        builder.build(event, event, result)
+        assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
+    }
+
+    @Test
+    fun `Non-recurring non-all-day event (with negative DURATION)`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(DateTime("20251010T010203", tzVienna)),
+            Duration(java.time.Duration.ofMinutes(-90))     // invalid negative DURATION will be treated as positive
         ))
         builder.build(event, event, result)
         assertEquals(1760056323000, result.entityValues.get(Events.DTEND))
@@ -198,7 +268,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE, duration is date-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(Date("20240228")),
-            Duration(null, "P1D")
+            java.time.Duration.ofDays(1)
         )
         assertEquals(
             DtEnd(Date("20240229")),    // leap day
@@ -210,7 +280,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE, duration is time-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(Date("20241231")),
-            Duration(null, "PT25H")
+            java.time.Duration.ofHours(25)
         )
         assertEquals(
             DtEnd(Date("20250101")),
@@ -222,7 +292,7 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE-TIME, duration is date-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
-            Duration(null, "P1D")
+            java.time.Duration.ofDays(1)
         )
         assertEquals(
             DtEnd(DateTime("20250102T045623", tzVienna)),
@@ -234,7 +304,19 @@ class EndTimeBuilderTest {
     fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based)`() {
         val result = builder.calculateFromDuration(
             DtStart(DateTime("20250101T045623", tzVienna)),
-            Duration(null, "PT25H")
+            java.time.Duration.ofHours(25)
+        )
+        assertEquals(
+            DtEnd(DateTime("20250102T055623", tzVienna)),
+            result
+        )
+    }
+
+    @Test
+    fun `calculateFromDuration (dtStart=DATE-TIME, duration is time-based and negative)`() {
+        val result = builder.calculateFromDuration(
+            DtStart(DateTime("20250101T045623", tzVienna)),
+            java.time.Duration.ofHours(-25)
         )
         assertEquals(
             DtEnd(DateTime("20250102T055623", tzVienna)),

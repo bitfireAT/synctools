@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
@@ -28,6 +29,7 @@ import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.TemporalAmount
 
 class EndTimeBuilder: AndroidEntityBuilder {
 
@@ -47,9 +49,21 @@ class EndTimeBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
-        val dtEnd = from.endDate?.let { alignWithDtStart(it, dtStart = dtStart) }
-            ?: calculateFromDuration(dtStart, from.duration)
+
+        // potentially calculate DTEND from DTSTART + DURATION, and always align with DTSTART value type
+        val calculatedDtEnd = from.getEndDate(/* don't let ical4j calculate DTEND from DURATION */ false)
+            ?.let { alignWithDtStart(it, dtStart = dtStart) }
+            ?: calculateFromDuration(dtStart, from.duration?.duration)
+
+        // ignore DTEND when not after DTSTART and use default duration, if necessary
+        val dtEnd = calculatedDtEnd
+            ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if it's after DTSTART [1]
             ?: calculateFromDefault(dtStart)
+
+        /**
+         * [1] RFC 5545 3.8.2.2 Date-Time End:
+         * […] its value MUST be later in time than the value of the "DTSTART" property.
+         */
 
         // end time: UNIX timestamp
         values.put(Events.DTEND, dtEnd.date.time)
@@ -122,12 +136,21 @@ class EndTimeBuilder: AndroidEntityBuilder {
         }
     }
 
+    /**
+     * Calculates the DTEND from DTSTART + DURATION, if possible.
+     *
+     * @param dtStart   start date/date-time
+     * @param duration  (optional) duration
+     *
+     * @return end date/date-time (same value type as [dtStart]) or `null` if [duration] was not given
+     */
     @VisibleForTesting
-    internal fun calculateFromDuration(dtStart: DtStart, duration: net.fortuna.ical4j.model.property.Duration?): DtEnd? {
+    internal fun calculateFromDuration(dtStart: DtStart, duration: TemporalAmount?): DtEnd? {
         if (duration == null)
             return null
 
-        val dur = duration.duration
+        val dur = duration.abs()   // always take positive temporal amount
+
         return if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
             if (dur is Period) {

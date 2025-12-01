@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.toDuration
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
@@ -18,9 +19,9 @@ import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import java.time.Duration
 import java.time.Period
 import java.time.temporal.TemporalAmount
 
@@ -42,8 +43,13 @@ class DurationBuilder: AndroidEntityBuilder {
         }
 
         val dtStart = from.requireDtStart()
-        val duration = from.duration
-            ?: calculateFromDtEnd(dtStart, from.endDate)
+
+        // calculate DURATION from DTEND - DTSTART, if necessary
+        val calculatedDuration = from.duration?.duration
+            ?: calculateFromDtEnd(dtStart, from.endDate)    // ignores DTEND < DTSTART
+
+        // use default duration, if necessary
+        val duration = calculatedDuration?.abs()    // always use positive duration
             ?: defaultDuration(DateUtils.isDate(dtStart))
 
         /* [RFC 5545 3.8.2.5]
@@ -54,7 +60,7 @@ class DurationBuilder: AndroidEntityBuilder {
         so we wouldn't have to take care of that. However it expects seconds to be in "P<n>S" format,
         whereas we provide an RFC 5545-compliant "PT<n>S", which causes the provider to crash:
         https://github.com/bitfireAT/synctools/issues/144. So we must convert it ourselves to be on the safe side. */
-        val alignedDuration = alignWithDtStart(duration.duration, dtStart)
+        val alignedDuration = alignWithDtStart(duration, dtStart)
 
         /* TemporalAmount can have months and years, but the RFC 5545 value must only contain weeks, days and time.
         So we have to recalculate the months/years to days according to their position in the calendar.
@@ -74,13 +80,13 @@ class DurationBuilder: AndroidEntityBuilder {
      * @return Temporal amount that is
      *
      * - a [Period] (days/months/years that can't be represented by an exact number of seconds) when [dtStart] is a DATE, and
-     * - a [java.time.Duration] (exact time that can be represented by an exact number of seconds) when [dtStart] is a DATE-TIME.
+     * - a [Duration] (exact time that can be represented by an exact number of seconds) when [dtStart] is a DATE-TIME.
      */
     @VisibleForTesting
     internal fun alignWithDtStart(amount: TemporalAmount, dtStart: DtStart): TemporalAmount {
         if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
-            return if (amount is java.time.Duration) {
+            return if (amount is Duration) {
                 // amount is Duration, change to Period of days instead
                 Period.ofDays(amount.toDays().toInt())
             } else {
@@ -90,7 +96,7 @@ class DurationBuilder: AndroidEntityBuilder {
 
         } else {
             // DTSTART is DATE-TIME
-            return if (amount is java.time.Period) {
+            return if (amount is Period) {
                 // amount is Period, change to Duration instead
                 amount.toDuration(dtStart.date.toInstant())
             } else {
@@ -100,15 +106,23 @@ class DurationBuilder: AndroidEntityBuilder {
         }
     }
 
+    /**
+     * Calculates the DURATION from DTEND - DTSTART, if possible.
+     *
+     * @param dtStart   start date/date-time
+     * @param dtEnd     (optional) end date/date-time (ignored if not after [dtStart])
+     *
+     * @return temporal amount ([Period] or [Duration]) or `null` if no valid end time was available
+     */
     @VisibleForTesting
-    internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): Duration? {
-        if (dtEnd == null)
+    internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): TemporalAmount? {
+        if (dtEnd == null || dtEnd.date.toInstant() <= dtStart.date.toInstant())
             return null
 
         return if (DateUtils.isDateTime(dtStart) && DateUtils.isDateTime(dtEnd)) {
             // DTSTART and DTEND are DATE-TIME → calculate difference between timestamps
             val seconds = (dtEnd.date.time - dtStart.date.time) / 1000
-            Duration(java.time.Duration.ofSeconds(seconds))
+            Duration.ofSeconds(seconds)
         } else {
             // Either DTSTART or DTEND or both are DATE:
             // - DTSTART and DTEND are DATE → DURATION is exact number of days (no time part)
@@ -116,16 +130,14 @@ class DurationBuilder: AndroidEntityBuilder {
             // - DTSTART is DATE-TIME, DTEND is DATE → amend DTEND with time of DTSTART → DURATION is exact number of days (no time part)
             val startDate = dtStart.date.toLocalDate()
             val endDate = dtEnd.date.toLocalDate()
-            Duration(Period.between(startDate, endDate))
+            Period.between(startDate, endDate)
         }
     }
 
-    private fun defaultDuration(allDay: Boolean): Duration =
-        Duration(
-            if (allDay)
-                Period.ofDays(1)
-            else
-                java.time.Duration.ZERO
-        )
+    private fun defaultDuration(allDay: Boolean): TemporalAmount =
+        if (allDay)
+            Period.ofDays(1)
+        else
+            Duration.ZERO
 
 }
