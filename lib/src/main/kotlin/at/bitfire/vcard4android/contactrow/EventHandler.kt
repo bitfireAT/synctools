@@ -59,27 +59,45 @@ object EventHandler : DataRowHandler() {
         return null
     }
 
-    override fun handle(values: ContentValues, contact: Contact) {
-        super.handle(values, contact)
-
-        var dateStr = values.getAsString(Event.START_DATE) ?: return
-        val full: Temporal? = parseStartDate(dateStr)
-        val partial: PartialDate? = if (full == null) try {
-            if (dateStr.endsWith('Z')) {
+    /**
+     * Tries to parse a date string into a [PartialDate] object.
+     * Returns the parsed [PartialDate] if successful, or `null` if parsing fails.
+     *
+     * Does some preprocessing to handle 'Z' suffix and strip nanoseconds, both not supported by
+     * [PartialDate.parse].
+     *
+     * @param dateString The date string to parse.
+     * @return The parsed [PartialDate] or `null` if parsing fails.
+     */
+    internal fun parsePartialDate(dateString: String): PartialDate? {
+        var dateString = dateString // to allow modification
+        return try {
+            if (dateString.endsWith('Z')) {
                 // 'Z' is not supported for suffix in PartialDate, replace with actual offset
-                dateStr = dateStr.removeSuffix("Z") + "+00:00"
+                dateString = dateString.removeSuffix("Z") + "+00:00"
             }
 
             val regex = "\\.\\d{3}".toRegex()
-            if (dateStr.contains(regex)) {
+            if (dateString.contains(regex)) {
                 // partial dates do not accept nanoseconds, so strip them if present
-                dateStr = dateStr.replace(regex, "")
-                PartialDate.parse(dateStr)
+                dateString = dateString.replace(regex, "")
+                PartialDate.parse(dateString)
             } else {
-                PartialDate.parse(dateStr)
+                PartialDate.parse(dateString)
             }
         } catch (_: IllegalArgumentException) {
+            // An error was thrown by PartialDate.parse
             null
+        }
+    }
+
+    override fun handle(values: ContentValues, contact: Contact) {
+        super.handle(values, contact)
+
+        val dateStr = values.getAsString(Event.START_DATE) ?: return
+        val full: Temporal? = parseStartDate(dateStr)
+        val partial: PartialDate? = if (full == null) {
+            parsePartialDate(dateStr)
         } else {
             null
         }
