@@ -62,11 +62,25 @@ object EventHandler : DataRowHandler() {
     override fun handle(values: ContentValues, contact: Contact) {
         super.handle(values, contact)
 
-        val dateStr = values.getAsString(Event.START_DATE) ?: return
+        var dateStr = values.getAsString(Event.START_DATE) ?: return
         val full: Temporal? = parseStartDate(dateStr)
         val partial: PartialDate? = if (full == null) try {
-            PartialDate.parse(dateStr)
-        } catch (_: IllegalArgumentException) {
+            if (dateStr.endsWith('Z')) {
+                // 'Z' is not supported for suffix in PartialDate, replace with actual offset
+                dateStr = dateStr.removeSuffix("Z") + "+00:00"
+            }
+
+            val regex = "\\.\\d{3}".toRegex()
+            if (dateStr.contains(regex)) {
+                // partial dates do not accept nanoseconds, so strip them if present
+                dateStr = dateStr.replace(regex, "")
+                PartialDate.parse(dateStr)
+            } else {
+                PartialDate.parse(dateStr)
+            }
+        } catch (e: IllegalArgumentException) {
+            System.err.println("Could not parse partial date: $dateStr")
+            e.printStackTrace()
             null
         } else {
             null
