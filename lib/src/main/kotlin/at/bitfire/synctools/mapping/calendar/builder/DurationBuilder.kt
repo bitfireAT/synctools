@@ -21,6 +21,7 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import java.time.Duration
 import java.time.Period
 import java.time.temporal.TemporalAmount
 
@@ -79,13 +80,13 @@ class DurationBuilder: AndroidEntityBuilder {
      * @return Temporal amount that is
      *
      * - a [Period] (days/months/years that can't be represented by an exact number of seconds) when [dtStart] is a DATE, and
-     * - a [java.time.Duration] (exact time that can be represented by an exact number of seconds) when [dtStart] is a DATE-TIME.
+     * - a [Duration] (exact time that can be represented by an exact number of seconds) when [dtStart] is a DATE-TIME.
      */
     @VisibleForTesting
     internal fun alignWithDtStart(amount: TemporalAmount, dtStart: DtStart): TemporalAmount {
         if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
-            return if (amount is java.time.Duration) {
+            return if (amount is Duration) {
                 // amount is Duration, change to Period of days instead
                 Period.ofDays(amount.toDays().toInt())
             } else {
@@ -111,7 +112,7 @@ class DurationBuilder: AndroidEntityBuilder {
      * @param dtStart   start date/date-time
      * @param dtEnd     (optional) end date/date-time (ignored if not after [dtStart])
      *
-     * @return duration or `null` if no valid end time was available
+     * @return temporal amount ([Period] or [Duration]) or `null` if no valid end time was available
      */
     @VisibleForTesting
     internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): TemporalAmount? {
@@ -121,7 +122,7 @@ class DurationBuilder: AndroidEntityBuilder {
         return if (DateUtils.isDateTime(dtStart) && DateUtils.isDateTime(dtEnd)) {
             // DTSTART and DTEND are DATE-TIME → calculate difference between timestamps
             val seconds = (dtEnd.date.time - dtStart.date.time) / 1000
-            java.time.Duration.ofSeconds(seconds)
+            Duration.ofSeconds(seconds)
         } else {
             // Either DTSTART or DTEND or both are DATE:
             // - DTSTART and DTEND are DATE → DURATION is exact number of days (no time part)
@@ -137,6 +138,6 @@ class DurationBuilder: AndroidEntityBuilder {
         if (allDay)
             Period.ofDays(1)
         else
-            java.time.Duration.ZERO
+            Duration.ZERO
 
 }
