@@ -18,6 +18,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
+import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
 import org.junit.Before
@@ -33,7 +34,7 @@ class AndroidCalendarProviderBehaviorTest {
     val permissonRule = GrantPermissionRule.grant(
         Manifest.permission.READ_CALENDAR,
         Manifest.permission.WRITE_CALENDAR
-    )
+    )!!
 
     private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
@@ -56,14 +57,55 @@ class AndroidCalendarProviderBehaviorTest {
     }
 
 
+    /**
+     * To verify that it's a problem to insert a recurring all-day event with a duration of zero seconds.
+     * See:
+     *
+     * - https://github.com/bitfireAT/davx5-ose/issues/1823
+     * - https://github.com/bitfireAT/synctools/issues/144
+     */
+    @Test(expected = LocalStorageException::class)
+    fun testInsertRecurringAllDayEventWithDurationZeroSeconds() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1763510400000,    // Wed Nov 19 2025 00:00:00 GMT+0000
+            Events.DURATION to "PT0S",
+            Events.TITLE to "Recurring all-day event with zero seconds duration",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251122"
+        )
+        calendar.addEvent(Entity(values))
+    }
+
+    /**
+     * To make sure that it's not a problem to insert a recurring all-day event with a duration of zero days.
+     */
     @Test
-    fun testInsertEventWithDurationZeroSeconds() {
-        // To make sure that it's not a problem to insert a recurring event with a duration of zero seconds.
+    fun testInsertRecurringAllDayEventWithDurationZeroDays() {
+        val values = contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1763510400000,    // Wed Nov 19 2025 00:00:00 GMT+0000
+            Events.DURATION to "P0D",
+            Events.TITLE to "Recurring all-day event with zero seconds duration",
+            Events.RRULE to "FREQ=DAILY;UNTIL=20251122"
+        )
+        val id = calendar.addEvent(Entity(values))
+
+        val event2 = calendar.getEventRow(id)
+        assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+    }
+
+    /**
+     * To make sure that it's not a problem to insert a recurring event with a duration of zero seconds.
+     */
+    @Test
+    fun testInsertRecurringNonAllDayEventWithDurationZeroSeconds() {
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
             Events.DURATION to "PT0S",
-            Events.TITLE to "Event with useless RRULE",
+            Events.TITLE to "Recurring non-all-day event with zero seconds duration",
             Events.RRULE to "FREQ=DAILY;UNTIL=20251002T000000Z"
         )
         val id = calendar.addEvent(Entity(values))
@@ -72,9 +114,11 @@ class AndroidCalendarProviderBehaviorTest {
         assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
     }
 
+    /**
+     * To make sure that's not a problem to insert an (invalid/useless) RRULE with UNTIL before the event's DTSTART.
+     */
     @Test
     fun testInsertEventWithRRuleUntilBeforeDtStart() {
-        // To make sure that's not a problem to insert an (invalid/useless) RRULE with UNTIL before the event's DTSTART.
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000

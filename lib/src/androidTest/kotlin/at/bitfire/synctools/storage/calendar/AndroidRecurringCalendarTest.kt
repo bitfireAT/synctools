@@ -30,6 +30,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -68,32 +69,9 @@ class AndroidRecurringCalendarTest {
     // test CRUD
 
     @Test
-    fun testAddEventAndExceptions() {
-        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
-        val mainEvent = Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events._SYNC_ID to "recur1",
-            Events.DTSTART to now,
-            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
-            Events.DURATION to "PT1H",
-            Events.TITLE to "Main Event",
-            Events.RRULE to "FREQ=DAILY;COUNT=3"
-        ))
-        val event = EventAndExceptions(
-            main = mainEvent,
-            exceptions = listOf(
-                Entity(contentValuesOf(
-                    Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_SYNC_ID to "recur1",
-                    Events.DTSTART to now + 86400000,
-                    Events.DTEND to now + 86400000 + 2*3600000,
-                    Events.TITLE to "Exception"
-                ))
-            )
-        )
-
+    fun testAddEventAndExceptions_and_GetById() {
         // add event and exceptions
-        val mainEventId = recurringCalendar.addEventAndExceptions(event)
+        val (mainEventId, event) = insertRecurring(syncId = "testAddEventAndExceptions_and_GetById")
         val addedWithId = event.withId(mainEventId)
 
         // verify that cleanUp was called
@@ -104,6 +82,49 @@ class AndroidRecurringCalendarTest {
         // verify
         val event2 = recurringCalendar.getById(mainEventId)
         assertEventAndExceptionsEqual(addedWithId, event2!!, onlyFieldsInExpected = true)
+    }
+
+    @Test
+    fun testFindEventAndExceptions() {
+        val (mainEventId, event) = insertRecurring(syncId = "testFindEventAndExceptions")
+        val addedWithId = event.withId(mainEventId)
+        val result = recurringCalendar.findEventAndExceptions("${Events._SYNC_ID}=?", arrayOf("testFindEventAndExceptions"))
+        assertEventAndExceptionsEqual(addedWithId, result!!, onlyFieldsInExpected = true)
+    }
+
+    @Test
+    fun testFindEventAndExceptions_NotFound() {
+        assertNull(recurringCalendar.findEventAndExceptions("${Events._SYNC_ID}=?", arrayOf("not-existent")))
+    }
+
+    @Test
+    fun testGetById_NotFound() {
+        // make sure there's no event with id=1
+        recurringCalendar.deleteEventAndExceptions(1)
+
+        assertNull(recurringCalendar.getById(1))
+    }
+
+    @Test
+    fun testIterateEventAndExceptions() {
+        val (id1, event1) = insertRecurring(syncId = "testIterateEventAndExceptions1")
+        val (id2, event2) = insertRecurring(syncId = "testIterateEventAndExceptions2")
+        val result = mutableListOf<EventAndExceptions>()
+        recurringCalendar.iterateEventAndExceptions(
+            "${Events._SYNC_ID} IN (?, ?)",
+            arrayOf("testIterateEventAndExceptions1", "testIterateEventAndExceptions2")
+        ) { result += it }
+        val orderedResult = result.sortedBy { it.main.entityValues.getAsInteger(Events._ID) }
+        assertEquals(2, orderedResult.size)
+        assertEventAndExceptionsEqual(event1.withId(id1), orderedResult[0], onlyFieldsInExpected = true)
+        assertEventAndExceptionsEqual(event2.withId(id2), orderedResult[1], onlyFieldsInExpected = true)
+    }
+
+    @Test
+    fun testIterateEventAndExceptions_NotFound() {
+        recurringCalendar.iterateEventAndExceptions("${Events._SYNC_ID}=?", arrayOf("not-existent")) {
+            fail("must not be called")
+        }
     }
 
     @Test
@@ -342,7 +363,7 @@ class AndroidRecurringCalendarTest {
     }
 
     
-    // test helpers for dirty/deleted events and exceptions
+    // test processing dirty/deleted events and exceptions
 
     @Test
     fun testProcessDeletedExceptions() {
@@ -448,6 +469,36 @@ class AndroidRecurringCalendarTest {
                 }))
             ), result, onlyFieldsInExpected = true
         )
+    }
+
+
+    // helpers
+
+    private fun insertRecurring(syncId: String): Pair<Long, EventAndExceptions> {
+        val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
+        val mainEvent = Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events._SYNC_ID to syncId,
+            Events.DTSTART to now,
+            Events.EVENT_TIMEZONE to TimeZones.GMT_ID,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Main Event",
+            Events.RRULE to "FREQ=DAILY;COUNT=3"
+        ))
+        val event = EventAndExceptions(
+            main = mainEvent,
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_SYNC_ID to syncId,
+                    Events.DTSTART to now + 86400000,
+                    Events.DTEND to now + 86400000 + 2*3600000,
+                    Events.TITLE to "Exception"
+                ))
+            )
+        )
+        val id = recurringCalendar.addEventAndExceptions(event)
+        return id to event
     }
 
 }

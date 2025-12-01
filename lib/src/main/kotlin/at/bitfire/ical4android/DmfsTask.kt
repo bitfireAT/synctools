@@ -10,7 +10,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
 import android.os.RemoteException
-import androidx.annotation.CallSuper
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.TasksBatchOperation
@@ -65,26 +64,31 @@ import java.util.logging.Logger
  * The SEQUENCE field is stored in [Tasks.SYNC_VERSION], so don't use [Tasks.SYNC_VERSION]
  * for anything else.
  */
-abstract class DmfsTask(
-    val taskList: DmfsTaskList<DmfsTask>
+open class DmfsTask(
+    val taskList: DmfsTaskList<*>
 ) {
-
-    companion object {
-        const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
-    }
 
     protected val logger = Logger.getLogger(javaClass.name)
     protected val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
+    var syncId: String? = null
+    var eTag: String? = null
+    var flags: Int = 0
 
 
-    constructor(taskList: DmfsTaskList<DmfsTask>, values: ContentValues): this(taskList) {
+    constructor(taskList: DmfsTaskList<*>, values: ContentValues): this(taskList) {
         id = values.getAsLong(Tasks._ID)
+        syncId = values.getAsString(Tasks._SYNC_ID)
+        eTag = values.getAsString(COLUMN_ETAG)
+        flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
     }
 
-    constructor(taskList: DmfsTaskList<DmfsTask>, task: Task): this(taskList) {
+    constructor(taskList: DmfsTaskList<*>, task: Task, syncId: String?, eTag: String?, flags: Int): this(taskList) {
         this.task = task
+        this.syncId = syncId
+        this.eTag = eTag
+        this.flags = flags
     }
 
 
@@ -156,8 +160,7 @@ abstract class DmfsTask(
             throw FileNotFoundException("Couldn't find task #$id")
         }
 
-    @CallSuper
-    protected open fun populateTask(values: ContentValues) {
+    protected fun populateTask(values: ContentValues) {
         val task = requireNotNull(task)
 
         task.uid = values.getAsString(Tasks._UID)
@@ -264,7 +267,7 @@ abstract class DmfsTask(
         values.getAsString(Tasks.RRULE)?.let { task.rRule = RRule(it) }
     }
 
-    protected open fun populateProperty(row: ContentValues) {
+    protected fun populateProperty(row: ContentValues) {
         logger.log(Level.FINER, "Found property", row)
 
         val task = requireNotNull(task)
@@ -284,7 +287,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun populateAlarm(row: ContentValues) {
+    protected fun populateAlarm(row: ContentValues) {
         val task = requireNotNull(task)
         val props = PropertyList<Property>()
 
@@ -312,7 +315,7 @@ abstract class DmfsTask(
         task.alarms += VAlarm(props)
     }
 
-    protected open fun populateRelatedTo(row: ContentValues) {
+    protected fun populateRelatedTo(row: ContentValues) {
         val uid = row.getAsString(Relation.RELATED_UID)
         if (uid == null) {
             logger.warning("Task relation doesn't refer to same task list; can't be synchronized")
@@ -361,8 +364,8 @@ abstract class DmfsTask(
 
         // remove associated rows which are added later again
         batch += CpoBuilder
-                .newDelete(taskList.tasksPropertiesSyncUri())
-                .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
+            .newDelete(taskList.tasksPropertiesSyncUri())
+            .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
 
         // update task
         val uri = taskSyncURI()
@@ -377,7 +380,7 @@ abstract class DmfsTask(
         return ContentUris.withAppendedId(Tasks.getContentUri(taskList.providerName.authority), existingId)
     }
 
-    protected open fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
         insertAlarms(batch, idxTask)
         insertCategories(batch, idxTask)
         insertComment(batch, idxTask)
@@ -385,7 +388,7 @@ abstract class DmfsTask(
         insertUnknownProperties(batch, idxTask)
     }
 
-    protected open fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
         val task = requireNotNull(task)
         for (alarm in task.alarms) {
             val (alarmRef, minutes) = ICalendar.vAlarmToMin(
@@ -414,20 +417,20 @@ abstract class DmfsTask(
             }
 
             val builder = CpoBuilder
-                    .newInsert(taskList.tasksPropertiesSyncUri())
-                    .withTaskId(Alarm.TASK_ID, idxTask)
-                    .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
-                    .withValue(Alarm.MINUTES_BEFORE, minutes)
-                    .withValue(Alarm.REFERENCE, ref)
-                    .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
-                    .withValue(Alarm.ALARM_TYPE, alarmType)
+                .newInsert(taskList.tasksPropertiesSyncUri())
+                .withTaskId(Alarm.TASK_ID, idxTask)
+                .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
+                .withValue(Alarm.MINUTES_BEFORE, minutes)
+                .withValue(Alarm.REFERENCE, ref)
+                .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
+                .withValue(Alarm.ALARM_TYPE, alarmType)
 
             logger.log(Level.FINE, "Inserting alarm", builder.build())
             batch += builder
         }
     }
 
-    protected open fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
         for (category in requireNotNull(task).categories) {
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
                     .withTaskId(Category.TASK_ID, idxTask)
@@ -438,7 +441,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
         val comment = requireNotNull(task).comment ?: return
         val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
             .withTaskId(Comment.TASK_ID, idxTask)
@@ -448,7 +451,7 @@ abstract class DmfsTask(
         batch += builder
     }
 
-    protected open fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
         for (relatedTo in requireNotNull(task).relatedTo) {
             val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
                 RelType.CHILD ->
@@ -468,7 +471,7 @@ abstract class DmfsTask(
         }
     }
 
-    protected open fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
+    protected fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
         for (property in requireNotNull(task).unknownProperties) {
             if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
                 logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
@@ -488,8 +491,7 @@ abstract class DmfsTask(
         return taskList.provider.delete(taskSyncURI(), null, null)
     }
 
-    @CallSuper
-    protected open fun buildTask(builder: CpoBuilder, update: Boolean) {
+    protected fun buildTask(builder: CpoBuilder, update: Boolean) {
         if (!update)
             builder .withValue(Tasks.LIST_ID, taskList.id)
 
@@ -504,9 +506,14 @@ abstract class DmfsTask(
                 .withValue(Tasks.TASK_COLOR, task.color)
                 .withValue(Tasks.URL, task.url)
 
+                .withValue(Tasks._SYNC_ID, syncId)
+                .withValue(COLUMN_FLAGS, flags)
+                .withValue(COLUMN_ETAG, eTag)
+
                 // parent_id will be re-calculated when the relation row is inserted (if there is any)
                 .withValue(Tasks.PARENT_ID, null)
 
+        // organizer
         task.organizer?.let { organizer ->
             val uri = organizer.calAddress
             val email = if (uri.scheme.equals("mailto", true))
@@ -519,6 +526,7 @@ abstract class DmfsTask(
                 logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
         }
 
+        // Priority, classification
         builder .withValue(Tasks.PRIORITY, task.priority)
                 .withValue(Tasks.CLASSIFICATION, when (task.classification) {
                     Clazz.PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
@@ -532,6 +540,7 @@ abstract class DmfsTask(
                 .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
                 .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
 
+        // Status
         val status = when (task.status) {
             Status.VTODO_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
             Status.VTODO_COMPLETED  -> Tasks.STATUS_COMPLETED
@@ -540,6 +549,7 @@ abstract class DmfsTask(
         }
         builder.withValue(Tasks.STATUS, status)
 
+        // Time related
         val allDay = task.isAllDay()
         if (allDay) {
             builder .withValue(Tasks.IS_ALLDAY, 1)
@@ -550,7 +560,6 @@ abstract class DmfsTask(
             builder .withValue(Tasks.IS_ALLDAY, 0)
                     .withValue(Tasks.TZ, getTimeZone().id)
         }
-
         builder .withValue(Tasks.CREATED, task.createdAt)
                 .withValue(Tasks.LAST_MODIFIED, task.lastModified)
 
@@ -570,6 +579,7 @@ abstract class DmfsTask(
                             null
                         else
                             AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
+
         logger.log(Level.FINE, "Built task object", builder.build())
     }
 
@@ -604,6 +614,14 @@ abstract class DmfsTask(
     protected fun taskSyncURI(loadProperties: Boolean = false): Uri {
         val id = requireNotNull(id)
         return ContentUris.withAppendedId(taskList.tasksSyncUri(loadProperties), id)
+    }
+
+    companion object {
+        const val UNKNOWN_PROPERTY_DATA = Properties.DATA0
+
+        const val COLUMN_ETAG = Tasks.SYNC1
+
+        const val COLUMN_FLAGS = Tasks.SYNC2
     }
 
 }

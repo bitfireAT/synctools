@@ -45,6 +45,11 @@ class AndroidRecurringCalendar(
     /**
      * Inserts an event and all its exceptions. Input data is first cleaned up using [cleanUp].
      *
+     * If you want to insert exceptions, [Events._SYNC_ID] must be set on the main
+     * event and [Events.ORIGINAL_SYNC_ID] should be set to the same value for the
+     * exception events. **It's not enough to just set [Events.ORIGINAL_ID] in the
+     * exceptions**.
+     *
      * @param eventAndExceptions    event and exceptions to insert
      *
      * @return ID of the resulting main event

@@ -12,6 +12,7 @@ import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.net.Uri
 import android.provider.CalendarContract
+import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.synctools.storage.LocalStorageException
@@ -98,6 +99,22 @@ class DmfsTaskTest(
             DatabaseUtils.cursorRowToContentValues(it, values)
             return values
         }
+    }
+
+    @Test
+    fun testConstructor_ContentValues() {
+        val dmfsTask = DmfsTask(
+            taskList!!, contentValuesOf(
+                Tasks._ID to 123,
+                Tasks._SYNC_ID to "some-ical.ics",
+                DmfsTask.COLUMN_ETAG to "some-etag",
+                DmfsTask.COLUMN_FLAGS to 45
+            )
+        )
+        assertEquals(123L, dmfsTask.id)
+        assertEquals("some-ical.ics", dmfsTask.syncId)
+        assertEquals("some-etag", dmfsTask.eTag)
+        assertEquals(45, dmfsTask.flags)
     }
 
     @Test

@@ -16,46 +16,46 @@ class FixInvalidUtcOffsetPreprocessorTest {
     private val processor = FixInvalidUtcOffsetPreprocessor()
 
     @Test
-    fun test_FixString_NoOccurrence() {
+    fun test_repairLine_NoOccurrence() {
         assertEquals(
             "Some String",
-            processor.fixString("Some String"))
+            processor.repairLine("Some String"))
     }
 
     @Test
-    fun test_FixString_TzOffsetFrom_Invalid() {
+    fun test_repairLine_TzOffsetFrom_Invalid() {
         assertEquals("TZOFFSETFROM:+005730",
-            processor.fixString("TZOFFSETFROM:+5730"))
+            processor.repairLine("TZOFFSETFROM:+5730"))
     }
 
     @Test
-    fun test_FixString_TzOffsetFrom_Valid() {
+    fun test_repairLine_TzOffsetFrom_Valid() {
         assertEquals("TZOFFSETFROM:+005730",
-            processor.fixString("TZOFFSETFROM:+005730"))
+            processor.repairLine("TZOFFSETFROM:+005730"))
     }
 
     @Test
-    fun test_FixString_TzOffsetTo_Invalid() {
+    fun test_repairLine_TzOffsetTo_Invalid() {
         assertEquals("TZOFFSETTO:+005730",
-            processor.fixString("TZOFFSETTO:+5730"))
+            processor.repairLine("TZOFFSETTO:+5730"))
     }
 
     @Test
-    fun test_FixString_TzOffsetTo_Valid() {
+    fun test_repairLine_TzOffsetTo_Valid() {
         assertEquals("TZOFFSETTO:+005730",
-            processor.fixString("TZOFFSETTO:+005730"))
+            processor.repairLine("TZOFFSETTO:+005730"))
     }
 
 
     @Test
     fun test_RegexpForProblem_TzOffsetTo_Invalid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertTrue(regex.matches("TZOFFSETTO:+5730"))
     }
 
     @Test
     fun test_RegexpForProblem_TzOffsetTo_Valid() {
-        val regex = processor.regexpForProblem()
+        val regex = processor.regexpForProblem
         assertFalse(regex.matches("TZOFFSETTO:+005730"))
     }
 
