@@ -78,9 +78,7 @@ object EventHandler : DataRowHandler() {
             } else {
                 PartialDate.parse(dateStr)
             }
-        } catch (e: IllegalArgumentException) {
-            System.err.println("Could not parse partial date: $dateStr")
-            e.printStackTrace()
+        } catch (_: IllegalArgumentException) {
             null
         } else {
             null
