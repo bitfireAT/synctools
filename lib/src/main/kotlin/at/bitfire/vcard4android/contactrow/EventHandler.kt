@@ -86,6 +86,7 @@ object EventHandler : DataRowHandler() {
      * @param dateString The date string to parse.
      * @return The parsed [PartialDate] or `null` if parsing fails.
      */
+    @VisibleForTesting
     internal fun parsePartialDate(dateString: String): PartialDate? {
         var dateString = dateString // to allow modification
         return try {
