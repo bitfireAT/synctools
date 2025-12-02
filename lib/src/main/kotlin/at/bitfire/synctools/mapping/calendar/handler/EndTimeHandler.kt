@@ -27,14 +27,14 @@ class EndTimeHandler(
         val tsStart = values.getAsLong(Events.DTSTART) ?: return
 
         // Skip if DURATION (non-zero and positive) is set
-        // (even if its invalid, since we never want DURATION _and_ DTSTART)
+        // (even if it's invalid, since we never want DURATION _and_ DTEND)
         if (values.getAsString(Events.DURATION) != null)
             return
 
         // Default to DTSTART value if DTEND is not set and DURATION is not present.
         // This is a workaround for iCloud that is always applied; it seems not to bother other servers.
         // Normally it's OK to have neither DTEND nor DURATION in a VEVENT with DTSTART, but iCloud
-        // rejects that with with a 404. See davx5-ose#1859
+        // rejects that with a 404. See davx5-ose#1859
         var tsEnd = values.getAsLong(Events.DTEND) ?: tsStart
 
         // Also default to the DTSTART value if DTEND is not after DTSTART (which is not allowed in iCalendar)
