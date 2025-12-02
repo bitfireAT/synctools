@@ -8,12 +8,9 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
-import java.time.Duration
-import java.time.Period
 import java.util.logging.Logger
 
 class EndTimeHandler(
@@ -29,7 +26,7 @@ class EndTimeHandler(
         // Skip if start is not set
         val tsStart = values.getAsLong(Events.DTSTART) ?: return
 
-        // Skip if valid DURATION (non-zero and positive) is set
+        // Skip if DURATION (non-zero and positive) is set
         // (even if its invalid, since we never want DURATION _and_ DTSTART)
         if (values.getAsString(Events.DURATION) != null)
             return
