@@ -16,11 +16,11 @@ import at.bitfire.ical4android.TaskProvider
 import org.dmfs.tasks.contract.TaskContract
 
 class TestTaskList(
-        account: Account,
-        provider: ContentProviderClient,
-        providerName: TaskProvider.ProviderName,
-        id: Long
-): DmfsTaskList<TestTask>(account, provider, providerName, TestTask.Factory, id) {
+    account: Account,
+    provider: ContentProviderClient,
+    providerName: TaskProvider.ProviderName,
+    id: Long
+) : DmfsTaskList(account, provider, providerName, id) {
 
     companion object {
 
@@ -33,7 +33,7 @@ class TestTaskList(
             values.put(TaskContract.TaskListColumns.LIST_COLOR, 0xffff0000)
             values.put(TaskContract.TaskListColumns.SYNC_ENABLED, 1)
             values.put(TaskContract.TaskListColumns.VISIBLE, 1)
-            val uri = DmfsTaskList.create(account, provider.client, provider.name, values)
+            val uri = create(account, provider.client, provider.name, values)
 
             return TestTaskList(account, provider.client, provider.name, ContentUris.parseId(uri))
         }
@@ -41,9 +41,13 @@ class TestTaskList(
     }
 
 
-    object Factory: DmfsTaskListFactory<TestTaskList> {
-        override fun newInstance(account: Account, provider: ContentProviderClient, providerName: TaskProvider.ProviderName, id: Long) =
-                TestTaskList(account, provider, providerName, id)
+    object Factory : DmfsTaskListFactory<TestTaskList> {
+        override fun newInstance(
+            account: Account,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            id: Long
+        ) = TestTaskList(account, provider, providerName, id)
     }
 
 }
