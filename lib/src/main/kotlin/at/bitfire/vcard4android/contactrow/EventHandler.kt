@@ -88,22 +88,23 @@ object EventHandler : DataRowHandler() {
      */
     @VisibleForTesting
     internal fun parsePartialDate(dateString: String): PartialDate? {
-        var dateString = dateString // to allow modification
         return try {
             // convert Android partial date/date-time to vCard partial date/date-time so that it can be parsed by ez-vcard
 
-            if (dateString.endsWith('Z')) {
+            val withoutZ = if (dateString.endsWith('Z')) {
                 // 'Z' is not supported for suffix in PartialDate, replace with actual offset
-                dateString = dateString.removeSuffix("Z") + "+00:00"
+                dateString.removeSuffix("Z") + "+00:00"
+            } else {
+                dateString
             }
 
-            val regex = "\\.\\d{3}".toRegex()
-            if (dateString.contains(regex)) {
+            val regex = "\\.\\d+".toRegex()
+            if (withoutZ.contains(regex)) {
                 // partial dates do not accept nanoseconds, so strip them if present
-                dateString = dateString.replace(regex, "")
-                PartialDate.parse(dateString)
+                val withoutNanos = withoutZ.replace(regex, "")
+                PartialDate.parse(withoutNanos)
             } else {
-                PartialDate.parse(dateString)
+                PartialDate.parse(withoutZ)
             }
         } catch (_: IllegalArgumentException) {
             // An error was thrown by PartialDate.parse
