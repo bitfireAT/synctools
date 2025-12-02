@@ -30,7 +30,9 @@ class DurationHandler(
 
         /* Skip if:
         - DTEND is set – we don't need to process DURATION anymore.
-        - DURATION is not set – then usually DTEND is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT. */
+        - DURATION is not set – then usually DTEND is set; Normally it's also OK to have neither
+        DTEND nor DURATION in a VEVENT, but to workaround iCloud rejection we always generate DTEND
+        if that's the case. See davx5-ose#1859. */
         if (values.getAsLong(Events.DTEND) != null)
             return
         val durStr = values.getAsString(Events.DURATION) ?: return
