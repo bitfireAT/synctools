@@ -12,6 +12,8 @@ import androidx.annotation.VisibleForTesting
 import at.bitfire.vcard4android.Contact
 import at.bitfire.vcard4android.LabeledProperty
 import at.bitfire.vcard4android.Utils.trimToNull
+import at.bitfire.vcard4android.contactrow.EventHandler.fullDateFormat
+import at.bitfire.vcard4android.contactrow.EventHandler.fullDateTimeFormats
 import at.bitfire.vcard4android.property.XAbDate
 import ezvcard.property.Anniversary
 import ezvcard.property.Birthday
@@ -60,7 +62,6 @@ object EventHandler : DataRowHandler() {
                 return OffsetDateTime.parse(dateString, formatter)
             } catch (_: DateTimeParseException) {
                 // ignore: given date is not valid
-                continue
             }
         }
 
