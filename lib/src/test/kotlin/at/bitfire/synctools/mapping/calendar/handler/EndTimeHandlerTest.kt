@@ -88,35 +88,52 @@ class EndTimeHandlerTest {
         assertEquals(defaultTz, (result.endDate?.date as? DateTime)?.timeZone)
     }
 
-
-    // skip conditions
-
     @Test
-    fun `Skip if DTEND is not after DTSTART`() {
+    fun `DTEND is not after DTSTART`() {
+        // We always need DTEND if DTSTART is present, because iCloud rejects otherwise
+        // See davx5-ose#1859
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1592733500000L,
-            Events.DTEND to 1592733500000L
+            Events.DTEND to 1592733100000L
         ))
         handler.process(entity, entity, result)
-        assertNull(result.endDate)
+        // It's against the standard to have DTEND with the same value as DTSTART, but we do it for compatibility with iCloud
+        assertEquals(1592733500000L, result.endDate?.date?.time)
     }
 
     @Test
-    fun `Skip if DTEND is not set`() {
+    fun `DTEND is not set`() {
+        // We always need DTEND if DTSTART is present, because iCloud rejects otherwise
+        // See davx5-ose#1859
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1592733500000L
         ))
         handler.process(entity, entity, result)
-        assertNull(result.endDate)
+        // It's against the standard to have DTEND with the same value as DTSTART, but we do it for compatibility with iCloud
+        assertEquals(1592733500000L, result.endDate?.date?.time)
     }
+
+
+    // skip conditions
 
     @Test
     fun `Skip if DTSTART is not set`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTEND to 1592733500000L
+        ))
+        handler.process(entity, entity, result)
+        assertNull(result.endDate)
+    }
+
+    @Test
+    fun `Skip if DURATION is set`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1592733500000L,
+            Events.DURATION to "P4D"
         ))
         handler.process(entity, entity, result)
         assertNull(result.endDate)
