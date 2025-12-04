@@ -16,7 +16,7 @@ import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class TestMappingUtil {
+class MappingUtilTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
