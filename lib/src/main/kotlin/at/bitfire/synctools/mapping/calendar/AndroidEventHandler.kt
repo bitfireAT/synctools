@@ -17,7 +17,6 @@ import at.bitfire.synctools.mapping.calendar.handler.AvailabilityHandler
 import at.bitfire.synctools.mapping.calendar.handler.CategoriesHandler
 import at.bitfire.synctools.mapping.calendar.handler.ColorHandler
 import at.bitfire.synctools.mapping.calendar.handler.DescriptionHandler
-import at.bitfire.synctools.mapping.calendar.handler.DurationHandler
 import at.bitfire.synctools.mapping.calendar.handler.EndTimeHandler
 import at.bitfire.synctools.mapping.calendar.handler.LocationHandler
 import at.bitfire.synctools.mapping.calendar.handler.OrganizerHandler
@@ -67,7 +66,6 @@ class AndroidEventHandler(
         LocationHandler(),
         StartTimeHandler(tzRegistry),
         EndTimeHandler(tzRegistry),
-        DurationHandler(tzRegistry),
         RecurrenceFieldsHandler(tzRegistry),
         DescriptionHandler(),
         ColorHandler(),
