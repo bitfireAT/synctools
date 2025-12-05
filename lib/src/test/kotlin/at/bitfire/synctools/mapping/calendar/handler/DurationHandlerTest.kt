@@ -119,9 +119,9 @@ class DurationHandlerTest {
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "PT24H"      // all-day event → converted to P1D
+            Events.DURATION to "PT24H"
         ))
-        // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
+        // DST transition at 03:00, clock is set back to 02:00 → PT24H goes one hour back
         handler.process(entity, entity, result)
         assertEquals(DtEnd(DateTime("20251027T000000", tzVienna)), result.endDate)
         assertNull(result.duration)
@@ -134,9 +134,9 @@ class DurationHandlerTest {
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "PT-24H"     // all-day event → converted to P1D
+            Events.DURATION to "PT-24H"     // will be converted to PT24H
         ))
-        // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
+        // DST transition at 03:00, clock is set back to 02:00 → PT24H goes one hour back
         handler.process(entity, entity, result)
         assertEquals(DtEnd(DateTime("20251027T000000", tzVienna)), result.endDate)
         assertNull(result.duration)
