@@ -8,11 +8,22 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
+import java.time.Duration
+import java.time.Instant
 import java.util.logging.Logger
 
+/**
+ * Maps a potentially present [Events.DTEND] to a VEvent [DtEnd] property.
+ *
+ * If [Events.DTEND] is null / not present:
+ *
+ * - If [Events.DURATION] is present / not null, [DurationHandler] is responsible for generating the VEvent's [DtEnd].
+ * - If [Events.DURATION] is null / not present, this class is responsible for generating the VEvent's [DtEnd].
+ */
 class EndTimeHandler(
     private val tzRegistry: TimeZoneRegistry
 ): AndroidEventFieldHandler {
@@ -24,15 +35,21 @@ class EndTimeHandler(
         val values = from.entityValues
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
-        // Skip if DTEND is not set – then usually DURATION is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT.
-        val tsEnd = values.getAsLong(Events.DTEND) ?: return
-
-        // Also skip if DTEND is not after DTSTART (not allowed in iCalendar)
+        // Skip if DTSTART is not present (not allowed in iCalendar)
         val tsStart = values.getAsLong(Events.DTSTART) ?: return
-        if (tsEnd <= tsStart) {
-            logger.warning("Ignoring DTEND=$tsEnd that is not after DTSTART=$tsStart")
-            return
-        }
+
+        val tsEndOrNull = values.getAsLong(Events.DTEND)
+        val durationStr = values.getAsString(Events.DURATION)
+
+        if (tsEndOrNull == null && durationStr != null) // DTEND not present, but DURATION is present:
+            return                                      // DurationHandler is responsible for generating the DTEND property
+
+        /* Make sure that there's always a DTEND for compatibility. While it's allowed in RFC 5545
+        to omit DTEND, this causes problems with some servers (notably iCloud). See also:
+        https://github.com/bitfireAT/davx5-ose/issues/1859 */
+        val tsEnd = tsEndOrNull
+            ?.takeUnless { it < tsStart }               // only use DTEND if it's not before DTSTART
+            ?: calculateFromDefault(tsStart, allDay)    // always provide DTEND for compatibility
 
         // DATE or DATE-TIME according to allDay
         val end = AndroidTimeField(
@@ -45,5 +62,17 @@ class EndTimeHandler(
 
         to.properties += DtEnd(end)
     }
+
+    @VisibleForTesting
+    internal fun calculateFromDefault(tsStart: Long, allDay: Boolean): Long =
+        if (allDay) {
+            // all-day: default duration is PT1D; all-day events are always in UTC time zone
+            val start = Instant.ofEpochMilli(tsStart)
+            val end = start + Duration.ofDays(1)
+            end.toEpochMilli()
+        } else {
+            // non-all-day: default duration is PT0S; end time = start time
+            tsStart
+        }
 
 }

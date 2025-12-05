@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
@@ -16,11 +17,17 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
-import java.time.Duration
 import java.time.Instant
-import java.time.Period
 import java.time.ZoneOffset
 
+/**
+ * Maps a potentially present [Events.DURATION] to a VEvent [DtEnd] property.
+ *
+ * Does nothing when:
+ *
+ * - [Events.DTEND] is present / not null (because DTEND then takes precedence over DURATION), and/or
+ * - [Events.DURATION] is null / not present.
+ */
 class DurationHandler(
     private val tzRegistry: TimeZoneRegistry
 ): AndroidEventFieldHandler {
@@ -28,18 +35,15 @@ class DurationHandler(
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
 
-        /* Skip if:
-        - DTEND is set – we don't need to process DURATION anymore.
-        - DURATION is not set – then usually DTEND is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT. */
+        /* Skip if DTEND is set and/or DURATION is not set. In both cases EndTimeHandler is
+        responsible for generating the DTEND property. */
         if (values.getAsLong(Events.DTEND) != null)
             return
-        val durStr = values.getAsString(Events.DURATION) ?: return
-        val duration = AndroidTimeUtils.parseDuration(durStr)
+        val durationStr = values.getAsString(Events.DURATION) ?: return
 
-        // Skip in case of zero or negative duration (analogous to DTEND being before DTSTART).
-        if ((duration is Duration && (duration.isZero || duration.isNegative)) ||
-            (duration is Period && (duration.isZero || duration.isNegative)))
-            return
+        // parse duration and invert in case of negative value (events can't go back in time)
+        val parsedDuration = AndroidTimeUtils.parseDuration(durationStr)
+        val duration = parsedDuration.abs()
 
         /* Some servers have problems with DURATION. For maximum compatibility, we always generate DTEND instead of DURATION.
         (After all, the constraint that non-recurring events have a DTEND while recurring events use DURATION is Android-specific.)
