@@ -24,22 +24,30 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.Temporal
 
+/**
+ * Maps contact events (like birthdays and anniversaries) to vCard properties.
+ *
+ * Android stores the events as date/date-time strings, so we have to parse these strings.
+ * Unfortunately, the format is not specified in the ContactsContract ("as the user entered it"):
+ * https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.Event?hl=en#START_DATE
+ *
+ * At least we know the formats used by AOSP Contacts:
+ * https://android.googlesource.com/platform/packages/apps/Contacts/+/c326c157541978c180be4e3432327eceb1e66637/src/com/android/contacts/util/CommonDateUtils.java#25
+ * so we support at least these formats.
+ */
 object EventHandler : DataRowHandler() {
 
-    // CommonDateUtils: https://android.googlesource.com/platform/packages/apps/Contacts/+/c326c157541978c180be4e3432327eceb1e66637/src/com/android/contacts/util/CommonDateUtils.java#25
-
     /**
-     * Date formats for full date with time. Converts to [OffsetDateTime].
+     * Date formats for full date with time (taken from Android's CommonDateUtils).
      */
     private val fullDateTimeFormats = listOf(
-        // Provided by Android's CommonDateUtils
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
         // "yyyy-MM-dd'T'HH:mm:ssXXX"
         DateTimeFormatter.ISO_OFFSET_DATE_TIME,
     )
 
     /**
-     * Date format for full date without time. Converts to [LocalDate].
+     * Date format for full date without time (taken from Android's CommonDateUtils).
      */
     private val fullDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -47,10 +55,11 @@ object EventHandler : DataRowHandler() {
     override fun forMimeType() = Event.CONTENT_ITEM_TYPE
 
     /**
-     * Tries to parse a date string into a [Temporal] object using multiple acceptable formats.
-     * Returns the parsed [Temporal] if successful, or `null` if none of the formats match.
-     * @param dateString The date string to parse.
-     * @return If format is:
+     * Tries to parse a contact event date string into a [Temporal] object using multiple acceptable formats.
+     *
+     * @param dateString The contact event date string to parse.
+     *
+     * @return The parsed [Temporal] if successful, or `null` if none of the formats match. If format is:
      * - `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` or `yyyy-MM-dd'T'HH:mm:ssXXX` ([fullDateTimeFormats]) -> [OffsetDateTime]
      * - `yyyy-MM-dd` ([fullDateFormat]) -> [LocalDate]
      * - else -> `null`
@@ -77,11 +86,14 @@ object EventHandler : DataRowHandler() {
     }
 
     /**
-     * Tries to parse a date string into a [PartialDate] object.
-     * Returns the parsed [PartialDate] if successful, or `null` if parsing fails.
+     * Tries to parse a contact event date string into a [PartialDate] object, covering the cases
+     * from Android's CommonDateUtils:
      *
-     * Does some preprocessing to handle 'Z' suffix and strip nanoseconds, both not supported by
-     * [PartialDate.parse].
+     * - `--MM-dd`
+     * - `--MM-dd'T'HH:mm:ss.SSS'Z'`
+     *
+     * Does some preprocessing to handle the 'Z' suffix and strip nanoseconds
+     * (both not supported by [PartialDate.parse]).
      *
      * @param dateString The date string to parse.
      * @return The parsed [PartialDate] or `null` if parsing fails.
@@ -94,11 +106,10 @@ object EventHandler : DataRowHandler() {
             val withoutZ = if (dateString.endsWith('Z')) {
                 // 'Z' is not supported for suffix in PartialDate, replace with actual offset
                 dateString.removeSuffix("Z") + "+00:00"
-            } else {
+            } else
                 dateString
-            }
 
-            // PartialDates.parse() does not accept fractions of seconds, so strip them if present
+            // PartialDate.parse() does not accept fractions of seconds, so strip them if present
             val subSecondsRegex = "\\.\\d+".toRegex()   // 2025-12-05T010203.456+00:30
                                                         //                  ^^^^ (number of digits may vary)
             val subSecondsMatch = subSecondsRegex.find(withoutZ)
