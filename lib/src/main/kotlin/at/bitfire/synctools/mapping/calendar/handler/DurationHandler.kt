@@ -35,15 +35,14 @@ class DurationHandler(
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
 
-        /* Skip if:
-        - DTEND is set – we don't need to process DURATION anymore.
-        - DURATION is not set – then usually DTEND is set; however it's also OK to have neither DTEND nor DURATION in a VEVENT. */
+        /* Skip if DTEND is set and/or DURATION is not set. In both cases EndTimeHandler is
+        responsible for generating the DTEND property. */
         if (values.getAsLong(Events.DTEND) != null)
             return
         val durationStr = values.getAsString(Events.DURATION) ?: return
-        val parsedDuration = AndroidTimeUtils.parseDuration(durationStr)
 
-        // invert in case of negative duration (events can't go back in time)
+        // parse duration and invert in case of negative value (events can't go back in time)
+        val parsedDuration = AndroidTimeUtils.parseDuration(durationStr)
         val duration = parsedDuration.abs()
 
         /* Some servers have problems with DURATION. For maximum compatibility, we always generate DTEND instead of DURATION.

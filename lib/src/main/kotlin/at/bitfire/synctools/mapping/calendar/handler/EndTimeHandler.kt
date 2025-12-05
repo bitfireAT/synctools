@@ -42,13 +42,14 @@ class EndTimeHandler(
         val durationStr = values.getAsString(Events.DURATION)
 
         if (tsEndOrNull == null && durationStr != null) // DTEND not present, but DURATION is present:
-            return                                      // DurationHandler is responsible
+            return                                      // DurationHandler is responsible for generating the DTEND property
 
         /* Make sure that there's always a DTEND for compatibility. While it's allowed in RFC 5545
-        to omit DTEND, this causes problems with some servers (notably iCloud). */
+        to omit DTEND, this causes problems with some servers (notably iCloud). See also:
+        https://github.com/bitfireAT/davx5-ose/issues/1859 */
         val tsEnd = tsEndOrNull
             ?.takeUnless { it < tsStart }               // only use DTEND if it's not before DTSTART
-            ?: calculateFromDefault(tsStart, allDay)    // for compatibility
+            ?: calculateFromDefault(tsStart, allDay)    // always provide DTEND for compatibility
 
         // DATE or DATE-TIME according to allDay
         val end = AndroidTimeField(
