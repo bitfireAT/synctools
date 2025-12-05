@@ -54,77 +54,6 @@ object EventHandler : DataRowHandler() {
 
     override fun forMimeType() = Event.CONTENT_ITEM_TYPE
 
-    /**
-     * Tries to parse a contact event date string into a [Temporal] object using multiple acceptable formats.
-     *
-     * @param dateString The contact event date string to parse.
-     *
-     * @return The parsed [Temporal] if successful, or `null` if none of the formats match. If format is:
-     * - `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` or `yyyy-MM-dd'T'HH:mm:ssXXX` ([fullDateTimeFormats]) -> [OffsetDateTime]
-     * - `yyyy-MM-dd` ([fullDateFormat]) -> [LocalDate]
-     * - else -> `null`
-     */
-    @VisibleForTesting
-    internal fun parseFullDate(dateString: String): Temporal? {
-        for (formatter in fullDateTimeFormats) {
-            try {
-                return OffsetDateTime.parse(dateString, formatter)
-            } catch (_: DateTimeParseException) {
-                // ignore: given date is not valid
-            }
-        }
-
-        // try parsing as full date only (no time)
-        try {
-            return LocalDate.parse(dateString, fullDateFormat)
-        } catch (_: DateTimeParseException) {
-            // ignore: given date is not valid
-        }
-
-        // could not parse date
-        return null
-    }
-
-    /**
-     * Tries to parse a contact event date string into a [PartialDate] object, covering the cases
-     * from Android's CommonDateUtils:
-     *
-     * - `--MM-dd`
-     * - `--MM-dd'T'HH:mm:ss.SSS'Z'`
-     *
-     * Does some preprocessing to handle the 'Z' suffix and strip nanoseconds
-     * (both not supported by [PartialDate.parse]).
-     *
-     * @param dateString The date string to parse.
-     * @return The parsed [PartialDate] or `null` if parsing fails.
-     */
-    @VisibleForTesting
-    internal fun parsePartialDate(dateString: String): PartialDate? {
-        return try {
-            // convert Android partial date/date-time to vCard partial date/date-time so that it can be parsed by ez-vcard
-
-            val withoutZ = if (dateString.endsWith('Z')) {
-                // 'Z' is not supported for suffix in PartialDate, replace with actual offset
-                dateString.removeSuffix("Z") + "+00:00"
-            } else
-                dateString
-
-            // PartialDate.parse() does not accept fractions of seconds, so strip them if present
-            val subSecondsRegex = "\\.\\d+".toRegex()   // 2025-12-05T010203.456+00:30
-                                                        //                  ^^^^ (number of digits may vary)
-            val subSecondsMatch = subSecondsRegex.find(withoutZ)
-            val withoutSubSeconds = if (subSecondsMatch != null)
-                withoutZ.removeRange(subSecondsMatch.range)
-            else
-                withoutZ
-
-            PartialDate.parse(withoutSubSeconds)
-        } catch (_: IllegalArgumentException) {
-            // An error was thrown by PartialDate.parse
-            null
-        }
-    }
-
     override fun handle(values: ContentValues, contact: Contact) {
         super.handle(values, contact)
 
@@ -151,6 +80,82 @@ object EventHandler : DataRowHandler() {
                     contact.customDates += LabeledProperty(abDate, label)
                 }
             }
+    }
+
+    /**
+     * Tries to parse a contact event date string into a [Temporal] object using multiple acceptable formats.
+     *
+     * "Full" means "with year" in this context.
+     *
+     * @param dateString The contact event date string to parse.
+     *
+     * @return The parsed [Temporal] if successful, or `null` if none of the formats match. If format is:
+     * - `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'` or `yyyy-MM-dd'T'HH:mm:ssXXX` ([fullDateTimeFormats]) -> [OffsetDateTime]
+     * - `yyyy-MM-dd` ([fullDateFormat]) -> [LocalDate]
+     * - else -> `null`
+     */
+    @VisibleForTesting
+    internal fun parseFullDate(dateString: String): Temporal? {
+        // try to parse as full date-time
+        for (formatter in fullDateTimeFormats) {
+            try {
+                return OffsetDateTime.parse(dateString, formatter)
+            } catch (_: DateTimeParseException) {
+                // ignore: given date is not valid
+            }
+        }
+
+        // try to parse as full date (without time)
+        try {
+            return LocalDate.parse(dateString, fullDateFormat)
+        } catch (_: DateTimeParseException) {
+            // ignore: given date is not valid
+        }
+
+        // could not parse date
+        return null
+    }
+
+    /**
+     * Tries to parse a contact event date string into a [PartialDate] object, covering the cases
+     * from Android's CommonDateUtils:
+     *
+     * - `--MM-dd`
+     * - `--MM-dd'T'HH:mm:ss.SSS'Z'`
+     *
+     * Does some preprocessing to handle the 'Z' suffix and strip nanoseconds
+     * (both not supported by [PartialDate.parse]).
+     *
+     * "Partial" means "without year" in this context.
+     *
+     * @param dateString The date string to parse.
+     * @return The parsed [PartialDate] or `null` if parsing fails.
+     */
+    @VisibleForTesting
+    internal fun parsePartialDate(dateString: String): PartialDate? {
+        return try {
+            // convert Android partial date/date-time to vCard partial date/date-time so that it can be parsed by ez-vcard
+
+            val withoutZ = if (dateString.endsWith('Z')) {
+                // 'Z' is not supported for suffix in PartialDate, replace with actual offset
+                dateString.removeSuffix("Z") + "+00:00"
+            } else
+                dateString
+
+            // PartialDate.parse() does not accept fractions of seconds, so strip them if present
+            val subSecondsRegex = "\\.\\d+".toRegex()   // 2025-12-05T010203.456+00:30
+            //                  ^^^^ (number of digits may vary)
+            val subSecondsMatch = subSecondsRegex.find(withoutZ)
+            val withoutSubSeconds = if (subSecondsMatch != null)
+                withoutZ.removeRange(subSecondsMatch.range)
+            else
+                withoutZ
+
+            PartialDate.parse(withoutSubSeconds)
+        } catch (_: IllegalArgumentException) {
+            // An error was thrown by PartialDate.parse
+            null
+        }
     }
 
 }
