@@ -44,12 +44,38 @@ class DurationHandlerTest {
     }
 
     @Test
+    fun `All-day event with negative all-day duration`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1592733600000L,   // 21/06/2020 10:00 UTC
+            Events.DURATION to "P-4D"
+        ))
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(Date("20200625")), result.endDate)
+        assertNull(result.duration)
+    }
+
+    @Test
     fun `All-day event with non-all-day duration`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 1,
             Events.DTSTART to 1760486400000L,   // Wed Oct 15 2025 00:00:00 GMT+0000
             Events.DURATION to "PT24H"
+        ))
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(Date("20251016")), result.endDate)
+        assertNull(result.duration)
+    }
+
+    @Test
+    fun `All-day event with negative non-all-day duration`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1760486400000L,   // Wed Oct 15 2025 00:00:00 GMT+0000
+            Events.DURATION to "PT-24H"
         ))
         handler.process(entity, entity, result)
         assertEquals(DtEnd(Date("20251016")), result.endDate)
@@ -72,13 +98,43 @@ class DurationHandlerTest {
     }
 
     @Test
+    fun `Non-all-day event with negative all-day duration`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 0,
+            Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
+            Events.EVENT_TIMEZONE to "Europe/Vienna",
+            Events.DURATION to "P-1D",
+        ))
+        // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(DateTime("20251027T010000", tzVienna)), result.endDate)
+        assertNull(result.duration)
+    }
+
+    @Test
     fun `Non-all-day event with non-all-day duration`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "P24H"
+            Events.DURATION to "PT24H"
+        ))
+        // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(DateTime("20251027T000000", tzVienna)), result.endDate)
+        assertNull(result.duration)
+    }
+
+    @Test
+    fun `Non-all-day event with negative non-all-day duration`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 0,
+            Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
+            Events.EVENT_TIMEZONE to "Europe/Vienna",
+            Events.DURATION to "PT-24H"
         ))
         // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
         handler.process(entity, entity, result)
