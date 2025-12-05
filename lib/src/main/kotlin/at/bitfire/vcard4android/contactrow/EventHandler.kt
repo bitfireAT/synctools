@@ -98,14 +98,16 @@ object EventHandler : DataRowHandler() {
                 dateString
             }
 
-            val regex = "\\.\\d+".toRegex()
-            if (withoutZ.contains(regex)) {
-                // partial dates do not accept nanoseconds, so strip them if present
-                val withoutNanos = withoutZ.replace(regex, "")
-                PartialDate.parse(withoutNanos)
-            } else {
-                PartialDate.parse(withoutZ)
-            }
+            // PartialDates.parse() does not accept fractions of seconds, so strip them if present
+            val subSecondsRegex = "\\.\\d+".toRegex()   // 2025-12-05T010203.456+00:30
+                                                        //                  ^^^^ (number of digits may vary)
+            val subSecondsMatch = subSecondsRegex.find(withoutZ)
+            val withoutSubSeconds = if (subSecondsMatch != null)
+                withoutZ.removeRange(subSecondsMatch.range)
+            else
+                withoutZ
+
+            PartialDate.parse(withoutSubSeconds)
         } catch (_: IllegalArgumentException) {
             // An error was thrown by PartialDate.parse
             null
@@ -117,11 +119,10 @@ object EventHandler : DataRowHandler() {
 
         val dateStr = values.getAsString(Event.START_DATE) ?: return
         val full: Temporal? = parseFullDate(dateStr)
-        val partial: PartialDate? = if (full == null) {
+        val partial: PartialDate? = if (full == null)
             parsePartialDate(dateStr)
-        } else {
+        else
             null
-        }
 
         if (full != null || partial != null)
             when (values.getAsInteger(Event.TYPE)) {
