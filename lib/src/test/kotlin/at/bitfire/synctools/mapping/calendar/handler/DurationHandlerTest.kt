@@ -100,28 +100,13 @@ class DurationHandlerTest {
     }
 
     @Test
-    fun `Skip if DURATION is negative all-day duration`() {
+    fun `Skip if DTEND is set`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
-            Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
-            Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "P-1D"
+            Events.DTSTART to 1761433200000L,
+            Events.DTEND to 1761433200000L
         ))
         handler.process(entity, entity, result)
-        assertNull(result.endDate)
-        assertNull(result.duration)
-    }
-
-    @Test
-    fun `Skip if DURATION is zero non-all-day duration`() {
-        val result = VEvent()
-        val entity = Entity(contentValuesOf(
-            Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
-            Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "PT0S"
-        ))
-        handler.process(entity, entity, result)
-        assertNull(result.endDate)
         assertNull(result.duration)
     }
 

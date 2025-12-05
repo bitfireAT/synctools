@@ -17,9 +17,9 @@ import java.time.ZoneId
  * Converts timestamps from the [android.provider.CalendarContract.Events.DTSTART] or [android.provider.CalendarContract.Events.DTEND]
  * fields into other representations.
  *
- * @param timestamp     value of the DTSTART/DTEND field (timestamp in milliseconds)
- * @param timeZone      value of the respective timezone field ([android.provider.CalendarContract.Events.EVENT_TIMEZONE] / [android.provider.CalendarContract.Events.EVENT_END_TIMEZONE])
- * @param allDay        whether [android.provider.CalendarContract.Events.ALL_DAY] is non-null and not zero
+ * @param timestamp     value of the Android `DTSTART`/`DTEND` field (timestamp in milliseconds)
+ * @param timeZone      value of the respective Android timezone field or `null` for system default time zone
+ * @param allDay        whether Android `ALL_DAY` field is non-null and not zero
  */
 class AndroidTimeField(
     private val timestamp: Long,

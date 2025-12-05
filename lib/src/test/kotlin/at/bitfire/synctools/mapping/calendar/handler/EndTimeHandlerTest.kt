@@ -21,7 +21,9 @@ import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 @RunWith(RobolectricTestRunner::class)
 class EndTimeHandlerTest {
@@ -43,6 +45,17 @@ class EndTimeHandlerTest {
         ))
         handler.process(entity, entity, result)
         assertEquals(DtEnd(Date("20200621")), result.endDate)
+    }
+
+    @Test
+    fun `All-day event with empty DTEND`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1592697600000L    // 21/06/2020; DTSTART is required for DTEND to be processed
+        ))
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(Date("20200622")), result.endDate)
     }
 
     @Test
@@ -88,29 +101,20 @@ class EndTimeHandlerTest {
         assertEquals(defaultTz, (result.endDate?.date as? DateTime)?.timeZone)
     }
 
+    @Test
+    fun `Non-all-day event with empty DTEND`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 0,
+            Events.DTSTART to 1592733600000L,           // 21/06/2020 12:00 +0200; DTSTART is required for DTEND to be processed
+            Events.EVENT_TIMEZONE to "Europe/Vienna"    // will be used as end time zone
+        ))
+        handler.process(entity, entity, result)
+        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
+    }
+
 
     // skip conditions
-
-    @Test
-    fun `Skip if DTEND is not after DTSTART`() {
-        val result = VEvent()
-        val entity = Entity(contentValuesOf(
-            Events.DTSTART to 1592733500000L,
-            Events.DTEND to 1592733500000L
-        ))
-        handler.process(entity, entity, result)
-        assertNull(result.endDate)
-    }
-
-    @Test
-    fun `Skip if DTEND is not set`() {
-        val result = VEvent()
-        val entity = Entity(contentValuesOf(
-            Events.DTSTART to 1592733500000L
-        ))
-        handler.process(entity, entity, result)
-        assertNull(result.endDate)
-    }
 
     @Test
     fun `Skip if DTSTART is not set`() {
@@ -120,6 +124,39 @@ class EndTimeHandlerTest {
         ))
         handler.process(entity, entity, result)
         assertNull(result.endDate)
+    }
+
+    @Test
+    fun `Skip if DURATION is set`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1592733500000L,
+            Events.DURATION to "PT1H"
+        ))
+        handler.process(entity, entity, result)
+        assertNull(result.endDate)
+    }
+
+
+    // calculateFromDefault
+
+    @Test
+    fun `calculateFromDefault (all-day)`() {
+        val start = OffsetDateTime.of(2025, 12, 5, 0, 0, 0, 0, ZoneOffset.UTC)
+        val tsStart = start.toInstant().toEpochMilli()
+
+        val result = handler.calculateFromDefault(tsStart, allDay = true)
+
+        val expectedEnd = OffsetDateTime.of(2025, 12, 6, 0, 0, 0, 0, ZoneOffset.UTC)
+        val expectedEndTs = expectedEnd.toInstant().toEpochMilli()
+        assertEquals(expectedEndTs, result)
+    }
+
+    @Test
+    fun `calculateFromDefault (non-all-day)`() {
+        val start = System.currentTimeMillis()
+        val result = handler.calculateFromDefault(start, allDay = false)
+        assertEquals(start, result)
     }
 
 }
