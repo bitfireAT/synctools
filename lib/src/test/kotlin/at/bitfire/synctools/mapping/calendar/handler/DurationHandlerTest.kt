@@ -119,7 +119,7 @@ class DurationHandlerTest {
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "PT24H"
+            Events.DURATION to "PT24H"      // all-day event → converted to P1D
         ))
         // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
         handler.process(entity, entity, result)
@@ -134,7 +134,7 @@ class DurationHandlerTest {
             Events.ALL_DAY to 0,
             Events.DTSTART to 1761433200000L,  // Sun Oct 26 2025 01:00:00 GMT+0200
             Events.EVENT_TIMEZONE to "Europe/Vienna",
-            Events.DURATION to "PT-24H"
+            Events.DURATION to "PT-24H"     // all-day event → converted to P1D
         ))
         // DST transition at 03:00, clock is set back to 02:00 → P1D = PT25H
         handler.process(entity, entity, result)
@@ -156,11 +156,12 @@ class DurationHandlerTest {
     }
 
     @Test
-    fun `Skip if DTEND is set`() {
+    fun `Skip if DTEND and DURATION are set`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1761433200000L,
-            Events.DTEND to 1761433200000L
+            Events.DTEND to 1761433200000L,
+            Events.DURATION to "P1D"
         ))
         handler.process(entity, entity, result)
         assertNull(result.duration)
