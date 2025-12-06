@@ -21,7 +21,6 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
-import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.util.TimeZones
 import java.text.SimpleDateFormat
@@ -256,7 +255,7 @@ object AndroidTimeUtils {
 
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
-            val tzId = dbStr.substring(0, limiter)
+            val tzId = dbStr.take(limiter)
             timeZone = tzRegistry.getTimeZone(tzId)
             if (TimeZones.isUtc(timeZone))
                 timeZone = null
@@ -296,7 +295,7 @@ object AndroidTimeUtils {
     /**
      * Concatenates, if necessary, multiple RDATE/EXDATE lists and converts them to
      * a formatted string which OpenTasks can process.
-     * OpenTasks expect a list of RFC 5545 DATE ("yyyymmdd") or DATE-TIME ("yyyymmdd[Z]") values,
+     * OpenTasks expect a list of RFC 5545 DATE (`yyyymmdd`) or DATE-TIME (`yyyymmdd[Z]`) values,
      * where the time zone is stored in a separate field.
      *
      * @param dates         one more more lists of RDATE or EXDATE
@@ -308,21 +307,20 @@ object AndroidTimeUtils {
         val allDay = tz == null
         val strDates = LinkedList<String>()
         for (dateListProp in dates) {
-            if (dateListProp is RDate)
-                if (dateListProp.periods.isNotEmpty())
-                    logger.warning("RDATE PERIOD not supported, ignoring")
-                else if (dateListProp is ExDate)
-                    if (dateListProp.periods.isNotEmpty())
-                        logger.warning("EXDATE PERIOD not supported, ignoring")
+            if (dateListProp is RDate && dateListProp.periods.isNotEmpty())
+                logger.warning("RDATE PERIOD not supported, ignoring")
 
             for (date in dateListProp.dates) {
                 val dateToUse =
-                        if (date is DateTime && allDay)             // VALUE=DATE-TIME, but allDay=1
+                    when (date) {
+                        is DateTime if allDay ->    // VALUE=DATE-TIME, but allDay=1
                             Date(date)
-                        else if (date !is DateTime && !allDay)      // VALUE=DATE, but allDay=0
+
+                        !is DateTime if !allDay ->  // VALUE=DATE, but allDay=0
                             DateTime(date.toString(), tz)
-                        else
-                            date
+
+                        else -> date
+                    }
                 if (dateToUse is DateTime && !dateToUse.isUtc)
                     dateToUse.timeZone = tz!!
                 strDates += dateToUse.toString()

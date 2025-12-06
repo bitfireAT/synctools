@@ -152,9 +152,7 @@ class RecurrenceFieldsHandler(
      * @see at.bitfire.synctools.mapping.calendar.builder.EndTimeBuilder.alignWithDtStart
      */
     fun alignUntil(recur: Recur, startDate: Date): Recur {
-        val until: Date? = recur.until
-        if (until == null)
-            return recur
+        val until: Date = recur.until ?: return recur
 
         if (until is DateTime) {
             // UNTIL is DATE-TIME
