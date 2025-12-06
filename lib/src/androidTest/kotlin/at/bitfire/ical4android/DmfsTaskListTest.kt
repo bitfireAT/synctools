@@ -11,7 +11,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.provider.CalendarContract
-import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import net.fortuna.ical4j.model.property.RelatedTo
 import org.dmfs.tasks.contract.TaskContract
@@ -77,9 +76,9 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             child.relatedTo.add(RelatedTo(parent.uid))
 
             // insert child before parent
-            val childContentUri = TestTask(taskList, child).add()
+            val childContentUri = DmfsTask(taskList, child, "452a5672-e2b0-434e-92b4-bc70a7a51ef2", null, 0).add()
             val childId = ContentUris.parseId(childContentUri)
-            val parentContentUri = TestTask(taskList, parent).add()
+            val parentContentUri = DmfsTask(taskList, parent, "452a5672-e2b0-434e-92b4-bc70a7a51ef2", null, 0).add()
             val parentId = ContentUris.parseId(parentContentUri)
 
             // OpenTasks should provide the correct relation

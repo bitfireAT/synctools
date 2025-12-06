@@ -13,7 +13,6 @@ import android.database.DatabaseUtils
 import android.net.Uri
 import android.provider.CalendarContract
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.impl.TestTask
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.synctools.storage.LocalStorageException
 import net.fortuna.ical4j.model.Date
@@ -92,7 +91,7 @@ class DmfsTaskTest(
         val task = Task().apply {
             taskBuilder()
         }
-        val uri = TestTask(taskList!!, task).add()
+        val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         provider.client.query(uri, null, null, null, null)!!.use {
             it.moveToNext()
             val values = ContentValues()
@@ -688,7 +687,7 @@ class DmfsTaskTest(
         task.unknownProperties += XProperty("X-UNKNOWN-PROP", "Unknown Value")
 
         // add to task list
-        val uri = TestTask(taskList!!, task).add()
+        val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull("Couldn't add task", uri)
 
         // read and parse event from calendar provider
@@ -721,7 +720,7 @@ class DmfsTaskTest(
         task.dtStart = DtStart(Date("20150102"))
 
         task.due = Due(Date("20150101"))
-        TestTask(taskList!!, task).add()
+        DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
     }
 
     @Test
@@ -734,7 +733,7 @@ class DmfsTaskTest(
         for (i in 1..1050)
             task.alarms += VAlarm(java.time.Duration.ofMinutes(i.toLong()))
 
-        val uri = TestTask(taskList!!, task).add()
+        val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         val task2 = taskList!!.findById(ContentUris.parseId(uri))
         assertEquals(1050, task2.task?.alarms?.size)
     }
@@ -749,7 +748,7 @@ class DmfsTaskTest(
         task.location = "Sample location"
         task.dtStart = DtStart("20150501T120000", tzVienna)
         assertFalse(task.isAllDay())
-        val uri = TestTask(taskList!!, task).add()
+        val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
 
         val testTask = taskList!!.findById(ContentUris.parseId(uri))
@@ -782,7 +781,7 @@ class DmfsTaskTest(
         task.dtStart = DtStart(Date("20150501"))
         task.due = Due(Date("20150502"))
         assertTrue(task.isAllDay())
-        val uri = TestTask(taskList!!, task).add()
+        val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
 
         val testTask = taskList!!.findById(ContentUris.parseId(uri))
@@ -803,16 +802,16 @@ class DmfsTaskTest(
     @Test
     fun testGetTimeZone() {
         // no date/time
-        var t = TestTask(taskList!!, Task())
+        var t = DmfsTask(taskList!!, Task(), "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0)
         assertEquals(tzDefault, t.getTimeZone())
 
         // dtstart with date (no time)
-        t = TestTask(taskList!!, Task())
+        t = DmfsTask(taskList!!, Task(), "410c19d7-df79-4d65-8146-40b7bec5923b", null, 0)
         t.task!!.dtStart = DtStart("20150101")
         assertEquals(tzDefault, t.getTimeZone())
 
         // dtstart with time
-        t = TestTask(taskList!!, Task())
+        t = DmfsTask(taskList!!, Task(), "9dc64544-1816-4f04-b952-e894164467f6", null, 0)
         t.task!!.dtStart = (DtStart("20150101", tzVienna))
         assertEquals(tzVienna, t.getTimeZone())
     }

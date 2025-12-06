@@ -33,11 +33,10 @@ import java.util.logging.Logger
  * Represents a locally stored task list, containing [DmfsTask]s (tasks).
  * Communicates with tasks.org-compatible content providers (currently tasks.org and OpenTasks) to store the tasks.
  */
-open class DmfsTaskList<out T : DmfsTask>(
+open class DmfsTaskList(
     val account: Account,
     val provider: ContentProviderClient,
     val providerName: TaskProvider.ProviderName,
-    val taskFactory: DmfsTaskFactory<T>,
     val id: Long
 ) {
 
@@ -133,18 +132,18 @@ open class DmfsTaskList<out T : DmfsTask>(
      *
      * @return events from this task list which match the selection
      */
-    fun queryTasks(_where: String? = null, _whereArgs: Array<String>? = null): List<T> {
+    fun queryTasks(_where: String? = null, _whereArgs: Array<String>? = null): List<DmfsTask> {
         val where = "(${_where ?: "1"}) AND ${Tasks.LIST_ID}=?"
         val whereArgs = (_whereArgs ?: arrayOf()) + id.toString()
 
-        val tasks = LinkedList<T>()
+        val tasks = LinkedList<DmfsTask>()
         provider.query(
             tasksSyncUri(),
             null,
             where, whereArgs, null
         )?.use { cursor ->
             while (cursor.moveToNext())
-                tasks += taskFactory.fromProvider(this, cursor.toContentValues())
+                tasks += DmfsTask(this, cursor.toContentValues())
         }
         return tasks
     }
@@ -201,7 +200,7 @@ open class DmfsTaskList<out T : DmfsTask>(
                 ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
         }
 
-        fun <T : DmfsTaskList<DmfsTask>> findByID(
+        fun <T : DmfsTaskList> findByID(
             account: Account,
             provider: ContentProviderClient,
             providerName: TaskProvider.ProviderName,
@@ -224,7 +223,7 @@ open class DmfsTaskList<out T : DmfsTask>(
             throw FileNotFoundException()
         }
 
-        fun <T : DmfsTaskList<DmfsTask>> find(
+        fun <T : DmfsTaskList> find(
             account: Account,
             factory: DmfsTaskListFactory<T>,
             provider: ContentProviderClient,
@@ -251,6 +250,16 @@ open class DmfsTaskList<out T : DmfsTask>(
             return taskLists
         }
 
+    }
+
+    // default factory (will be removed as soon as DmfsTaskList is not open anymore)
+    object Factory : DmfsTaskListFactory<DmfsTaskList> {
+        override fun newInstance(
+            account: Account,
+            provider: ContentProviderClient,
+            providerName: TaskProvider.ProviderName,
+            id: Long
+        ): DmfsTaskList = DmfsTaskList(account, provider, providerName, id)
     }
 
 }
