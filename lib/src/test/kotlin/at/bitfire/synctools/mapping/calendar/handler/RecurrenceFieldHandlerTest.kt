@@ -13,12 +13,14 @@ import androidx.core.content.contentValuesOf
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Date
+import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
@@ -75,10 +77,10 @@ class RecurrenceFieldHandlerTest {
     fun `Recurring main event`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
-            Events.DTSTART to System.currentTimeMillis(),
-            Events.RRULE to "FREQ=DAILY;COUNT=10",
-            Events.RDATE to "20251010T010203Z",
-            Events.EXRULE to "FREQ=WEEKLY;COUNT=1",
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.RRULE to "FREQ=DAILY;COUNT=10",      // Oct 02 ... Oct 12
+            Events.RDATE to "20251002T111413Z,20251015T010203Z",    // RDATE at event start as required by Android plus Oct 15
+            Events.EXRULE to "FREQ=WEEKLY;COUNT=1",     // meaningless EXRULE/EXDATE
             Events.EXDATE to "20260201T010203Z"
         ))
         handler.process(entity, entity, result)
@@ -87,7 +89,7 @@ class RecurrenceFieldHandlerTest {
             result.getProperties<RRule>(Property.RRULE)
         )
         assertEquals(
-            listOf(RDate(ParameterList(), "20251010T010203Z")),
+            listOf(RDate(ParameterList(), "20251015T010203Z")),
             result.getProperties<RDate>(Property.RDATE)
         )
         assertEquals(
@@ -100,6 +102,35 @@ class RecurrenceFieldHandlerTest {
         )
     }
 
+    @Test
+    fun `Recurring main event (all-day)`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 1,
+            Events.DTSTART to 1759363200000,    // Thu Oct 02 2025 00:00:00 GMT+0000
+            Events.RRULE to "FREQ=DAILY;COUNT=10",      // Oct 02 ... Oct 12
+            Events.RDATE to "20251002,20251015",        // RDATE at event start as required by Android plus Oct 15
+            Events.EXRULE to "FREQ=WEEKLY;COUNT=1",     // meaningless EXRULE/EXDATE
+            Events.EXDATE to "20260201T010203Z"
+        ))
+        handler.process(entity, entity, result)
+        assertEquals(
+            listOf(RRule("FREQ=DAILY;COUNT=10")),
+            result.getProperties<RRule>(Property.RRULE)
+        )
+        assertEquals(
+            listOf(RDate(DateList(Value.DATE).apply { add(Date("20251015")) })),
+            result.getProperties<RDate>(Property.RDATE)
+        )
+        assertEquals(
+            "FREQ=WEEKLY;COUNT=1",
+            result.getProperties<ExRule>(Property.EXRULE).joinToString { it.value }
+        )
+        assertEquals(
+            "20260201",
+            result.getProperties<ExDate>(Property.EXDATE).joinToString { it.value }
+        )
+    }
 
     @Test
     fun `RRULE with UNTIL before DTSTART`() {
