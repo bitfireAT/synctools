@@ -27,7 +27,7 @@ jobs:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
           dependency-graph: generate-and-submit         # submit Github Dependency Graph info
 
-      - run: ./gradlew --build-cache --configuration-cache compileDebugSources
+      - run: ./gradlew --build-cache --configuration-cache compileBenchtestDebugSources
 
   test:
     needs: compile
@@ -46,9 +46,9 @@ jobs:
           cache-read-only: true
 
       - name: Run lint
-        run: ./gradlew --build-cache --configuration-cache lintDebug
+        run: ./gradlew --build-cache --configuration-cache lintBenchtestDebug
       - name: Run unit tests
-        run: ./gradlew --build-cache --configuration-cache testDebugUnitTest
+        run: ./gradlew --build-cache --configuration-cache testBenchtestDebugUnitTest
 
   test_on_emulator:
     needs: compile
