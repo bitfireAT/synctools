@@ -54,21 +54,6 @@ android {
         }
     }
 
-    flavorDimensions += "version"
-    productFlavors {
-        create("library") {
-            dimension = "version"
-            // Inherits minSdk = 23 from defaultConfig
-        }
-
-        create("benchtest") { // flavor cannot start with 'test'
-            dimension = "version"
-            minSdk = 26 // Higher minSdk for testing
-            // Mockk Requires a minSdk of 26 since version 1.14.7.
-            // Until we rise our minSdk to 26 for all flavors, we provide a separate test flavor.
-        }
-    }
-
     buildTypes {
         release {
             // Android libraries shouldn't be minified:
@@ -103,7 +88,7 @@ android {
 
     publishing {
         // Configure publish variant
-        singleVariant("libraryRelease") {
+        singleVariant("release") {
             withSourcesJar()
         }
     }
@@ -118,7 +103,7 @@ publishing {
             version = System.getenv("GIT_COMMIT")
 
             afterEvaluate {
-                from(components["libraryRelease"])
+                from(components["release"])
             }
         }
     }
