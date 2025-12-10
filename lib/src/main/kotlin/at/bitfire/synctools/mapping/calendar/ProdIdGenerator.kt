@@ -32,14 +32,14 @@ class DefaultProdIdGenerator(
 
         if (packages.isNotEmpty()) {
             val packagesStr = packages.joinToString(",")
-            params.add(XParameter(PARAMETER_MUTATORS, packagesStr))
+            params.add(XParameter(XNAME_USER_AGENT, packagesStr))
         }
 
         return ProdId(params, prodId)
     }
 
     companion object {
-        const val PARAMETER_MUTATORS = "x-mutators"
+        const val XNAME_USER_AGENT = "X-UA"
     }
 
 }
