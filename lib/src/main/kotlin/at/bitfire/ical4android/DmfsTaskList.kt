@@ -33,7 +33,7 @@ import java.util.logging.Logger
  * Represents a locally stored task list, containing [DmfsTask]s (tasks).
  * Communicates with tasks.org-compatible content providers (currently tasks.org and OpenTasks) to store the tasks.
  */
-open class DmfsTaskList(
+class DmfsTaskList(
     val account: Account,
     val provider: ContentProviderClient,
     val providerName: TaskProvider.ProviderName,
@@ -200,13 +200,12 @@ open class DmfsTaskList(
                 ?: throw LocalStorageException("Couldn't create task list (empty result from provider)")
         }
 
-        fun <T : DmfsTaskList> findByID(
+        fun findByID(
             account: Account,
             provider: ContentProviderClient,
             providerName: TaskProvider.ProviderName,
-            factory: DmfsTaskListFactory<T>,
             id: Long
-        ): T {
+        ): DmfsTaskList {
             provider.query(
                 ContentUris.withAppendedId(TaskLists.getContentUri(providerName.authority), id).asSyncAdapter(account),
                 null,
@@ -215,7 +214,7 @@ open class DmfsTaskList(
                 null
             )?.use { cursor ->
                 if (cursor.moveToNext()) {
-                    val taskList = factory.newInstance(account, provider, providerName, id)
+                    val taskList = DmfsTaskList(account, provider, providerName, id)
                     taskList.populate(cursor.toContentValues())
                     return taskList
                 }
@@ -223,15 +222,14 @@ open class DmfsTaskList(
             throw FileNotFoundException()
         }
 
-        fun <T : DmfsTaskList> find(
+        fun find(
             account: Account,
-            factory: DmfsTaskListFactory<T>,
             provider: ContentProviderClient,
             providerName: TaskProvider.ProviderName,
             where: String?,
             whereArgs: Array<String>?
-        ): List<T> {
-            val taskLists = LinkedList<T>()
+        ): List<DmfsTaskList> {
+            val taskLists = LinkedList<DmfsTaskList>()
             provider.query(
                 TaskLists.getContentUri(providerName.authority).asSyncAdapter(account),
                 null,
@@ -241,8 +239,12 @@ open class DmfsTaskList(
             )?.use { cursor ->
                 while (cursor.moveToNext()) {
                     val values = cursor.toContentValues()
-                    val taskList =
-                        factory.newInstance(account, provider, providerName, values.getAsLong(TaskLists._ID))
+                    val taskList = DmfsTaskList(
+                        account = account,
+                        provider = provider,
+                        providerName = providerName,
+                        id = values.getAsLong(TaskLists._ID)
+                    )
                     taskList.populate(values)
                     taskLists += taskList
                 }
@@ -250,16 +252,6 @@ open class DmfsTaskList(
             return taskLists
         }
 
-    }
-
-    // default factory (will be removed as soon as DmfsTaskList is not open anymore)
-    object Factory : DmfsTaskListFactory<DmfsTaskList> {
-        override fun newInstance(
-            account: Account,
-            provider: ContentProviderClient,
-            providerName: TaskProvider.ProviderName,
-            id: Long
-        ): DmfsTaskList = DmfsTaskList(account, provider, providerName, id)
     }
 
 }

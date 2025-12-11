@@ -66,7 +66,7 @@ class DmfsTaskTest(
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
     private lateinit var taskListUri: Uri
-    private var taskList: TestTaskList? = null
+    private var taskList: DmfsTaskList? = null
 
     @Before
     override fun prepare() {

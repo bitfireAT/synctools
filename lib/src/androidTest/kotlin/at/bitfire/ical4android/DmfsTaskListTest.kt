@@ -11,7 +11,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.provider.CalendarContract
-import at.bitfire.ical4android.impl.TestTaskList
 import net.fortuna.ical4j.model.property.RelatedTo
 import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Properties
@@ -28,7 +27,7 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
 
-    private fun createTaskList(): TestTaskList {
+    private fun createTaskList(): DmfsTaskList {
         val info = ContentValues()
         info.put(TaskContract.TaskLists.LIST_NAME, "Test Task List")
         info.put(TaskContract.TaskLists.LIST_COLOR, 0xffff0000)
@@ -39,7 +38,7 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
         val uri = DmfsTaskList.create(testAccount, provider.client, providerName, info)
         assertNotNull(uri)
 
-        return DmfsTaskList.findByID(testAccount, provider.client, providerName, TestTaskList.Factory, ContentUris.parseId(uri))
+        return DmfsTaskList.findByID(testAccount, provider.client, providerName, ContentUris.parseId(uri))
     }
 
 
