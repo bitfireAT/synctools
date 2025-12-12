@@ -22,9 +22,13 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
+import net.fortuna.ical4j.model.property.DtEnd
+import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
+import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.io.StringReader
 import java.io.StringWriter
@@ -176,6 +180,55 @@ class Ical4jTest {
 
         val dt2 = DateTime("20210106T200000", karachi)
         assertEquals(1609945200000, dt2.time)
+    }
+
+    @Test
+    fun `TZID with parentheses and space + DatePropertyRule`() {
+        /* DTSTART;TZID="...":...  is formally invalid because RFC 5545 only allows tzidparam to be a
+        paramtext and not a quoted-string for an unknown reason (see also https://www.rfc-editor.org/errata/eid5505).
+        Some generators don't know that and still use DQUOTE. Doing so caused a problem with DAVx5.
+        This test verifies that ical4j is capable to parse such TZIDs. */
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+        val cal = CalendarBuilder(tzRegistry).build(
+            StringReader("BEGIN:VCALENDAR\n" +
+                    "VERSION:2.0\n" +
+                    "BEGIN:VTIMEZONE\n" +
+                    "TZID:(GMT -05:00)\n" +
+                    "BEGIN:STANDARD\n" +
+                    "DTSTART:19700101T020000\n" +
+                    "TZOFFSETFROM:-0400\n" +
+                    "TZOFFSETTO:-0500\n" +
+                    "RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11;WKST=SU\n" +
+                    "END:STANDARD\n" +
+                    "BEGIN:DAYLIGHT\n" +
+                    "DTSTART:19700101T020000\n" +
+                    "TZOFFSETFROM:-0500\n" +
+                    "TZOFFSETTO:-0400\n" +
+                    "RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3;WKST=SU\n" +
+                    "END:DAYLIGHT\n" +
+                    "END:VTIMEZONE\n" +
+                    "BEGIN:VEVENT\n" +
+                    "DTSTART;TZID=\"(GMT -05:00)\":20250124T190000\n" +     // technically invalid TZID parameter
+                    "DTEND;TZID=\"(GMT -05:00)\":20250124T203000\n" +       // technically invalid TZID parameter
+                    "SUMMARY:Special timezone definition\n" +
+                    "END:VEVENT\n" +
+                    "END:VCALENDAR\n"
+            )
+        )
+        val event = cal.getComponent<VEvent>(Component.VEVENT)
+        val tzGMT5 = tzRegistry.getTimeZone("(GMT -05:00)")
+        assertNotNull(tzGMT5)
+        assertEquals(DtStart("20250124T190000", tzGMT5), event.startDate)
+        assertEquals(DtEnd("20250124T203000", tzGMT5), event.endDate)
+
+        // now apply DatePropertyRule
+        DatePropertyRule().applyTo(event.startDate)
+        DatePropertyRule().applyTo(event.endDate)
+
+        /* "(GMT -05:00)" is neither in msTimezones, nor in IANA timezones, so
+        DatePropertyRule completely removes it, but keeps the offset. */
+        assertEquals(DtStart(DateTime("20250125T000000Z")), event.startDate)
+        assertEquals(DtEnd(DateTime("20250125T013000Z")), event.endDate)
     }
 
     @Test(expected = ParserException::class)
