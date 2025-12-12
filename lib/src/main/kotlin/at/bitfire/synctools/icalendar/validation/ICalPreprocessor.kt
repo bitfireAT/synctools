@@ -16,7 +16,6 @@ import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
 import net.fortuna.ical4j.transform.rfc5545.Rfc5545PropertyRule
 import java.io.BufferedReader
 import java.io.Reader
-import java.util.logging.Level
 import java.util.logging.Logger
 import javax.annotation.WillNotClose
 
@@ -24,11 +23,13 @@ import javax.annotation.WillNotClose
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
  *
  *   - [CreatedPropertyRule] to make sure CREATED is UTC
- *   - [DatePropertyRule], [DateListPropertyRule] to rename Outlook-specific TZID parameters
+ *   - [DatePropertyRule] and [DateListPropertyRule] to rename Outlook-specific TZID parameters
  * (like "W. Europe Standard Time" to an Android-friendly name like "Europe/Vienna")
- *
  */
 class ICalPreprocessor {
+
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
         CreatedPropertyRule(),      // make sure CREATED is UTC
@@ -105,12 +106,12 @@ class ICalPreprocessor {
     private fun applyRules(property: Property) {
         propertyRules
             .filter { rule -> rule.supportedType.isAssignableFrom(property::class.java) }
-            .forEach {
+            .forEach { rule ->
                 val beforeStr = property.toString()
-                (it as Rfc5545PropertyRule<Property>).applyTo(property)
+                (rule as Rfc5545PropertyRule<Property>).applyTo(property)
                 val afterStr = property.toString()
                 if (beforeStr != afterStr)
-                    Logger.getLogger(javaClass.name).log(Level.FINER, "$beforeStr -> $afterStr")
+                    logger.info("${rule.javaClass.name}: $beforeStr -> $afterStr")
             }
     }
 
