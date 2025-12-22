@@ -11,7 +11,7 @@ guava = "33.5.0-android"
 # noinspection NewerVersionAvailable
 ical4j = "3.2.19"   # final version; update to 4.x will require much work
 junit = "4.13.2"
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 mockk = "1.14.7"
 roboelectric = "4.16"
 slf4j = "2.0.17"
