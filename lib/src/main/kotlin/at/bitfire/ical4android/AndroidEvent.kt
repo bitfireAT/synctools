@@ -56,6 +56,7 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
+import net.fortuna.ical4j.model.property.LastModified
 import net.fortuna.ical4j.model.property.Organizer
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
@@ -98,6 +99,7 @@ open class AndroidEvent(
     var eTag: String? = null
     var scheduleTag: String? = null
     var flags: Int = 0
+    var lastModified: Long = 0L
 
     /**
      * Creates a new object from an event which already exists in the calendar storage.
@@ -110,6 +112,7 @@ open class AndroidEvent(
         this.eTag = values.getAsString(COLUMN_ETAG)
         this.scheduleTag = values.getAsString(COLUMN_SCHEDULE_TAG)
         this.flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
+        this.lastModified = values.getAsLong(COLUMN_LAST_MODIFIED) ?: 0L
     }
 
     /**
@@ -122,6 +125,7 @@ open class AndroidEvent(
         this.eTag = eTag
         this.scheduleTag = scheduleTag
         this.flags = flags
+        this.lastModified = event.lastModified?.dateTime?.time ?: 0L
     }
 
     private var _event: Event? = null
@@ -318,6 +322,9 @@ open class AndroidEvent(
         event.uid = row.getAsString(Events.UID_2445)
         event.sequence = row.getAsInteger(COLUMN_SEQUENCE)
         event.isOrganizer = row.getAsBoolean(Events.IS_ORGANIZER)
+        event.lastModified = row.getAsLong(COLUMN_LAST_MODIFIED)?.let { time ->
+            LastModified(DateTime(time))
+        }
 
         event.summary = row.getAsString(Events.TITLE)
         event.location = row.getAsString(Events.EVENT_LOCATION)
@@ -800,6 +807,7 @@ open class AndroidEvent(
             builder.withValue(Events._SYNC_ID, syncId)
                 .withValue(COLUMN_ETAG, eTag)
                 .withValue(COLUMN_SCHEDULE_TAG, scheduleTag)
+                .withValue(COLUMN_LAST_MODIFIED, lastModified)
         else
             builder.withValue(Events.ORIGINAL_SYNC_ID, syncId)
 
@@ -1153,6 +1161,11 @@ open class AndroidEvent(
          * Custom sync column to store the Schedule-Tag of an event.
          */
         const val COLUMN_SCHEDULE_TAG = Events.SYNC_DATA4
+
+        /**
+         * Custom sync column to store the last modified value of an event.
+         */
+        const val COLUMN_LAST_MODIFIED = Events.SYNC_DATA5
 
         /**
          * VEVENT CATEGORIES are stored as an extended property with this [ExtendedProperties.NAME].
