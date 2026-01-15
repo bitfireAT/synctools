@@ -10,7 +10,11 @@ import ezvcard.Ezvcard
 import ezvcard.VCard
 import ezvcard.VCardVersion
 import ezvcard.property.Address
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EzVCardTest {
@@ -23,6 +27,38 @@ class EzVCardTest {
                 "KIND:GROUP\r\n" +
                 "END:VCARD").first()
         assertTrue(vCard.kind.isGroup)
+    }
+
+    @Test
+    fun `Parse PHOTO binary encoding (vCard3)`() {
+        val vCard = Ezvcard.parse("BEGIN:VCARD\r\n" +
+                "VERSION:3.0\r\n" +
+                "PHOTO;ENCODING=b;TYPE=JPEG:dGVzdA==\r\n" +
+                "END:VCARD").first()
+        // decodes binary data
+        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
+    }
+
+    @Test
+    fun `Parse PHOTO data URI (vCard3)`() {
+        val vCard = Ezvcard.parse("BEGIN:VCARD\r\n" +
+                "VERSION:3.0\r\n" +
+                "PHOTO;VALUE=uri:data:image/png;base64,dGVzdA==\r\n" +
+                "END:VCARD").first()
+        val photo = vCard.photos.first()
+        // Somehow unexpected: returns a data URI and doesn't decode it
+        assertEquals("data:image/png;base64,dGVzdA==", photo.url)
+        assertNull(photo.data)
+    }
+
+    @Test
+    fun `Parse PHOTO data URI (vCard4)`() {
+        val vCard = Ezvcard.parse("BEGIN:VCARD\r\n" +
+                "VERSION:4.0\r\n" +
+                "PHOTO:data:image/png;base64,dGVzdA==\r\n" +
+                "END:VCARD").first()
+        // decodes data URI
+        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
     }
 
     @Test
