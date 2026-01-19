@@ -6,7 +6,6 @@
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.dokka)
     `maven-publish`
 }
@@ -31,9 +30,6 @@ android {
     compileOptions {
         // ical4j >= 3.x uses the Java 8 Time API
         isCoreLibraryDesugaringEnabled = true
-    }
-    kotlin {
-        jvmToolchain(21)
     }
 
     buildFeatures.buildConfig = true

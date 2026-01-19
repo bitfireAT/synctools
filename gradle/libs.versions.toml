@@ -37,4 +37,3 @@ spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", ve
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
