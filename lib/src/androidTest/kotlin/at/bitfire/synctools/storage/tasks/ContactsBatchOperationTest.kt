@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools.storage
+package at.bitfire.synctools.storage.tasks
 
 import android.Manifest
 import android.accounts.Account
@@ -13,7 +13,9 @@ import android.provider.ContactsContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.util.MiscUtils.closeCompat
-import at.bitfire.synctools.test.BuildConfig
+import at.bitfire.synctools.storage.BatchOperation
+import at.bitfire.synctools.storage.ContactsBatchOperation
+import at.bitfire.synctools.storage.LocalStorageException
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule

@@ -15,6 +15,7 @@ import android.provider.CalendarContract
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime

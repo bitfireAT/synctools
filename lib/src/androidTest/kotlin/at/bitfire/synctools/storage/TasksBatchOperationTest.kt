@@ -10,6 +10,7 @@ import android.accounts.Account
 import at.bitfire.ical4android.DmfsStyleProvidersTaskTest
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.impl.TestTaskList
+import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.test.BuildConfig
 import org.dmfs.tasks.contract.TaskContract
 import org.junit.Test

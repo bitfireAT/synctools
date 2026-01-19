@@ -9,7 +9,7 @@ package at.bitfire.ical4android.impl
 import android.accounts.Account
 import android.content.ContentUris
 import android.content.ContentValues
-import at.bitfire.ical4android.DmfsTaskList
+import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.ical4android.TaskProvider
 import org.dmfs.tasks.contract.TaskContract
 

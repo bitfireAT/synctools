@@ -12,7 +12,8 @@ import android.net.Uri
 import android.os.RemoteException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
-import at.bitfire.synctools.storage.TasksBatchOperation
+import at.bitfire.synctools.storage.tasks.TasksBatchOperation
+import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.toContentValues
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Date
@@ -106,7 +107,7 @@ class DmfsTask(
             val id = requireNotNull(id)
 
             try {
-                val client = taskList.provider
+                val client = taskList.provider.client
                 client.query(taskSyncURI(true), null, null, null, null)?.use { cursor ->
                     if (cursor.moveToFirst()) {
                         // create new Task which will be populated
@@ -136,7 +137,7 @@ class DmfsTask(
                             }
                             if (!hasParentRelation) {
                                 // get UID of parent task
-                                val parentContentUri = ContentUris.withAppendedId(taskList.tasksSyncUri(), parentId)
+                                val parentContentUri = ContentUris.withAppendedId(taskList.tasksUri(), parentId)
                                 client.query(parentContentUri, arrayOf(Tasks._UID), null, null, null)?.use { cursor ->
                                     if (cursor.moveToNext()) {
                                         // add RelatedTo for parent task
@@ -339,9 +340,9 @@ class DmfsTask(
 
 
     fun add(): Uri {
-        val batch = TasksBatchOperation(taskList.provider)
+        val batch = TasksBatchOperation(taskList.provider.client)
 
-        val builder = CpoBuilder.newInsert(taskList.tasksSyncUri())
+        val builder = CpoBuilder.newInsert(taskList.tasksUri())
         buildTask(builder, false)
         val idxTask = batch.nextBackrefIdx()
         batch += builder
@@ -360,11 +361,11 @@ class DmfsTask(
         this.task = task
         val existingId = requireNotNull(id)
 
-        val batch = TasksBatchOperation(taskList.provider)
+        val batch = TasksBatchOperation(taskList.provider.client)
 
         // remove associated rows which are added later again
         batch += CpoBuilder
-            .newDelete(taskList.tasksPropertiesSyncUri())
+            .newDelete(taskList.tasksPropertiesUri())
             .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
 
         // update task
@@ -381,7 +382,7 @@ class DmfsTask(
     }
 
     fun update(values: ContentValues) {
-        taskList.provider.update(taskSyncURI(), values, null, null)
+        taskList.provider.client.update(taskSyncURI(), values, null, null)
     }
 
     private fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
@@ -421,7 +422,7 @@ class DmfsTask(
             }
 
             val builder = CpoBuilder
-                .newInsert(taskList.tasksPropertiesSyncUri())
+                .newInsert(taskList.tasksPropertiesUri())
                 .withTaskId(Alarm.TASK_ID, idxTask)
                 .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
                 .withValue(Alarm.MINUTES_BEFORE, minutes)
@@ -436,7 +437,7 @@ class DmfsTask(
 
     private fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
         for (category in requireNotNull(task).categories) {
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
+            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
                     .withTaskId(Category.TASK_ID, idxTask)
                     .withValue(Category.MIMETYPE, Category.CONTENT_ITEM_TYPE)
                     .withValue(Category.CATEGORY_NAME, category)
@@ -447,7 +448,7 @@ class DmfsTask(
 
     private fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
         val comment = requireNotNull(task).comment ?: return
-        val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
+        val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
             .withTaskId(Comment.TASK_ID, idxTask)
             .withValue(Comment.MIMETYPE, Comment.CONTENT_ITEM_TYPE)
             .withValue(Comment.COMMENT, comment)
@@ -465,7 +466,7 @@ class DmfsTask(
                 else /* RelType.PARENT, default value */ ->
                     Relation.RELTYPE_PARENT
             }
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
+            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
                     .withTaskId(Relation.TASK_ID, idxTask)
                     .withValue(Relation.MIMETYPE, Relation.CONTENT_ITEM_TYPE)
                     .withValue(Relation.RELATED_UID, relatedTo.value)
@@ -482,7 +483,7 @@ class DmfsTask(
                 return
             }
 
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesSyncUri())
+            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
                     .withTaskId(Properties.TASK_ID, idxTask)
                     .withValue(Properties.MIMETYPE, UnknownProperty.CONTENT_ITEM_TYPE)
                     .withValue(UNKNOWN_PROPERTY_DATA, UnknownProperty.toJsonString(property))
@@ -492,7 +493,7 @@ class DmfsTask(
     }
 
     fun delete(): Int {
-        return taskList.provider.delete(taskSyncURI(), null, null)
+        return taskList.provider.client.delete(taskSyncURI(), null, null)
     }
 
     private fun buildTask(builder: CpoBuilder, update: Boolean) {
@@ -617,7 +618,7 @@ class DmfsTask(
 
     private fun taskSyncURI(loadProperties: Boolean = false): Uri {
         val id = requireNotNull(id)
-        return ContentUris.withAppendedId(taskList.tasksSyncUri(loadProperties), id)
+        return ContentUris.withAppendedId(taskList.tasksUri(loadProperties), id)
     }
 
     companion object {
