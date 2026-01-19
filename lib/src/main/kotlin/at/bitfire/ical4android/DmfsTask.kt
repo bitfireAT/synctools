@@ -12,8 +12,8 @@ import android.net.Uri
 import android.os.RemoteException
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
-import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
+import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.storage.toContentValues
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Date

@@ -34,12 +34,12 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
         info.put(TaskContract.TaskLists.VISIBLE, 1)
 
         val dmfsTaskListProvider = DmfsTaskListProvider(testAccount, provider.client, providerName)
-        val uri = dmfsTaskListProvider.createTaskList(testAccount, provider.client, providerName, info)
-        Assert.assertNotNull(uri)
+        val id = dmfsTaskListProvider.createTaskList(info)
+        Assert.assertNotNull(id)
 
-        dmfsTaskListProvider.createTaskList()
+        dmfsTaskListProvider.createTaskList(info)
 
-        return DmfsTaskList.findByID(testAccount, provider.client, providerName, ContentUris.parseId(uri))
+        return dmfsTaskListProvider.getTaskList(id)!!
     }
 
     @Test
@@ -50,28 +50,28 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             // sync URIs
             Assert.assertEquals(
                 "true",
-                taskList.taskListSyncUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
+                taskList.tasksUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
             )
             Assert.assertEquals(
                 testAccount.type,
-                taskList.taskListSyncUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
+                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
             )
             Assert.assertEquals(
                 testAccount.name,
-                taskList.taskListSyncUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
+                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
             )
 
             Assert.assertEquals(
                 "true",
-                taskList.tasksSyncUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
+                taskList.tasksUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
             )
             Assert.assertEquals(
                 testAccount.type,
-                taskList.tasksSyncUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
+                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
             )
             Assert.assertEquals(
                 testAccount.name,
-                taskList.tasksSyncUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
+                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
             )
         } finally {
             // delete task list
@@ -111,7 +111,7 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             val parentId = ContentUris.parseId(parentContentUri)
 
             // OpenTasks should provide the correct relation
-            taskList.provider.client.query(taskList.tasksPropertiesSyncUri(), null,
+            taskList.provider.client.query(taskList.tasksPropertiesUri(), null,
                     "${TaskContract.Properties.TASK_ID}=?", arrayOf(childId.toString()),
                     null, null)!!.use { cursor ->
                 Assert.assertEquals(1, cursor.count)

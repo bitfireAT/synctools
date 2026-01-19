@@ -16,6 +16,7 @@ import at.bitfire.ical4android.util.MiscUtils.closeCompat
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.ContactsBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
+import at.bitfire.synctools.test.BuildConfig
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule

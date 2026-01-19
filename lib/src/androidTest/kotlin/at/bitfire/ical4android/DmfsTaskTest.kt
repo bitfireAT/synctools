@@ -514,7 +514,7 @@ class DmfsTaskTest(
             categories.addAll(arrayOf("Cat_1", "Cat 2"))
         }.let { result ->
             val id = result.getAsLong(Tasks._ID)
-            val uri = taskList!!.tasksPropertiesSyncUri()
+            val uri = taskList!!.tasksPropertiesUri()
             provider.client.query(uri, arrayOf(Category.CATEGORY_NAME), "${Properties.MIMETYPE}=? AND ${PropertyColumns.TASK_ID}=?",
                     arrayOf(Category.CONTENT_ITEM_TYPE, id.toString()), null)!!.use { cursor ->
                 while (cursor.moveToNext())
@@ -535,7 +535,7 @@ class DmfsTaskTest(
             comment = "Comment value"
         }.let { result ->
             val id = result.getAsLong(Tasks._ID)
-            val uri = taskList!!.tasksPropertiesSyncUri()
+            val uri = taskList!!.tasksPropertiesUri()
             provider.client.query(uri, arrayOf(Property.Comment.COMMENT), "${Properties.MIMETYPE}=? AND ${PropertyColumns.TASK_ID}=?",
                 arrayOf(Property.Comment.CONTENT_ITEM_TYPE, id.toString()), null)!!.use { cursor ->
                 if (cursor.moveToNext())
@@ -552,7 +552,7 @@ class DmfsTaskTest(
             comment = null
         }.let { result ->
             val id = result.getAsLong(Tasks._ID)
-            val uri = taskList!!.tasksPropertiesSyncUri()
+            val uri = taskList!!.tasksPropertiesUri()
             provider.client.query(uri, arrayOf(Property.Comment.COMMENT), "${Properties.MIMETYPE}=? AND ${PropertyColumns.TASK_ID}=?",
                 arrayOf(Property.Comment.CONTENT_ITEM_TYPE, id.toString()), null)!!.use { cursor ->
                     hasComment = cursor.count > 0
@@ -562,7 +562,7 @@ class DmfsTaskTest(
     }
 
     private fun firstProperty(taskId: Long, mimeType: String): ContentValues? {
-        val uri = taskList!!.tasksPropertiesSyncUri()
+        val uri = taskList!!.tasksPropertiesUri()
         provider.client.query(uri, null, "${Properties.MIMETYPE}=? AND ${PropertyColumns.TASK_ID}=?",
                 arrayOf(mimeType, taskId.toString()), null)!!.use { cursor ->
             if (cursor.moveToNext()) {
@@ -692,7 +692,7 @@ class DmfsTaskTest(
         assertNotNull("Couldn't add task", uri)
 
         // read and parse event from calendar provider
-        val testTask = taskList!!.findById(ContentUris.parseId(uri))
+        val testTask = taskList!!.getTask(ContentUris.parseId(uri))
         try {
             assertNotNull("Inserted task is not here", testTask)
             val task2 = testTask.task
@@ -735,7 +735,7 @@ class DmfsTaskTest(
             task.alarms += VAlarm(java.time.Duration.ofMinutes(i.toLong()))
 
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
-        val task2 = taskList!!.findById(ContentUris.parseId(uri))
+        val task2 = taskList!!.getTask(ContentUris.parseId(uri))
         assertEquals(1050, task2.task?.alarms?.size)
     }
 
@@ -752,7 +752,7 @@ class DmfsTaskTest(
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
 
-        val testTask = taskList!!.findById(ContentUris.parseId(uri))
+        val testTask = taskList!!.getTask(ContentUris.parseId(uri))
         try {
             // update test event in calendar
             val task2 = testTask.task!!
@@ -762,7 +762,7 @@ class DmfsTaskTest(
             testTask.update(task2)
 
             // read again and verify result
-            val updatedTask = taskList!!.findById(ContentUris.parseId(uri)).task!!
+            val updatedTask = taskList!!.getTask(ContentUris.parseId(uri)).task!!
             assertEquals(task2.summary, updatedTask.summary)
             assertEquals(task2.location, updatedTask.location)
             assertEquals(task2.dtStart, updatedTask.dtStart)
@@ -785,7 +785,7 @@ class DmfsTaskTest(
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
 
-        val testTask = taskList!!.findById(ContentUris.parseId(uri))
+        val testTask = taskList!!.getTask(ContentUris.parseId(uri))
         try {
             // read again and verify result
             val task2 = testTask.task!!
