@@ -11,7 +11,6 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
 import android.net.Uri
-import android.provider.CalendarContract
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.synctools.storage.LocalStorageException
@@ -39,6 +38,7 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RelatedTo
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.XProperty
+import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Property
 import org.dmfs.tasks.contract.TaskContract.Property.Category
@@ -64,7 +64,7 @@ class DmfsTaskTest(
     private val tzChicago = tzRegistry.getTimeZone("America/Chicago")!!
     private val tzDefault = tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
 
-    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, TaskContract.LOCAL_ACCOUNT_TYPE)
 
     private lateinit var taskListUri: Uri
     private var taskList: DmfsTaskList? = null
