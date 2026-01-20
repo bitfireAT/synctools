@@ -10,7 +10,6 @@ import android.accounts.Account
 import android.content.ContentUris
 import android.content.ContentValues
 import android.database.DatabaseUtils
-import android.provider.CalendarContract
 import at.bitfire.ical4android.DmfsStyleProvidersTaskTest
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.Task
@@ -23,7 +22,7 @@ import org.junit.Test
 class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
     DmfsStyleProvidersTaskTest(providerName) {
 
-    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+    private val testAccount = Account(javaClass.name, TaskContract.LOCAL_ACCOUNT_TYPE)
 
     private fun createTaskList(): DmfsTaskList {
         val info = ContentValues()
