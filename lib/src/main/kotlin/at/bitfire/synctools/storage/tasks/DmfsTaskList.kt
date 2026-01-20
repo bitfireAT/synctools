@@ -94,6 +94,22 @@ class DmfsTaskList(
             throw LocalStorageException("Couldn't update ${providerName.authority} tasks", e)
         }
 
+    /**
+     * Deletes tasks in this task list.
+     *
+     * @param where         selection
+     * @param whereArgs     arguments for selection
+     *
+     * @return number of deleted rows
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun deleteTasks(where: String?, whereArgs: Array<String>?): Int =
+        try {
+            client.delete(tasksUri(), where, whereArgs)
+        } catch (e: Exception) {
+            throw LocalStorageException("Couldn't delete ${providerName.authority} tasks", e)
+        }
+
 
     // shortcuts to upper level
 
