@@ -48,7 +48,7 @@ class DmfsTaskListProvider(
 
         val uri = try {
             client.insert(taskListsUri, values)
-        } catch (e: Exception) {
+        } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't create task list", e)
         }
         if (uri == null)
@@ -128,7 +128,7 @@ class DmfsTaskListProvider(
                 if (cursor.moveToNext())
                     return DmfsTaskList(this, cursor.toContentValues(), providerName)
             }
-        } catch (e: Exception) {
+        } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query ${providerName.authority} task list", e)
         }
         return null
@@ -136,7 +136,11 @@ class DmfsTaskListProvider(
 
     fun updateTaskList(id: Long, info: ContentValues): Int {
         logger.log(Level.FINE, "Updating ${providerName.authority} task list (#$id)", info)
-        return client.update(taskListUri(id), info, null, null)
+        try {
+            return client.update(taskListUri(id), info, null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't update ${providerName.authority} task list", e)
+        }
     }
 
     /**
@@ -146,26 +150,35 @@ class DmfsTaskListProvider(
      */
     fun delete(id: Long): Boolean {
         logger.log(Level.FINE, "Deleting ${providerName.authority} task list (#$id)")
-        return client.delete(taskListUri(id), null, null) > 0
+        try {
+            return client.delete(taskListUri(id), null, null) > 0
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't delete ${providerName.authority} task list", e)
+        }
     }
 
 
     // other methods: sync state
 
-    fun readTaskListSyncState(id: Long): String? = try {
-        client.query(taskListUri(id), arrayOf(COLUMN_TASKLIST_SYNC_STATE), null, null, null)?.use { cursor ->
-            if (cursor.moveToNext())
-                return cursor.getString(0)
-            else
-                null
+    fun readTaskListSyncState(id: Long): String? =
+        try {
+            client.query(taskListUri(id), arrayOf(COLUMN_TASKLIST_SYNC_STATE), null, null, null)?.use { cursor ->
+                if (cursor.moveToNext())
+                    return cursor.getString(0)
+                else
+                    null
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query ${providerName.authority} task list sync state", e)
         }
-    } catch (e: Exception) {
-        throw LocalStorageException("Couldn't query ${providerName.authority} task list sync state", e)
-    }
 
     fun writeTaskListSyncState(id: Long, state: String?) {
-        val values = contentValuesOf(COLUMN_TASKLIST_SYNC_STATE to state)
-        client.update(taskListUri(id), values, null, null)
+        try {
+            val values = contentValuesOf(COLUMN_TASKLIST_SYNC_STATE to state)
+            client.update(taskListUri(id), values, null, null)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't query ${providerName.authority} task list", e)
+        }
     }
 
 

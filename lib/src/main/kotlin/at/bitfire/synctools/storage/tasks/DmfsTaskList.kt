@@ -9,6 +9,7 @@ package at.bitfire.synctools.storage.tasks
 import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
+import android.os.RemoteException
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
@@ -68,7 +69,7 @@ class DmfsTaskList(
                 while (cursor.moveToNext())
                     tasks += DmfsTask(this, cursor.toContentValues())
             }
-        } catch (e: Exception) {
+        } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query ${providerName.authority} tasks", e)
         }
         return tasks
@@ -90,7 +91,7 @@ class DmfsTaskList(
     fun updateTasks(values: ContentValues, where: String?, whereArgs: Array<String>?): Int =
         try {
             client.update(tasksUri(), values, where, whereArgs)
-        } catch (e: Exception) {
+        } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update ${providerName.authority} tasks", e)
         }
 
@@ -106,7 +107,7 @@ class DmfsTaskList(
     fun deleteTasks(where: String?, whereArgs: Array<String>?): Int =
         try {
             client.delete(tasksUri(), where, whereArgs)
-        } catch (e: Exception) {
+        } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't delete ${providerName.authority} tasks", e)
         }
 
@@ -186,26 +187,30 @@ class DmfsTaskList(
      */
     fun touchRelations(): Int {
         logger.fine("Touching relations to set parent_id")
-        val batch = TasksBatchOperation(client)
-        client.query(
-            tasksUri(true), null,
-            "${TaskContract.Tasks.LIST_ID}=? AND ${TaskContract.Tasks.PARENT_ID} IS NULL AND ${TaskContract.Property.Relation.MIMETYPE}=? AND ${TaskContract.Property.Relation.RELATED_ID} IS NOT NULL",
-            arrayOf(id.toString(), TaskContract.Property.Relation.CONTENT_ITEM_TYPE),
-            null, null
-        )?.use { cursor ->
-            while (cursor.moveToNext()) {
-                val values = cursor.toContentValues()
-                val id = values.getAsLong(TaskContract.Property.Relation.PROPERTY_ID)
-                val propertyContentUri = ContentUris.withAppendedId(tasksPropertiesUri(), id)
-                batch += BatchOperation.CpoBuilder
-                    .newUpdate(propertyContentUri)
-                    .withValue(
-                        TaskContract.Property.Relation.RELATED_ID,
-                        values.getAsLong(TaskContract.Property.Relation.RELATED_ID)
-                    )
+        try {
+            val batch = TasksBatchOperation(client)
+            client.query(
+                tasksUri(true), null,
+                "${TaskContract.Tasks.LIST_ID}=? AND ${TaskContract.Tasks.PARENT_ID} IS NULL AND ${TaskContract.Property.Relation.MIMETYPE}=? AND ${TaskContract.Property.Relation.RELATED_ID} IS NOT NULL",
+                arrayOf(id.toString(), TaskContract.Property.Relation.CONTENT_ITEM_TYPE),
+                null, null
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val values = cursor.toContentValues()
+                    val id = values.getAsLong(TaskContract.Property.Relation.PROPERTY_ID)
+                    val propertyContentUri = ContentUris.withAppendedId(tasksPropertiesUri(), id)
+                    batch += BatchOperation.CpoBuilder
+                        .newUpdate(propertyContentUri)
+                        .withValue(
+                            TaskContract.Property.Relation.RELATED_ID,
+                            values.getAsLong(TaskContract.Property.Relation.RELATED_ID)
+                        )
+                }
             }
+            return batch.commit()
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't touch ${providerName.authority} task relations", e)
         }
-        return batch.commit()
     }
 
 }
