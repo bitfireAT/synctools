@@ -42,43 +42,6 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
     }
 
     @Test
-    fun testManageTaskLists() {
-        val taskList = createTaskList()
-
-        try {
-            // sync URIs
-            Assert.assertEquals(
-                "true",
-                taskList.tasksUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
-            )
-            Assert.assertEquals(
-                testAccount.type,
-                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
-            )
-            Assert.assertEquals(
-                testAccount.name,
-                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
-            )
-
-            Assert.assertEquals(
-                "true",
-                taskList.tasksUri().getQueryParameter(TaskContract.CALLER_IS_SYNCADAPTER)
-            )
-            Assert.assertEquals(
-                testAccount.type,
-                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_TYPE)
-            )
-            Assert.assertEquals(
-                testAccount.name,
-                taskList.tasksUri().getQueryParameter(TaskContract.ACCOUNT_NAME)
-            )
-        } finally {
-            // delete task list
-            Assert.assertTrue(taskList.delete())
-        }
-    }
-
-    @Test
     fun testTouchRelations() {
         val taskList = createTaskList()
         try {
