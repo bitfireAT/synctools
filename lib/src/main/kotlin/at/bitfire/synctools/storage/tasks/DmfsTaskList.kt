@@ -26,7 +26,7 @@ import java.util.logging.Logger
 class DmfsTaskList(
     val provider: DmfsTaskListProvider,
     val values: ContentValues,
-    val providerName: TaskProvider.ProviderName,
+    val providerName: TaskProvider.ProviderName
 ) {
 
     private val logger

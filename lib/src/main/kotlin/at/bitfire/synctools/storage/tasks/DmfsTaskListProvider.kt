@@ -31,7 +31,7 @@ import java.util.logging.Logger
 class DmfsTaskListProvider(
     val account: Account,
     internal val client: ContentProviderClient,
-    val providerName: TaskProvider.ProviderName,
+    val providerName: TaskProvider.ProviderName
 ) {
 
     private val logger
