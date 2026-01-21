@@ -7,10 +7,10 @@
 package at.bitfire.ical4android.impl
 
 import android.accounts.Account
-import android.content.ContentUris
 import android.content.ContentValues
-import at.bitfire.ical4android.DmfsTaskList
 import at.bitfire.ical4android.TaskProvider
+import at.bitfire.synctools.storage.tasks.DmfsTaskList
+import at.bitfire.synctools.storage.tasks.DmfsTaskListProvider
 import org.dmfs.tasks.contract.TaskContract
 
 object TestTaskList {
@@ -24,9 +24,9 @@ object TestTaskList {
         values.put(TaskContract.TaskListColumns.LIST_COLOR, 0xffff0000)
         values.put(TaskContract.TaskListColumns.SYNC_ENABLED, 1)
         values.put(TaskContract.TaskListColumns.VISIBLE, 1)
-        val uri = DmfsTaskList.create(account, provider.client, provider.name, values)
+        val dmfsTaskListProvider = DmfsTaskListProvider(account, provider.client, provider.name)
 
-        return DmfsTaskList(account, provider.client, provider.name, ContentUris.parseId(uri))
+        return DmfsTaskList(dmfsTaskListProvider, values, provider.name)
     }
 
 }
