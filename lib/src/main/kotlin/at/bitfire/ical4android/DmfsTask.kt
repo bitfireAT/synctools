@@ -11,44 +11,18 @@ import android.content.ContentValues
 import android.net.Uri
 import android.os.RemoteException
 import at.bitfire.synctools.mapping.tasks.DmfsTaskBuilder
+import at.bitfire.synctools.mapping.tasks.DmfsTaskProcessor
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.storage.toContentValues
-import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
-import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.Completed
-import net.fortuna.ical4j.model.property.Description
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.Due
-import net.fortuna.ical4j.model.property.Duration
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Geo
-import net.fortuna.ical4j.model.property.Organizer
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RelatedTo
-import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Trigger
 import org.dmfs.tasks.contract.TaskContract.Properties
-import org.dmfs.tasks.contract.TaskContract.Property.Alarm
-import org.dmfs.tasks.contract.TaskContract.Property.Category
-import org.dmfs.tasks.contract.TaskContract.Property.Comment
-import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.io.FileNotFoundException
-import java.net.URISyntaxException
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -66,7 +40,6 @@ class DmfsTask(
 ) {
 
     private val logger = Logger.getLogger(javaClass.name)
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     var id: Long? = null
     var syncId: String? = null
@@ -112,15 +85,16 @@ class DmfsTask(
 
                         val values = cursor.toContentValues()
                         logger.log(Level.FINER, "Found task", values)
-                        populateTask(values)
+                        val processor = DmfsTaskProcessor(taskList)
+                        processor.populateTask(values, newTask)
 
                         if (values.containsKey(Properties.PROPERTY_ID)) {
                             // process the first property, which is combined with the task row
-                            populateProperty(values)
+                            processor.populateProperty(values, newTask)
 
                             while (cursor.moveToNext()) {
                                 // process the other properties
-                                populateProperty(cursor.toContentValues())
+                                processor.populateProperty(cursor.toContentValues(), newTask)
                             }
                         }
 
@@ -156,184 +130,6 @@ class DmfsTask(
             }
             throw FileNotFoundException("Couldn't find task #$id")
         }
-
-    private fun populateTask(values: ContentValues) {
-        val task = requireNotNull(task)
-
-        task.uid = values.getAsString(Tasks._UID)
-        task.sequence = values.getAsInteger(Tasks.SYNC_VERSION)
-        task.summary = values.getAsString(Tasks.TITLE)
-        task.location = values.getAsString(Tasks.LOCATION)
-        task.userAgents += taskList.providerName.packageName
-
-        values.getAsString(Tasks.GEO)?.let { geo ->
-            val (lng, lat) = geo.split(',')
-            try {
-                task.geoPosition = Geo(lat.toBigDecimal(), lng.toBigDecimal())
-            } catch (e: NumberFormatException) {
-                logger.log(Level.WARNING, "Invalid GEO value: $geo", e)
-            }
-        }
-
-        task.description = values.getAsString(Tasks.DESCRIPTION)
-        task.color = values.getAsInteger(Tasks.TASK_COLOR)
-        task.url = values.getAsString(Tasks.URL)
-
-        values.getAsString(Tasks.ORGANIZER)?.let {
-            try {
-                task.organizer = Organizer("mailto:$it")
-            } catch(e: URISyntaxException) {
-                logger.log(Level.WARNING, "Invalid ORGANIZER email", e)
-            }
-        }
-
-        values.getAsInteger(Tasks.PRIORITY)?.let { task.priority = it }
-
-        task.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
-            Tasks.CLASSIFICATION_PUBLIC ->       Clazz.PUBLIC
-            Tasks.CLASSIFICATION_PRIVATE ->      Clazz.PRIVATE
-            Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz.CONFIDENTIAL
-            else ->                              null
-        }
-
-        values.getAsLong(Tasks.COMPLETED)?.let { task.completedAt = Completed(DateTime(it)) }
-        values.getAsInteger(Tasks.PERCENT_COMPLETE)?.let { task.percentComplete = it }
-
-        task.status = when (values.getAsInteger(Tasks.STATUS)) {
-            Tasks.STATUS_IN_PROCESS -> Status.VTODO_IN_PROCESS
-            Tasks.STATUS_COMPLETED ->  Status.VTODO_COMPLETED
-            Tasks.STATUS_CANCELLED ->  Status.VTODO_CANCELLED
-            else ->                    Status.VTODO_NEEDS_ACTION
-        }
-
-        val allDay = (values.getAsInteger(Tasks.IS_ALLDAY) ?: 0) != 0
-
-        val tzID = values.getAsString(Tasks.TZ)
-        val tz = tzID?.let {
-            val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-            tzRegistry.getTimeZone(it)
-        }
-
-        values.getAsLong(Tasks.CREATED)?.let { task.createdAt = it }
-        values.getAsLong(Tasks.LAST_MODIFIED)?.let { task.lastModified = it }
-
-        values.getAsLong(Tasks.DTSTART)?.let { dtStart ->
-            task.dtStart =
-                    if (allDay)
-                        DtStart(Date(dtStart))
-                    else {
-                        val dt = DateTime(dtStart)
-                        if (tz == null)
-                            DtStart(dt, true)
-                        else
-                            DtStart(dt.apply {
-                                timeZone = tz
-                            })
-                    }
-        }
-
-        values.getAsLong(Tasks.DUE)?.let { due ->
-            task.due =
-                    if (allDay)
-                        Due(Date(due))
-                    else {
-                        val dt = DateTime(due)
-                        if (tz == null)
-                            Due(dt).apply {
-                                isUtc = true
-                            }
-                        else
-                            Due(dt.apply {
-                                timeZone = tz
-                            })
-                    }
-        }
-
-        values.getAsString(Tasks.DURATION)?.let { duration ->
-            val fixedDuration = AndroidTimeUtils.parseDuration(duration)
-            task.duration = Duration(fixedDuration)
-        }
-
-        values.getAsString(Tasks.RDATE)?.let {
-            task.rDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> RDate(dates) }
-        }
-        values.getAsString(Tasks.EXDATE)?.let {
-            task.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> ExDate(dates) }
-        }
-
-        values.getAsString(Tasks.RRULE)?.let { task.rRule = RRule(it) }
-    }
-
-    private fun populateProperty(row: ContentValues) {
-        logger.log(Level.FINER, "Found property", row)
-
-        val task = requireNotNull(task)
-        when (val type = row.getAsString(Properties.MIMETYPE)) {
-            Alarm.CONTENT_ITEM_TYPE ->
-                populateAlarm(row)
-            Category.CONTENT_ITEM_TYPE ->
-                task.categories += row.getAsString(Category.CATEGORY_NAME)
-            Comment.CONTENT_ITEM_TYPE ->
-                task.comment = row.getAsString(Comment.COMMENT)
-            Relation.CONTENT_ITEM_TYPE ->
-                populateRelatedTo(row)
-            UnknownProperty.CONTENT_ITEM_TYPE ->
-                task.unknownProperties += UnknownProperty.fromJsonString(row.getAsString(UNKNOWN_PROPERTY_DATA))
-            else ->
-                logger.warning("Found unknown property of type $type")
-        }
-    }
-
-    private fun populateAlarm(row: ContentValues) {
-        val task = requireNotNull(task)
-        val props = PropertyList<Property>()
-
-        val trigger = Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE)))
-        when (row.getAsInteger(Alarm.REFERENCE)) {
-            Alarm.ALARM_REFERENCE_START_DATE ->
-                trigger.parameters.add(Related.START)
-            Alarm.ALARM_REFERENCE_DUE_DATE ->
-                trigger.parameters.add(Related.END)
-        }
-        props += trigger
-
-        props += when (row.getAsInteger(Alarm.ALARM_TYPE)) {
-            Alarm.ALARM_TYPE_EMAIL ->
-                Action.EMAIL
-            Alarm.ALARM_TYPE_SOUND ->
-                Action.AUDIO
-            else ->
-                // show alarm by default
-                Action.DISPLAY
-        }
-
-        props += Description(row.getAsString(Alarm.MESSAGE) ?: task.summary)
-
-        task.alarms += VAlarm(props)
-    }
-
-    private fun populateRelatedTo(row: ContentValues) {
-        val uid = row.getAsString(Relation.RELATED_UID)
-        if (uid == null) {
-            logger.warning("Task relation doesn't refer to same task list; can't be synchronized")
-            return
-        }
-
-        val relatedTo = RelatedTo(uid)
-
-        // add relation type as reltypeparam
-        relatedTo.parameters.add(when (row.getAsInteger(Relation.RELATED_TYPE)) {
-            Relation.RELTYPE_CHILD ->
-                RelType.CHILD
-            Relation.RELTYPE_SIBLING ->
-                RelType.SIBLING
-            else /* Relation.RELTYPE_PARENT, default value */ ->
-                RelType.PARENT
-        })
-
-        requireNotNull(task).relatedTo.add(relatedTo)
-    }
-
 
     fun add(): Uri {
         val batch = TasksBatchOperation(taskList.provider.client)
