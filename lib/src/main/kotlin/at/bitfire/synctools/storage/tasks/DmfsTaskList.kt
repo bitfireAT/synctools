@@ -149,6 +149,9 @@ class DmfsTaskList(
             uri
     }
 
+    fun taskUri(id: Long, loadProperties: Boolean = false): Uri =
+        ContentUris.withAppendedId(tasksUri(loadProperties), id)
+
     fun tasksPropertiesUri() =
         TaskContract.Properties.getContentUri(providerName.authority).asSyncAdapter(account)
 

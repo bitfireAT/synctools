@@ -10,6 +10,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
 import android.os.RemoteException
+import at.bitfire.synctools.mapping.tasks.DmfsTaskBuilder
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
@@ -21,10 +22,8 @@ import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
-import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.Action
@@ -42,7 +41,6 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RelatedTo
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.Trigger
-import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Property.Alarm
 import org.dmfs.tasks.contract.TaskContract.Property.Category
@@ -51,8 +49,6 @@ import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.io.FileNotFoundException
 import java.net.URISyntaxException
-import java.time.ZoneId
-import java.util.Locale
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -342,12 +338,10 @@ class DmfsTask(
     fun add(): Uri {
         val batch = TasksBatchOperation(taskList.provider.client)
 
-        val builder = CpoBuilder.newInsert(taskList.tasksUri())
-        buildTask(builder, false)
-        val idxTask = batch.nextBackrefIdx()
-        batch += builder
-
-        insertProperties(batch, idxTask)
+        val requiredTask = requireNotNull(task)
+        val builder = DmfsTaskBuilder(taskList, requiredTask, id, syncId, eTag, flags)
+        val idxTask = builder.addRows(batch)
+        builder.insertProperties(batch, idxTask)
 
         batch.commit()
 
@@ -369,13 +363,11 @@ class DmfsTask(
             .withSelection("${Properties.TASK_ID}=?", arrayOf(existingId.toString()))
 
         // update task
-        val uri = taskSyncURI()
-        val builder = CpoBuilder.newUpdate(uri)
-        buildTask(builder, true)
-        batch += builder
+        val builder = DmfsTaskBuilder(taskList, task, id, syncId, eTag, flags)
+        builder.updateRows(batch)
 
         // insert task properties again
-        insertProperties(batch, null)
+        builder.insertProperties(batch, null)
 
         batch.commit()
         return ContentUris.withAppendedId(Tasks.getContentUri(taskList.providerName.authority), existingId)
@@ -385,236 +377,9 @@ class DmfsTask(
         taskList.provider.client.update(taskSyncURI(), values, null, null)
     }
 
-    private fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
-        insertAlarms(batch, idxTask)
-        insertCategories(batch, idxTask)
-        insertComment(batch, idxTask)
-        insertRelatedTo(batch, idxTask)
-        insertUnknownProperties(batch, idxTask)
-    }
-
-    private fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
-        val task = requireNotNull(task)
-        for (alarm in task.alarms) {
-            val (alarmRef, minutes) = ICalendar.vAlarmToMin(
-                alarm = alarm,
-                refStart = task.dtStart,
-                refEnd = task.due,
-                refDuration = task.duration,
-                allowRelEnd = true
-            ) ?: continue
-            val ref = when (alarmRef) {
-                Related.END ->
-                    Alarm.ALARM_REFERENCE_DUE_DATE
-                else /* Related.START is the default value */ ->
-                    Alarm.ALARM_REFERENCE_START_DATE
-            }
-
-            val alarmType = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
-                Action.AUDIO.value ->
-                    Alarm.ALARM_TYPE_SOUND
-                Action.DISPLAY.value ->
-                    Alarm.ALARM_TYPE_MESSAGE
-                Action.EMAIL.value ->
-                    Alarm.ALARM_TYPE_EMAIL
-                else ->
-                    Alarm.ALARM_TYPE_NOTHING
-            }
-
-            val builder = CpoBuilder
-                .newInsert(taskList.tasksPropertiesUri())
-                .withTaskId(Alarm.TASK_ID, idxTask)
-                .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
-                .withValue(Alarm.MINUTES_BEFORE, minutes)
-                .withValue(Alarm.REFERENCE, ref)
-                .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
-                .withValue(Alarm.ALARM_TYPE, alarmType)
-
-            logger.log(Level.FINE, "Inserting alarm", builder.build())
-            batch += builder
-        }
-    }
-
-    private fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
-        for (category in requireNotNull(task).categories) {
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
-                    .withTaskId(Category.TASK_ID, idxTask)
-                    .withValue(Category.MIMETYPE, Category.CONTENT_ITEM_TYPE)
-                    .withValue(Category.CATEGORY_NAME, category)
-            logger.log(Level.FINE, "Inserting category", builder.build())
-            batch += builder
-        }
-    }
-
-    private fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
-        val comment = requireNotNull(task).comment ?: return
-        val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
-            .withTaskId(Comment.TASK_ID, idxTask)
-            .withValue(Comment.MIMETYPE, Comment.CONTENT_ITEM_TYPE)
-            .withValue(Comment.COMMENT, comment)
-        logger.log(Level.FINE, "Inserting comment", builder.build())
-        batch += builder
-    }
-
-    private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
-        for (relatedTo in requireNotNull(task).relatedTo) {
-            val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
-                RelType.CHILD ->
-                    Relation.RELTYPE_CHILD
-                RelType.SIBLING ->
-                    Relation.RELTYPE_SIBLING
-                else /* RelType.PARENT, default value */ ->
-                    Relation.RELTYPE_PARENT
-            }
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
-                    .withTaskId(Relation.TASK_ID, idxTask)
-                    .withValue(Relation.MIMETYPE, Relation.CONTENT_ITEM_TYPE)
-                    .withValue(Relation.RELATED_UID, relatedTo.value)
-                    .withValue(Relation.RELATED_TYPE, relType)
-            logger.log(Level.FINE, "Inserting relation", builder.build())
-            batch += builder
-        }
-    }
-
-    private fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
-        for (property in requireNotNull(task).unknownProperties) {
-            if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
-                logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
-                return
-            }
-
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
-                    .withTaskId(Properties.TASK_ID, idxTask)
-                    .withValue(Properties.MIMETYPE, UnknownProperty.CONTENT_ITEM_TYPE)
-                    .withValue(UNKNOWN_PROPERTY_DATA, UnknownProperty.toJsonString(property))
-            logger.log(Level.FINE, "Inserting unknown property", builder.build())
-            batch += builder
-        }
-    }
-
     fun delete(): Int {
         return taskList.provider.client.delete(taskSyncURI(), null, null)
     }
-
-    private fun buildTask(builder: CpoBuilder, update: Boolean) {
-        if (!update)
-            builder .withValue(Tasks.LIST_ID, taskList.id)
-
-        val task = requireNotNull(task)
-        builder .withValue(Tasks._UID, task.uid)
-                .withValue(Tasks._DIRTY, 0)
-                .withValue(Tasks.SYNC_VERSION, task.sequence)
-                .withValue(Tasks.TITLE, task.summary)
-                .withValue(Tasks.LOCATION, task.location)
-                .withValue(Tasks.GEO, task.geoPosition?.let { "${it.longitude},${it.latitude}" })
-                .withValue(Tasks.DESCRIPTION, task.description)
-                .withValue(Tasks.TASK_COLOR, task.color)
-                .withValue(Tasks.URL, task.url)
-
-                .withValue(Tasks._SYNC_ID, syncId)
-                .withValue(COLUMN_FLAGS, flags)
-                .withValue(COLUMN_ETAG, eTag)
-
-                // parent_id will be re-calculated when the relation row is inserted (if there is any)
-                .withValue(Tasks.PARENT_ID, null)
-
-        // organizer
-        task.organizer?.let { organizer ->
-            val uri = organizer.calAddress
-            val email = if (uri.scheme.equals("mailto", true))
-                uri.schemeSpecificPart
-            else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
-            if (email != null)
-                builder.withValue(Tasks.ORGANIZER, email)
-            else
-                logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-        }
-
-        // Priority, classification
-        builder .withValue(Tasks.PRIORITY, task.priority)
-                .withValue(Tasks.CLASSIFICATION, when (task.classification) {
-                    Clazz.PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
-                    Clazz.CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
-                    null -> Tasks.CLASSIFICATION_DEFAULT
-                    else -> Tasks.CLASSIFICATION_PRIVATE    // all unknown classifications MUST be treated as PRIVATE
-                })
-
-        // COMPLETED must always be a DATE-TIME
-        builder .withValue(Tasks.COMPLETED, task.completedAt?.date?.time)
-                .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
-                .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
-
-        // Status
-        val status = when (task.status) {
-            Status.VTODO_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
-            Status.VTODO_COMPLETED  -> Tasks.STATUS_COMPLETED
-            Status.VTODO_CANCELLED  -> Tasks.STATUS_CANCELLED
-            else                    -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
-        }
-        builder.withValue(Tasks.STATUS, status)
-
-        // Time related
-        val allDay = task.isAllDay()
-        if (allDay) {
-            builder .withValue(Tasks.IS_ALLDAY, 1)
-                    .withValue(Tasks.TZ, null)
-        } else {
-            AndroidTimeUtils.androidifyTimeZone(task.dtStart, tzRegistry)
-            AndroidTimeUtils.androidifyTimeZone(task.due, tzRegistry)
-            builder .withValue(Tasks.IS_ALLDAY, 0)
-                    .withValue(Tasks.TZ, getTimeZone().id)
-        }
-        builder .withValue(Tasks.CREATED, task.createdAt)
-                .withValue(Tasks.LAST_MODIFIED, task.lastModified)
-
-                .withValue(Tasks.DTSTART, task.dtStart?.date?.time)
-                .withValue(Tasks.DUE, task.due?.date?.time)
-                .withValue(Tasks.DURATION, task.duration?.value)
-
-                .withValue(Tasks.RDATE,
-                        if (task.rDates.isEmpty())
-                            null
-                        else
-                            AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.rDates, if (allDay) null else getTimeZone()))
-                .withValue(Tasks.RRULE, task.rRule?.value)
-
-                .withValue(Tasks.EXDATE,
-                        if (task.exDates.isEmpty())
-                            null
-                        else
-                            AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
-
-        logger.log(Level.FINE, "Built task object", builder.build())
-    }
-
-
-    fun getTimeZone(): TimeZone {
-        val task = requireNotNull(task)
-        return  task.dtStart?.let { dtStart ->
-                    if (dtStart.isUtc)
-                        tzRegistry.getTimeZone(TimeZones.UTC_ID)
-                    else
-                        dtStart.timeZone
-                } ?:
-                task.due?.let { due ->
-                    if (due.isUtc)
-                        tzRegistry.getTimeZone(TimeZones.UTC_ID)
-                    else
-                        due.timeZone
-                } ?:
-                tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
-    }
-
-
-    private fun CpoBuilder.withTaskId(column: String, idxTask: Int?): CpoBuilder {
-        if (idxTask != null)
-            withValueBackReference(column, idxTask)
-        else
-            withValue(column, requireNotNull(id))
-        return this
-    }
-
 
     private fun taskSyncURI(loadProperties: Boolean = false): Uri {
         val id = requireNotNull(id)
