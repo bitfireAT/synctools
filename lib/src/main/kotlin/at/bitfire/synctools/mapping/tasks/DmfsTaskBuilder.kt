@@ -164,7 +164,6 @@ class DmfsTaskBuilder(
     }
 
     fun getTimeZone(): TimeZone {
-        val task = requireNotNull(task)
         return  task.dtStart?.let { dtStart ->
             if (dtStart.isUtc)
                 tzRegistry.getTimeZone(TimeZones.UTC_ID)
@@ -189,7 +188,6 @@ class DmfsTaskBuilder(
     }
 
     private fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
-        val task = requireNotNull(task)
         for (alarm in task.alarms) {
             val (alarmRef, minutes) = ICalendar.vAlarmToMin(
                 alarm = alarm,
@@ -231,7 +229,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
-        for (category in requireNotNull(task).categories) {
+        for (category in task.categories) {
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
                 .withTaskId(Category.TASK_ID, idxTask)
                 .withValue(Category.MIMETYPE, Category.CONTENT_ITEM_TYPE)
@@ -242,7 +240,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertComment(batch: TasksBatchOperation, idxTask: Int?) {
-        val comment = requireNotNull(task).comment ?: return
+        val comment = task.comment ?: return
         val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
             .withTaskId(Comment.TASK_ID, idxTask)
             .withValue(Comment.MIMETYPE, Comment.CONTENT_ITEM_TYPE)
@@ -252,7 +250,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
-        for (relatedTo in requireNotNull(task).relatedTo) {
+        for (relatedTo in task.relatedTo) {
             val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
                 RelType.CHILD ->
                     Relation.RELTYPE_CHILD
@@ -272,7 +270,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
-        for (property in requireNotNull(task).unknownProperties) {
+        for (property in task.unknownProperties) {
             if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
                 logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
                 return
