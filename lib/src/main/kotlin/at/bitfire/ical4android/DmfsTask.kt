@@ -131,6 +131,14 @@ class DmfsTask(
             throw FileNotFoundException("Couldn't find task #$id")
         }
 
+    /**
+     * Saves the unsaved [task] into the task provider storage.
+     *
+     * @return content URI of the created task
+     *
+     * @throws LocalStorageException when the tasks provider doesn't return a result row
+     * @throws RemoteException on tasks provider errors
+     */
     fun add(): Uri {
         val batch = TasksBatchOperation(taskList.provider.client)
 
@@ -147,6 +155,15 @@ class DmfsTask(
         return resultUri
     }
 
+    /**
+     * Updates an already existing task in the tasks provider storage with the values
+     * from the instance.
+     *
+     * @return content URI of the updated task
+     *
+     * @throws LocalStorageException when the tasks provider doesn't return a result row
+     * @throws RemoteException on tasks provider errors
+     */
     fun update(task: Task): Uri {
         this.task = task
         val existingId = requireNotNull(id)
@@ -173,6 +190,13 @@ class DmfsTask(
         taskList.provider.client.update(taskSyncURI(), values, null, null)
     }
 
+    /**
+     * Deletes an existing task from the tasks provider storage.
+     *
+     * @return number of affected rows
+     *
+     * @throws RemoteException on tasks provider errors
+     */
     fun delete(): Int {
         return taskList.provider.client.delete(taskSyncURI(), null, null)
     }
