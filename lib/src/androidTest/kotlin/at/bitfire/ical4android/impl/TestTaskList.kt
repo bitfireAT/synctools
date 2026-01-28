@@ -26,7 +26,7 @@ object TestTaskList {
         values.put(TaskContract.TaskListColumns.VISIBLE, 1)
         val dmfsTaskListProvider = DmfsTaskListProvider(account, provider.client, provider.name)
 
-        return DmfsTaskList(dmfsTaskListProvider, values, provider.name)
+        return dmfsTaskListProvider.createAndGetTaskList(values)
     }
 
 }
