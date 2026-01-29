@@ -28,10 +28,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 import java.io.StringReader
+import java.io.StringWriter
 import java.nio.charset.Charset
 import java.time.Duration
 
@@ -210,8 +209,8 @@ class TaskReaderTest {
     }
 
     private fun regenerate(t: Task): Task {
-        val os = ByteArrayOutputStream()
-        t.write(os, testProdId)
-        return TaskReader().tasksFromReader(InputStreamReader(ByteArrayInputStream(os.toByteArray()), Charsets.UTF_8)).first()
+        val icalWriter = StringWriter()
+        TaskWriter(testProdId).write(t, icalWriter)
+        return TaskReader().tasksFromReader(StringReader(icalWriter.toString())).first()
     }
 }
