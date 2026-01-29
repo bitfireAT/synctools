@@ -200,17 +200,17 @@ class TaskReaderTest {
     /* helpers */
 
     private fun parseCalendar(iCalendar: String): Task =
-        TaskReader().tasksFromReader(StringReader(iCalendar)).first()
+        TaskReader().readTasks(StringReader(iCalendar)).first()
 
     private fun parseCalendarFile(fname: String, charset: Charset = Charsets.UTF_8): Task {
         javaClass.classLoader!!.getResourceAsStream("tasks/$fname").use { stream ->
-            return TaskReader().tasksFromReader(InputStreamReader(stream, charset)).first()
+            return TaskReader().readTasks(InputStreamReader(stream, charset)).first()
         }
     }
 
     private fun regenerate(t: Task): Task {
         val icalWriter = StringWriter()
         TaskWriter(testProdId).write(t, icalWriter)
-        return TaskReader().tasksFromReader(StringReader(icalWriter.toString())).first()
+        return TaskReader().readTasks(StringReader(icalWriter.toString())).first()
     }
 }

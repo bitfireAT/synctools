@@ -64,7 +64,7 @@ class TaskReader {
      * @throws InvalidICalendarException when the iCalendar can't be parsed
      * @throws IOException on I/O errors
      */
-    fun tasksFromReader(reader: Reader): List<Task> {
+    fun readTasks(reader: Reader): List<Task> {
         val ical = fromReader(reader)
         val vToDos = ical.getComponents<VToDo>(Component.VTODO)
         return vToDos.mapTo(LinkedList()) { this.fromVToDo(it) }
