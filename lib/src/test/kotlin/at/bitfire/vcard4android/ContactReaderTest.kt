@@ -6,15 +6,50 @@
 
 package at.bitfire.vcard4android
 
-import at.bitfire.vcard4android.property.*
+import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.vcard4android.property.XAbDate
+import at.bitfire.vcard4android.property.XAbLabel
+import at.bitfire.vcard4android.property.XAbRelatedNames
+import at.bitfire.vcard4android.property.XAddressBookServerKind
+import at.bitfire.vcard4android.property.XPhoneticFirstName
+import at.bitfire.vcard4android.property.XPhoneticLastName
+import at.bitfire.vcard4android.property.XPhoneticMiddleName
+import at.bitfire.vcard4android.property.XSip
 import ezvcard.VCard
 import ezvcard.VCardVersion
 import ezvcard.parameter.ImageType
 import ezvcard.parameter.RelatedType
 import ezvcard.parameter.SoundType
-import ezvcard.property.*
+import ezvcard.property.Address
+import ezvcard.property.Anniversary
+import ezvcard.property.Birthday
+import ezvcard.property.Categories
+import ezvcard.property.FormattedName
+import ezvcard.property.Impp
+import ezvcard.property.Kind
+import ezvcard.property.Label
+import ezvcard.property.Logo
+import ezvcard.property.Member
+import ezvcard.property.Nickname
+import ezvcard.property.Organization
+import ezvcard.property.Photo
+import ezvcard.property.ProductId
+import ezvcard.property.RawProperty
+import ezvcard.property.Related
+import ezvcard.property.Revision
+import ezvcard.property.SortString
+import ezvcard.property.Sound
+import ezvcard.property.StructuredName
+import ezvcard.property.Telephone
+import ezvcard.property.Uid
+import ezvcard.property.Url
 import ezvcard.util.PartialDate
-import org.junit.Assert.*
+import ezvcard.util.TelUri
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.URI
 import java.time.LocalDate
@@ -366,9 +401,13 @@ class ContactReaderTest {
     @Test
     fun testTelephone() {
         val c = ContactReader.fromVCard(VCard().apply {
+            // number of type TEXT
             addTelephoneNumber("+1 555 12345")
+            // number of type URI
+            addTelephoneNumber(Telephone(TelUri.parse("tel:123")))
         })
-        assertEquals("+1 555 12345", c.phoneNumbers.first.property.text)
+        assertEquals("+1 555 12345", c.phoneNumbers[0].property.text)
+        assertEquals("123", c.phoneNumbers[1].property.uri.number)
     }
 
 

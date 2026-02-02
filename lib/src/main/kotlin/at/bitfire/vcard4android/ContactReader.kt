@@ -199,11 +199,9 @@ class ContactReader internal constructor(val vCard: VCard, val downloader: Conta
                     c.jobDescription = prop.value?.trimToNull()
 
                 is Telephone ->
-                    if (!prop.text.isNullOrBlank())
-                        c.phoneNumbers += LabeledProperty(prop, findAndRemoveLabel(prop.group))
+                    c.phoneNumbers += LabeledProperty(prop, findAndRemoveLabel(prop.group))
                 is Email ->
-                    if (!prop.value.isNullOrBlank())
-                        c.emails += LabeledProperty(prop, findAndRemoveLabel(prop.group))
+                    c.emails += LabeledProperty(prop, findAndRemoveLabel(prop.group))
                 is Impp ->
                     c.impps += LabeledProperty(prop, findAndRemoveLabel(prop.group))
                 is XSip ->
