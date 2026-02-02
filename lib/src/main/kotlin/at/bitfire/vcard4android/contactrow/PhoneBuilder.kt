@@ -21,16 +21,21 @@ class PhoneBuilder(dataRowUri: Uri, rawContactId: Long?, contact: Contact, readO
     override fun build(): List<BatchOperation.CpoBuilder> {
         val result = LinkedList<BatchOperation.CpoBuilder>()
         for (phoneNumber in contact.phoneNumbers) {
-            val number = phoneNumber.property
-            if (number.text.isNullOrBlank())
+            val tel = phoneNumber.property
+
+            // TEL can have either a TEXT (default for vCard 3 compatibility) or an URI value.
+            val number = tel.uri?.number ?: tel.text
+
+            // Skip empty numbers
+            if (number.isNullOrBlank())
                 continue
 
-            val types = number.types
+            val types = tel.types
 
             // preferred number?
             var pref: Int? = null
             try {
-                pref = number.pref
+                pref = tel.pref
             } catch(e: IllegalStateException) {
                 logger.log(Level.FINER, "Can't understand phone number PREF", e)
             }
@@ -89,7 +94,7 @@ class PhoneBuilder(dataRowUri: Uri, rawContactId: Long?, contact: Contact, readO
 
             result += newDataRow()
                 .withValue(Phone.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
-                .withValue(Phone.NUMBER, number.text)
+                .withValue(Phone.NUMBER, number)
                 .withValue(Phone.TYPE, typeCode)
                 .withValue(Phone.LABEL, typeLabel)
                 .withValue(Phone.IS_PRIMARY, if (isPrimary) 1 else 0)

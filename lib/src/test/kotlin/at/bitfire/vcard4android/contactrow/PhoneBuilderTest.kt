@@ -13,6 +13,7 @@ import at.bitfire.vcard4android.LabeledProperty
 import at.bitfire.vcard4android.property.CustomType
 import ezvcard.parameter.TelephoneType
 import ezvcard.property.Telephone
+import ezvcard.util.TelUri
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,9 +40,19 @@ class PhoneBuilderTest {
     }
 
     @Test
-    fun testNumber_Value() {
+    fun testNumber_Value_Text() {
         PhoneBuilder(Uri.EMPTY, null, Contact().apply {
             phoneNumbers += LabeledProperty(Telephone("+1 555 12345"))
+        }, false).build().also { result ->
+            assertEquals(1, result.size)
+            assertEquals("+1 555 12345", result[0].values[CommonDataKinds.Phone.NUMBER])
+        }
+    }
+
+    @Test
+    fun testNumber_Value_Uri() {
+        PhoneBuilder(Uri.EMPTY, null, Contact().apply {
+            phoneNumbers += LabeledProperty(Telephone(TelUri.parse("tel:+1 555 12345")))
         }, false).build().also { result ->
             assertEquals(1, result.size)
             assertEquals("+1 555 12345", result[0].values[CommonDataKinds.Phone.NUMBER])
