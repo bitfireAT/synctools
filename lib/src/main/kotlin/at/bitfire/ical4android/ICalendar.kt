@@ -287,7 +287,7 @@ open class ICalendar {
             val trigger = alarm.trigger ?: return null
 
             val minutes: Int    // minutes before/after the event
-            var related = trigger.getParameter<Related>(Parameter.RELATED) ?: Related.START
+            var related = trigger.getParameter(Parameter.RELATED) ?: Related.START
 
             // event/task start time
             val start: java.util.Date? = refStart?.date
@@ -351,7 +351,7 @@ open class ICalendar {
     }
 
 
-    protected fun generateUID() {
+    fun generateUID() {
         uid = UUID.randomUUID().toString()
     }
 
