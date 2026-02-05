@@ -8,6 +8,7 @@ package at.bitfire.ical4android
 
 import android.content.ContentUris
 import android.content.ContentValues
+import android.content.Entity
 import android.net.Uri
 import android.os.RemoteException
 import at.bitfire.synctools.mapping.tasks.DmfsTaskBuilder
@@ -20,6 +21,7 @@ import at.bitfire.synctools.storage.toContentValues
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.property.RelatedTo
+import org.dmfs.tasks.contract.TaskContract
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.io.FileNotFoundException
@@ -27,40 +29,36 @@ import java.util.logging.Level
 import java.util.logging.Logger
 
 /**
- * Stores and retrieves VTODO iCalendar objects (represented as [Task]s) to/from the
- * tasks.org-content provider (currently tasks.org and OpenTasks).
+ * Stores and retrieves tasks to/from the tasks.org-content provider (currently tasks.org and
+ * OpenTasks).
  *
- * Extend this class to process specific fields of the task.
+ * A task in the context of this class is one row in the [TaskContract.Tasks] table,
+ * plus associated data rows (like alarms and reminders).
+ *
+ * Exceptions (of recurring tasks) have their own entries in the [TaskContract.Tasks] table and thus
+ * are separate.
  *
  * The SEQUENCE field is stored in [Tasks.SYNC_VERSION], so don't use [Tasks.SYNC_VERSION]
  * for anything else.
+ *
+ * @param taskList  task list where the task is stored
+ * @param values    entity with all columns, as returned by the calendar provider; [TaskContract.Tasks._ID] must be set to a non-null value
  */
+
 class DmfsTask(
-    val taskList: DmfsTaskList
+    val taskList: DmfsTaskList,
+    val values: Entity
 ) {
 
     private val logger = Logger.getLogger(javaClass.name)
 
-    var id: Long? = null
-    var syncId: String? = null
-    var eTag: String? = null
-    var flags: Int = 0
+    private val mainValues
+        get() = values.entityValues
 
-
-    constructor(taskList: DmfsTaskList, values: ContentValues): this(taskList) {
-        id = values.getAsLong(Tasks._ID)
-        syncId = values.getAsString(Tasks._SYNC_ID)
-        eTag = values.getAsString(COLUMN_ETAG)
-        flags = values.getAsInteger(COLUMN_FLAGS) ?: 0
-    }
-
-    constructor(taskList: DmfsTaskList, task: Task, syncId: String?, eTag: String?, flags: Int): this(taskList) {
-        this.task = task
-        this.syncId = syncId
-        this.eTag = eTag
-        this.flags = flags
-    }
-
+    var id: Long = mainValues.getAsLong(Tasks._ID)
+    var syncId: String? = mainValues.getAsString(Tasks._SYNC_ID)
+    var eTag: String? = mainValues.getAsString(COLUMN_ETAG)
+    var flags: Int = mainValues.getAsInteger(COLUMN_FLAGS) ?: 0
 
     var task: Task? = null
         /**
