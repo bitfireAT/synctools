@@ -11,7 +11,6 @@ import android.content.ContentValues
 import android.content.Entity
 import android.net.Uri
 import android.os.RemoteException
-import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation
@@ -20,6 +19,7 @@ import at.bitfire.synctools.storage.toContentValues
 import org.dmfs.tasks.contract.TaskContract
 import java.util.LinkedList
 import java.util.logging.Logger
+import at.bitfire.ical4android.DmfsTask as LegacyDmfsTask
 
 /**
  * Represents a locally stored task list, containing [DmfsTask]s (tasks).
@@ -139,6 +139,17 @@ class DmfsTaskList(
             throw LocalStorageException("Couldn't query task entity", e)
         }
         return null
+    }
+
+    /**
+     * Gets a specific task, identified by its ID, from this task list.
+     *
+     * @param id    task ID
+     * @return task (or `null` if not found)
+     */
+    fun getLegacyTask(id: Long): LegacyDmfsTask? {
+        val entity = getTaskEntity(id, null) ?: return null
+        return LegacyDmfsTask(this, entity.entityValues)
     }
 
     /**
