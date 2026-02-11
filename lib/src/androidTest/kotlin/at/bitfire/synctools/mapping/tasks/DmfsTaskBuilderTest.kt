@@ -734,7 +734,7 @@ class DmfsTaskBuilderTest (
         val testTask = taskList!!.getTask(ContentUris.parseId(uri))
         try {
             // read again and verify result
-            val task2 = testTask.task!!
+            val task2 = testTask?.task!!
             assertEquals(task.summary, task2.summary)
             assertEquals(task.description, task2.description)
             assertEquals(task.location, task2.location)
@@ -742,7 +742,7 @@ class DmfsTaskBuilderTest (
             assertEquals(task.due!!.date, task2.due!!.date)
             Assert.assertTrue(task2.isAllDay())
         } finally {
-            testTask.delete()
+            testTask?.delete()
         }
     }
 
