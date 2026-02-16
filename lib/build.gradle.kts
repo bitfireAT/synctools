@@ -118,11 +118,7 @@ dependencies {
     // ical4j/ez-vcard
     api(libs.ical4j)
     implementation(libs.slf4j.jdk)       // ical4j uses slf4j, this module uses java.util.Logger
-    api(libs.ezvcard) {    // requires Java 8
-        // hCard functionality not needed
-        exclude(group = "org.jsoup")
-        exclude(group = "org.freemarker")
-    }
+    api(libs.ezvcard)
 
     // synctools.test package also provide test rules
     implementation(libs.androidx.test.rules)
