@@ -13,7 +13,6 @@ import ezvcard.property.Address
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,9 +45,8 @@ class EzVCardTest {
                 "PHOTO;VALUE=uri:data:image/png;base64,dGVzdA==\r\n" +
                 "END:VCARD").first()
         val photo = vCard.photos.first()
-        // Somehow unexpected: returns a data URI and doesn't decode it
-        assertEquals("data:image/png;base64,dGVzdA==", photo.url)
-        assertNull(photo.data)
+        // decodes binary data
+        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
     }
 
     @Test
