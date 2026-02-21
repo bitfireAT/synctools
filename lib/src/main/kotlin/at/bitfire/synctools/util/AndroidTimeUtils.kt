@@ -121,70 +121,7 @@ object AndroidTimeUtils {
      * @return formatted string for Android calendar provider
      */
     fun recurrenceSetsToAndroidString(dates: List<DateListProperty>, dtStart: Date): String {
-        /*  rdate/exdate:       DATE                                DATE_TIME
-            all-day             store as ...T000000Z                cut off time and store as ...T000000Z
-            event with time     (undefined)                         store as ...ThhmmssZ
-        */
-        val dateFormatUtcMidnight = SimpleDateFormat("yyyyMMdd'T'000000'Z'", Locale.ROOT)
-        val strDates = LinkedList<String>()
-        val allDay = dtStart !is DateTime
-
-        // use time zone of first entry for the whole set; null for UTC
-        val tz =
-            (dates.firstOrNull() as? RDate)?.periods?.timeZone ?:   // VALUE=PERIOD (only RDate)
-            dates.firstOrNull()?.dates?.timeZone                    // VALUE=DATE/DATE-TIME
-
-        for (dateListProp in dates) {
-            if (dateListProp is RDate && dateListProp.periods.isNotEmpty()) {
-                logger.warning("RDATE PERIOD not supported, ignoring")
-                break
-            }
-
-            when (dateListProp.dates.type) {
-                Value.DATE_TIME -> {        // RDATE/EXDATE is DATE-TIME
-                    if (tz == null && !dateListProp.dates.isUtc)
-                        dateListProp.setUtc(true)
-                    else if (tz != null && dateListProp.timeZone != tz)
-                        dateListProp.timeZone = tz
-
-                    if (allDay)
-                        // DTSTART is DATE
-                        dateListProp.dates.mapTo(strDates) { dateFormatUtcMidnight.format(it) }
-                    else
-                        // DTSTART is DATE-TIME
-                        strDates.add(dateListProp.value)
-                }
-                Value.DATE ->               // RDATE/EXDATE is DATE
-                    if (allDay) {
-                        // DTSTART is DATE; DATE values have to be returned as <date>T000000Z for Android
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            dateFormatUtcMidnight.format(date)
-                        }
-                    } else {
-                        // DTSTART is DATE-TIME; amend DATE-TIME with clock time from dtStart
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            // take time (including time zone) from dtStart and date from date
-                            val dtStartTime = dtStart.toZonedDateTime()
-                            val localDate = date.toLocalDate()
-                            val dtStartTimeUtc = ZonedDateTime.of(
-                                localDate,
-                                dtStartTime.toLocalTime(),
-                                dtStartTime.zone
-                            ).withZoneSameInstant(ZoneOffset.UTC)
-
-                            val dateFormatUtc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT)
-                            dtStartTimeUtc.format(dateFormatUtc)
-                        }
-                    }
-            }
-        }
-
-        // format expected by Android: [tzid;]value1,value2,...
-        val result = StringBuilder()
-        if (tz != null)
-            result.append(tz.id).append(RECURRENCE_LIST_TZID_SEPARATOR)
-        result.append(strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR))
-        return result.toString()
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -208,49 +145,8 @@ object AndroidTimeUtils {
         allDay: Boolean,
         exclude: Long? = null,
         generator: (DateList) -> T
-    ): T
-    {
-        // 1. split string into time zone and actual dates
-        var timeZone: net.fortuna.ical4j.model.TimeZone?
-        val datesStr: String
-
-        val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
-        if (limiter != -1) {    // TZID given
-            val tzId = dbStr.take(limiter)
-            timeZone = tzRegistry.getTimeZone(tzId)
-            if (TimeZones.isUtc(timeZone))
-                timeZone = null
-            datesStr = dbStr.substring(limiter + 1)
-        } else {
-            timeZone = null
-            datesStr = dbStr
-        }
-
-        // 2. process date string and generate list of DATEs or DATE-TIMEs
-        val dateList =
-                if (allDay)
-                    DateList(datesStr, Value.DATE)
-                else
-                    DateList(datesStr, Value.DATE_TIME, timeZone)
-
-        // 3. filter excludes
-        val iter = dateList.iterator()
-        while (iter.hasNext()) {
-            val date = iter.next()
-            if (date.time == exclude)
-                iter.remove()
-        }
-
-        // 4. generate requested DateListProperty (RDate/ExDate) from list of DATEs or DATE-TIMEs
-        val property = generator(dateList)
-        if (!allDay) {
-            if (timeZone != null)
-                property.timeZone = timeZone
-            else
-                property.setUtc(true)
-        }
-
-        return property
+    ): T {
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -265,29 +161,7 @@ object AndroidTimeUtils {
      * @return formatted string for Android calendar provider
      */
     fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty>, tz: net.fortuna.ical4j.model.TimeZone?): String {
-        val allDay = tz == null
-        val strDates = LinkedList<String>()
-        for (dateListProp in dates) {
-            if (dateListProp is RDate && dateListProp.periods.isNotEmpty())
-                logger.warning("RDATE PERIOD not supported, ignoring")
-
-            for (date in dateListProp.dates) {
-                val dateToUse =
-                    when (date) {
-                        is DateTime if allDay ->    // VALUE=DATE-TIME, but allDay=1
-                            Date(date)
-
-                        !is DateTime if !allDay ->  // VALUE=DATE, but allDay=0
-                            DateTime(date.toString(), tz)
-
-                        else -> date
-                    }
-                if (dateToUse is DateTime && !dateToUse.isUtc)
-                    dateToUse.timeZone = tz!!
-                strDates += dateToUse.toString()
-            }
-        }
-        return strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR)
+        TODO("ical4j 4.x")
     }
 
 
@@ -302,39 +176,7 @@ object AndroidTimeUtils {
      * @return duration value in RFC 2445 format ("PT3600S" when the argument was "P3600S")
      */
     fun parseDuration(durationStr: String): TemporalAmount {
-        /** [RFC 2445/5445]
-         * dur-value  = (["+"] / "-") "P" (dur-date / dur-time / dur-week)
-         * dur-date   = dur-day [dur-time]
-         * dur-day    = 1*DIGIT "D"
-         * dur-time   = "T" (dur-hour / dur-minute / dur-second)
-         * dur-week   = 1*DIGIT "W"
-         * dur-hour   = 1*DIGIT "H" [dur-minute]
-         * dur-minute = 1*DIGIT "M" [dur-second]
-         * dur-second = 1*DIGIT "S"
-         */
-        val possibleFormats = Regex("([+-]?)P?(T|((\\d+)W)|((\\d+)D)|((\\d+)H)|((\\d+)M)|((\\d+)S))*")
-                                         //  1            4         6         8         10        12
-        possibleFormats.matchEntire(durationStr)?.let { result ->
-            fun fromMatch(s: String) = if (s.isEmpty()) 0 else s.toInt()
-
-            val intSign = if (result.groupValues[1] == "-") -1 else 1
-            val intDays = fromMatch(result.groupValues[4]) * TimeApiExtensions.DAYS_PER_WEEK + fromMatch(result.groupValues[6])
-            val intHours = fromMatch(result.groupValues[8])
-            val intMinutes = fromMatch(result.groupValues[10])
-            val intSeconds = fromMatch(result.groupValues[12])
-
-            return if (intDays != 0 && intHours == 0 && intMinutes == 0 && intSeconds == 0)
-                Period.ofDays(intSign * intDays)
-            else
-                Duration.ofSeconds(intSign * (
-                        intDays * TimeApiExtensions.SECONDS_PER_DAY.toLong() +
-                        intHours * TimeApiExtensions.SECONDS_PER_HOUR +
-                        intMinutes * TimeApiExtensions.SECONDS_PER_MINUTE +
-                        intSeconds
-                ))
-        }
-        // no match, try TemporalAmountAdapter
-        return TemporalAmountAdapter.parse(durationStr).duration
+        TODO("ical4j 4.x")
     }
 
 }
