@@ -292,33 +292,7 @@ open class JtxICalObject(
             reader: Reader,
             collection: JtxCollection<JtxICalObject>
         ): List<JtxICalObject> {
-            val ical = ICalendar.fromReader(reader)
-
-            val iCalObjectList = mutableListOf<JtxICalObject>()
-
-            ical.components.forEach { component ->
-
-                val iCalObject = JtxICalObject(collection)
-                when(component) {
-                    is VToDo -> {
-                        iCalObject.component = JtxContract.JtxICalObject.Component.VTODO.name
-                        if (component.uid != null)
-                            iCalObject.uid = component.uid.value                         // generated UID is overwritten here (if present)
-                        extractProperties(iCalObject, component.properties)
-                        extractVAlarms(iCalObject, component.components)                 // accessing the components needs an explicit type
-                        iCalObjectList.add(iCalObject)
-                    }
-                    is VJournal -> {
-                        iCalObject.component = JtxContract.JtxICalObject.Component.VJOURNAL.name
-                        if (component.uid != null)
-                            iCalObject.uid = component.uid.value
-                        extractProperties(iCalObject, component.properties)
-                        extractVAlarms(iCalObject, component.components)                  // accessing the components needs an explicit type
-                        iCalObjectList.add(iCalObject)
-                    }
-                }
-            }
-            return iCalObjectList
+            TODO("ical4j 4.x")
         }
 
         /**
@@ -329,42 +303,7 @@ open class JtxICalObject(
          */
         private fun extractVAlarms(iCalObject: JtxICalObject, calComponents: ComponentList<*>) {
 
-            calComponents.forEach { component ->
-                if(component is VAlarm) {
-                    val jtxAlarm = Alarm().apply {
-                        component.action?.value?.let { vAlarmAction -> this.action = vAlarmAction }
-                        component.summary?.value?.let { vAlarmSummary -> this.summary = vAlarmSummary }
-                        component.description?.value?.let { vAlarmDesc -> this.description = vAlarmDesc }
-                        component.duration?.value?.let { vAlarmDur -> this.duration = vAlarmDur }
-                        component.attachment?.uri?.let { uri -> this.attach = uri.toString() }
-                        component.repeat?.value?.let { vAlarmRep -> this.repeat = vAlarmRep }
-
-                        // alarms can have a duration or an absolute dateTime, but not both!
-                        if(component.trigger.duration != null) {
-                            component.trigger?.duration?.let { duration -> this.triggerRelativeDuration = duration.toString() }
-                            component.trigger?.getParameter<Related>(Parameter.RELATED)?.let { related -> this.triggerRelativeTo = related.value }
-                        } else if(component.trigger.dateTime != null) {
-                            component.trigger?.dateTime?.let { dateTime -> this.triggerTime = dateTime.time  }
-                            component.trigger?.dateTime?.timeZone?.let { timezone -> this.triggerTimezone = timezone.id }
-                        }
-
-                        // remove properties to add the rest to other
-                        component.properties.removeAll(
-                            setOf(
-                                component.action,
-                                component.summary,
-                                component.description,
-                                component.duration,
-                                component.attachment,
-                                component.repeat,
-                                component.trigger
-                            )
-                        )
-                        component.properties?.let { vAlarmProps -> this.other = JtxContract.getJsonStringFromXProperties(vAlarmProps) }
-                    }
-                    iCalObject.alarms.add(jtxAlarm)
-                }
-            }
+            TODO("ical4j 4.x")
         }
 
         /**
@@ -374,55 +313,7 @@ open class JtxICalObject(
          */
         private fun extractProperties(iCalObject: JtxICalObject, properties: PropertyList<*>) {
 
-            // sequence must only be null for locally created, not-yet-synchronized events
-            iCalObject.sequence = 0
-
-            for (prop in properties) {
-                when (prop) {
-                    is Sequence -> iCalObject.sequence = prop.sequenceNo.toLong()
-                    is Created -> iCalObject.created = prop.dateTime.time
-                    is LastModified -> iCalObject.lastModified = prop.dateTime.time
-                    is Summary -> iCalObject.summary = prop.value
-                    is Location -> {
-                        iCalObject.location = prop.value
-                        if(!prop.parameters.isEmpty && prop.parameters.getParameter<AltRep>(Parameter.ALTREP) != null)
-                            iCalObject.locationAltrep = prop.parameters.getParameter<AltRep>(Parameter.ALTREP).value
-                    }
-                    is Geo -> {
-                        iCalObject.geoLat = prop.latitude.toDouble()
-                        iCalObject.geoLong = prop.longitude.toDouble()
-                    }
-                    is Description -> iCalObject.description = prop.value
-                    is Color -> iCalObject.color = Css3Color.fromString(prop.value)?.argb
-                    is Url -> iCalObject.url = prop.value
-                    is Contact -> iCalObject.contact = prop.value
-                    is Priority -> iCalObject.priority = prop.level
-                    is Clazz -> iCalObject.classification = prop.value
-                    is Status -> iCalObject.status = prop.value
-                    is DtEnd -> logger.warning("The property DtEnd must not be used for VTODO and VJOURNAL, this value is rejected.")
-                    is Completed -> {
-                        if (iCalObject.component == JtxContract.JtxICalObject.Component.VTODO.name) {
-                            iCalObject.completed = prop.date.time
-                        } else
-                            logger.warning("The property Completed is only supported for VTODO, this value is rejected.")
-                    }
-
-                    is Due -> {
-                        if (iCalObject.component == JtxContract.JtxICalObject.Component.VTODO.name) {
-                            iCalObject.due = prop.date.time
-                            when {
-                                prop.date is DateTime && prop.timeZone != null -> iCalObject.dueTimezone = prop.timeZone.id
-                                prop.date is DateTime && prop.isUtc -> iCalObject.dueTimezone = TimeZone.getTimeZone("UTC").id
-                                prop.date is DateTime && !prop.isUtc && prop.timeZone == null -> iCalObject.dueTimezone = null                   // this comparison is kept on purpose as "prop.date is Date" did not work as expected.
-                                else -> iCalObject.dueTimezone = TZ_ALLDAY     // prop.date is Date (and not DateTime), therefore it must be Allday
-                            }
-                        } else
-                            logger.warning("The property Due is only supported for VTODO, this value is rejected.")
-                    }
-
-                    is Duration -> iCalObject.duration = prop.value
-
-                    is DtStart -> {
+            TODO("ical4j 4.x")
                         iCalObject.dtstart = prop.date.time
                         when {
                             prop.date is DateTime && prop.timeZone != null -> iCalObject.dtstartTimezone = prop.timeZone.id
