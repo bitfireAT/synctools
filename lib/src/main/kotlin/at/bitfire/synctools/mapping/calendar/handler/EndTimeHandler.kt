@@ -32,35 +32,7 @@ class EndTimeHandler(
         get() = Logger.getLogger(javaClass.name)
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val values = from.entityValues
-        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-
-        // Skip if DTSTART is not present (not allowed in iCalendar)
-        val tsStart = values.getAsLong(Events.DTSTART) ?: return
-
-        val tsEndOrNull = values.getAsLong(Events.DTEND)
-        val durationStr = values.getAsString(Events.DURATION)
-
-        if (tsEndOrNull == null && durationStr != null) // DTEND not present, but DURATION is present:
-            return                                      // DurationHandler is responsible for generating the DTEND property
-
-        /* Make sure that there's always a DTEND for compatibility. While it's allowed in RFC 5545
-        to omit DTEND, this causes problems with some servers (notably iCloud). See also:
-        https://github.com/bitfireAT/davx5-ose/issues/1859 */
-        val tsEnd = tsEndOrNull
-            ?.takeUnless { it < tsStart }               // only use DTEND if it's not before DTSTART
-            ?: calculateFromDefault(tsStart, allDay)    // always provide DTEND for compatibility
-
-        // DATE or DATE-TIME according to allDay
-        val end = AndroidTimeField(
-            timestamp = tsEnd,
-            timeZone = values.getAsString(Events.EVENT_END_TIMEZONE)
-                ?: values.getAsString(Events.EVENT_TIMEZONE),   // if end timezone is not present, assume same as for start
-            allDay = allDay,
-            tzRegistry = tzRegistry
-        ).asIcal4jDate()
-
-        to.properties += DtEnd(end)
+        TODO("ical4j 4.x")
     }
 
     @VisibleForTesting

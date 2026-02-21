@@ -33,46 +33,7 @@ class DurationHandler(
 ): AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val values = from.entityValues
-
-        /* Skip if DTEND is set and/or DURATION is not set. In both cases EndTimeHandler is
-        responsible for generating the DTEND property. */
-        if (values.getAsLong(Events.DTEND) != null)
-            return
-        val durationStr = values.getAsString(Events.DURATION) ?: return
-
-        // parse duration and invert in case of negative value (events can't go back in time)
-        val parsedDuration = AndroidTimeUtils.parseDuration(durationStr)
-        val duration = parsedDuration.abs()
-
-        /* Some servers have problems with DURATION. For maximum compatibility, we always generate DTEND instead of DURATION.
-        (After all, the constraint that non-recurring events have a DTEND while recurring events use DURATION is Android-specific.)
-        So we have to calculate DTEND from DTSTART and its timezone plus DURATION. */
-
-        val tsStart = values.getAsLong(Events.DTSTART) ?: return
-        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-
-        if (allDay) {
-            val startTimeUTC = Instant.ofEpochMilli(tsStart).atOffset(ZoneOffset.UTC)
-            val endDate = (startTimeUTC + duration).toLocalDate()
-
-            // DATE
-            to.properties += DtEnd(endDate.toIcal4jDate())
-
-        } else {
-            // DATE-TIME
-            val startDateTime = AndroidTimeField(
-                timestamp = tsStart,
-                timeZone = values.getAsString(Events.EVENT_TIMEZONE),
-                allDay = false,
-                tzRegistry = tzRegistry
-            ).asIcal4jDate() as DateTime
-
-            val start = startDateTime.toZonedDateTime()
-            val end = start + duration
-
-            to.properties += DtEnd(end.toIcal4jDateTime(tzRegistry))
-        }
+        TODO("ical4j 4.x")
     }
 
 }
