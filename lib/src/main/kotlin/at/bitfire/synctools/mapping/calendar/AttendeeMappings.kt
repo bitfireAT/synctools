@@ -44,45 +44,7 @@ object AttendeeMappings {
      * @param attendee   iCalendar attendee to fill
      */
     fun androidToICalendar(row: ContentValues, attendee: Attendee) {
-        val type = row.getAsInteger(Attendees.ATTENDEE_TYPE) ?: Attendees.TYPE_NONE
-        val relationship = row.getAsInteger(Attendees.ATTENDEE_RELATIONSHIP) ?: Attendees.RELATIONSHIP_NONE
-
-        var cuType: CuType? = null
-        val role: Role?
-
-        if (relationship == Attendees.RELATIONSHIP_SPEAKER) {
-            role = Role.CHAIR
-            if (type == Attendees.TYPE_RESOURCE)
-                cuType = CuType.RESOURCE
-
-        } else /* relationship != Attendees.RELATIONSHIP_SPEAKER */ {
-
-            cuType = when (relationship) {
-                Attendees.RELATIONSHIP_PERFORMER -> CuType.GROUP
-                Attendees.RELATIONSHIP_NONE -> CuType.UNKNOWN
-                else -> CuType.INDIVIDUAL
-            }
-
-            when (type) {
-                Attendees.TYPE_OPTIONAL -> role = Role.OPT_PARTICIPANT
-                Attendees.TYPE_RESOURCE  -> {
-                    cuType =
-                            if (relationship == Attendees.RELATIONSHIP_PERFORMER)
-                                CuType.ROOM
-                            else
-                                CuType.RESOURCE
-                    role = Role.REQ_PARTICIPANT
-                }
-                else /* Attendees.TYPE_REQUIRED, Attendees.TYPE_NONE */ ->
-                    role = Role.REQ_PARTICIPANT
-            }
-
-        }
-
-        if (cuType != null && cuType != CuType.INDIVIDUAL)
-            attendee.parameters.add(cuType)
-        if (role != null && role != Role.REQ_PARTICIPANT)
-            attendee.parameters.add(role)
+        TODO("ical4j 4.x")
     }
 
 
@@ -109,65 +71,7 @@ object AttendeeMappings {
      * @param organizer  email address of iCalendar ORGANIZER; used to determine whether [attendee] is the organizer
      */
     fun iCalendarToAndroid(attendee: Attendee, to: ContentValues, organizer: String) {
-        val type: Int
-        var relationship: Int
-
-        val cuType = attendee.getParameter(Parameter.CUTYPE) ?: CuType.INDIVIDUAL
-        val role = attendee.getParameter(Parameter.ROLE) ?: Role.REQ_PARTICIPANT
-
-        when (cuType) {
-            CuType.RESOURCE -> {
-                type = Attendees.TYPE_RESOURCE
-                relationship =
-                        if (role == Role.CHAIR)
-                            Attendees.RELATIONSHIP_SPEAKER
-                        else
-                            Attendees.RELATIONSHIP_NONE
-            }
-            CuType.ROOM -> {
-                type = Attendees.TYPE_RESOURCE
-                relationship = Attendees.RELATIONSHIP_PERFORMER
-            }
-
-            else -> {
-                // not a room and not a resource -> individual (default), group or unknown (includes x-custom)
-                relationship = when (cuType) {
-                    CuType.GROUP ->
-                        Attendees.RELATIONSHIP_PERFORMER
-                    CuType.UNKNOWN ->
-                        Attendees.RELATIONSHIP_NONE
-                    else -> /* CuType.INDIVIDUAL and custom/unknown values */
-                        Attendees.RELATIONSHIP_ATTENDEE
-                }
-
-                when (role) {
-                    Role.CHAIR -> {
-                        type = Attendees.TYPE_REQUIRED
-                        relationship = Attendees.RELATIONSHIP_SPEAKER
-                    }
-                    Role.OPT_PARTICIPANT ->
-                        type = Attendees.TYPE_OPTIONAL
-                    Role.NON_PARTICIPANT ->
-                        type = Attendees.TYPE_NONE
-                    else -> /* Role.REQ_PARTICIPANT and custom/unknown values */
-                        type = Attendees.TYPE_REQUIRED
-                }
-            }
-        }
-
-        if (relationship == Attendees.RELATIONSHIP_ATTENDEE) {
-            val uri = attendee.calAddress
-            val email = if (uri.scheme.equals("mailto", true))
-                uri.schemeSpecificPart
-            else
-                attendee.getParameter<Email>(Parameter.EMAIL)?.value
-
-            if (email == organizer)
-                relationship = Attendees.RELATIONSHIP_ORGANIZER
-        }
-
-        to.put(Attendees.ATTENDEE_TYPE, type)
-        to.put(Attendees.ATTENDEE_RELATIONSHIP, relationship)
+        TODO("ical4j 4.x")
     }
 
 }
