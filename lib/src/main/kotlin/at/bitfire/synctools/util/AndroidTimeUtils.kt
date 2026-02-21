@@ -66,7 +66,7 @@ object AndroidTimeUtils {
      * @param date [net.fortuna.ical4j.model.property.DateProperty] to validate. Values which are not DATE-TIME will be ignored.
      * @param tzRegistry    time zone registry to get time zones from
      */
-    fun androidifyTimeZone(date: DateProperty?, tzRegistry: TimeZoneRegistry) {
+    fun <T : java.time.temporal.Temporal> androidifyTimeZone(date: DateProperty<T>?, tzRegistry: TimeZoneRegistry) {
         TODO("ical4j 4.x")
     }
 
@@ -78,7 +78,7 @@ object AndroidTimeUtils {
      * *
      * @param dateList [net.fortuna.ical4j.model.property.DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
      */
-    fun androidifyTimeZone(dateList: DateListProperty) {
+    fun <T : java.time.temporal.Temporal> androidifyTimeZone(dateList: DateListProperty<T>) {
         TODO("ical4j 4.x")
     }
 
@@ -94,7 +94,7 @@ object AndroidTimeUtils {
      *         - the specified time zone ID for date-times with given time zone
      *         - the currently set default time zone ID for floating date-times
      */
-    fun storageTzId(date: DateProperty): String =
+    fun <T : java.time.temporal.Temporal> storageTzId(date: DateProperty<T>): String =
         TODO("ical4j 4.x")
 
 
@@ -120,7 +120,7 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToAndroidString(dates: List<DateListProperty>, dtStart: Date): String {
+    fun <T : java.time.temporal.Temporal> recurrenceSetsToAndroidString(dates: List<DateListProperty<T>>, dtStart: Date): String {
         TODO("ical4j 4.x")
     }
 
@@ -139,12 +139,12 @@ object AndroidTimeUtils {
      *
      * @throws java.text.ParseException when the string cannot be parsed
      */
-    fun<T: DateListProperty> androidStringToRecurrenceSet(
+    fun<T: DateListProperty<*>> androidStringToRecurrenceSet(
         dbStr: String,
         tzRegistry: TimeZoneRegistry,
         allDay: Boolean,
         exclude: Long? = null,
-        generator: (DateList) -> T
+        generator: (DateList<*>) -> T
     ): T {
         TODO("ical4j 4.x")
     }
@@ -160,7 +160,7 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty>, tz: net.fortuna.ical4j.model.TimeZone?): String {
+    fun <T : java.time.temporal.Temporal> recurrenceSetsToOpenTasksString(dates: List<DateListProperty<T>>, tz: net.fortuna.ical4j.model.TimeZone?): String {
         TODO("ical4j 4.x")
     }
 
