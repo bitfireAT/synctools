@@ -25,58 +25,16 @@ class AttendeesBuilder(
 ): AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        for (attendee in from.getProperties<Attendee>(Property.ATTENDEE))
-            to.addSubValue(Attendees.CONTENT_URI, buildAttendee(attendee, from))
+        TODO("ical4j 4.x")
     }
 
     private fun buildAttendee(attendee: Attendee, event: VEvent): ContentValues {
-        val values = ContentValues()
-        val organizer = organizerEmail(event) ?:
-            /* no ORGANIZER, use current account owner as ORGANIZER */
-            calendar.ownerAccount ?: calendar.account.name
-
-        val member = attendee.calAddress
-        if (member.scheme.equals("mailto", true))   // attendee identified by email
-            values.put(Attendees.ATTENDEE_EMAIL, member.schemeSpecificPart)
-        else {
-            // attendee identified by other URI
-            values.put(Attendees.ATTENDEE_ID_NAMESPACE, member.scheme)
-            values.put(Attendees.ATTENDEE_IDENTITY, member.schemeSpecificPart)
-
-            attendee.getParameter<Email>(Parameter.EMAIL)?.let { email ->
-                values.put(Attendees.ATTENDEE_EMAIL, email.value)
-            }
-        }
-
-        attendee.getParameter<Cn>(Parameter.CN)?.let { cn ->
-            values.put(Attendees.ATTENDEE_NAME, cn.value)
-        }
-
-        // type/relation mapping is complex and thus outsourced to AttendeeMappings
-        AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
-
-        val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
-            PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
-            PartStat.DECLINED     -> Attendees.ATTENDEE_STATUS_DECLINED
-            PartStat.TENTATIVE    -> Attendees.ATTENDEE_STATUS_TENTATIVE
-            PartStat.DELEGATED    -> Attendees.ATTENDEE_STATUS_NONE
-            else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
-        }
-        values.put(Attendees.ATTENDEE_STATUS, status)
-
-        return values
+        TODO("ical4j 4.x")
     }
 
     @VisibleForTesting
     internal fun organizerEmail(event: VEvent): String? {
-        event.organizer?.let { organizer ->
-            val uri = organizer.calAddress
-            return if (uri.scheme.equals("mailto", true))
-                uri.schemeSpecificPart
-            else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
-        }
-        return null
+        TODO("ical4j 4.x")
     }
 
 }
