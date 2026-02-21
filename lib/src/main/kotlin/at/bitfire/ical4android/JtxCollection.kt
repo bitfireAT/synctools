@@ -249,30 +249,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
      * @return a string with all JtxICalObjects within the collection as iCalendar
      */
     fun getICSForCollection(prodId: ProdId): String {
-        client.query(
-            JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(account),
-            null,
-            "${JtxContract.JtxICalObject.ICALOBJECT_COLLECTIONID} = ? AND ${JtxContract.JtxICalObject.DELETED} = ? AND ${JtxContract.JtxICalObject.RECURID} IS NULL",
-            arrayOf(id.toString(), "0"),
-            null
-        ).use { cursor ->
-            logger.fine("getICSForCollection: found ${cursor?.count} records in ${account.name}")
-
-            val ical = Calendar()
-            ical.properties += Version.VERSION_2_0
-            ical.properties += prodId
-
-            while (cursor?.moveToNext() == true) {
-                val jtxIcalObject = JtxICalObject(this)
-                jtxIcalObject.populateFromContentValues(cursor.toContentValues())
-                val singleICS = jtxIcalObject.getICalendarFormat(prodId)
-                singleICS?.components?.forEach { component ->
-                    if(component is VToDo || component is VJournal)
-                        ical.components += component
-                }
-            }
-            return ical.toString()
-        }
+        TODO("ical4j 4.x")
     }
 
     /**
