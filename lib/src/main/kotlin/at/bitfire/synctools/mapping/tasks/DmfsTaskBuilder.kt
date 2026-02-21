@@ -250,23 +250,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
-        for (relatedTo in task.relatedTo) {
-            val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
-                RelType.CHILD ->
-                    Relation.RELTYPE_CHILD
-                RelType.SIBLING ->
-                    Relation.RELTYPE_SIBLING
-                else /* RelType.PARENT, default value */ ->
-                    Relation.RELTYPE_PARENT
-            }
-            val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
-                .withTaskId(Relation.TASK_ID, idxTask)
-                .withValue(Relation.MIMETYPE, Relation.CONTENT_ITEM_TYPE)
-                .withValue(Relation.RELATED_UID, relatedTo.value)
-                .withValue(Relation.RELATED_TYPE, relType)
-            logger.log(Level.FINE, "Inserting relation", builder.build())
-            batch += builder
-        }
+        TODO("ical4j 4.x")
     }
 
     private fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
