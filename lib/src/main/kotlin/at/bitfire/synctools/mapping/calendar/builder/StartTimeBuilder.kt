@@ -17,37 +17,7 @@ import java.time.ZoneId
 class StartTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val values = to.entityValues
-
-        val dtStart = from.requireDtStart()
-
-        // start time: UNIX timestamp
-        values.put(Events.DTSTART, dtStart.date.time)
-
-        // start time: timezone ID
-        if (DateUtils.isDateTime(dtStart)) {
-            /* DTSTART is a DATE-TIME. This can be:
-               - date/time with timezone ID ("DTSTART;TZID=Europe/Vienna:20251006T155623")
-               - UTC ("DTSTART:20251006T155623Z")
-               - floating time ("DTSTART:20251006T155623") */
-
-            if (dtStart.isUtc) {
-                // UTC
-                values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-
-            } else if (dtStart.timeZone != null) {
-                // timezone reference – make sure that time zone is known by Android
-                values.put(Events.EVENT_TIMEZONE, DateUtils.findAndroidTimezoneID(dtStart.timeZone.id))
-
-            } else {
-                // floating time, use system default
-                values.put(Events.EVENT_TIMEZONE, ZoneId.systemDefault().id)
-            }
-
-        } else {
-            // DTSTART is a DATE
-            values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }
+        TODO("ical4j 4.x")
     }
 
 }
