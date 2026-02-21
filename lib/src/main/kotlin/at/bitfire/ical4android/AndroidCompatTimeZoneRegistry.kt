@@ -51,41 +51,7 @@ class AndroidCompatTimeZoneRegistry(
      * @return time zone
      */
     override fun getTimeZone(id: String): TimeZone? {
-        val tz: TimeZone = base.getTimeZone(id)
-            ?: return null      // ical4j doesn't know time zone, return null
-
-        // check whether time zone is available on Android, too
-        val androidTzId =
-            try {
-                ZoneId.of(id).id
-            } catch (e: Exception) {
-                /* Not available in Android, should return null in a later version.
-                   However, we return the ical4j timezone to keep the changes caused by AndroidCompatTimeZoneRegistry introduction
-                   as small as possible. */
-                return tz
-            }
-
-        /* Time zone known by Android. Unfortunately, we can't use the Android timezone database directly
-           to generate ical4j timezone definitions (which are based on VTIMEZONE).
-           So we have to use the timezone definition from ical4j (based on its own VTIMEZONE database),
-           but we also need to use the Android TZ name (otherwise Android may not understand it later).
-
-           Example: getTimeZone("Europe/Kiev") returns a TimeZone with TZID:Europe/Kyiv since ical4j/3.2.5,
-           but most Android devices don't now Europe/Kyiv yet.
-           */
-        if (tz.id != androidTzId) {
-            logger.fine("Using ical4j timezone ${tz.id} data to construct Android timezone $androidTzId")
-
-            // create a copy of the VTIMEZONE so that we don't modify the original registry values (which are not immutable)
-            val vTimeZone = tz.vTimeZone
-            val newVTimeZoneProperties = PropertyList<Property>()
-            newVTimeZoneProperties += TzId(androidTzId)
-            return TimeZone(VTimeZone(
-                newVTimeZoneProperties,
-                vTimeZone.observances
-            ))
-        } else
-            return tz
+        TODO("ical4j 4.x")
     }
 
 
