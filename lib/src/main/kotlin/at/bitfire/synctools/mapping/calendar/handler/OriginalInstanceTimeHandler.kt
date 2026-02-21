@@ -21,34 +21,7 @@ class OriginalInstanceTimeHandler(
 ): AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        // only applicable to exceptions, not to main events
-        if (from === main)
-            return
-
-        val values = from.entityValues
-        values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
-            val originalAllDay = (values.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-            val originalDate =
-                if (originalAllDay)
-                    Date(originalInstanceTime)
-                else
-                    DateTime(originalInstanceTime)
-
-            if (originalDate is DateTime) {
-                // get DTSTART time zone
-                val startTzId = DateUtils.findAndroidTimezoneID(values.getAsString(Events.EVENT_TIMEZONE))
-                val startTz = tzRegistry.getTimeZone(startTzId)
-
-                if (startTz != null) {
-                    if (TimeZones.isUtc(startTz))
-                        originalDate.isUtc = true
-                    else
-                        originalDate.timeZone = startTz
-                }
-            }
-
-            to.properties += RecurrenceId(originalDate)
-        }
+        TODO("ical4j 4.x")
     }
 
 }
