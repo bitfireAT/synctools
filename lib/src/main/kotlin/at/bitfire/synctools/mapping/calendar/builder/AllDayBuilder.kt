@@ -14,8 +14,7 @@ import net.fortuna.ical4j.model.component.VEvent
 class AllDayBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val allDay = DateUtils.isDate(from.startDate)
-        to.entityValues.put(Events.ALL_DAY, if (allDay) 1 else 0)
+        TODO("ical4j 4.x")
     }
 
 }
