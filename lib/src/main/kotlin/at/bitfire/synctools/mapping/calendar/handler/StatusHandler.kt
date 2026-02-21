@@ -14,21 +14,7 @@ import net.fortuna.ical4j.model.property.Status
 class StatusHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val status = when (from.entityValues.getAsInteger(Events.STATUS)) {
-            Events.STATUS_CONFIRMED ->
-                Status.VEVENT_CONFIRMED
-
-            Events.STATUS_TENTATIVE ->
-                Status.VEVENT_TENTATIVE
-
-            Events.STATUS_CANCELED ->
-                Status.VEVENT_CANCELLED
-
-            else ->
-                null
-        }
-        if (status != null)
-            to.properties += status
+        TODO("ical4j 4.x")
     }
 
 }

@@ -21,17 +21,7 @@ class UnknownPropertiesHandler: AndroidEventFieldHandler {
         get() = Logger.getLogger(javaClass.name)
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val extended = from.subValues.filter { it.uri == ExtendedProperties.CONTENT_URI }.map { it.values }
-        val unknownProperties = extended.filter { it.getAsString(ExtendedProperties.NAME) == UnknownProperty.CONTENT_ITEM_TYPE }
-        val jsonProperties = unknownProperties.mapNotNull { it.getAsString(ExtendedProperties.VALUE) }
-        for (json in jsonProperties)
-            try {
-                val prop = UnknownProperty.fromJsonString(json)
-                if (!EXCLUDED.contains(prop.name))
-                    to.properties += prop
-            } catch (e: JSONException) {
-                logger.log(Level.WARNING, "Couldn't parse unknown properties", e)
-            }
+        TODO("ical4j 4.x")
     }
 
 

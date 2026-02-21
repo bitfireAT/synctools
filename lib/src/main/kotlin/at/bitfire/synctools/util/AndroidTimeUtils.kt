@@ -67,10 +67,7 @@ object AndroidTimeUtils {
      * @param tzRegistry    time zone registry to get time zones from
      */
     fun androidifyTimeZone(date: DateProperty?, tzRegistry: TimeZoneRegistry) {
-        if (DateUtils.isDateTime(date) && date?.isUtc == false) {
-            val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
-            date.timeZone = tzRegistry.getTimeZone(tzID)
-        }
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -82,28 +79,7 @@ object AndroidTimeUtils {
      * @param dateList [net.fortuna.ical4j.model.property.DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
      */
     fun androidifyTimeZone(dateList: DateListProperty) {
-        val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
-        // periods (RDate only)
-        val periods = (dateList as? RDate)?.periods
-        if (periods != null && periods.isNotEmpty() && !periods.isUtc) {
-            val tzID = DateUtils.findAndroidTimezoneID(periods.timeZone?.id)
-
-            // Setting the time zone won't work until resolved in ical4j (https://github.com/ical4j/ical4j/discussions/568)
-            // DateListProperty.setTimeZone() does not set the timeZone property when the DateList has PERIODs
-            dateList.timeZone = tzRegistry.getTimeZone(tzID)
-
-            return //  RDate can only contain periods OR dates - not both, bail out fast
-        }
-
-        // date-times (RDate and ExDate)
-        val dates = dateList.dates
-        if (dates != null && dates.isNotEmpty()) {
-            if (dates.type == Value.DATE_TIME && !dates.isUtc) {
-                val tzID = DateUtils.findAndroidTimezoneID(dates.timeZone?.id)
-                dateList.timeZone = tzRegistry.getTimeZone(tzID)
-            }
-        }
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -119,22 +95,7 @@ object AndroidTimeUtils {
      *         - the currently set default time zone ID for floating date-times
      */
     fun storageTzId(date: DateProperty): String =
-            if (DateUtils.isDateTime(date)) {
-                // DATE-TIME
-                when {
-                    date.isUtc ->
-                        // DATE-TIME in UTC format
-                        TimeZones.UTC_ID
-                    date.timeZone != null ->
-                        // DATE-TIME with given time-zone
-                        date.timeZone.id
-                    else ->
-                        // DATE-TIME in local format (floating)
-                        TimeZone.getDefault().id
-                }
-            } else
-                // DATE
-                TZID_UTC
+        TODO("ical4j 4.x")
 
 
     // recurrence sets

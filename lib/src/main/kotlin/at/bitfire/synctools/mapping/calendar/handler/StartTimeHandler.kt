@@ -18,18 +18,7 @@ class StartTimeHandler(
 ): AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val values = from.entityValues
-        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-
-        // DATE or DATE-TIME according to allDay
-        val start = AndroidTimeField(
-            timestamp = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART"),
-            timeZone = values.getAsString(Events.EVENT_TIMEZONE),
-            allDay = allDay,
-            tzRegistry = tzRegistry
-        ).asIcal4jDate()
-
-        to.properties += DtStart(start)
+        TODO("ical4j 4.x")
     }
 
 }

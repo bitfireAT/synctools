@@ -15,9 +15,7 @@ import net.fortuna.ical4j.model.property.Summary
 class TitleHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val summary = from.entityValues.getAsString(Events.TITLE).trimToNull()
-        if (summary != null)
-            to.properties += Summary(summary)
+        TODO("ical4j 4.x")
     }
 
 }
