@@ -17,49 +17,7 @@ import net.fortuna.ical4j.model.property.Clazz
 class AccessLevelBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val accessLevel: Int
-        val retainValue: Boolean
-
-        val classification = from.classification
-        when (classification) {
-            Clazz.PUBLIC -> {
-                accessLevel = Events.ACCESS_PUBLIC
-                retainValue = false
-            }
-
-            Clazz.PRIVATE -> {
-                accessLevel = Events.ACCESS_PRIVATE
-                retainValue = false
-            }
-
-            Clazz.CONFIDENTIAL -> {
-                accessLevel = Events.ACCESS_CONFIDENTIAL
-                retainValue = true
-            }
-
-            null -> {
-                accessLevel = Events.ACCESS_DEFAULT
-                retainValue = false
-            }
-
-            else -> {
-                accessLevel = Events.ACCESS_PRIVATE
-                retainValue = true
-            }
-        }
-
-        // store access level in main row
-        to.entityValues.put(Events.ACCESS_LEVEL, accessLevel)
-
-        // add retained classification, if needed
-        if (retainValue && classification != null)
-            to.addSubValue(
-                ExtendedProperties.CONTENT_URI,
-                contentValuesOf(
-                    ExtendedProperties.NAME to UnknownProperty.CONTENT_ITEM_TYPE,
-                    ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
-                )
-            )
+        TODO("ical4j 4.x")
     }
 
 }
