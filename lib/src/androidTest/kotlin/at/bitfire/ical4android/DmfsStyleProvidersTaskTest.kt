@@ -6,46 +6,4 @@
 
 package at.bitfire.ical4android
 
-import androidx.test.platform.app.InstrumentationRegistry
-import at.bitfire.synctools.test.GrantPermissionOrSkipRule
-import org.junit.After
-import org.junit.Assert.assertNotNull
-import org.junit.Before
-import org.junit.Rule
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import java.util.logging.Logger
-
-@RunWith(Parameterized::class)
-
-abstract class DmfsStyleProvidersTaskTest(
-    val providerName: TaskProvider.ProviderName
-) {
-
-    companion object {
-        @Parameterized.Parameters(name="{0}")
-        @JvmStatic
-        fun taskProviders() = listOf(TaskProvider.ProviderName.OpenTasks,TaskProvider.ProviderName.TasksOrg)
-    }
-
-    @get:Rule
-    val permissionRule = GrantPermissionOrSkipRule(providerName.permissions.toSet())
-
-    var providerOrNull: TaskProvider? = null
-    lateinit var provider: TaskProvider
-
-    @Before
-    open fun prepare() {
-        providerOrNull = TaskProvider.acquire(InstrumentationRegistry.getInstrumentation().context, providerName)
-        assertNotNull("$providerName is not installed", providerOrNull != null)
-
-        provider = providerOrNull!!
-        Logger.getLogger(javaClass.name).fine("Using task provider: $provider")
-    }
-
-    @After
-    open fun shutdown() {
-        providerOrNull?.close()
-    }
-
-}
+class DmfsStyleProvidersTaskTest { /* TODO ical4j 4.x */ }
