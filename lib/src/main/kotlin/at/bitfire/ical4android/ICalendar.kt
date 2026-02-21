@@ -96,25 +96,7 @@ open class ICalendar {
             reader: Reader,
             properties: MutableMap<String, String>? = null
         ): Calendar {
-            logger.fine("Parsing iCalendar stream")
-
-            val calendar = ICalendarParser().parse(reader)
-
-            // fill calendar properties
-            properties?.let {
-                calendar.getProperty<Property>(CALENDAR_NAME)?.let { calName ->
-                    properties[CALENDAR_NAME] = calName.value
-                }
-
-                calendar.getProperty<Property>(Color.PROPERTY_NAME)?.let { calColor ->
-                    properties[Color.PROPERTY_NAME] = calColor.value
-                }
-                calendar.getProperty<Property>(CALENDAR_COLOR)?.let { calColor ->
-                    properties[CALENDAR_COLOR] = calColor.value
-                }
-            }
-
-            return calendar
+            TODO("ical4j 4.x")
         }
 
 
@@ -134,86 +116,7 @@ open class ICalendar {
          * @return              minified time zone definition
          */
         fun minifyVTimeZone(originalTz: VTimeZone, start: Date?): VTimeZone {
-            var newTz: VTimeZone? = null
-            val keep = mutableSetOf<Observance>()
-
-            if (start != null) {
-                // find latest matching STANDARD/DAYLIGHT observances
-                var latestDaylight: Pair<Date, Observance>? = null
-                var latestStandard: Pair<Date, Observance>? = null
-                for (observance in originalTz.observances) {
-                    val latest = observance.getLatestOnset(start)
-
-                    if (latest == null)         // observance begins after "start", keep in any case
-                        keep += observance
-                    else
-                        when (observance) {
-                            is Standard ->
-                                if (latestStandard == null || latest > latestStandard.first)
-                                    latestStandard = Pair(latest, observance)
-                            is Daylight ->
-                                if (latestDaylight == null || latest > latestDaylight.first)
-                                    latestDaylight = Pair(latest, observance)
-                        }
-                }
-
-                // keep latest STANDARD observance
-                latestStandard?.second?.let { keep += it }
-
-                // Check latest DAYLIGHT for whether it can apply in the future. Otherwise, DST is not
-                // used in this time zone anymore and the DAYLIGHT component can be dropped completely.
-                latestDaylight?.second?.let { daylight ->
-                    // check whether start time is in DST
-                    if (latestStandard != null) {
-                        val latestStandardOnset = latestStandard.second.getLatestOnset(start)
-                        val latestDaylightOnset = daylight.getLatestOnset(start)
-                        if (latestStandardOnset != null && latestDaylightOnset != null && latestDaylightOnset > latestStandardOnset) {
-                            // we're currently in DST
-                            keep += daylight
-                            return@let
-                        }
-                    }
-
-                    // check RRULEs
-                    for (rRule in daylight.getProperties<RRule>(Property.RRULE)) {
-                        val nextDstOnset = rRule.recur.getNextDate(daylight.startDate.date, start)
-                        if (nextDstOnset != null) {
-                            // there will be a DST onset in the future -> keep DAYLIGHT
-                            keep += daylight
-                            return@let
-                        }
-                    }
-                    // no RRULE, check whether there's an RDATE in the future
-                    for (rDate in daylight.getProperties<RDate>(Property.RDATE)) {
-                        if (rDate.dates.any { it >= start }) {
-                            // RDATE in the future
-                            keep += daylight
-                            return@let
-                        }
-                    }
-                }
-
-                // construct minified time zone that only contains the ID and relevant observances
-                val relevantProperties = PropertyList<Property>().apply {
-                    add(originalTz.timeZoneId)
-                }
-                val relevantObservances = ComponentList<Observance>().apply {
-                    addAll(keep)
-                }
-                newTz = VTimeZone(relevantProperties, relevantObservances)
-
-                // validate minified timezone
-                try {
-                    newTz.validate()
-                } catch (e: ValidationException) {
-                    // This should never happen!
-                    logger.log(Level.WARNING, "Minified timezone is invalid, using original one", e)
-                    newTz = null
-                }
-            }
-
-            // use original time zone if we couldn't calculate a minified one
-            return newTz ?: originalTz
+            TODO("ical4j 4.x")
         }
 
         /**
@@ -222,15 +125,7 @@ open class ICalendar {
          * @return time zone id (TZID) if VTIMEZONE contains a TZID, null otherwise
          */
         fun timezoneDefToTzId(timezoneDef: String): String? {
-            try {
-                val builder = CalendarBuilder()
-                val cal = builder.build(StringReader(timezoneDef))
-                val timezone = cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone?
-                timezone?.timeZoneId?.let { return it.value }
-            } catch (e: ParserException) {
-                logger.log(Level.SEVERE, "Can't understand time zone definition", e)
-            }
-            return null
+            TODO("ical4j 4.x")
         }
 
         /**
