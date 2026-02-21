@@ -16,14 +16,7 @@ import net.fortuna.ical4j.model.property.Categories
 class CategoriesHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val extended = from.subValues.filter { it.uri == ExtendedProperties.CONTENT_URI }.map { it.values }
-        val categories = extended.firstOrNull { it.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_CATEGORIES }
-        val listValue = categories?.getAsString(ExtendedProperties.VALUE)
-        if (listValue != null) {
-            to.properties += Categories(TextList(
-                listValue.split(EventsContract.CATEGORIES_SEPARATOR).toTypedArray()
-            ))
-        }
+        TODO("ical4j 4.x")
     }
 
 }
