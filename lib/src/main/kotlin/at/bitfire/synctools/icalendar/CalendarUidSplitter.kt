@@ -20,23 +20,7 @@ class CalendarUidSplitter<T: CalendarComponent> {
      * this method keeps only the ones with the highest SEQUENCE.
      */
     fun associateByUid(calendar: Calendar, componentName: String): Map<String?, AssociatedComponents<T>> {
-        // get all components of type T (for instance: all VEVENTs)
-        val all = calendar.getComponents<T>(componentName)
-
-        // Note for VEVENT: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
-        // so it's possible that the Uid is null.
-        val byUid: Map<String?, List<T>> = all
-            .groupBy { it.uid?.value }
-            .mapValues { filterBySequence(it.value) }
-
-        val result = mutableMapOf<String?, AssociatedComponents<T>>()
-        for ((uid, vEventsWithUid) in byUid) {
-            val mainVEvent = vEventsWithUid.lastOrNull { it.recurrenceId == null }
-            val exceptions = vEventsWithUid.filter { it.recurrenceId != null }
-            result[uid] = AssociatedComponents(mainVEvent, exceptions)
-        }
-
-        return result
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -48,15 +32,7 @@ class CalendarUidSplitter<T: CalendarComponent> {
      */
     @VisibleForTesting
     internal fun filterBySequence(events: List<T>): List<T> {
-        // group by RECURRENCE-ID (may be null)
-        val byRecurId = events.groupBy { it.recurrenceId?.value }.values
-
-        // for every RECURRENCE-ID: keep only event with highest sequence
-        val latest = byRecurId.map { sameUidAndRecurId ->
-            sameUidAndRecurId.maxBy { it.sequence?.sequenceNo ?: 0 }
-        }
-
-        return latest
+        TODO("ical4j 4.x")
     }
 
 }
