@@ -44,22 +44,22 @@ data class Task(
     var organizer: Organizer? = null,
 
     @IntRange(from = 0, to = 9)
-    var priority: Int = Priority.UNDEFINED.level,
+    var priority: Int = 0,
 
     var classification: Clazz? = null,
     var status: Status? = null,
 
-    var dtStart: DtStart? = null,
-    var due: Due? = null,
+    var dtStart: DtStart<*>? = null,
+    var due: Due<*>? = null,
     var duration: Duration? = null,
     var completedAt: Completed? = null,
 
     @IntRange(from = 0, to = 100)
     var percentComplete: Int? = null,
 
-    var rRule: RRule? = null,
-    val rDates: LinkedList<RDate> = LinkedList(),
-    val exDates: LinkedList<ExDate> = LinkedList(),
+    var rRule: RRule<*>? = null,
+    val rDates: LinkedList<RDate<*>> = LinkedList(),
+    val exDates: LinkedList<ExDate<*>> = LinkedList(),
 
     val categories: LinkedList<String> = LinkedList(),
     var comment: String? = null,
@@ -70,9 +70,7 @@ data class Task(
 ) : ICalendar() {
 
     fun isAllDay(): Boolean {
-        return dtStart?.let { DateUtils.isDate(it) }
-            ?: due?.let { DateUtils.isDate(it) }
-            ?: true
+        TODO("ical4j 4.x")
     }
 
 }
