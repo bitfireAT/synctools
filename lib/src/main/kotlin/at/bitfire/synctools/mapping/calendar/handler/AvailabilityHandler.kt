@@ -14,16 +14,7 @@ import net.fortuna.ical4j.model.property.Transp
 class AvailabilityHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val transp: Transp = when (from.entityValues.getAsInteger(Events.AVAILABILITY)) {
-            Events.AVAILABILITY_FREE ->
-                Transp.TRANSPARENT
-
-            /* Events.AVAILABILITY_BUSY, Events.AVAILABILITY_TENTATIVE */
-            else ->
-                Transp.OPAQUE
-        }
-        if (transp != Transp.OPAQUE)    // iCalendar default value is OPAQUE
-            to.properties += transp
+        TODO("ical4j 4.x")
     }
 
 }
