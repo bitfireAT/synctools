@@ -45,28 +45,7 @@ class ICalendarParser(
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
         val preprocessed = preprocessor.preprocessStream(reader)
 
-        // parse stream, ignoring invalid properties (if possible)
-        val calendar: Calendar
-        try {
-            calendar = CalendarBuilder(
-                /* parser = */ CalendarParserFactory.getInstance().get(),
-                /* contentHandlerContext = */ ContentHandlerContext().withSupressInvalidProperties(/* supressInvalidProperties = */ true),
-                /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
-            ).build(preprocessed)
-        } catch(e: ParserException) {
-            throw InvalidICalendarException("Couldn't parse iCalendar", e)
-        } catch(e: IllegalArgumentException) {
-            throw InvalidICalendarException("iCalendar contains invalid value", e)
-        }
-
-        // Pre-process calendar for increased compatibility (fixes some common errors)
-        try {
-            preprocessor.preprocessCalendar(calendar)
-        } catch (e: Exception) {
-            logger.log(Level.WARNING, "Couldn't pre-process iCalendar", e)
-        }
-
-        return calendar
+        TODO("ical4j 4.x")
     }
 
 }
