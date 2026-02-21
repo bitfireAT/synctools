@@ -42,21 +42,7 @@ class OrganizerBuilder(
     }
 
     fun emailFromOrganizer(organizer: Organizer?): String? {
-        if (organizer == null)
-            return null
-
-        // Take from mailto: value or EMAIL parameter
-        val uri: URI? = organizer.calAddress
-        val email = if (uri?.scheme.equals("mailto", true))
-            uri?.schemeSpecificPart
-        else
-            organizer.getParameter<Email>(Parameter.EMAIL)?.value
-
-        if (email != null)
-            return email
-
-        logger.log(Level.WARNING, "Ignoring ORGANIZER without email address (not supported by Android)", organizer)
-        return null
+        TODO("ical4j 4.x")
     }
 
 }

@@ -23,39 +23,7 @@ import java.time.ZonedDateTime
 class OriginalInstanceTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val values = to.entityValues
-        if (from !== main) {
-            // only for exceptions
-            val originalDtStart = main.requireDtStart()
-            values.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(originalDtStart)) 1 else 0)
-
-            var recurrenceDate = from.recurrenceId?.date
-            val originalDate = originalDtStart.date
-
-            // rewrite recurrenceDate, if necessary
-            if (recurrenceDate is DateTime && originalDate != null && originalDate !is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
-
-            } else if (recurrenceDate != null && recurrenceDate !is DateTime && originalDate is DateTime) {
-                // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
-                // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    originalDate.toLocalTime(),
-                    originalDate.requireZoneId()
-                )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
-            }
-            values.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate?.time)
-
-        } else {
-            // main event
-            values.putNull(Events.ORIGINAL_ALL_DAY)
-            values.putNull(Events.ORIGINAL_INSTANCE_TIME)
-        }
+        TODO("ical4j 4.x")
     }
 
 }
