@@ -90,14 +90,14 @@ object DateUtils {
      * @param date date property to check
      * @return *true* if the date is a DATE value; *false* otherwise (for instance, when the argument is a DATE-TIME value or null)
      */
-    fun isDate(date: DateProperty?) = date != null && date.date is Date && date.date !is DateTime
+    fun <T : java.time.temporal.Temporal> isDate(date: DateProperty<T>?): Boolean = TODO("ical4j 4.x")
 
     /**
      * Determines whether a given date represents a DATE-TIME value.
      * @param date date property to check
      * @return *true* if the date is a DATE-TIME value; *false* otherwise (for instance, when the argument is a DATE value or null)
      */
-    fun isDateTime(date: DateProperty?) = date != null && date.date is DateTime
+    fun <T : java.time.temporal.Temporal> isDateTime(date: DateProperty<T>?): Boolean = TODO("ical4j 4.x")
 
     /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.
@@ -107,14 +107,7 @@ object DateUtils {
      * @return parsed [VTimeZone], or `null` when the timezone definition can't be parsed
      */
     fun parseVTimeZone(timezoneDef: String ): VTimeZone? {
-        val builder = CalendarBuilder()
-        try {
-            val cal = builder.build(StringReader(timezoneDef))
-            return cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone
-        } catch (_: Exception) {
-            // Couldn't parse timezone definition
-            return null
-        }
+        TODO("ical4j 4.x")
     }
 
 }
