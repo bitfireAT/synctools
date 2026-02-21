@@ -78,18 +78,7 @@ object UnknownProperty {
      * @return JSON representation of [prop]
      */
     fun toJsonString(prop: Property): String {
-        val json = JSONArray()
-        json.put(prop.name)
-        json.put(prop.value)
-
-        if (!prop.parameters.isEmpty) {
-            val jsonParams = JSONObject()
-            for (param in prop.parameters)
-                jsonParams.put(param.name, param.value)
-            json.put(jsonParams)
-        }
-
-        return json.toString()
+        TODO("ical4j 4.x")
     }
 
 }
