@@ -25,66 +25,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
         get() = Logger.getLogger(javaClass.name)
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val values = to.entityValues
-
-        val rRules = from.getProperties<RRule>(Property.RRULE)
-        val rDates = from.getProperties<RDate>(Property.RDATE)
-        val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
-        if (recurring && from === main) {
-            // generate recurrence fields only for recurring main events
-            val dtStart = from.requireDtStart()
-
-            // RRULE
-            if (rRules.isNotEmpty())
-                values.put(Events.RRULE, rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                values.putNull(Events.RRULE)
-
-            // RDATE (start with null value)
-            values.putNull(Events.RDATE)
-            if (rDates.isNotEmpty()) {
-                // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
-                val infiniteRrule = rRules.any { rRule ->
-                    rRule.recur.count == -1 &&  // no COUNT AND
-                    rRule.recur.until == null   // no UNTIL
-                }
-                if (infiniteRrule)
-                    logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
-                else {
-                    for (rDate in rDates)
-                        AndroidTimeUtils.androidifyTimeZone(rDate)
-
-                    // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
-                    val listWithDtStart = DateList()
-                    listWithDtStart.add(dtStart.date)
-                    rDates.add(0, RDate(listWithDtStart))
-
-                    values.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(rDates, dtStart.date))
-                }
-            }
-
-            // EXRULE
-            val exRules = from.getProperties<ExRule>(Property.EXRULE)
-            if (exRules.isNotEmpty())
-                values.put(Events.EXRULE, exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
-            else
-                values.putNull(Events.EXRULE)
-
-            // EXDATE
-            val exDates = from.getProperties<ExDate>(Property.EXDATE)
-            if (exDates.isNotEmpty()) {
-                for (exDate in exDates)
-                    AndroidTimeUtils.androidifyTimeZone(exDate)
-                values.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(exDates, dtStart.date))
-            } else
-                values.putNull(Events.EXDATE)
-
-        } else {
-            values.putNull(Events.RRULE)
-            values.putNull(Events.EXRULE)
-            values.putNull(Events.RDATE)
-            values.putNull(Events.EXDATE)
-        }
+        TODO("ical4j 4.x")
     }
 
 }
