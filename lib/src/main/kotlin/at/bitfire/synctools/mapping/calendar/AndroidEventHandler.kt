@@ -107,76 +107,15 @@ class AndroidEventHandler(
      * generates an UID, if necessary. If an `UID` was generated, it is noted in the result.
      */
     fun mapToVEvents(eventAndExceptions: EventAndExceptions): MappingResult {
-        // make sure that main event has a UID
-        var generatedUid = false
-        val uid = provideUid(eventAndExceptions.main) {
-            generatedUid = true
-            UUID.randomUUID().toString()
-        }
-
-        // map main event
-        val main = mapEvent(
-            entity = eventAndExceptions.main,
-            main = eventAndExceptions.main
-        )
-
-        // add exceptions of recurring main event
-        val rRules = main.getProperties<RRule>(Property.RRULE)
-        val rDates = main.getProperties<RDate>(Property.RDATE)
-        val exceptions = LinkedList<VEvent>()
-        if (rRules.isNotEmpty() || rDates.isNotEmpty()) {
-            for (exception in eventAndExceptions.exceptions) {
-                // convert exception to Event
-                val exceptionEvent = mapEvent(
-                    entity = exception,
-                    main = eventAndExceptions.main
-                )
-
-                // make sure that exception has a RECURRENCE-ID
-                val recurrenceId = exceptionEvent.recurrenceId ?: continue
-
-                // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
-                if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                    main.properties += asExDate(exception, recurrenceId)
-                else
-                    exceptions += exceptionEvent
-            }
-        }
-
-        val mappedEvents = AssociatedEvents(
-            main = main,
-            exceptions = exceptions,
-            prodId = generateProdId(eventAndExceptions.main)
-        )
-        return MappingResult(
-            associatedEvents = mappedEvents,
-            uid = uid,
-            generatedUid = generatedUid
-        )
+        TODO("ical4j 4.x")
     }
 
-    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
-        val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-        val list = DateList(
-            if (originalAllDay) Value.DATE else Value.DATE_TIME,
-            recurrenceId.timeZone
-        )
-        list.add(recurrenceId.date)
-        return ExDate(list).apply {
-            // also set TZ properties of ExDate (not only the list)
-            if (!originalAllDay) {
-                if (recurrenceId.isUtc)
-                    setUtc(true)
-                else
-                    timeZone = recurrenceId.timeZone
-            }
-        }
+    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId<*>): ExDate<*> {
+        TODO("ical4j 4.x")
     }
 
     private fun generateProdId(main: Entity): ProdId {
-        val mutators: String? = main.entityValues.getAsString(Events.MUTATORS)
-        val packages: List<String> = mutators?.split(MUTATORS_SEPARATOR)?.toList() ?: emptyList()
-        return prodIdGenerator.generateProdId(packages)
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -188,12 +127,7 @@ class AndroidEventHandler(
      * @return generated data object
      */
     private fun mapEvent(entity: Entity, main: Entity): VEvent {
-        // initialization adds DTSTAMP
-        val vEvent = VEvent(/* initialise = */ true)
-
-        for (handler in fieldHandlers)
-            handler.process(from = entity, main = main, to = vEvent)
-        return vEvent
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -208,28 +142,7 @@ class AndroidEventHandler(
         main: Entity,
         generateUid: () -> String
     ): String {
-        val mainValues = main.entityValues
-        val existingUid = mainValues.getAsString(Events.UID_2445)
-        if (existingUid != null) {
-            // UID already present, nothing to do
-            return existingUid
-        }
-
-        // have a look at extended properties (Google Calendar)
-        val googleCalendarUid = main.subValues.firstOrNull {
-            it.uri == ExtendedProperties.CONTENT_URI &&
-            it.values.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_GOOGLE_CALENDAR_UID
-        }?.values?.getAsString(ExtendedProperties.VALUE)
-        if (googleCalendarUid != null) {
-            // copy to UID_2445 so that it will be processed by UidHandler and return
-            mainValues.put(Events.UID_2445, googleCalendarUid)
-            return googleCalendarUid
-        }
-
-        // still no UID, generate one
-        val newUid = generateUid()
-        mainValues.put(Events.UID_2445, newUid)
-        return newUid
+        TODO("ical4j 4.x")
     }
 
 
