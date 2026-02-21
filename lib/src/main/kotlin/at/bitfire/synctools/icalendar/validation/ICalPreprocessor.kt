@@ -10,10 +10,10 @@ import androidx.annotation.VisibleForTesting
 import com.google.common.io.CharSource
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
-import net.fortuna.ical4j.transform.rfc5545.DateListPropertyRule
-import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
-import net.fortuna.ical4j.transform.rfc5545.Rfc5545PropertyRule
+// import net.fortuna.ical4j.transform.rfc5545.CreatedPropertyRule
+// import net.fortuna.ical4j.transform.rfc5545.DateListPropertyRule
+// import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
+// import net.fortuna.ical4j.transform.rfc5545.Rfc5545PropertyRule
 import java.io.BufferedReader
 import java.io.Reader
 import java.util.logging.Logger
@@ -31,12 +31,7 @@ class ICalPreprocessor {
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    private val propertyRules = arrayOf(
-        CreatedPropertyRule(),      // make sure CREATED is UTC
-
-        DatePropertyRule(),         // These two rules also replace VTIMEZONEs of the iCalendar ...
-        DateListPropertyRule()      // ... by the ical4j VTIMEZONE with the same TZID!
-    )
+    private val propertyRules = arrayOf<Any>() // TODO("ical4j 4.x")
 
     @VisibleForTesting
     internal val streamPreprocessors = arrayOf(
@@ -97,22 +92,12 @@ class ICalPreprocessor {
      * @param calendar the calendar object that is going to be modified
      */
     fun preprocessCalendar(calendar: Calendar) {
-        for (component in calendar.components)
-            for (property in component.properties)
-                applyRules(property)
+        TODO("ical4j 4.x")
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun applyRules(property: Property) {
-        propertyRules
-            .filter { rule -> rule.supportedType.isAssignableFrom(property::class.java) }
-            .forEach { rule ->
-                val beforeStr = property.toString()
-                (rule as Rfc5545PropertyRule<Property>).applyTo(property)
-                val afterStr = property.toString()
-                if (beforeStr != afterStr)
-                    logger.info("${rule.javaClass.name}: $beforeStr -> $afterStr")
-            }
+        TODO("ical4j 4.x")
     }
 
 }
