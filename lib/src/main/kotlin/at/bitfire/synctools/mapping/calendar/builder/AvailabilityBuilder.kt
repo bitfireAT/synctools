@@ -14,18 +14,7 @@ import net.fortuna.ical4j.model.property.Transp
 class AvailabilityBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val availability = when (from.transparency) {
-            Transp.TRANSPARENT ->
-                Events.AVAILABILITY_FREE
-
-            // Default value in iCalendar is OPAQUE
-            else /* including Transp.OPAQUE */ ->
-                Events.AVAILABILITY_BUSY
-        }
-        to.entityValues.put(
-            Events.AVAILABILITY,
-            availability
-        )
+        TODO("ical4j 4.x")
     }
 
 }
