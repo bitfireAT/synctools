@@ -101,8 +101,8 @@ object JtxContract {
      * @param [string] that should be parsed
      * @return The list of XProperty parsed from the string
      */
-    fun getXPropertyListFromJson(string: String): PropertyList<Property> {
-        val propertyList = PropertyList<Property>()
+    fun getXPropertyListFromJson(string: String): PropertyList {
+        val propertyList = PropertyList()
 
         if (string.isBlank())
             return propertyList
@@ -132,17 +132,7 @@ object JtxContract {
      * @return The generated Json object as a [String]
      */
     fun getJsonStringFromXParameters(parameters: ParameterList?): String? {
-        if (parameters == null)
-            return null
-
-        val jsonObject = JSONObject()
-        parameters.forEach { parameter ->
-            jsonObject.put(parameter.name, parameter.value)
-        }
-        return if (jsonObject.length() == 0)
-            null
-        else
-            jsonObject.toString()
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -151,18 +141,8 @@ object JtxContract {
      * @param [propertyList] The PropertyList that should be transformed into a Json String
      * @return The generated Json object as a [String]
      */
-    fun getJsonStringFromXProperties(propertyList: PropertyList<*>?): String? {
-        if (propertyList == null)
-            return null
-
-        val jsonObject = JSONObject()
-        propertyList.forEach { property ->
-            jsonObject.put(property.name, property.value)
-        }
-        return if (jsonObject.length() == 0)
-            null
-        else
-            jsonObject.toString()
+    fun getJsonStringFromXProperties(propertyList: PropertyList?): String? {
+        TODO("ical4j 4.x")
     }
 
 
