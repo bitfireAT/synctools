@@ -73,111 +73,10 @@ class DmfsTaskBuilder(
     }
 
     private fun buildTask(builder: CpoBuilder, update: Boolean) {
-        if (!update)
-            builder .withValue(Tasks.LIST_ID, taskList.id)
-
-        builder .withValue(Tasks._UID, task.uid)
-            .withValue(Tasks._DIRTY, 0)
-            .withValue(Tasks.SYNC_VERSION, task.sequence)
-            .withValue(Tasks.TITLE, task.summary)
-            .withValue(Tasks.LOCATION, task.location)
-            .withValue(Tasks.GEO, task.geoPosition?.let { "${it.longitude},${it.latitude}" })
-            .withValue(Tasks.DESCRIPTION, task.description)
-            .withValue(Tasks.TASK_COLOR, task.color)
-            .withValue(Tasks.URL, task.url)
-
-            .withValue(Tasks._SYNC_ID, syncId)
-            .withValue(COLUMN_FLAGS, flags)
-            .withValue(COLUMN_ETAG, eTag)
-
-            // parent_id will be re-calculated when the relation row is inserted (if there is any)
-            .withValue(Tasks.PARENT_ID, null)
-
-        // organizer
-        task.organizer?.let { organizer ->
-            val uri = organizer.calAddress
-            val email = if (uri.scheme.equals("mailto", true))
-                uri.schemeSpecificPart
-            else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
-            if (email != null)
-                builder.withValue(Tasks.ORGANIZER, email)
-            else
-                logger.warning("Ignoring ORGANIZER without email address (not supported by Android)")
-        }
-
-        // Priority, classification
-        builder .withValue(Tasks.PRIORITY, task.priority)
-            .withValue(Tasks.CLASSIFICATION, when (task.classification) {
-                Clazz.PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
-                Clazz.CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
-                null -> Tasks.CLASSIFICATION_DEFAULT
-                else -> Tasks.CLASSIFICATION_PRIVATE    // all unknown classifications MUST be treated as PRIVATE
-            })
-
-        // COMPLETED must always be a DATE-TIME
-        builder .withValue(Tasks.COMPLETED, task.completedAt?.date?.time)
-            .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
-            .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
-
-        // Status
-        val status = when (task.status) {
-            Status.VTODO_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
-            Status.VTODO_COMPLETED  -> Tasks.STATUS_COMPLETED
-            Status.VTODO_CANCELLED  -> Tasks.STATUS_CANCELLED
-            else                    -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
-        }
-        builder.withValue(Tasks.STATUS, status)
-
-        // Time related
-        val allDay = task.isAllDay()
-        if (allDay) {
-            builder .withValue(Tasks.IS_ALLDAY, 1)
-                .withValue(Tasks.TZ, null)
-        } else {
-            AndroidTimeUtils.androidifyTimeZone(task.dtStart, tzRegistry)
-            AndroidTimeUtils.androidifyTimeZone(task.due, tzRegistry)
-            builder .withValue(Tasks.IS_ALLDAY, 0)
-                .withValue(Tasks.TZ, getTimeZone().id)
-        }
-        builder .withValue(Tasks.CREATED, task.createdAt)
-            .withValue(Tasks.LAST_MODIFIED, task.lastModified)
-
-            .withValue(Tasks.DTSTART, task.dtStart?.date?.time)
-            .withValue(Tasks.DUE, task.due?.date?.time)
-            .withValue(Tasks.DURATION, task.duration?.value)
-
-            .withValue(Tasks.RDATE,
-                if (task.rDates.isEmpty())
-                    null
-                else
-                    AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.rDates, if (allDay) null else getTimeZone()))
-            .withValue(Tasks.RRULE, task.rRule?.value)
-
-            .withValue(Tasks.EXDATE,
-                if (task.exDates.isEmpty())
-                    null
-                else
-                    AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
-
-        logger.log(Level.FINE, "Built task object", builder.build())
+        TODO()
     }
 
-    fun getTimeZone(): TimeZone {
-        return  task.dtStart?.let { dtStart ->
-            if (dtStart.isUtc)
-                tzRegistry.getTimeZone(TimeZones.UTC_ID)
-            else
-                dtStart.timeZone
-        } ?:
-        task.due?.let { due ->
-            if (due.isUtc)
-                tzRegistry.getTimeZone(TimeZones.UTC_ID)
-            else
-                due.timeZone
-        } ?:
-        tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
-    }
+    fun getTimeZone(): TimeZone = TODO()
 
     fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
         insertAlarms(batch, idxTask)
@@ -188,44 +87,7 @@ class DmfsTaskBuilder(
     }
 
     private fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
-        for (alarm in task.alarms) {
-            val (alarmRef, minutes) = ICalendar.vAlarmToMin(
-                alarm = alarm,
-                refStart = task.dtStart,
-                refEnd = task.due,
-                refDuration = task.duration,
-                allowRelEnd = true
-            ) ?: continue
-            val ref = when (alarmRef) {
-                Related.END ->
-                    Alarm.ALARM_REFERENCE_DUE_DATE
-                else /* Related.START is the default value */ ->
-                    Alarm.ALARM_REFERENCE_START_DATE
-            }
-
-            val alarmType = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
-                Action.AUDIO.value ->
-                    Alarm.ALARM_TYPE_SOUND
-                Action.DISPLAY.value ->
-                    Alarm.ALARM_TYPE_MESSAGE
-                Action.EMAIL.value ->
-                    Alarm.ALARM_TYPE_EMAIL
-                else ->
-                    Alarm.ALARM_TYPE_NOTHING
-            }
-
-            val builder = CpoBuilder
-                .newInsert(taskList.tasksPropertiesUri())
-                .withTaskId(Alarm.TASK_ID, idxTask)
-                .withValue(Alarm.MIMETYPE, Alarm.CONTENT_ITEM_TYPE)
-                .withValue(Alarm.MINUTES_BEFORE, minutes)
-                .withValue(Alarm.REFERENCE, ref)
-                .withValue(Alarm.MESSAGE, alarm.description?.value ?: alarm.summary)
-                .withValue(Alarm.ALARM_TYPE, alarmType)
-
-            logger.log(Level.FINE, "Inserting alarm", builder.build())
-            batch += builder
-        }
+        TODO()
     }
 
     private fun insertCategories(batch: TasksBatchOperation, idxTask: Int?) {
