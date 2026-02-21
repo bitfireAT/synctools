@@ -36,101 +36,7 @@ class RecurrenceFieldsHandler(
         get() = Logger.getLogger(javaClass.name)
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val values = from.entityValues
-
-        val tsStart = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Found event without DTSTART")
-        val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
-
-        // provide start date as ical4j Date, if needed
-        val startDate by lazy {
-            AndroidTimeField(
-                timestamp = tsStart,
-                timeZone = values.getAsString(Events.EVENT_TIMEZONE),
-                allDay = allDay,
-                tzRegistry = tzRegistry
-            ).asIcal4jDate()
-        }
-
-        // process RRULE field
-        val rRules = LinkedList<RRule>()
-        values.getAsString(Events.RRULE)?.let { rRuleField ->
-            try {
-                for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
-                    val rule = RRule(rule)
-
-                    // align RRULE UNTIL to DTSTART, if needed
-                    rule.recur = alignUntil(rule.recur, startDate)
-
-                    // skip if UNTIL is before event's DTSTART
-                    val tsUntil = rule.recur.until?.time
-                    if (tsUntil != null && tsUntil <= tsStart) {
-                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
-                        continue
-                    }
-
-                    rRules += rule
-                }
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't parse RRULE field, ignoring", e)
-            }
-        }
-
-        // process RDATE field
-        val rDates = LinkedList<RDate>()
-        values.getAsString(Events.RDATE)?.let { rDateField ->
-            try {
-                val rDate = AndroidTimeUtils.androidStringToRecurrenceSet(rDateField, tzRegistry, allDay, tsStart) {
-                    RDate(it)
-                }
-                rDates += rDate
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't parse RDATE field, ignoring", e)
-            }
-        }
-
-        // EXRULE
-        val exRules = LinkedList<ExRule>()
-        values.getAsString(Events.EXRULE)?.let { exRuleField ->
-            try {
-                for (rule in exRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
-                    val rule = ExRule(null, rule)
-
-                    // align RRULE UNTIL to DTSTART, if needed
-                    rule.recur = alignUntil(rule.recur, startDate)
-
-                    // skip if UNTIL is before event's DTSTART
-                    val tsUntil = rule.recur.until?.time
-                    if (tsUntil != null && tsUntil <= tsStart) {
-                        logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
-                        continue
-                    }
-
-                    exRules += rule
-                }
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
-            }
-        }
-
-        // EXDATE
-        val exDates = LinkedList<ExDate>()
-        values.getAsString(Events.EXDATE)?.let { exDateField ->
-            try {
-                val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(exDateField, tzRegistry, allDay) { ExDate(it) }
-                exDates += exDate
-            } catch (e: Exception) {
-                logger.log(Level.WARNING, "Couldn't parse recurrence rules, ignoring", e)
-            }
-        }
-
-        // generate recurrence properties only for recurring main events
-        val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
-        if (from === main && recurring) {
-            to.properties += rRules
-            to.properties += rDates
-            to.properties += exRules
-            to.properties += exDates
-        }
+        TODO("ical4j 4.x")
     }
 
     /**
@@ -151,38 +57,8 @@ class RecurrenceFieldsHandler(
      *
      * @see at.bitfire.synctools.mapping.calendar.builder.EndTimeBuilder.alignWithDtStart
      */
-    fun alignUntil(recur: Recur, startDate: Date): Recur {
-        val until: Date = recur.until ?: return recur
-
-        if (until is DateTime) {
-            // UNTIL is DATE-TIME
-            if (startDate is DateTime) {
-                // DTSTART is DATE-TIME
-                return recur
-            } else {
-                // DTSTART is DATE → only take date part for UNTIL
-                val untilDate = until.toLocalDate()
-                return Recur.Builder(recur)
-                    .until(untilDate.toIcal4jDate())
-                    .build()
-            }
-        } else {
-            // UNTIL is DATE
-            if (startDate is DateTime) {
-                // DTSTART is DATE-TIME → amend UNTIL to UTC DATE-TIME
-                val untilDate = until.toLocalDate()
-                val startTime = startDate.toZonedDateTime()
-                val untilDateWithTime = ZonedDateTime.of(untilDate, startTime.toLocalTime(), startTime.zone)
-                return Recur.Builder(recur)
-                    .until(untilDateWithTime.toIcal4jDateTime(tzRegistry).apply {
-                        isUtc = true
-                    })
-                    .build()
-            } else {
-                // DTSTART is DATE
-                return recur
-            }
-        }
+    fun <T : java.time.temporal.Temporal> alignUntil(recur: Recur<T>, startDate: Date): Recur<T> {
+        TODO("ical4j 4.x")
     }
 
 }
