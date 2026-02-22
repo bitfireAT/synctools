@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.mapping.calendar.handler.AccessLevelHandler
 import at.bitfire.synctools.mapping.calendar.handler.AndroidEventFieldHandler
 import at.bitfire.synctools.mapping.calendar.handler.AttendeesHandler
@@ -121,8 +122,8 @@ class AndroidEventHandler(
         )
 
         // add exceptions of recurring main event
-        val rRules = main.getProperties<RRule>(Property.RRULE)
-        val rDates = main.getProperties<RDate>(Property.RDATE)
+        val rRules = main.getProperties<RRule<*>>(Property.RRULE)
+        val rDates = main.getProperties<RDate<*>>(Property.RDATE)
         val exceptions = LinkedList<VEvent>()
         if (rRules.isNotEmpty() || rDates.isNotEmpty()) {
             for (exception in eventAndExceptions.exceptions) {
@@ -136,10 +137,11 @@ class AndroidEventHandler(
                 val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
                 // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
-                if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
+                TODO("ical4j 4.x")
+                /*if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
                     main.properties += asExDate(exception, recurrenceId)
                 else
-                    exceptions += exceptionEvent
+                    exceptions += exceptionEvent*/
             }
         }
 
@@ -155,8 +157,9 @@ class AndroidEventHandler(
         )
     }
 
-    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
-        val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
+    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId<*>): ExDate<*> {
+        TODO("ical4j 4.x")
+        /*val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
         val list = DateList(
             if (originalAllDay) Value.DATE else Value.DATE_TIME,
             recurrenceId.timeZone
@@ -170,7 +173,7 @@ class AndroidEventHandler(
                 else
                     timeZone = recurrenceId.timeZone
             }
-        }
+        }*/
     }
 
     private fun generateProdId(main: Entity): ProdId {

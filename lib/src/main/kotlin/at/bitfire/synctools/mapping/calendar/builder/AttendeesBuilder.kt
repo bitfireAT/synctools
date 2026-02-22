@@ -36,7 +36,8 @@ class AttendeesBuilder(
             calendar.ownerAccount ?: calendar.account.name
 
         val member = attendee.calAddress
-        if (member.scheme.equals("mailto", true))   // attendee identified by email
+        TODO("ical4j 4.x")
+        /*if (member.scheme.equals("mailto", true))   // attendee identified by email
             values.put(Attendees.ATTENDEE_EMAIL, member.schemeSpecificPart)
         else {
             // attendee identified by other URI
@@ -62,7 +63,7 @@ class AttendeesBuilder(
             PartStat.DELEGATED    -> Attendees.ATTENDEE_STATUS_NONE
             else /* default: PartStat.NEEDS_ACTION */ -> Attendees.ATTENDEE_STATUS_INVITED
         }
-        values.put(Attendees.ATTENDEE_STATUS, status)
+        values.put(Attendees.ATTENDEE_STATUS, status)*/
 
         return values
     }
@@ -74,7 +75,8 @@ class AttendeesBuilder(
             return if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
             else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
+                TODO("ical4j 4.x")
+                // organizer.getParameter<Email>(Parameter.EMAIL)?.value
         }
         return null
     }

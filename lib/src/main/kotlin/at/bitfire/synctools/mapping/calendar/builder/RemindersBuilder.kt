@@ -24,7 +24,8 @@ class RemindersBuilder: AndroidEntityBuilder {
     }
 
     private fun buildReminder(alarm: VAlarm, event: VEvent): ContentValues {
-        val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
+        TODO("ical4j 4.x")
+        /*val method = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
             Action.DISPLAY.value,
             Action.AUDIO.value -> Reminders.METHOD_ALERT    // will trigger an alarm on the Android device
 
@@ -45,7 +46,7 @@ class RemindersBuilder: AndroidEntityBuilder {
         return contentValuesOf(
             Reminders.METHOD to method,
             Reminders.MINUTES to minutes
-        )
+        )*/
     }
 
 }

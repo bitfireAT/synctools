@@ -16,8 +16,9 @@ class LocationHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val location = from.entityValues.getAsString(Events.EVENT_LOCATION).trimToNull()
-        if (location != null)
-            to.properties += Location(location)
+        TODO("ical4j 4.x")
+        /*if (location != null)
+            to.properties += Location(location)*/
     }
 
 }

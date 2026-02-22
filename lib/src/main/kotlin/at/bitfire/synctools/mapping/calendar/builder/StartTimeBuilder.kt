@@ -17,7 +17,8 @@ import java.time.ZoneId
 class StartTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val values = to.entityValues
+        TODO("ical4j 4.x")
+        /*val values = to.entityValues
 
         val dtStart = from.requireDtStart()
 
@@ -47,7 +48,7 @@ class StartTimeBuilder: AndroidEntityBuilder {
         } else {
             // DTSTART is a DATE
             values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }
+        }*/
     }
 
 }

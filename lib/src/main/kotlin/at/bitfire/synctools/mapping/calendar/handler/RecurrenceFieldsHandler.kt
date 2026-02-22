@@ -51,8 +51,11 @@ class RecurrenceFieldsHandler(
             ).asIcal4jDate()
         }
 
+        TODO("ical4j 4.x")
+        // Note: big method – maybe split?
+
         // process RRULE field
-        val rRules = LinkedList<RRule>()
+        /*val rRules = LinkedList<RRule>()
         values.getAsString(Events.RRULE)?.let { rRuleField ->
             try {
                 for (rule in rRuleField.split(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR)) {
@@ -130,7 +133,7 @@ class RecurrenceFieldsHandler(
             to.properties += rDates
             to.properties += exRules
             to.properties += exDates
-        }
+        }*/
     }
 
     /**
@@ -151,8 +154,9 @@ class RecurrenceFieldsHandler(
      *
      * @see at.bitfire.synctools.mapping.calendar.builder.EndTimeBuilder.alignWithDtStart
      */
-    fun alignUntil(recur: Recur, startDate: Date): Recur {
-        val until: Date = recur.until ?: return recur
+    fun alignUntil(recur: Recur<*>, startDate: Date): Recur<*> {
+        TODO("ical4j 4.x")
+        /*val until: Date = recur.until ?: return recur
 
         if (until is DateTime) {
             // UNTIL is DATE-TIME
@@ -182,7 +186,7 @@ class RecurrenceFieldsHandler(
                 // DTSTART is DATE
                 return recur
             }
-        }
+        }*/
     }
 
 }

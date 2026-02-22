@@ -94,7 +94,10 @@ class DmfsTaskBuilder(
             .withValue(Tasks.PARENT_ID, null)
 
         // organizer
-        task.organizer?.let { organizer ->
+        TODO("ical4j 4.x")
+        // Note: big method – maybe split? Depends on how we want to proceed with refactoring.
+
+        /*task.organizer?.let { organizer ->
             val uri = organizer.calAddress
             val email = if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
@@ -160,11 +163,12 @@ class DmfsTaskBuilder(
                 else
                     AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
 
-        logger.log(Level.FINE, "Built task object", builder.build())
+        logger.log(Level.FINE, "Built task object", builder.build())*/
     }
 
     fun getTimeZone(): TimeZone {
-        return  task.dtStart?.let { dtStart ->
+        TODO("ical4j 4.x")
+        /*return  task.dtStart?.let { dtStart ->
             if (dtStart.isUtc)
                 tzRegistry.getTimeZone(TimeZones.UTC_ID)
             else
@@ -176,7 +180,7 @@ class DmfsTaskBuilder(
             else
                 due.timeZone
         } ?:
-        tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!
+        tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!*/
     }
 
     fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
@@ -203,7 +207,8 @@ class DmfsTaskBuilder(
                     Alarm.ALARM_REFERENCE_START_DATE
             }
 
-            val alarmType = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
+            TODO("ical4j 4.x")
+            /*val alarmType = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
                 Action.AUDIO.value ->
                     Alarm.ALARM_TYPE_SOUND
                 Action.DISPLAY.value ->
@@ -224,7 +229,7 @@ class DmfsTaskBuilder(
                 .withValue(Alarm.ALARM_TYPE, alarmType)
 
             logger.log(Level.FINE, "Inserting alarm", builder.build())
-            batch += builder
+            batch += builder*/
         }
     }
 
@@ -250,13 +255,14 @@ class DmfsTaskBuilder(
     }
 
     private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
-        for (relatedTo in task.relatedTo) {
+        TODO("ical4j 4.x")
+        /*for (relatedTo in task.relatedTo) {
             val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
                 RelType.CHILD ->
                     Relation.RELTYPE_CHILD
                 RelType.SIBLING ->
                     Relation.RELTYPE_SIBLING
-                else /* RelType.PARENT, default value */ ->
+                else *//* RelType.PARENT, default value *//* ->
                     Relation.RELTYPE_PARENT
             }
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
@@ -266,7 +272,7 @@ class DmfsTaskBuilder(
                 .withValue(Relation.RELATED_TYPE, relType)
             logger.log(Level.FINE, "Inserting relation", builder.build())
             batch += builder
-        }
+        }*/
     }
 
     private fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {

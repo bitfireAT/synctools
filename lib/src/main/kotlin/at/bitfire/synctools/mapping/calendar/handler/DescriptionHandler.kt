@@ -15,9 +15,10 @@ import net.fortuna.ical4j.model.property.Description
 class DescriptionHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        val description = from.entityValues.getAsString(Events.DESCRIPTION).trimToNull()
+        TODO("ical4j 4.x")
+        /*val description = from.entityValues.getAsString(Events.DESCRIPTION).trimToNull()
         if (description != null)
-            to.properties += Description(description)
+            to.properties += Description(description)*/
     }
 
 }

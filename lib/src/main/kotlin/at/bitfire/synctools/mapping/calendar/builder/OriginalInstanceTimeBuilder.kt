@@ -14,6 +14,7 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
+import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.icalendar.requireDtStart
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
@@ -23,7 +24,9 @@ import java.time.ZonedDateTime
 class OriginalInstanceTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val values = to.entityValues
+        TODO("ical4j 4.x")
+
+        /*val values = to.entityValues
         if (from !== main) {
             // only for exceptions
             val originalDtStart = main.requireDtStart()
@@ -55,7 +58,7 @@ class OriginalInstanceTimeBuilder: AndroidEntityBuilder {
             // main event
             values.putNull(Events.ORIGINAL_ALL_DAY)
             values.putNull(Events.ORIGINAL_INSTANCE_TIME)
-        }
+        }*/
     }
 
 }

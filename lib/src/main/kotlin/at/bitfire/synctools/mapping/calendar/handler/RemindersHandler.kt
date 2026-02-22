@@ -40,7 +40,8 @@ class RemindersHandler(
         val eventTitle = event.entityValues.getAsString(Events.TITLE) ?: "Calendar Event Reminder"
 
         val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
-        val props = alarm.properties
+        TODO("ical4j 4.x")
+        /*val props = alarm.properties
         when (row.getAsInteger(Reminders.METHOD)) {
             Reminders.METHOD_EMAIL -> {
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
@@ -64,7 +65,7 @@ class RemindersHandler(
                 props += Description(eventTitle)
             }
         }
-        to.components += alarm
+        to.components += alarm*/
     }
 
 }

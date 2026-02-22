@@ -27,8 +27,9 @@ class UnknownPropertiesHandler: AndroidEventFieldHandler {
         for (json in jsonProperties)
             try {
                 val prop = UnknownProperty.fromJsonString(json)
-                if (!EXCLUDED.contains(prop.name))
-                    to.properties += prop
+                TODO("ical4j 4.x")
+                /*if (!EXCLUDED.contains(prop.name))
+                    to.properties += prop*/
             } catch (e: JSONException) {
                 logger.log(Level.WARNING, "Couldn't parse unknown properties", e)
             }
