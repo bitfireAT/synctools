@@ -21,7 +21,8 @@ class TaskTest {
         assertTrue(Task().isAllDay())
 
         // DTSTART has priority
-        assertFalse(Task().apply {
+        TODO("ical4j 4.x")
+        /*assertFalse(Task().apply {
             dtStart = DtStart(DateTime())
         }.isAllDay())
         assertFalse(Task().apply {
@@ -42,7 +43,7 @@ class TaskTest {
         }.isAllDay())
         assertTrue(Task().apply {
             due = Due(Date())
-        }.isAllDay())
+        }.isAllDay())*/
     }
 
 }

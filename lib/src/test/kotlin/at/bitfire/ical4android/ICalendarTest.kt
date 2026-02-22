@@ -50,11 +50,12 @@ class ICalendarTest {
 
 
 	private fun readTimeZone(fileName: String): VTimeZone {
-		javaClass.classLoader!!.getResourceAsStream("tz/$fileName").use { tzStream ->
+		TODO("ical4j 4.x")
+		/*javaClass.classLoader!!.getResourceAsStream("tz/$fileName").use { tzStream ->
 			val cal = CalendarBuilder().build(tzStream)
 			val vTimeZone = cal.getComponent(Component.VTIMEZONE) as VTimeZone
 			return vTimeZone
-		}
+		}*/
 	}
 
 	@Test
@@ -71,9 +72,10 @@ class ICalendarTest {
                         "END:VCALENDAR"
             )
 		)
-        assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).value)
+		TODO("ical4j 4.x")
+        /*assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).value)
         assertEquals("darkred", calendar.getProperty<Property>(Color.PROPERTY_NAME).value)
-        assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)
+        assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)*/
 	}
 
 	@Test
@@ -217,7 +219,11 @@ class ICalendarTest {
     }
 
 
-	@Test
+	init {
+		TODO("ical4j 4.x")
+	}
+
+	/*@Test
 	fun testVAlarmToMin_TriggerDuration_Negative() {
 		// TRIGGER;REL=START:-P1DT1H1M29S
 		val (ref, min) = ICalendar.vAlarmToMin(
@@ -306,7 +312,7 @@ class ICalendarTest {
 			false
 		)!!
         assertEquals(Related.START, ref)
-        assertEquals(-(60 * 24 + 60 + 1 + 1) /* duration of event: */ - 1, min)
+        assertEquals(-(60 * 24 + 60 + 1 + 1) *//* duration of event: *//* - 1, min)
 	}
 
 	@Test
@@ -328,7 +334,10 @@ class ICalendarTest {
 		val (ref, min) = ICalendar.vAlarmToMin(alarm, DtStart(DateTime(currentTime)), null, null, false)!!
         assertEquals(Related.START, ref)
         assertEquals(1, min)
-	}
+	}*/
+
+
+	// TODO Note: can we use the following now when we have ical4j 4.x?
 
 	/*
 	DOES NOT WORK YET! Will work as soon as Java 8 API is consequently used in ical4j and ical4android.

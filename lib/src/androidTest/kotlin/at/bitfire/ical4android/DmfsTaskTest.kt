@@ -82,7 +82,8 @@ class DmfsTaskTest(
     @Test
     fun testAddTask() {
         // build and write event to calendar provider
-        val task = Task()
+        TODO("ical4j 4.x")
+        /*val task = Task()
         task.uid = "sample1@testAddEvent"
         task.summary = "Sample event"
         task.description = "Sample event with date/time"
@@ -125,18 +126,19 @@ class DmfsTaskTest(
             assertEquals(task.unknownProperties, task2.unknownProperties)
         } finally {
             testTask.delete()
-        }
+        }*/
     }
 
     @Test(expected = LocalStorageException::class)
     fun testAddTaskWithInvalidDue() {
         val task = Task()
-        task.uid = "invalidDUE@ical4android.tests"
+        TODO("ical4j 4.x")
+        /*task.uid = "invalidDUE@ical4android.tests"
         task.summary = "Task with invalid DUE"
         task.dtStart = DtStart(Date("20150102"))
 
         task.due = Due(Date("20150101"))
-        DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
+        DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()*/
     }
 
     @Test
@@ -144,7 +146,8 @@ class DmfsTaskTest(
         val task = Task()
         task.uid = "TaskWithManyAlarms"
         task.summary = "Task with many alarms"
-        task.dtStart = DtStart(Date("20150102"))
+        TODO("ical4j 4.x")
+        //task.dtStart = DtStart(Date("20150102"))
 
         for (i in 1..1050)
             task.alarms += VAlarm(java.time.Duration.ofMinutes(i.toLong()))
@@ -162,7 +165,8 @@ class DmfsTaskTest(
         task.summary = "Sample event"
         task.description = "Sample event with date/time"
         task.location = "Sample location"
-        task.dtStart = DtStart("20150501T120000", tzVienna)
+        TODO("ical4j 4.x")
+        //task.dtStart = DtStart("20150501T120000", tzVienna)
         assertFalse(task.isAllDay())
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
