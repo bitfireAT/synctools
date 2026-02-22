@@ -34,7 +34,8 @@ class ICalendarGenerator {
      * @param to        stream that the iCalendar is written to
      */
     fun write(event: AssociatedComponents<*>, @WillNotClose to: Writer) {
-        val ical = Calendar()
+        TODO("ical4j 4.x")
+        /*val ical = Calendar()
         ical.properties += Version.VERSION_2_0
 
         // add PRODID
@@ -68,11 +69,12 @@ class ICalendarGenerator {
         for (tz in usedTimeZones)
             ical.components += ICalendar.minifyVTimeZone(tz.vTimeZone, earliestStart)
 
-        CalendarOutputter(false).output(ical, to)
+        CalendarOutputter(false).output(ical, to)*/
     }
 
     private fun timeZonesOf(component: CalendarComponent): Set<TimeZone> {
-        val timeZones = mutableSetOf<TimeZone>()
+        TODO("ical4j 4.x")
+        /*val timeZones = mutableSetOf<TimeZone>()
 
         // properties
         timeZones += component.properties
@@ -86,7 +88,7 @@ class ICalendarGenerator {
                     .filterIsInstance<DateProperty>()
                     .mapNotNull { (it.date as? DateTime)?.timeZone }
 
-        return timeZones
+        return timeZones*/
     }
 
 }

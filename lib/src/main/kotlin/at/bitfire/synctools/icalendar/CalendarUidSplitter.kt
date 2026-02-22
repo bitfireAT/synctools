@@ -23,9 +23,11 @@ class CalendarUidSplitter<T: CalendarComponent> {
         // get all components of type T (for instance: all VEVENTs)
         val all = calendar.getComponents<T>(componentName)
 
+        TODO("ical4j 4.x")
+
         // Note for VEVENT: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
         // so it's possible that the Uid is null.
-        val byUid: Map<String?, List<T>> = all
+        /*val byUid: Map<String?, List<T>> = all
             .groupBy { it.uid?.value }
             .mapValues { filterBySequence(it.value) }
 
@@ -36,7 +38,7 @@ class CalendarUidSplitter<T: CalendarComponent> {
             result[uid] = AssociatedComponents(mainVEvent, exceptions)
         }
 
-        return result
+        return result*/
     }
 
     /**
@@ -48,15 +50,17 @@ class CalendarUidSplitter<T: CalendarComponent> {
      */
     @VisibleForTesting
     internal fun filterBySequence(events: List<T>): List<T> {
+        TODO("ical4j 4.x")
+
         // group by RECURRENCE-ID (may be null)
-        val byRecurId = events.groupBy { it.recurrenceId?.value }.values
+        /*val byRecurId = events.groupBy { it.recurrenceId?.value }.values
 
         // for every RECURRENCE-ID: keep only event with highest sequence
         val latest = byRecurId.map { sameUidAndRecurId ->
             sameUidAndRecurId.maxBy { it.sequence?.sequenceNo ?: 0 }
         }
 
-        return latest
+        return latest*/
     }
 
 }

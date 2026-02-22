@@ -66,11 +66,12 @@ object AndroidTimeUtils {
      * @param date [net.fortuna.ical4j.model.property.DateProperty] to validate. Values which are not DATE-TIME will be ignored.
      * @param tzRegistry    time zone registry to get time zones from
      */
-    fun androidifyTimeZone(date: DateProperty?, tzRegistry: TimeZoneRegistry) {
-        if (DateUtils.isDateTime(date) && date?.isUtc == false) {
+    fun androidifyTimeZone(date: DateProperty<*>?, tzRegistry: TimeZoneRegistry) {
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDateTime(date) && date?.isUtc == false) {
             val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
             date.timeZone = tzRegistry.getTimeZone(tzID)
-        }
+        }*/
     }
 
     /**
@@ -81,11 +82,12 @@ object AndroidTimeUtils {
      * *
      * @param dateList [net.fortuna.ical4j.model.property.DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
      */
-    fun androidifyTimeZone(dateList: DateListProperty) {
+    fun androidifyTimeZone(dateList: DateListProperty<*>) {
         val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
         // periods (RDate only)
-        val periods = (dateList as? RDate)?.periods
+        TODO("ical4j 4.x")
+        /*val periods = (dateList as? RDate)?.periods
         if (periods != null && periods.isNotEmpty() && !periods.isUtc) {
             val tzID = DateUtils.findAndroidTimezoneID(periods.timeZone?.id)
 
@@ -103,7 +105,7 @@ object AndroidTimeUtils {
                 val tzID = DateUtils.findAndroidTimezoneID(dates.timeZone?.id)
                 dateList.timeZone = tzRegistry.getTimeZone(tzID)
             }
-        }
+        }*/
     }
 
     /**
@@ -118,23 +120,24 @@ object AndroidTimeUtils {
      *         - the specified time zone ID for date-times with given time zone
      *         - the currently set default time zone ID for floating date-times
      */
-    fun storageTzId(date: DateProperty): String =
-            if (DateUtils.isDateTime(date)) {
-                // DATE-TIME
-                when {
-                    date.isUtc ->
-                        // DATE-TIME in UTC format
-                        TimeZones.UTC_ID
-                    date.timeZone != null ->
-                        // DATE-TIME with given time-zone
-                        date.timeZone.id
-                    else ->
-                        // DATE-TIME in local format (floating)
-                        TimeZone.getDefault().id
-                }
-            } else
-                // DATE
-                TZID_UTC
+    fun storageTzId(date: DateProperty<*>): String =
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDateTime(date)) {
+            // DATE-TIME
+            when {
+                date.isUtc ->
+                    // DATE-TIME in UTC format
+                    TimeZones.UTC_ID
+                date.timeZone != null ->
+                    // DATE-TIME with given time-zone
+                    date.timeZone.id
+                else ->
+                    // DATE-TIME in local format (floating)
+                    TimeZone.getDefault().id
+            }
+        } else
+            // DATE
+            TZID_UTC*/
 
 
     // recurrence sets
@@ -159,7 +162,7 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToAndroidString(dates: List<DateListProperty>, dtStart: Date): String {
+    fun recurrenceSetsToAndroidString(dates: List<DateListProperty<*>>, dtStart: Date): String {
         /*  rdate/exdate:       DATE                                DATE_TIME
             all-day             store as ...T000000Z                cut off time and store as ...T000000Z
             event with time     (undefined)                         store as ...ThhmmssZ
@@ -169,7 +172,8 @@ object AndroidTimeUtils {
         val allDay = dtStart !is DateTime
 
         // use time zone of first entry for the whole set; null for UTC
-        val tz =
+        TODO("ical4j 4.x")
+        /*val tz =
             (dates.firstOrNull() as? RDate)?.periods?.timeZone ?:   // VALUE=PERIOD (only RDate)
             dates.firstOrNull()?.dates?.timeZone                    // VALUE=DATE/DATE-TIME
 
@@ -223,7 +227,7 @@ object AndroidTimeUtils {
         if (tz != null)
             result.append(tz.id).append(RECURRENCE_LIST_TZID_SEPARATOR)
         result.append(strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR))
-        return result.toString()
+        return result.toString()*/
     }
 
     /**
@@ -241,16 +245,18 @@ object AndroidTimeUtils {
      *
      * @throws java.text.ParseException when the string cannot be parsed
      */
-    fun<T: DateListProperty> androidStringToRecurrenceSet(
+    fun<T: DateListProperty<*>> androidStringToRecurrenceSet(
         dbStr: String,
         tzRegistry: TimeZoneRegistry,
         allDay: Boolean,
         exclude: Long? = null,
-        generator: (DateList) -> T
+        generator: (DateList<*>) -> T
     ): T
     {
+        TODO("ical4j 4.x")
+
         // 1. split string into time zone and actual dates
-        var timeZone: net.fortuna.ical4j.model.TimeZone?
+        /*var timeZone: net.fortuna.ical4j.model.TimeZone?
         val datesStr: String
 
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
@@ -289,7 +295,7 @@ object AndroidTimeUtils {
                 property.setUtc(true)
         }
 
-        return property
+        return property*/
     }
 
     /**
@@ -303,8 +309,10 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty>, tz: net.fortuna.ical4j.model.TimeZone?): String {
-        val allDay = tz == null
+    fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty<*>>, tz: net.fortuna.ical4j.model.TimeZone?): String {
+        TODO("ical4j 4.x")
+
+        /*val allDay = tz == null
         val strDates = LinkedList<String>()
         for (dateListProp in dates) {
             if (dateListProp is RDate && dateListProp.periods.isNotEmpty())
@@ -326,7 +334,7 @@ object AndroidTimeUtils {
                 strDates += dateToUse.toString()
             }
         }
-        return strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR)
+        return strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR)*/
     }
 
 
