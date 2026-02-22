@@ -51,7 +51,8 @@ class AvailabilityHandlerTest {
             Events.AVAILABILITY to Events.AVAILABILITY_FREE
         ))
         handler.process(entity, entity, result)
-        assertEquals(Transp.TRANSPARENT, result.getProperty<Transp>(Property.TRANSP))
+        TODO("ical4j 4.x")
+        //assertEquals(Transp.TRANSPARENT, result.getProperty<Transp>(Property.TRANSP))
     }
 
     @Test

@@ -42,7 +42,8 @@ class CategoriesHandlerTest {
             ExtendedProperties.VALUE to "Cat 1\\Cat 2"
         ))
         handler.process(entity, entity, result)
-        assertEquals(listOf("Cat 1", "Cat 2"), result.getProperty<Categories>(Property.CATEGORIES).categories.toList())
+        TODO("ical4j 4.x")
+        //assertEquals(listOf("Cat 1", "Cat 2"), result.getProperty<Categories>(Property.CATEGORIES).categories.toList())
     }
 
 }

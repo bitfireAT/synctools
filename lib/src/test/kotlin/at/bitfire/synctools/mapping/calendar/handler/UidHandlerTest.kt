@@ -37,7 +37,8 @@ class UidHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        assertEquals("from-event", result.uid.value)
+        TODO("ical4j 4.x")
+        //assertEquals("from-event", result.uid.value)
     }
 
 }
