@@ -36,7 +36,11 @@ class StatusBuilderTest {
         assertNull(result.entityValues.get(Events.STATUS))
     }
 
-    @Test
+    init {
+        TODO("ical4j 4.x")
+    }
+
+    /*@Test
     fun `STATUS is CONFIRMED`() {
         val result = Entity(ContentValues())
         builder.build(
@@ -78,6 +82,6 @@ class StatusBuilderTest {
             to = result
         )
         assertEquals(Events.STATUS_TENTATIVE, result.entityValues.getAsInteger(Events.STATUS))
-    }
+    }*/
 
 }

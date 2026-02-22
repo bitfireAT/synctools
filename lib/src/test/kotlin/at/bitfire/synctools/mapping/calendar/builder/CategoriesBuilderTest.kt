@@ -31,7 +31,8 @@ class CategoriesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Categories(TextList(arrayOf("Cat 1", "Cat\\2")))
+                TODO("ical4j 4.x")
+                // properties += Categories(TextList(arrayOf("Cat 1", "Cat\\2")))
             },
             main = VEvent(),
             to = result

@@ -36,7 +36,8 @@ class ICalendarGeneratorTest {
     @Test
     fun `Write event with exceptions and various timezones`() {
         val iCal = StringWriter()
-        writer.write(AssociatedEvents(
+        TODO("ical4j 4.x")
+        /*writer.write(AssociatedEvents(
             main =
                 VEvent(propertyListOf(
                     Uid("SAMPLEUID"),
@@ -57,7 +58,7 @@ class ICalendarGeneratorTest {
                 ))
             ),
             prodId = userAgent
-        ), iCal)
+        ), iCal)*/
 
         assertEquals("BEGIN:VCALENDAR\r\n" +
                 "VERSION:2.0\r\n" +

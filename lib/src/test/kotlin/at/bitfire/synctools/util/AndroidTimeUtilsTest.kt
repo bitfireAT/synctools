@@ -38,7 +38,7 @@ class AndroidTimeUtilsTest {
     val tzBerlin: TimeZone = tzRegistry.getTimeZone("Europe/Berlin")!!
     val tzToronto: TimeZone = tzRegistry.getTimeZone("America/Toronto")!!
 
-    val tzCustom by lazy {
+    val tzCustom: TimeZone by lazy {
         val builder = CalendarBuilder(tzRegistry)
         val cal = builder.build(
             StringReader(
@@ -54,7 +54,8 @@ class AndroidTimeUtilsTest {
                         "END:VCALENDAR"
             )
         )
-        TimeZone(cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone)
+        TODO("ical4j 4.x")
+        //TimeZone(cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone)
     }
 
     val tzIdDefault = java.util.TimeZone.getDefault().id!!
@@ -71,7 +72,11 @@ class AndroidTimeUtilsTest {
     // androidifyTimeZone
     // DateProperty
 
-    @Test
+    init {
+        TODO("ical4j 4.x")
+    }
+
+    /*@Test
     fun testAndroidifyTimeZone_DateProperty_Date() {
         // dates (without time) should be ignored
         val dtStart = DtStart(Date("20150101"))
@@ -493,7 +498,7 @@ class AndroidTimeUtilsTest {
         val list = ArrayList<DateListProperty>(1)
         list.add(RDate(DateList("20150101,20150702", Value.DATE)))
         assertEquals("20150101T000000,20150702T000000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
-    }
+    }*/
 
 
     @Test

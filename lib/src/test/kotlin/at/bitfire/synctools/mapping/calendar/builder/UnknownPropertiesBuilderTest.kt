@@ -46,8 +46,9 @@ class UnknownPropertiesBuilderTest {
         builder.build(
             from = VEvent(propertyListOf(
                 XProperty("X-Some-Property", "Some Value").apply {
-                    parameters.add(XParameter("Param1", "Value1"))
-                    parameters.add(XParameter("Param2", "Value2"))
+                    TODO("ical4j 4.x")
+                    /*parameters.add(XParameter("Param1", "Value1"))
+                    parameters.add(XParameter("Param2", "Value2"))*/
                 }
             )),
             main = VEvent(),

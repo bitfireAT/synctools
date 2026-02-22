@@ -38,22 +38,24 @@ class AvailabilityBuilderTest {
     @Test
     fun `Transparency is OPAQUE`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(Transp.OPAQUE)),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertEquals(Events.AVAILABILITY_BUSY, result.entityValues.get(Events.AVAILABILITY))
     }
 
     @Test
     fun `Transparency is TRANSPARENT`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(Transp.TRANSPARENT)),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertEquals(Events.AVAILABILITY_FREE, result.entityValues.get(Events.AVAILABILITY))
     }
 
