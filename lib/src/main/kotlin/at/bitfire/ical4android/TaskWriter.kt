@@ -6,35 +6,8 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.ical4android.ICalendar.Companion.minifyVTimeZone
-import at.bitfire.ical4android.ICalendar.Companion.softValidate
-import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.synctools.icalendar.Css3Color
-import net.fortuna.ical4j.data.CalendarOutputter
-import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TextList
-import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.component.VToDo
-import net.fortuna.ical4j.model.property.Categories
-import net.fortuna.ical4j.model.property.Color
-import net.fortuna.ical4j.model.property.Comment
-import net.fortuna.ical4j.model.property.Created
-import net.fortuna.ical4j.model.property.Description
-import net.fortuna.ical4j.model.property.LastModified
-import net.fortuna.ical4j.model.property.Location
-import net.fortuna.ical4j.model.property.PercentComplete
-import net.fortuna.ical4j.model.property.Priority
 import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.Sequence
-import net.fortuna.ical4j.model.property.Summary
-import net.fortuna.ical4j.model.property.Uid
-import net.fortuna.ical4j.model.property.Url
-import net.fortuna.ical4j.model.property.Version
 import java.io.Writer
-import java.net.URI
-import java.net.URISyntaxException
-import java.util.logging.Level
 import java.util.logging.Logger
 
 /**
@@ -58,7 +31,8 @@ class TaskWriter(
      * @param to    stream that the iCalendar is written to
      */
     fun write(task: Task, to: Writer): Unit = with(task) {
-        val ical = Calendar()
+        TODO()
+        /*val ical = Calendar()
         ical.properties += Version.VERSION_2_0
         ical.properties += prodId.withUserAgents(userAgents)
 
@@ -135,7 +109,7 @@ class TaskWriter(
             ical.components += minifyVTimeZone(tz.vTimeZone, earliest)
 
         softValidate(ical)
-        CalendarOutputter(false).output(ical, to)
+        CalendarOutputter(false).output(ical, to)*/
     }
 
 }
