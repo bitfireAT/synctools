@@ -15,7 +15,7 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject
@@ -117,7 +117,7 @@ class JtxICalObjectTest {
 
     @After
     fun tearDown() {
-        client.closeCompat()
+        client.close()
         collection?.delete()
         val collections = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)
         assertEquals(0, collections.size)
