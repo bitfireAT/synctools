@@ -16,7 +16,7 @@ android {
     namespace = "at.bitfire.synctools"
 
     defaultConfig {
-        minSdk = 23        // Android 6
+        minSdk = 24        // Android 7
 
         testInstrumentationRunner = "at.bitfire.synctools.LoggingTestRunner"
 
