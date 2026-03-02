@@ -6,13 +6,13 @@
 
 package at.bitfire.synctools.mapping.tasks
 
-import at.bitfire.ical4android.DmfsTask.Companion.COLUMN_ETAG
-import at.bitfire.ical4android.DmfsTask.Companion.COLUMN_FLAGS
-import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
+import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.COLUMN_ETAG
+import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.COLUMN_FLAGS
+import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.util.AndroidTimeUtils
