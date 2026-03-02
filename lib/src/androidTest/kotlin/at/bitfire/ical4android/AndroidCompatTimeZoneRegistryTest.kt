@@ -91,4 +91,9 @@ class AndroidCompatTimeZoneRegistryTest {
         assertNull(registry.getTimeZone("Test/NotExisting"))
     }
 
+    @Test
+    fun getTimeZone_Empty() {
+        assertNull(registry.getTimeZone(""))
+    }
+
 }
