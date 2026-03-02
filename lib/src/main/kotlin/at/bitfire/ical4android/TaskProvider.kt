@@ -11,7 +11,7 @@ import android.content.ContentProviderClient
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.pm.PackageInfoCompat
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import java.io.Closeable
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -138,7 +138,7 @@ class TaskProvider private constructor(
 
 
     override fun close() {
-        client.closeCompat()
+        client.close()
     }
 
 

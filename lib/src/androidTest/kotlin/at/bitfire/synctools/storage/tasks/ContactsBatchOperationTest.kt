@@ -12,7 +12,7 @@ import android.content.ContentProviderClient
 import android.provider.ContactsContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.ContactsBatchOperation
 import at.bitfire.synctools.storage.LocalStorageException
@@ -48,7 +48,7 @@ class ContactsBatchOperationTest {
             "${ContactsContract.RawContacts.ACCOUNT_TYPE}=? AND ${ContactsContract.RawContacts.ACCOUNT_NAME}=?",
             arrayOf(testAccount.type, testAccount.name)
         )
-        provider.closeCompat()
+        provider.close()
     }
 
 

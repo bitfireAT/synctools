@@ -12,7 +12,7 @@ import android.content.ContentValues
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
@@ -57,7 +57,7 @@ class JtxCollectionTest {
 
     @After
     fun tearDown() {
-        client.closeCompat()
+        client.close()
 
         var collections = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)
         collections.forEach { collection ->
