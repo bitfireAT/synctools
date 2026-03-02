@@ -6,8 +6,6 @@
 
 package at.bitfire.ical4android
 
-import java.time.ZoneId
-import java.util.logging.Logger
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
@@ -17,6 +15,8 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.TzId
+import java.time.ZoneId
+import java.util.logging.Logger
 
 /**
  * Wrapper around default [TimeZoneRegistry] that uses the Android name if a time zone has a
@@ -51,6 +51,9 @@ class AndroidCompatTimeZoneRegistry(
      * @return time zone
      */
     override fun getTimeZone(id: String): TimeZone? {
+        // If the timezone is empty, or format is not valid, return null
+        if (id.isEmpty()) return null
+
         val tz: TimeZone = base.getTimeZone(id)
             ?: return null      // ical4j doesn't know time zone, return null
 
