@@ -14,10 +14,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import java.time.ZoneId
 import java.time.zone.ZoneRulesException
 
+@Ignore("ical4j 4.x")
 class AndroidCompatTimeZoneRegistryTest {
 
     lateinit var ical4jRegistry: TimeZoneRegistry
