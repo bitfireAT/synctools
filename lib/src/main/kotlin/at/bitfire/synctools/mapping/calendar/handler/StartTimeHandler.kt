@@ -29,7 +29,8 @@ class StartTimeHandler(
             tzRegistry = tzRegistry
         ).asIcal4jDate()
 
-        to.properties += DtStart(start)
+        TODO("ical4j 4.x")
+        //to.properties += DtStart(start)
     }
 
 }

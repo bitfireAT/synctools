@@ -14,7 +14,8 @@ import net.fortuna.ical4j.model.property.Transp
 class AvailabilityBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val availability = when (from.transparency) {
+        TODO("ical4j 4.x")
+        /*val availability = when (from.transparency) {
             Transp.TRANSPARENT ->
                 Events.AVAILABILITY_FREE
 
@@ -25,7 +26,7 @@ class AvailabilityBuilder: AndroidEntityBuilder {
         to.entityValues.put(
             Events.AVAILABILITY,
             availability
-        )
+        )*/
     }
 
 }

@@ -29,10 +29,11 @@ class TaskWriterTest {
     fun testWrite() {
         val t = Task()
         t.uid = "SAMPLEUID"
-        t.dtStart = DtStart("20190101T100000", tzBerlin)
+        TODO("ical4j 4.x")
+        //t.dtStart = DtStart("20190101T100000", tzBerlin)
 
         val alarm = VAlarm(Duration.ofHours(-1) /*Dur(0, -1, 0, 0)*/)
-        alarm.properties += Action.AUDIO
+        //alarm.properties += Action.AUDIO
         t.alarms += alarm
 
         val icalWriter = StringWriter()

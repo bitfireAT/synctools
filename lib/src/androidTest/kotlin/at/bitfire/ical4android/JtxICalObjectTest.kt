@@ -837,7 +837,8 @@ class JtxICalObjectTest {
         //assertEquals(iCalIn.components[0].getProperty(Component.VTODO), iCalOut.components[0].getProperty(Component.VTODO))
 
         // there should only be one component for VJOURNAL and VTODO!
-        for(i in 0 until iCalIn.components.size)  {
+        TODO("ical4j 4.x")
+        /*for(i in 0 until iCalIn.components.size)  {
 
             iCalIn.components[i].properties.forEach { inProp ->
 
@@ -846,7 +847,7 @@ class JtxICalObjectTest {
                 val outProp = iCalOut.components[i].properties.getProperty<Property>(inProp.name)
                 assertEquals(inProp, outProp)
             }
-        }
+        }*/
     }
 
 

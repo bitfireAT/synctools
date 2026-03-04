@@ -11,31 +11,17 @@ import at.bitfire.synctools.BuildConfig
 import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
-import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
-import net.fortuna.ical4j.model.component.Daylight
 import net.fortuna.ical4j.model.component.Observance
-import net.fortuna.ical4j.model.component.Standard
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.validate.ValidationException
 import java.io.Reader
-import java.io.StringReader
-import java.time.Duration
-import java.time.Period
 import java.util.LinkedList
 import java.util.UUID
 import java.util.logging.Level
@@ -102,7 +88,8 @@ open class ICalendar {
 
             // fill calendar properties
             properties?.let {
-                calendar.getProperty<Property>(CALENDAR_NAME)?.let { calName ->
+                TODO("ical4j 4.x")
+                /*calendar.getProperty<Property>(CALENDAR_NAME)?.let { calName ->
                     properties[CALENDAR_NAME] = calName.value
                 }
 
@@ -111,7 +98,7 @@ open class ICalendar {
                 }
                 calendar.getProperty<Property>(CALENDAR_COLOR)?.let { calColor ->
                     properties[CALENDAR_COLOR] = calColor.value
-                }
+                }*/
             }
 
             return calendar
@@ -137,6 +124,10 @@ open class ICalendar {
             var newTz: VTimeZone? = null
             val keep = mutableSetOf<Observance>()
 
+            TODO("ical4j 4.x")
+            // Note: big method – maybe split?
+
+            /*
             if (start != null) {
                 // find latest matching STANDARD/DAYLIGHT observances
                 var latestDaylight: Pair<Date, Observance>? = null
@@ -210,7 +201,7 @@ open class ICalendar {
                     logger.log(Level.WARNING, "Minified timezone is invalid, using original one", e)
                     newTz = null
                 }
-            }
+            }*/
 
             // use original time zone if we couldn't calculate a minified one
             return newTz ?: originalTz
@@ -222,14 +213,15 @@ open class ICalendar {
          * @return time zone id (TZID) if VTIMEZONE contains a TZID, null otherwise
          */
         fun timezoneDefToTzId(timezoneDef: String): String? {
-            try {
+            TODO("ical4j 4.x")
+            /*try {
                 val builder = CalendarBuilder()
                 val cal = builder.build(StringReader(timezoneDef))
                 val timezone = cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone?
                 timezone?.timeZoneId?.let { return it.value }
             } catch (e: ParserException) {
                 logger.log(Level.SEVERE, "Can't understand time zone definition", e)
-            }
+            }*/
             return null
         }
 
@@ -279,14 +271,17 @@ open class ICalendar {
          */
         fun vAlarmToMin(
             alarm: VAlarm,
-            refStart: DtStart?,
-            refEnd: DateProperty?,
+            refStart: DtStart<*>?,
+            refEnd: DateProperty<*>?,
             refDuration: net.fortuna.ical4j.model.property.Duration?,
             allowRelEnd: Boolean
         ): Pair<Related, Int>? {
             val trigger = alarm.trigger ?: return null
 
-            val minutes: Int    // minutes before/after the event
+            TODO("ical4j 4.x")
+            // Note: big method – maybe split?
+
+            /*val minutes: Int    // minutes before/after the event
             var related = trigger.getParameter(Parameter.RELATED) ?: Related.START
 
             // event/task start time
@@ -345,7 +340,7 @@ open class ICalendar {
                 return null
             }
 
-            return Pair(related, minutes)
+            return Pair(related, minutes)*/
         }
 
     }

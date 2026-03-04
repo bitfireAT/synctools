@@ -62,8 +62,9 @@ class TaskReaderTest {
                 "END:VCALENDAR\r\n")
         assertEquals("DTSTART is DATE, but DUE is DATE-TIME", t.summary)
         // rewrite DTSTART to DATE-TIME, too
-        assertEquals(DtStart(DateTime("20200731T000000", tzVienna)), t.dtStart)
-        assertEquals(Due(DateTime("20200731T234600", tzVienna)), t.due)
+        TODO("ical4j 4.x")
+        /*assertEquals(DtStart(DateTime("20200731T000000", tzVienna)), t.dtStart)
+        assertEquals(Due(DateTime("20200731T234600", tzVienna)), t.due)*/
     }
 
     @Test
@@ -78,8 +79,9 @@ class TaskReaderTest {
                 "END:VCALENDAR\r\n")
         assertEquals("DTSTART is DATE-TIME, but DUE is DATE", t.summary)
         // rewrite DTSTART to DATE-TIME, too
-        assertEquals(DtStart(DateTime("20200731T235510", tzVienna)), t.dtStart)
-        assertEquals(Due(DateTime("20200801T000000", tzVienna)), t.due)
+        TODO("ical4j 4.x")
+        /*assertEquals(DtStart(DateTime("20200731T235510", tzVienna)), t.dtStart)
+        assertEquals(Due(DateTime("20200801T000000", tzVienna)), t.due)*/
     }
 
     @Test
@@ -95,7 +97,8 @@ class TaskReaderTest {
         assertEquals("DUE before DTSTART", t.summary)
         // invalid tasks with DUE before DTSTART: DTSTART should be set to null
         assertNull(t.dtStart)
-        assertEquals(Due(DateTime("20200731T123000", tzVienna)), t.due)
+        TODO("ical4j 4.x")
+        //assertEquals(Due(DateTime("20200731T123000", tzVienna)), t.due)
     }
 
     @Test
@@ -126,7 +129,11 @@ class TaskReaderTest {
     }
 
 
-    @Test
+    init {
+        TODO("ical4j 4.x")
+    }
+
+    /*@Test
     fun testSamples() {
         val t = regenerate(parseCalendarFile("rfc5545-sample1.ics"))
         assertEquals(2, t.sequence)
@@ -190,11 +197,11 @@ class TaskReaderTest {
         assertEquals("most-fields2@example.com", t.uid)
         assertEquals(DtStart(DateTime("20100101T101010Z")), t.dtStart)
         assertEquals(
-            net.fortuna.ical4j.model.property.Duration(Duration.ofSeconds(4 * 86400 + 3 * 3600 + 2 * 60 + 1) /*Dur(4, 3, 2, 1)*/),
+            net.fortuna.ical4j.model.property.Duration(Duration.ofSeconds(4 * 86400 + 3 * 3600 + 2 * 60 + 1) *//*Dur(4, 3, 2, 1)*//*),
             t.duration
         )
         assertTrue(t.unknownProperties.isEmpty())
-    }
+    }*/
 
 
     /* helpers */

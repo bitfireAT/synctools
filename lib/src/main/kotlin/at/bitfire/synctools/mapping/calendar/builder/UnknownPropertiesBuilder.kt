@@ -48,9 +48,10 @@ class UnknownPropertiesBuilder: AndroidEntityBuilder {
 
     @VisibleForTesting
     internal fun unknownProperties(event: VEvent): List<Property> =
-        event.properties.filterNot {
+        TODO("ical4j 4.x")
+        /*event.properties.filterNot {
             KNOWN_PROPERTY_NAMES.contains(it.name.uppercase())
-        }
+        }*/
 
 
     companion object {

@@ -41,7 +41,8 @@ class EndTimeBuilder: AndroidEntityBuilder {
            - DURATION when the event is recurring.
 
         So we'll skip if this event is a recurring main event (only main events can be recurring). */
-        val rRules = from.getProperties<RRule>(Property.RRULE)
+        TODO("ical4j 4.x")
+        /*val rRules = from.getProperties<RRule>(Property.RRULE)
         val rDates = from.getProperties<RDate>(Property.RDATE)
         if (from === main && (rRules.isNotEmpty() || rDates.isNotEmpty())) {
             values.putNull(Events.DTEND)
@@ -91,7 +92,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
         } else {
             // DTEND is a DATE
             values.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }
+        }*/
     }
 
 
@@ -110,8 +111,9 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * @see at.bitfire.synctools.mapping.calendar.handler.RecurrenceFieldsHandler.alignUntil
      */
     @VisibleForTesting
-    internal fun alignWithDtStart(dtEnd: DtEnd, dtStart: DtStart): DtEnd {
-        if (DateUtils.isDate(dtEnd)) {
+    internal fun alignWithDtStart(dtEnd: DtEnd<*>, dtStart: DtStart<*>): DtEnd<*> {
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDate(dtEnd)) {
             // DTEND is DATE
             if (DateUtils.isDate(dtStart)) {
                 // DTEND is DATE, DTSTART is DATE
@@ -133,7 +135,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
                 // DTEND is DATE-TIME, DTSTART is DATE-TIME
                 return dtEnd
             }
-        }
+        }*/
     }
 
     /**
@@ -145,13 +147,14 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * @return end date/date-time (same value type as [dtStart]) or `null` if [duration] was not given
      */
     @VisibleForTesting
-    internal fun calculateFromDuration(dtStart: DtStart, duration: TemporalAmount?): DtEnd? {
+    internal fun calculateFromDuration(dtStart: DtStart<*>, duration: TemporalAmount?): DtEnd<*>? {
         if (duration == null)
             return null
 
         val dur = duration.abs()   // always take positive temporal amount
 
-        return if (DateUtils.isDate(dtStart)) {
+        TODO("ical4j 4.x")
+        /*return if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
             if (dur is Period) {
                 // date-based amount of time ("4 days")
@@ -170,7 +173,7 @@ class EndTimeBuilder: AndroidEntityBuilder {
             // We can add both date-based (Period) and time-based (Duration) amounts of time to an exact date/time.
             val result = (dtStart.date as DateTime).toZonedDateTime() + dur
             DtEnd(result.toIcal4jDateTime())
-        }
+        }*/
     }
 
     /**
@@ -194,14 +197,15 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * - when [dtStart] is a `DATE-TIME`: [dtStart]
      */
     @VisibleForTesting
-    internal fun calculateFromDefault(dtStart: DtStart): DtEnd =
-        if (DateUtils.isDate(dtStart)) {
+    internal fun calculateFromDefault(dtStart: DtStart<*>): DtEnd<*> =
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDate(dtStart)) {
             // DATE → one day duration
             val endDate: LocalDate = dtStart.date.toLocalDate().plusDays(1)
             DtEnd(endDate.toIcal4jDate())
         } else {
             // DATE-TIME → same as DTSTART to indicate there was no DTEND set
             DtEnd(dtStart.value, dtStart.timeZone)
-        }
+        }*/
 
 }

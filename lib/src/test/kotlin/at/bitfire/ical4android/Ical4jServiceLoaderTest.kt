@@ -31,7 +31,8 @@ class Ical4jServiceLoaderTest {
                 "END:VCALENDAR\n"
         val result = CalendarBuilder().build(StringReader(iCal))
         val vEvent = result.getComponent<VEvent>(Component.VEVENT)
-        assertEquals("Networld+Interop Conference", vEvent.summary.value)
+        TODO("ical4j 4.x")
+        //assertEquals("Networld+Interop Conference", vEvent.summary.value)
     }
 
 }

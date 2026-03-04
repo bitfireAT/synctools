@@ -39,7 +39,8 @@ class ColorHandlerTest {
             Events.EVENT_COLOR_KEY to Css3Color.silver.name
         ))
         handler.process(entity, entity, result)
-        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
+        TODO("ical4j 4.x")
+        //assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
     }
 
     @Test
@@ -49,7 +50,8 @@ class ColorHandlerTest {
             Events.EVENT_COLOR to Css3Color.silver.argb
         ))
         handler.process(entity, entity, result)
-        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
+        TODO("ical4j 4.x")
+        //assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
     }
 
 }

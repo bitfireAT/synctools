@@ -34,8 +34,9 @@ class ColorHandler: AndroidEventFieldHandler {
                 Css3Color.entries.firstOrNull { it.argb == color }
             }
 
-        if (color != null)
-            to.properties += Color(null, color.name)
+        TODO("ical4j 4.x")
+        /*if (color != null)
+            to.properties += Color(null, color.name)*/
     }
 
 }

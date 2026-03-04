@@ -39,7 +39,11 @@ class StartTimeBuilderTest {
     }
 
 
-    @Test
+    init {
+        TODO("ical4j 4.x")
+    }
+
+    /*@Test
     fun `All-day event`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
@@ -77,6 +81,6 @@ class StartTimeBuilderTest {
         ))
         builder.build(event, event, result)
         assertEquals(1760050923000, result.entityValues.get(Events.DTSTART))
-    }
+    }*/
 
 }

@@ -34,7 +34,8 @@ class AttendeesHandler: AndroidEventFieldHandler {
     private fun populateAttendee(row: ContentValues, to: VEvent) {
         logger.log(Level.FINE, "Read event attendee from calendar provider", row)
 
-        try {
+        TODO("ical4j 4.x")
+        /*try {
             val attendee: Attendee
             val email = row.getAsString(Attendees.ATTENDEE_EMAIL)
             val idNS = row.getAsString(Attendees.ATTENDEE_ID_NAMESPACE)
@@ -69,7 +70,7 @@ class AttendeesHandler: AndroidEventFieldHandler {
             to.properties += attendee
         } catch (e: URISyntaxException) {
             logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
-        }
+        }*/
     }
 
 }

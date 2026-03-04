@@ -60,7 +60,8 @@ class EndTimeHandler(
             tzRegistry = tzRegistry
         ).asIcal4jDate()
 
-        to.properties += DtEnd(end)
+        TODO("ical4j 4.x")
+        //to.properties += DtEnd(end)
     }
 
     @VisibleForTesting

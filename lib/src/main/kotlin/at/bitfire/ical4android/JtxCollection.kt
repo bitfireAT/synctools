@@ -17,10 +17,7 @@ import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.component.VJournal
-import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.Version
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -259,7 +256,8 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             logger.fine("getICSForCollection: found ${cursor?.count} records in ${account.name}")
 
             val ical = Calendar()
-            ical.properties += Version.VERSION_2_0
+            TODO("ical4j 4.x")
+            /*ical.properties += Version.VERSION_2_0
             ical.properties += prodId
 
             while (cursor?.moveToNext() == true) {
@@ -270,7 +268,7 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
                     if(component is VToDo || component is VJournal)
                         ical.components += component
                 }
-            }
+            }*/
             return ical.toString()
         }
     }

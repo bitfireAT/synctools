@@ -6,100 +6,26 @@
 
 package at.bitfire.ical4android
 
-import android.content.ContentUris
 import android.content.ContentValues
-import android.net.ParseException
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.synctools.exception.InvalidICalendarException
-import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
 import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
-import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.ParameterList
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
-import net.fortuna.ical4j.model.TextList
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.component.VJournal
-import net.fortuna.ical4j.model.component.VToDo
-import net.fortuna.ical4j.model.parameter.AltRep
-import net.fortuna.ical4j.model.parameter.Cn
-import net.fortuna.ical4j.model.parameter.CuType
-import net.fortuna.ical4j.model.parameter.DelegatedFrom
-import net.fortuna.ical4j.model.parameter.DelegatedTo
-import net.fortuna.ical4j.model.parameter.Dir
-import net.fortuna.ical4j.model.parameter.FmtType
-import net.fortuna.ical4j.model.parameter.Language
-import net.fortuna.ical4j.model.parameter.Member
-import net.fortuna.ical4j.model.parameter.PartStat
-import net.fortuna.ical4j.model.parameter.RelType
-import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.parameter.Role
-import net.fortuna.ical4j.model.parameter.Rsvp
-import net.fortuna.ical4j.model.parameter.SentBy
-import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.parameter.XParameter
-import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Attach
-import net.fortuna.ical4j.model.property.Categories
-import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.Color
-import net.fortuna.ical4j.model.property.Comment
-import net.fortuna.ical4j.model.property.Completed
-import net.fortuna.ical4j.model.property.Contact
-import net.fortuna.ical4j.model.property.Created
-import net.fortuna.ical4j.model.property.Description
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStamp
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.Due
-import net.fortuna.ical4j.model.property.Duration
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Geo
-import net.fortuna.ical4j.model.property.LastModified
-import net.fortuna.ical4j.model.property.Location
-import net.fortuna.ical4j.model.property.PercentComplete
-import net.fortuna.ical4j.model.property.Priority
 import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.model.property.RelatedTo
-import net.fortuna.ical4j.model.property.Repeat
-import net.fortuna.ical4j.model.property.Resources
-import net.fortuna.ical4j.model.property.Sequence
-import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Summary
-import net.fortuna.ical4j.model.property.Trigger
-import net.fortuna.ical4j.model.property.Uid
-import net.fortuna.ical4j.model.property.Url
-import net.fortuna.ical4j.model.property.Version
-import net.fortuna.ical4j.model.property.XProperty
-import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.OutputStream
 import java.io.Reader
-import java.net.URI
-import java.net.URISyntaxException
-import java.time.format.DateTimeParseException
-import java.util.TimeZone
 import java.util.UUID
-import java.util.logging.Level
 import java.util.logging.Logger
 
 open class JtxICalObject(
@@ -296,6 +222,8 @@ open class JtxICalObject(
 
             val iCalObjectList = mutableListOf<JtxICalObject>()
 
+            TODO("ical4j 4.x")
+            /*
             ical.components.forEach { component ->
 
                 val iCalObject = JtxICalObject(collection)
@@ -317,7 +245,7 @@ open class JtxICalObject(
                         iCalObjectList.add(iCalObject)
                     }
                 }
-            }
+            }*/
             return iCalObjectList
         }
 
@@ -328,8 +256,8 @@ open class JtxICalObject(
          * @param [calComponents] from which the VAlarms should be extracted
          */
         private fun extractVAlarms(iCalObject: JtxICalObject, calComponents: ComponentList<*>) {
-
-            calComponents.forEach { component ->
+            TODO("ical4j 4.x")
+            /*calComponents.forEach { component ->
                 if(component is VAlarm) {
                     val jtxAlarm = Alarm().apply {
                         component.action?.value?.let { vAlarmAction -> this.action = vAlarmAction }
@@ -364,7 +292,7 @@ open class JtxICalObject(
                     }
                     iCalObject.alarms.add(jtxAlarm)
                 }
-            }
+            }*/
         }
 
         /**
@@ -372,12 +300,12 @@ open class JtxICalObject(
          * @param [iCalObject] where the properties should be mapped to
          * @param [properties] from which the properties can be extracted
          */
-        private fun extractProperties(iCalObject: JtxICalObject, properties: PropertyList<*>) {
-
+        private fun extractProperties(iCalObject: JtxICalObject, properties: PropertyList) {
             // sequence must only be null for locally created, not-yet-synchronized events
             iCalObject.sequence = 0
 
-            for (prop in properties) {
+            TODO("ical4j 4.x")
+            /*for (prop in properties) {
                 when (prop) {
                     is Sequence -> iCalObject.sequence = prop.sequenceNo.toLong()
                     is Created -> iCalObject.created = prop.dateTime.time
@@ -625,7 +553,7 @@ open class JtxICalObject(
             if (iCalObject.duration != null && iCalObject.dtstart == null) {
                 logger.warning("Found DURATION without DTSTART; ignoring")
                 iCalObject.duration = null
-            }
+            }*/
         }
     }
 
@@ -638,7 +566,8 @@ open class JtxICalObject(
      */
     fun getICalendarFormat(prodId: ProdId): Calendar? {
         val ical = Calendar()
-        ical.properties += Version.VERSION_2_0
+        TODO("ical4j 4.x")
+        /*ical.properties += Version.VERSION_2_0
         ical.properties += prodId.withUserAgents(listOf(TaskProvider.ProviderName.JtxBoard.packageName))
 
         val calComponent = when (component) {
@@ -730,7 +659,7 @@ open class JtxICalObject(
             recurInstance.addProperties(recurCalComponent.properties)
         }
 
-        ICalendar.softValidate(ical)
+        ICalendar.softValidate(ical)*/
         return ical
     }
 
@@ -748,9 +677,9 @@ open class JtxICalObject(
      * This function maps the current JtxICalObject to a iCalendar property list
      * @param [props] The PropertyList where the properties should be added
      */
-    private fun addProperties(props: PropertyList<Property>) {
-
-        uid.let { props += Uid(it) }
+    private fun addProperties(props: PropertyList) {
+        TODO("ical4j 4.x")
+        /*uid.let { props += Uid(it) }
         sequence.let { props += Sequence(it.toInt()) }
 
         created.let { props += Created(DateTime(it).apply {
@@ -1134,8 +1063,6 @@ duration?.let(props::add)
             }
         }
 
-        /*
-
     // determine earliest referenced date
     val earliest = arrayOf(
         dtStart?.date,
@@ -1145,7 +1072,8 @@ duration?.let(props::add)
     // add VTIMEZONE components
     for (tz in usedTimeZones)
         ical.components += ICalendar.minifyVTimeZone(tz.vTimeZone, earliest)
-*/
+
+        TODO */
     }
 
 
@@ -1175,7 +1103,6 @@ duration?.let(props::add)
      * @param [flags] to be set as [Int]
      */
     fun updateFlags(flags: Int) {
-
         var updateUri = JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account)
         updateUri = Uri.withAppendedPath(updateUri, this.id.toString())
 
@@ -1190,7 +1117,8 @@ duration?.let(props::add)
      * @return the Content [Uri] of the inserted object
      */
     fun add(): Uri {
-        val values = this.toContentValues()
+        TODO("ical4j 4.x")
+        /*val values = this.toContentValues()
 
         val newUri = collection.client.insert(
             JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account),
@@ -1200,7 +1128,7 @@ duration?.let(props::add)
 
         insertOrUpdateListProperties(false)
 
-        return newUri
+        return newUri*/
     }
 
     /**
@@ -1209,8 +1137,8 @@ duration?.let(props::add)
      * @return [Uri] of the updated entry
      */
     fun update(data: JtxICalObject): Uri {
-
-        this.applyNewData(data)
+        TODO("ical4j 4.x")
+        /*this.applyNewData(data)
         val values = this.toContentValues()
 
         var updateUri = JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account)
@@ -1224,7 +1152,7 @@ duration?.let(props::add)
 
         insertOrUpdateListProperties(true)
 
-        return updateUri
+        return updateUri*/
     }
 
 

@@ -43,11 +43,12 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is PUBLIC`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(Clazz.PUBLIC)),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ), result.entityValues)
@@ -57,11 +58,12 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is PRIVATE`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(Clazz.PRIVATE)),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ), result.entityValues)
@@ -71,11 +73,12 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is CONFIDENTIAL`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(Clazz.CONFIDENTIAL)),
             main = VEvent(),
             to = result
-        )
+        )*/
 
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL

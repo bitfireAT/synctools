@@ -6,17 +6,13 @@
 
 package at.bitfire.ical4android
 
-import java.time.ZoneId
-import java.util.logging.Logger
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl
-import net.fortuna.ical4j.model.component.VTimeZone
-import net.fortuna.ical4j.model.property.TzId
+import java.time.ZoneId
+import java.util.logging.Logger
 
 /**
  * Wrapper around default [TimeZoneRegistry] that uses the Android name if a time zone has a
@@ -78,12 +74,13 @@ class AndroidCompatTimeZoneRegistry(
 
             // create a copy of the VTIMEZONE so that we don't modify the original registry values (which are not immutable)
             val vTimeZone = tz.vTimeZone
-            val newVTimeZoneProperties = PropertyList<Property>()
+            TODO("ical4j 4.x")
+            /*val newVTimeZoneProperties = PropertyList<Property>()
             newVTimeZoneProperties += TzId(androidTzId)
             return TimeZone(VTimeZone(
                 newVTimeZoneProperties,
                 vTimeZone.observances
-            ))
+            ))*/
         } else
             return tz
     }

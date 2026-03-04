@@ -41,11 +41,12 @@ class AllDayBuilderTest {
     @Test
     fun `DTSTART is DATE`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(DtStart(Date()))),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertContentValuesEqual(contentValuesOf(
             Events.ALL_DAY to 1
         ), result.entityValues)
@@ -54,11 +55,12 @@ class AllDayBuilderTest {
     @Test
     fun `DTSTART is DATE-TIME`() {
         val result = Entity(ContentValues())
-        builder.build(
+        TODO("ical4j 4.x")
+        /*builder.build(
             from = VEvent(propertyListOf(DtStart(DateTime()))),
             main = VEvent(),
             to = result
-        )
+        )*/
         assertContentValuesEqual(contentValuesOf(
             Events.ALL_DAY to 0
         ), result.entityValues)

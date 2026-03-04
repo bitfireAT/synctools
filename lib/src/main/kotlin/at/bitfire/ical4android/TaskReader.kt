@@ -7,39 +7,9 @@
 package at.bitfire.ical4android
 
 import at.bitfire.ical4android.ICalendar.Companion.fromReader
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.synctools.exception.InvalidICalendarException
-import at.bitfire.synctools.icalendar.Css3Color
 import net.fortuna.ical4j.model.Component
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VToDo
-import net.fortuna.ical4j.model.property.Categories
-import net.fortuna.ical4j.model.property.Clazz
-import net.fortuna.ical4j.model.property.Color
-import net.fortuna.ical4j.model.property.Comment
-import net.fortuna.ical4j.model.property.Completed
-import net.fortuna.ical4j.model.property.Created
-import net.fortuna.ical4j.model.property.Description
-import net.fortuna.ical4j.model.property.DtStamp
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.Due
-import net.fortuna.ical4j.model.property.Duration
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.Geo
-import net.fortuna.ical4j.model.property.LastModified
-import net.fortuna.ical4j.model.property.Location
-import net.fortuna.ical4j.model.property.Organizer
-import net.fortuna.ical4j.model.property.PercentComplete
-import net.fortuna.ical4j.model.property.Priority
-import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.RelatedTo
-import net.fortuna.ical4j.model.property.Sequence
-import net.fortuna.ical4j.model.property.Status
-import net.fortuna.ical4j.model.property.Summary
-import net.fortuna.ical4j.model.property.Uid
-import net.fortuna.ical4j.model.property.Url
 import java.io.IOException
 import java.io.Reader
 import java.util.LinkedList
@@ -71,7 +41,8 @@ class TaskReader {
     }
 
     private fun fromVToDo(todo: VToDo): Task {
-        val t = Task()
+        TODO("ical4j 4.x")
+        /*val t = Task()
 
         if (todo.uid != null)
             t.uid = todo.uid.value
@@ -142,7 +113,7 @@ class TaskReader {
             t.duration = null
         }
 
-        return t
+        return t*/
     }
 
 }

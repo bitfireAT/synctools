@@ -7,7 +7,6 @@
 package at.bitfire.ical4android
 
 import androidx.annotation.IntRange
-import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.property.Clazz
@@ -44,22 +43,22 @@ data class Task(
     var organizer: Organizer? = null,
 
     @IntRange(from = 0, to = 9)
-    var priority: Int = Priority.UNDEFINED.level,
+    var priority: Int = Priority.VALUE_UNDEFINED,
 
     var classification: Clazz? = null,
     var status: Status? = null,
 
-    var dtStart: DtStart? = null,
-    var due: Due? = null,
+    var dtStart: DtStart<*>? = null,
+    var due: Due<*>? = null,
     var duration: Duration? = null,
     var completedAt: Completed? = null,
 
     @IntRange(from = 0, to = 100)
     var percentComplete: Int? = null,
 
-    var rRule: RRule? = null,
-    val rDates: LinkedList<RDate> = LinkedList(),
-    val exDates: LinkedList<ExDate> = LinkedList(),
+    var rRule: RRule<*>? = null,
+    val rDates: LinkedList<RDate<*>> = LinkedList(),
+    val exDates: LinkedList<ExDate<*>> = LinkedList(),
 
     val categories: LinkedList<String> = LinkedList(),
     var comment: String? = null,
@@ -70,9 +69,10 @@ data class Task(
 ) : ICalendar() {
 
     fun isAllDay(): Boolean {
-        return dtStart?.let { DateUtils.isDate(it) }
+        TODO("ical4j 4.x")
+        /*return dtStart?.let { DateUtils.isDate(it) }
             ?: due?.let { DateUtils.isDate(it) }
-            ?: true
+            ?: true*/
     }
 
 }

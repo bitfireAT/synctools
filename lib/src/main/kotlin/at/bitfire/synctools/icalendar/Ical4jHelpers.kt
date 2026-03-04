@@ -27,24 +27,30 @@ const val ical4jVersion = BuildConfig.version_ical4j
 
 // component access helpers
 
-fun<T: CalendarComponent> componentListOf(vararg components: T) =
-    ComponentList<CalendarComponent>().apply {
+fun<T: CalendarComponent> componentListOf(vararg components: T): ComponentList<T> =
+    TODO("ical4j 4.x")
+    /*ComponentList<CalendarComponent>().apply {
         addAll(components)
-    }
+    }*/
 
-fun propertyListOf(vararg properties: Property) =
-    PropertyList<Property>().apply {
+fun propertyListOf(vararg properties: Property): PropertyList =
+    TODO("ical4j 4.x")
+    /*PropertyList<Property>().apply {
         addAll(properties)
-    }
+    }*/
 
 val CalendarComponent.uid: Uid?
-    get() = getProperty(Property.UID)
+    get() = TODO("ical4j 4.x")
+    // getProperty(Property.UID)
 
-val CalendarComponent.recurrenceId: RecurrenceId?
-    get() = getProperty(Property.RECURRENCE_ID)
+val CalendarComponent.recurrenceId: RecurrenceId<*>?
+    get() = TODO("ical4j 4.x")
+    // getProperty(Property.RECURRENCE_ID)
 
 val CalendarComponent.sequence: Sequence?
-    get() = getProperty(Property.SEQUENCE)
+    get() = TODO("ical4j 4.x")
+    // getProperty(Property.SEQUENCE)
 
-fun VEvent.requireDtStart(): DtStart =
-    startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
+fun VEvent.requireDtStart(): DtStart<*> =
+    TODO("ical4j 4.x")
+    // startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")

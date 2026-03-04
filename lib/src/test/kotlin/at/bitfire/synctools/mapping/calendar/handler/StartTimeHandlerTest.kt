@@ -39,7 +39,8 @@ class StartTimeHandlerTest {
             Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtStart(Date("20200621")), result.startDate)
+        TODO("ical4j 4.x")
+        //assertEquals(DtStart(Date("20200621")), result.startDate)
     }
 
     @Test
@@ -50,7 +51,8 @@ class StartTimeHandlerTest {
             Events.EVENT_TIMEZONE to "Europe/Vienna"
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtStart(DateTime("20200621T120000", tzVienna)), result.startDate)
+        TODO("ical4j 4.x")
+        //assertEquals(DtStart(DateTime("20200621T120000", tzVienna)), result.startDate)
     }
 
     @Test(expected = InvalidLocalResourceException::class)

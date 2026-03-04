@@ -76,7 +76,8 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ))
         handler.process(entity, entity, result)
-        assertEquals(Clazz.PUBLIC, result.classification)
+        TODO("ical4j 4.x")
+        //assertEquals(Clazz.PUBLIC, result.classification)
     }
 
     @Test
@@ -86,7 +87,8 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ))
         handler.process(entity, entity, result)
-        assertEquals(Clazz.PRIVATE, result.classification)
+        TODO("ical4j 4.x")
+        //assertEquals(Clazz.PRIVATE, result.classification)
     }
 
     @Test
@@ -96,7 +98,8 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
         ))
         handler.process(entity, entity, result)
-        assertEquals(Clazz.CONFIDENTIAL, result.classification)
+        TODO("ical4j 4.x")
+        //assertEquals(Clazz.CONFIDENTIAL, result.classification)
     }
 
 }

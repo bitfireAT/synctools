@@ -38,9 +38,10 @@ class UnknownPropertyTest {
         assertTrue(prop is Attendee)
         assertEquals("ATTENDEE", prop.name)
         assertEquals("PropValue", prop.value)
-        assertEquals(2, prop.parameters.size())
+        TODO("ical4j 4.x")
+        /*assertEquals(2, prop.parameters.size())
         assertEquals("value1", prop.parameters.getParameter<Parameter>("x-param1").value)
-        assertEquals("value2", prop.parameters.getParameter<Parameter>("x-param2").value)
+        assertEquals("value2", prop.parameters.getParameter<Parameter>("x-param2").value)*/
     }
 
     @Test(expected = JSONException::class)
@@ -59,8 +60,9 @@ class UnknownPropertyTest {
             attendee.toString().trim()
         )
 
-        attendee.parameters.add(Rsvp(true))
-        attendee.parameters.add(XParameter("X-My-Param", "SomeValue"))
+        TODO("ical4j 4.x")
+        /*attendee.parameters.add(Rsvp(true))
+        attendee.parameters.add(XParameter("X-My-Param", "SomeValue"))*/
         assertEquals(
             "ATTENDEE;RSVP=TRUE;X-My-Param=SomeValue:mailto:test@test.at",
             attendee.toString().trim()

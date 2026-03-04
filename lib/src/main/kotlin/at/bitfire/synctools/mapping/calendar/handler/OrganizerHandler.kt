@@ -30,7 +30,8 @@ class OrganizerHandler: AndroidEventFieldHandler {
         val hasAttendees = from.subValues.any { it.uri == Attendees.CONTENT_URI }
         if (hasAttendees && mainValues.containsKey(Events.ORGANIZER))
             try {
-                to.properties += Organizer(URI("mailto", mainValues.getAsString(Events.ORGANIZER), null))
+                TODO("ical4j 4.x")
+                //to.properties += Organizer(URI("mailto", mainValues.getAsString(Events.ORGANIZER), null))
             } catch (e: URISyntaxException) {
                 logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
             }

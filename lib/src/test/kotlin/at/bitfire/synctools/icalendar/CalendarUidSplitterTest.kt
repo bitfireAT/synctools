@@ -30,7 +30,8 @@ class CalendarUidSplitterTest {
     @Test
     fun testAssociatedVEventsByUid_ExceptionOnly_NoUid() {
         val exception = VEvent(propertyListOf(
-            RecurrenceId("20250629T000000Z")
+            TODO("ical4j 4.x")
+            //RecurrenceId("20250629T000000Z")
         ))
         val calendar = Calendar(componentListOf(exception))
         val result = CalendarUidSplitter<VEvent>().associateByUid(calendar, Component.VEVENT)
@@ -77,7 +78,11 @@ class CalendarUidSplitterTest {
         assertEquals(emptyList<VEvent>(), result)
     }
 
-    @Test
+    init {
+        TODO("ical4j 4.x")
+    }
+
+    /*@Test
     fun testFilterBySequence_MainAndExceptions_MultipleSequences() {
         val mainEvent1a = VEvent(propertyListOf(Sequence(1)))
         val mainEvent1b = VEvent(propertyListOf(Sequence(2)))
@@ -159,7 +164,7 @@ class CalendarUidSplitterTest {
             listOf(exception1a, exception1c, exception1b, exception2a, exception2b)
         )
         assertEquals(listOf(exception1c, exception2b), result)
-    }
+    }*/
 
     @Test
     fun testFilterBySequence_OnlyMain_SingleSequence() {

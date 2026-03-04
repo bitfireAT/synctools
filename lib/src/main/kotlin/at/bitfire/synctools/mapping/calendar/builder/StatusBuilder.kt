@@ -14,12 +14,13 @@ import net.fortuna.ical4j.model.property.Status
 class StatusBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        to.entityValues.put(Events.STATUS, when (from.status) {
+        TODO("ical4j 4.x")
+        /*to.entityValues.put(Events.STATUS, when (from.status) {
             Status.VEVENT_CONFIRMED -> Events.STATUS_CONFIRMED
             Status.VEVENT_CANCELLED -> Events.STATUS_CANCELED
             null -> null
             else -> Events.STATUS_TENTATIVE
-        })
+        })*/
     }
 
 }
