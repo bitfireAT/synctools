@@ -9,6 +9,7 @@ package at.bitfire.synctools.icalendar
 import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.component.CalendarComponent
+import kotlin.jvm.optionals.getOrNull
 
 class CalendarUidSplitter<T: CalendarComponent> {
 
@@ -23,12 +24,10 @@ class CalendarUidSplitter<T: CalendarComponent> {
         // get all components of type T (for instance: all VEVENTs)
         val all = calendar.getComponents<T>(componentName)
 
-        TODO("ical4j 4.x")
-
         // Note for VEVENT: UID is REQUIRED in RFC 5545 section 3.6.1, but optional in RFC 2445 section 4.6.1,
         // so it's possible that the Uid is null.
-        /*val byUid: Map<String?, List<T>> = all
-            .groupBy { it.uid?.value }
+        val byUid: Map<String?, List<T>> = all
+            .groupBy { it.uid.getOrNull()?.value }
             .mapValues { filterBySequence(it.value) }
 
         val result = mutableMapOf<String?, AssociatedComponents<T>>()
@@ -38,29 +37,27 @@ class CalendarUidSplitter<T: CalendarComponent> {
             result[uid] = AssociatedComponents(mainVEvent, exceptions)
         }
 
-        return result*/
+        return result
     }
 
     /**
      * Keeps only the events with the highest SEQUENCE (per RECURRENCE-ID).
      *
-     * @param events    list of VEVENTs with the same UID, but different RECURRENCE-IDs (may be `null`) and SEQUENCEs
+     * @param events    list of VEVENTs with the same UID, but different RECURRENCE-IDs (could be `null`) and SEQUENCEs
      *
      * @return same as input list, but each RECURRENCE-ID occurs only with the highest SEQUENCE
      */
     @VisibleForTesting
     internal fun filterBySequence(events: List<T>): List<T> {
-        TODO("ical4j 4.x")
+        // group by RECURRENCE-ID (could be null)
+        val byRecurId = events.groupBy { it.recurrenceId?.value }.values
 
-        // group by RECURRENCE-ID (may be null)
-        /*val byRecurId = events.groupBy { it.recurrenceId?.value }.values
-
-        // for every RECURRENCE-ID: keep only event with highest sequence
+        // for every RECURRENCE-ID: keep only event with the highest sequence
         val latest = byRecurId.map { sameUidAndRecurId ->
             sameUidAndRecurId.maxBy { it.sequence?.sequenceNo ?: 0 }
         }
 
-        return latest*/
+        return latest
     }
 
 }
