@@ -42,17 +42,15 @@ class ICalendarParser(
      * @throws InvalidICalendarException   when the resource is can't be parsed
      */
     fun parse(@WillNotClose reader: Reader): Calendar {
-        TODO("ical4j 4.x")
-
         // preprocess stream to work around problems that prevent parsing and thus can't be fixed later
-        /*val preprocessed = preprocessor.preprocessStream(reader)
+        val preprocessed = preprocessor.preprocessStream(reader)
 
         // parse stream, ignoring invalid properties (if possible)
         val calendar: Calendar
         try {
             calendar = CalendarBuilder(
                 /* parser = */ CalendarParserFactory.getInstance().get(),
-                /* contentHandlerContext = */ ContentHandlerContext().withSupressInvalidProperties(/* supressInvalidProperties = */ true),
+                /* contentHandlerContext = */ ContentHandlerContext().withSuppressInvalidProperties(true),
                 /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
             ).build(preprocessed)
         } catch(e: ParserException) {
@@ -68,7 +66,7 @@ class ICalendarParser(
             logger.log(Level.WARNING, "Couldn't pre-process iCalendar", e)
         }
 
-        return calendar*/
+        return calendar
     }
 
 }
