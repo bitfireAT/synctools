@@ -39,11 +39,11 @@ class ICalendarGenerator {
      */
     fun write(event: AssociatedComponents<*>, @WillNotClose to: Writer) {
         val ical = Calendar()
-        ical.addProperty(ImmutableVersion.VERSION_2_0)
+        ical += ImmutableVersion.VERSION_2_0
 
         // add PRODID
         if (event.prodId != null)
-            ical.addProperty(event.prodId)
+            ical += event.prodId
 
         // keep record of used timezones and earliest DTSTART to generate minified VTIMEZONEs
         var earliestStart: Temporal? = null
@@ -51,7 +51,7 @@ class ICalendarGenerator {
 
         // add main event
         if (event.main != null) {
-            ical.addComponent(event.main)
+            ical += event.main
 
             earliestStart = event.main.dtStart<Temporal>()?.date
             usedTimeZones += timeZonesOf(event.main)
@@ -59,7 +59,7 @@ class ICalendarGenerator {
 
         // recurrence exceptions
         for (exception in event.exceptions) {
-            ical.addComponent(exception)
+            ical += exception
 
             exception.dtStart<Temporal>()?.date?.let { start ->
                 if (earliestStart == null || TemporalAdapter.isBefore(start, earliestStart))
@@ -73,7 +73,7 @@ class ICalendarGenerator {
         for (tz in usedTimeZones) {
             val vTimeZone = tzReg.getTimeZone(tz.id).vTimeZone
             val minifiedVTimeZone = ICalendar.minifyVTimeZone(vTimeZone, earliestStart.toZonedDateTime(tz))
-            ical.addComponent(minifiedVTimeZone)
+            ical += minifiedVTimeZone
         }
 
         CalendarOutputter(false).output(ical, to)

@@ -7,10 +7,11 @@
 package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.BuildConfig
-import at.bitfire.synctools.exception.InvalidICalendarException
-import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.ComponentContainer
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.PropertyContainer
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
@@ -53,12 +54,10 @@ fun VEvent.requireDtStart(): DtStart<*> =
     TODO("ical4j 4.x")
     // startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
 
-// Work around a Kotlin type inference issue when writing e.g. `Calendar().add(myProperty)`
-fun Calendar.addProperty(property: Property): Calendar {
-    return add(property)
+operator fun PropertyContainer.plusAssign(property: Property) {
+    add<PropertyContainer>(property)
 }
 
-// Work around a Kotlin type inference issue when writing e.g. `Calendar().add(myComponent)`
-fun Calendar.addComponent(component: CalendarComponent): Calendar {
-    return add(component)
+operator fun <T : Component> ComponentContainer<T>.plusAssign(component: T) {
+    add<ComponentContainer<T>>(component)
 }
