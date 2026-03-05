@@ -15,12 +15,10 @@ import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
 
-@Ignore("ical4j 4.x")
 class CalendarUidSplitterTest {
 
     @Test
