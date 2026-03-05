@@ -14,11 +14,17 @@ import kotlin.jvm.optionals.getOrNull
 class CalendarUidSplitter<T: CalendarComponent> {
 
     /**
-     * Splits iCalendar components by UID and classifies them as main events (without RECURRENCE-ID)
-     * or exceptions (with RECURRENCE-ID).
+     * Splits iCalendar components by UID and classifies them as
+     * - main events (which do not have a RECURRENCE-ID) or
+     * - exceptions (which do have a RECURRENCE-ID).
      *
      * When there are multiple components with the same UID and RECURRENCE-ID, but different SEQUENCE,
      * this method keeps only the ones with the highest SEQUENCE.
+     *
+     * @param calendar The calendar to split
+     * @param componentName The name of the component to split (e.g. "VEVENT")
+     *
+     * @return A map of UID to [AssociatedComponents]
      */
     fun associateByUid(calendar: Calendar, componentName: String): Map<String?, AssociatedComponents<T>> {
         // get all components of type T (for instance: all VEVENTs)
