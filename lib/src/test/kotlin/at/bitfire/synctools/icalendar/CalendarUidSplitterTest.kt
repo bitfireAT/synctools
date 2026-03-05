@@ -153,7 +153,7 @@ class CalendarUidSplitterTest {
             // Sequence(0)
         ))
         val exception2b = VEvent(propertyListOf(
-            RecurrenceId<Instant>("20250629"),
+            RecurrenceId<LocalDate>("20250629"),
             Sequence(1)
         ))
         val result = CalendarUidSplitter<VEvent>().filterBySequence(
