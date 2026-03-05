@@ -7,8 +7,11 @@
 package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.BuildConfig
+import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.ComponentContainer
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.PropertyContainer
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
@@ -16,6 +19,7 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Uid
+import java.time.temporal.Temporal
 import kotlin.jvm.optionals.getOrNull
 
 /**
@@ -28,10 +32,10 @@ const val ical4jVersion = BuildConfig.version_ical4j
 // component access helpers
 
 fun<T: CalendarComponent> componentListOf(vararg components: T): ComponentList<T> =
-    ComponentList<T>().addAll(components.toList())
+    ComponentList(components.toList())
 
 fun propertyListOf(vararg properties: Property): PropertyList =
-    PropertyList().addAll(properties.toList())
+    PropertyList(properties.toList())
 
 val CalendarComponent.uid: Uid?
     get() = getProperty<Uid>(Property.UID).getOrNull()
@@ -42,6 +46,18 @@ val CalendarComponent.recurrenceId: RecurrenceId<*>?
 val CalendarComponent.sequence: Sequence?
     get() = getProperty<Sequence>(Property.SEQUENCE).getOrNull()
 
+fun <T: Temporal> CalendarComponent.dtStart(): DtStart<T>? {
+    return getProperty<DtStart<T>>(Property.DTSTART).getOrNull()
+}
+
 fun VEvent.requireDtStart(): DtStart<*> =
     TODO("ical4j 4.x")
     // startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
+
+operator fun PropertyContainer.plusAssign(property: Property) {
+    add<PropertyContainer>(property)
+}
+
+operator fun <T : Component> ComponentContainer<T>.plusAssign(component: T) {
+    add<ComponentContainer<T>>(component)
+}

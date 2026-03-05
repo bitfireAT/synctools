@@ -15,13 +15,11 @@ import io.mockk.junit4.MockKRule
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import java.io.Reader
 import java.io.StringReader
 
-@Ignore("ical4j 4.x")
 class ICalendarParserTest {
 
     @get:Rule

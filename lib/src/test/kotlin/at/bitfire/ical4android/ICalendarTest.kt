@@ -10,6 +10,7 @@ import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
@@ -19,18 +20,16 @@ import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.util.TimeZones
-import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
-import java.time.Duration
-import java.time.Period
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.Date
 
-@Ignore("ical4j 4.x")
 class ICalendarTest {
 
 	// UTC timezone
@@ -52,14 +51,14 @@ class ICalendarTest {
 
 
 	private fun readTimeZone(fileName: String): VTimeZone {
-		TODO("ical4j 4.x")
-		/*javaClass.classLoader!!.getResourceAsStream("tz/$fileName").use { tzStream ->
+		javaClass.classLoader!!.getResourceAsStream("tz/$fileName").use { tzStream ->
 			val cal = CalendarBuilder().build(tzStream)
-			val vTimeZone = cal.getComponent(Component.VTIMEZONE) as VTimeZone
+			val vTimeZone = cal.getComponent<VTimeZone>(Component.VTIMEZONE).get()
 			return vTimeZone
-		}*/
+		}
 	}
 
+	@Ignore("ical4j 4.x")
 	@Test
 	fun testFromReader_calendarProperties() {
 		val calendar = ICalendar.fromReader(
@@ -80,6 +79,7 @@ class ICalendarTest {
         assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)*/
 	}
 
+	@Ignore("ical4j 4.x")
 	@Test
 	fun testFromReader_invalidProperty() {
 		// The GEO property is invalid and should be ignored.
@@ -108,9 +108,10 @@ class ICalendarTest {
 		// DATE-TIME values in UTC are usually noted with ...Z and don't have a VTIMEZONE,
 		// but it is allowed to write them as TZID=Etc/UTC.
         assertEquals(1, vtzUTC.observances.size)
-		ICalendar.minifyVTimeZone(vtzUTC, net.fortuna.ical4j.model.Date("20200612")).let { minified ->
-            assertEquals(1, minified.observances.size)
-		}
+
+		val minified = ICalendar.minifyVTimeZone(vtzUTC, vtzUTC.zonedDateTime("2020-06-12T00:00"))
+
+		assertEquals(1, minified.observances.size)
 	}
 
 	@Test
@@ -118,14 +119,14 @@ class ICalendarTest {
 		// Remove obsolete observances when DST is used.
         assertEquals(6, vtzVienna.observances.size)
 		// By default, the earliest observance is in 1893. We can drop that for events in 2020.
-        assertEquals(DateTime("18930401T000000"), vtzVienna.observances.sortedBy { it.startDate.date }.first().startDate.date)
-		ICalendar.minifyVTimeZone(vtzVienna, net.fortuna.ical4j.model.Date("20200101")).let { minified ->
-			Assert.assertEquals(2, minified.observances.size)
-			// now earliest observance for DAYLIGHT/STANDARD is 1981/1996
-            assertEquals(DateTime("19961027T030000"), minified.observances[0].startDate.date)
-            assertEquals(DateTime("19810329T020000"), minified.observances[1].startDate.date)
-		}
+        assertEquals(LocalDateTime.parse("1893-04-01T00:00:00"), vtzVienna.observances.minOfOrNull { it.startDate.date })
 
+		val minified = ICalendar.minifyVTimeZone(vtzVienna, vtzVienna.zonedDateTime("2020-01-01"))
+
+		assertEquals(2, minified.observances.size)
+		// now earliest observance for STANDARD/DAYLIGHT is 1996/1981
+		assertEquals(LocalDateTime.parse("1996-10-27T03:00:00"), minified.observances[0].startDate.date)
+		assertEquals(LocalDateTime.parse("1981-03-29T02:00:00"), minified.observances[1].startDate.date)
 	}
 
 	@Test
@@ -133,26 +134,36 @@ class ICalendarTest {
 		// Remove obsolete observances when DST is not used. Mogadishu had several time zone changes,
 		// but now there is a simple offest without DST.
         assertEquals(4, vtzMogadishu.observances.size)
-		ICalendar.minifyVTimeZone(vtzMogadishu, net.fortuna.ical4j.model.Date("19611001")).let { minified ->
-            assertEquals(1, minified.observances.size)
-		}
+
+		val minified = ICalendar.minifyVTimeZone(vtzMogadishu, vtzMogadishu.zonedDateTime("1961-10-01"))
+
+		assertEquals(1, minified.observances.size)
 	}
 
 	@Test
 	fun testMinifyVTimezone_keepFutureObservances() {
 		// Keep future observances.
-		ICalendar.minifyVTimeZone(vtzVienna, net.fortuna.ical4j.model.Date("19751001")).let { minified ->
-			Assert.assertEquals(4, minified.observances.size)
-            assertEquals(DateTime("19161001T010000"), minified.observances[2].startDate.date)
-            assertEquals(DateTime("19160430T230000"), minified.observances[3].startDate.date)
+		ICalendar.minifyVTimeZone(vtzVienna, vtzVienna.zonedDateTime("1975-10-01")).let { minified ->
+			val sortedStartDates = minified.observances
+				.map { it.startDate.date }
+				.sorted()
+				.map { it.toString() }
+
+			assertEquals(
+				listOf("1916-04-30T23:00", "1916-10-01T01:00", "1981-03-29T02:00", "1996-10-27T03:00"),
+				sortedStartDates
+			)
 		}
-		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("19611001")).let { minified ->
+
+		ICalendar.minifyVTimeZone(vtzKarachi, vtzKarachi.zonedDateTime("1961-10-01")).let { minified ->
             assertEquals(4, minified.observances.size)
 		}
-		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("19751001")).let { minified ->
+
+		ICalendar.minifyVTimeZone(vtzKarachi, vtzKarachi.zonedDateTime("1975-10-01")).let { minified ->
             assertEquals(3, minified.observances.size)
 		}
-		ICalendar.minifyVTimeZone(vtzMogadishu, net.fortuna.ical4j.model.Date("19311001")).let { minified ->
+
+		ICalendar.minifyVTimeZone(vtzMogadishu, vtzMogadishu.zonedDateTime("1931-10-01")).let { minified ->
             assertEquals(3, minified.observances.size)
 		}
 	}
@@ -160,7 +171,7 @@ class ICalendarTest {
 	@Test
 	fun testMinifyVTimezone_keepDstWhenStartInDst() {
 		// Keep DST when there are no obsolete observances, but start time is in DST.
-		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("20091031")).let { minified ->
+		ICalendar.minifyVTimeZone(vtzKarachi, vtzKarachi.zonedDateTime("2009-10-31")).let { minified ->
             assertEquals(2, minified.observances.size)
 		}
 	}
@@ -168,12 +179,13 @@ class ICalendarTest {
 	@Test
 	fun testMinifyVTimezone_removeDstWhenNotUsedAnymore() {
 		// Remove obsolete observances (including DST) when DST is not used anymore.
-		ICalendar.minifyVTimeZone(vtzKarachi, net.fortuna.ical4j.model.Date("201001001")).let { minified ->
+		ICalendar.minifyVTimeZone(vtzKarachi, vtzKarachi.zonedDateTime("2010-01-01")).let { minified ->
             assertEquals(1, minified.observances.size)
 		}
 	}
 
 
+	@Ignore("ical4j 4.x")
     @Test
     fun testTimezoneDefToTzId_Valid() {
         assertEquals(
@@ -204,6 +216,7 @@ class ICalendarTest {
         )
 	}
 
+	@Ignore("ical4j 4.x")
 	@Test
 	fun testTimezoneDefToTzId_Invalid() {
 		// invalid time zone
@@ -220,10 +233,6 @@ class ICalendarTest {
         )
     }
 
-
-	init {
-		TODO("ical4j 4.x")
-	}
 
 	/*@Test
 	fun testVAlarmToMin_TriggerDuration_Negative() {
@@ -359,4 +368,9 @@ class ICalendarTest {
 		assertEquals(8*24*60, min)
 	}*/
 
+}
+
+private fun VTimeZone.zonedDateTime(text: String): ZonedDateTime {
+	val dateTimeText = if ('T' in text) text else "${text}T00:00:00"
+	return LocalDateTime.parse(dateTimeText).atZone(TimeZone(this).toZoneId())
 }
