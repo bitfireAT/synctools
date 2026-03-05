@@ -16,8 +16,10 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
 import java.io.Writer
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
@@ -99,6 +101,8 @@ class ICalendarGenerator {
         return when (this) {
             is LocalDate -> this.atStartOfDay().atZone(zoneId)
             is LocalDateTime -> this.atZone(zoneId)
+            is OffsetDateTime -> this.atZoneSameInstant(zoneId)
+            is Instant -> this.atZone(zoneId)
             is ZonedDateTime -> this
             else -> null
         }
