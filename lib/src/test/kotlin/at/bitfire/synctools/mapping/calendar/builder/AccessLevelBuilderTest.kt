@@ -16,13 +16,13 @@ import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
 import org.junit.Assert.assertEquals
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class AccessLevelBuilderTest {
 
@@ -45,12 +45,11 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is PUBLIC`() {
         val result = Entity(ContentValues())
-        TODO("ical4j 4.x")
-        /*builder.build(
-            from = VEvent(propertyListOf(Clazz.PUBLIC)),
+        builder.build(
+            from = VEvent(propertyListOf(ImmutableClazz.PUBLIC)),
             main = VEvent(),
             to = result
-        )*/
+        )
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ), result.entityValues)
@@ -60,12 +59,11 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is PRIVATE`() {
         val result = Entity(ContentValues())
-        TODO("ical4j 4.x")
-        /*builder.build(
-            from = VEvent(propertyListOf(Clazz.PRIVATE)),
+        builder.build(
+            from = VEvent(propertyListOf(ImmutableClazz.PRIVATE)),
             main = VEvent(),
             to = result
-        )*/
+        )
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ), result.entityValues)
@@ -75,12 +73,11 @@ class AccessLevelBuilderTest {
     @Test
     fun `Classification is CONFIDENTIAL`() {
         val result = Entity(ContentValues())
-        TODO("ical4j 4.x")
-        /*builder.build(
-            from = VEvent(propertyListOf(Clazz.CONFIDENTIAL)),
+        builder.build(
+            from = VEvent(propertyListOf(ImmutableClazz.CONFIDENTIAL)),
             main = VEvent(),
             to = result
-        )*/
+        )
 
         assertContentValuesEqual(contentValuesOf(
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
