@@ -16,12 +16,10 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Organizer
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class OrganizerBuilderTest {
 
@@ -48,8 +46,7 @@ class OrganizerBuilderTest {
         builder.build(
             from = VEvent(propertyListOf(Organizer("mailto:organizer@example.com"))).apply {
                 // at least one attendee to make event group-scheduled
-                TODO("ical4j 4.x")
-                // properties += Attendee("mailto:attendee@example.com")
+                add<VEvent>(Attendee("mailto:attendee@example.com"))
             },
             main = VEvent(),
             to = result
@@ -66,8 +63,7 @@ class OrganizerBuilderTest {
         builder.build(
             from = VEvent(propertyListOf(Organizer("local-id:user"))).apply {
                 // at least one attendee to make event group-scheduled
-                TODO("ical4j 4.x")
-                // properties += Attendee("mailto:attendee@example.com")
+                add<VEvent>(Attendee("mailto:attendee@example.com"))
             },
             main = VEvent(),
             to = result
@@ -83,10 +79,8 @@ class OrganizerBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                Organizer("local-id:user").apply {
-                    TODO("ical4j 4.x")
-                    // parameters.add(Email("organizer@example.com"))
-                },
+                Organizer("local-id:user")
+                    .add(Email("organizer@example.com")),
                 Attendee("mailto:attendee@example.com")
             )),
             main = VEvent(),
