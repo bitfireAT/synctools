@@ -21,7 +21,6 @@ import javax.annotation.WillNotClose
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
  *
- *   - [CreatedPropertyRule] to make sure CREATED is UTC
  *   - [DatePropertyRule] and [DateListPropertyRule] to rename Outlook-specific TZID parameters
  * (like "W. Europe Standard Time" to an Android-friendly name like "Europe/Vienna")
  */
@@ -31,9 +30,6 @@ class ICalPreprocessor {
         get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
-        TODO("ical4j 4.x"),
-        //CreatedPropertyRule(),      // make sure CREATED is UTC
-
         DatePropertyRule(),         // These two rules also replace VTIMEZONEs of the iCalendar ...
         DateListPropertyRule()      // ... by the ical4j VTIMEZONE with the same TZID!
     )
