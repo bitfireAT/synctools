@@ -18,7 +18,6 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
 import org.junit.Assert.assertEquals
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
