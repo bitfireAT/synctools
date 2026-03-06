@@ -50,9 +50,8 @@ fun <T: Temporal> CalendarComponent.dtStart(): DtStart<T>? {
     return getProperty<DtStart<T>>(Property.DTSTART).getOrNull()
 }
 
-fun VEvent.requireDtStart(): DtStart<*> =
-    TODO("ical4j 4.x")
-    // startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
+fun <T: Temporal> VEvent.requireDtStart(): DtStart<T> =
+    getRequiredProperty<DtStart<T>>(Property.DTSTART)
 
 operator fun PropertyContainer.plusAssign(property: Property) {
     add<PropertyContainer>(property)
