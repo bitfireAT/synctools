@@ -16,13 +16,7 @@ object MiscUtils {
 
     // various extension methods
 
-    fun ContentProviderClient.closeCompat() {
-        @Suppress("DEPRECATION")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            close()
-        else
-            release()
-    }
+
 
     fun Uri.asSyncAdapter(account: Account): Uri = buildUpon()
         .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_NAME, account.name)

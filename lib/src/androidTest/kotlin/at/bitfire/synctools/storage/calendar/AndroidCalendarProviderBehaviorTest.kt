@@ -17,7 +17,7 @@ import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
@@ -53,7 +53,7 @@ class AndroidCalendarProviderBehaviorTest {
 
     @After
     fun tearDown() {
-        client.closeCompat()
+        client.close()
     }
 
 

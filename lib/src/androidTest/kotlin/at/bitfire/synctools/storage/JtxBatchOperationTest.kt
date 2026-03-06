@@ -15,7 +15,7 @@ import at.bitfire.ical4android.JtxCollection
 import at.bitfire.ical4android.JtxICalObject
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.test.BuildConfig
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
@@ -42,7 +42,7 @@ class JtxBatchOperationTest {
 
     @After
     fun tearDown() {
-        provider.closeCompat()
+        provider.close()
     }
 
 
