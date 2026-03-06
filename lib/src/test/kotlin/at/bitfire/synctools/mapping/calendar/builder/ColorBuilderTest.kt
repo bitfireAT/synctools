@@ -19,13 +19,11 @@ import io.mockk.junit4.MockKRule
 import io.mockk.mockk
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Color
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class ColorBuilderTest {
 
