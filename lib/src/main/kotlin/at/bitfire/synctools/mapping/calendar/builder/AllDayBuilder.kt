@@ -9,14 +9,15 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.icalendar.dtStart
 import net.fortuna.ical4j.model.component.VEvent
+import java.time.temporal.Temporal
 
 class AllDayBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        TODO("ical4j 4.x")
-        /*val allDay = DateUtils.isDate(from.startDate)
-        to.entityValues.put(Events.ALL_DAY, if (allDay) 1 else 0)*/
+        val allDay = DateUtils.isDate(from.dtStart<Temporal>())
+        to.entityValues.put(Events.ALL_DAY, if (allDay) 1 else 0)
     }
 
 }
