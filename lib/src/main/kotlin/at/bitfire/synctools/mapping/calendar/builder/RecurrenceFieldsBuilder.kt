@@ -27,7 +27,8 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
     override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
-        val rRules = from.getProperties<RRule>(Property.RRULE)
+        TODO("ical4j 4.x")
+        /*val rRules = from.getProperties<RRule>(Property.RRULE)
         val rDates = from.getProperties<RDate>(Property.RDATE)
         val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
         if (recurring && from === main) {
@@ -84,7 +85,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
             values.putNull(Events.EXRULE)
             values.putNull(Events.RDATE)
             values.putNull(Events.EXDATE)
-        }
+        }*/
     }
 
 }

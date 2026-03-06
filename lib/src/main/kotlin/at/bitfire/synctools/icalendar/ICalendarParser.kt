@@ -50,7 +50,7 @@ class ICalendarParser(
         try {
             calendar = CalendarBuilder(
                 /* parser = */ CalendarParserFactory.getInstance().get(),
-                /* contentHandlerContext = */ ContentHandlerContext().withSupressInvalidProperties(/* supressInvalidProperties = */ true),
+                /* contentHandlerContext = */ ContentHandlerContext().withSuppressInvalidProperties(true),
                 /* tzRegistry = */ TimeZoneRegistryFactory.getInstance().createRegistry()
             ).build(preprocessed)
         } catch(e: ParserException) {

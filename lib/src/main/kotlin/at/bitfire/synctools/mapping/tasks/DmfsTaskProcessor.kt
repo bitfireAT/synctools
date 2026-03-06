@@ -88,7 +88,10 @@ class DmfsTaskProcessor(
 
         values.getAsInteger(Tasks.PRIORITY)?.let { to.priority = it }
 
-        to.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
+        TODO("ical4j 4.x")
+        // Note: big method – maybe split? Depends on how we want to proceed with refactoring.
+
+        /*to.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
             Tasks.CLASSIFICATION_PUBLIC ->       Clazz.PUBLIC
             Tasks.CLASSIFICATION_PRIVATE ->      Clazz.PRIVATE
             Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz.CONFIDENTIAL
@@ -160,7 +163,7 @@ class DmfsTaskProcessor(
             to.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> ExDate(dates) }
         }
 
-        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule(it) }
+        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule(it) }*/
     }
 
     fun populateProperty(row: ContentValues, to: Task) {
@@ -183,10 +186,11 @@ class DmfsTaskProcessor(
     }
 
     private fun populateAlarm(row: ContentValues, to: Task) {
-        val props = PropertyList<Property>()
+        val props = PropertyList()
 
         val trigger = Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE)))
-        when (row.getAsInteger(Alarm.REFERENCE)) {
+        TODO("ical4j 4.x")
+        /*when (row.getAsInteger(Alarm.REFERENCE)) {
             Alarm.ALARM_REFERENCE_START_DATE ->
                 trigger.parameters.add(Related.START)
             Alarm.ALARM_REFERENCE_DUE_DATE ->
@@ -204,7 +208,7 @@ class DmfsTaskProcessor(
                 Action.DISPLAY
         }
 
-        props += Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)
+        props += Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)*/
 
         to.alarms += VAlarm(props)
     }
@@ -219,14 +223,15 @@ class DmfsTaskProcessor(
         val relatedTo = RelatedTo(uid)
 
         // add relation type as reltypeparam
-        relatedTo.parameters.add(when (row.getAsInteger(Relation.RELATED_TYPE)) {
+        TODO("ical4j 4.x")
+        /*relatedTo.parameters.add(when (row.getAsInteger(Relation.RELATED_TYPE)) {
             Relation.RELTYPE_CHILD ->
                 RelType.CHILD
             Relation.RELTYPE_SIBLING ->
                 RelType.SIBLING
-            else /* Relation.RELTYPE_PARENT, default value */ ->
+            else *//* Relation.RELTYPE_PARENT, default value *//* ->
                 RelType.PARENT
-        })
+        })*/
 
         to.relatedTo.add(relatedTo)
     }

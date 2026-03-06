@@ -7,14 +7,10 @@
 package at.bitfire.ical4android
 
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl
-import net.fortuna.ical4j.model.component.VTimeZone
-import net.fortuna.ical4j.model.property.TzId
 import java.time.ZoneId
 import java.util.logging.Logger
 
@@ -51,9 +47,6 @@ class AndroidCompatTimeZoneRegistry(
      * @return time zone
      */
     override fun getTimeZone(id: String): TimeZone? {
-        // If the timezone is empty, or format is not valid, return null
-        if (id.isEmpty()) return null
-
         val tz: TimeZone = base.getTimeZone(id)
             ?: return null      // ical4j doesn't know time zone, return null
 
@@ -81,12 +74,13 @@ class AndroidCompatTimeZoneRegistry(
 
             // create a copy of the VTIMEZONE so that we don't modify the original registry values (which are not immutable)
             val vTimeZone = tz.vTimeZone
-            val newVTimeZoneProperties = PropertyList<Property>()
+            TODO("ical4j 4.x")
+            /*val newVTimeZoneProperties = PropertyList<Property>()
             newVTimeZoneProperties += TzId(androidTzId)
             return TimeZone(VTimeZone(
                 newVTimeZoneProperties,
                 vTimeZone.observances
-            ))
+            ))*/
         } else
             return tz
     }

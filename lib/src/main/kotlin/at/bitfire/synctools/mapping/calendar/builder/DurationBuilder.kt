@@ -35,7 +35,8 @@ class DurationBuilder: AndroidEntityBuilder {
             - DURATION when the event is recurring.
 
         So we'll skip if this event is not a recurring main event (only main events can be recurring). */
-        val rRules = from.getProperties<RRule>(Property.RRULE)
+        TODO("ical4j 4.x")
+        /*val rRules = from.getProperties<RRule>(Property.RRULE)
         val rDates = from.getProperties<RDate>(Property.RDATE)
         if (from !== main || (rRules.isEmpty() && rDates.isEmpty())) {
             values.putNull(Events.DURATION)
@@ -68,7 +69,7 @@ class DurationBuilder: AndroidEntityBuilder {
         The calendar provider accepts every DURATION that `com.android.calendarcommon2.Duration` can parse,
         which is weeks, days, hours, minutes and seconds, like for the RFC 5545 duration. */
         val durationStr = alignedDuration.toRfc5545Duration(dtStart.date.toInstant())
-        values.put(Events.DURATION, durationStr)
+        values.put(Events.DURATION, durationStr)*/
     }
 
     /**
@@ -83,8 +84,9 @@ class DurationBuilder: AndroidEntityBuilder {
      * - a [Duration] (exact time that can be represented by an exact number of seconds) when [dtStart] is a DATE-TIME.
      */
     @VisibleForTesting
-    internal fun alignWithDtStart(amount: TemporalAmount, dtStart: DtStart): TemporalAmount {
-        if (DateUtils.isDate(dtStart)) {
+    internal fun alignWithDtStart(amount: TemporalAmount, dtStart: DtStart<*>): TemporalAmount {
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDate(dtStart)) {
             // DTSTART is DATE
             return if (amount is Duration) {
                 // amount is Duration, change to Period of days instead
@@ -103,7 +105,7 @@ class DurationBuilder: AndroidEntityBuilder {
                 // amount is already Duration
                 amount
             }
-        }
+        }*/
     }
 
     /**
@@ -115,8 +117,9 @@ class DurationBuilder: AndroidEntityBuilder {
      * @return temporal amount ([Period] or [Duration]) or `null` if no valid end time was available
      */
     @VisibleForTesting
-    internal fun calculateFromDtEnd(dtStart: DtStart, dtEnd: DtEnd?): TemporalAmount? {
-        if (dtEnd == null || dtEnd.date.toInstant() <= dtStart.date.toInstant())
+    internal fun calculateFromDtEnd(dtStart: DtStart<*>, dtEnd: DtEnd<*>?): TemporalAmount? {
+        TODO("ical4j 4.x")
+        /*if (dtEnd == null || dtEnd.date.toInstant() <= dtStart.date.toInstant())
             return null
 
         return if (DateUtils.isDateTime(dtStart) && DateUtils.isDateTime(dtEnd)) {
@@ -131,7 +134,7 @@ class DurationBuilder: AndroidEntityBuilder {
             val startDate = dtStart.date.toLocalDate()
             val endDate = dtEnd.date.toLocalDate()
             Period.between(startDate, endDate)
-        }
+        }*/
     }
 
     private fun defaultDuration(allDay: Boolean): TemporalAmount =

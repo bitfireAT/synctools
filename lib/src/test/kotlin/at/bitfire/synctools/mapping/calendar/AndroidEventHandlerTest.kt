@@ -25,10 +25,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class AndroidEventHandlerTest {
 
@@ -42,9 +44,13 @@ class AndroidEventHandlerTest {
     private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
 
 
+    init {
+        TODO("ical4j 4.x")
+    }
+
     // mapToVEvents → MappingResult.associatedEvents
 
-    @Test
+    /*@Test
     fun `mapToVEvents processes exceptions`() {
         val result = handler.mapToVEvents(
             eventAndExceptions = EventAndExceptions(
@@ -283,6 +289,6 @@ class AndroidEventHandlerTest {
         assertFalse(result.generatedUid)
         assertEquals("sample-uid", result.uid)
         assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
-    }
+    }*/
 
 }

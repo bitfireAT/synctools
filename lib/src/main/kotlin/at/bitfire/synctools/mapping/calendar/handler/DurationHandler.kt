@@ -52,7 +52,8 @@ class DurationHandler(
         val tsStart = values.getAsLong(Events.DTSTART) ?: return
         val allDay = (values.getAsInteger(Events.ALL_DAY) ?: 0) != 0
 
-        if (allDay) {
+        TODO("ical4j 4.x")
+        /*if (allDay) {
             val startTimeUTC = Instant.ofEpochMilli(tsStart).atOffset(ZoneOffset.UTC)
             val endDate = (startTimeUTC + duration).toLocalDate()
 
@@ -72,7 +73,7 @@ class DurationHandler(
             val end = start + duration
 
             to.properties += DtEnd(end.toIcal4jDateTime(tzRegistry))
-        }
+        }*/
     }
 
 }

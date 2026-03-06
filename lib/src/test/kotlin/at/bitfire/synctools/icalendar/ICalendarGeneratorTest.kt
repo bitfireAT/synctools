@@ -17,18 +17,20 @@ import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Uid
-import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.io.StringWriter
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 
 class ICalendarGeneratorTest {
 
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin")!!
-    private val tzLondon = tzRegistry.getTimeZone("Europe/London")!!
-    private val tzUTC = tzRegistry.getTimeZone(TimeZones.UTC_ID)!!
+    private val tzBerlin = tzRegistry.getTimeZone("Europe/Berlin").toZoneId()
+    private val tzLondon = tzRegistry.getTimeZone("Europe/London").toZoneId()
 
     private val userAgent = ProdId("TestUA/1.0")
     private val writer = ICalendarGenerator()
@@ -40,19 +42,19 @@ class ICalendarGeneratorTest {
             main =
                 VEvent(propertyListOf(
                     Uid("SAMPLEUID"),
-                    DtStart("20190101T100000", tzBerlin),
-                    DtEnd("20190101T160000Z"),
+                    DtStart(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T10:00:00"), tzBerlin)),
+                    DtEnd(Instant.parse("2019-01-01T16:00:00Z")),
                     DtStamp("20251028T185101Z"),
-                    RRule("FREQ=DAILY;COUNT=5")
+                    RRule<Temporal>("FREQ=DAILY;COUNT=5")
                 ), ComponentList(listOf(
                     VAlarm(Duration.ofHours(-1))
                 ))),
             exceptions = listOf(
                 VEvent(propertyListOf(
                     Uid("SAMPLEUID"),
-                    RecurrenceId("20190102T100000", tzBerlin),
-                    DtStart("20190101T110000", tzLondon),
-                    DtEnd("20190101T170000Z"),
+                    RecurrenceId(ZonedDateTime.of(LocalDateTime.parse("2019-01-02T10:00:00"), tzBerlin)),
+                    DtStart(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T11:00:00"), tzLondon)),
+                    DtEnd(Instant.parse("2019-01-01T17:00:00Z")),
                     DtStamp("20251028T185101Z")
                 ))
             ),

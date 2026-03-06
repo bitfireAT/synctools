@@ -1,4 +1,10 @@
 /*
+ * This file is part of bitfireAT/synctools which is released under GPLv3.
+ * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
  * Copyright (c) Techbee e.U.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Public License v3.0
@@ -27,7 +33,6 @@ import at.techbee.jtx.JtxContract.JtxICalObject.GEO_LAT
 import at.techbee.jtx.JtxContract.JtxICalObject.GEO_LONG
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import net.fortuna.ical4j.model.ParameterList
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.XProperty
@@ -101,8 +106,8 @@ object JtxContract {
      * @param [string] that should be parsed
      * @return The list of XProperty parsed from the string
      */
-    fun getXPropertyListFromJson(string: String): PropertyList<Property> {
-        val propertyList = PropertyList<Property>()
+    fun getXPropertyListFromJson(string: String): PropertyList {
+        val propertyList = PropertyList()
 
         if (string.isBlank())
             return propertyList
@@ -136,9 +141,12 @@ object JtxContract {
             return null
 
         val jsonObject = JSONObject()
-        parameters.forEach { parameter ->
+        TODO("ical4j 4.x")
+        // Note: probably the contract should be separated from methods that do things, especially if they depend on ical4j
+
+        /*parameters.forEach { parameter ->
             jsonObject.put(parameter.name, parameter.value)
-        }
+        }*/
         return if (jsonObject.length() == 0)
             null
         else
@@ -151,18 +159,21 @@ object JtxContract {
      * @param [propertyList] The PropertyList that should be transformed into a Json String
      * @return The generated Json object as a [String]
      */
-    fun getJsonStringFromXProperties(propertyList: PropertyList<*>?): String? {
+    fun getJsonStringFromXProperties(propertyList: PropertyList?): String? {
         if (propertyList == null)
             return null
 
-        val jsonObject = JSONObject()
+        TODO("ical4j 4.x")
+        // Note: probably the contract should be separated from methods that do things, especially if they depend on ical4j
+
+        /*val jsonObject = JSONObject()
         propertyList.forEach { property ->
             jsonObject.put(property.name, property.value)
         }
         return if (jsonObject.length() == 0)
             null
         else
-            jsonObject.toString()
+            jsonObject.toString()*/
     }
 
 

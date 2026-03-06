@@ -26,8 +26,9 @@ class UrlHandler: AndroidEventFieldHandler {
             } catch (_: URISyntaxException) {
                 null
             }
-            if (uri != null)
-                to.properties += Url(uri)
+            TODO("ical4j 4.x")
+            /*if (uri != null)
+                to.properties += Url(uri)*/
         }
     }
 

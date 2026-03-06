@@ -20,7 +20,8 @@ class AccessLevelHandler: AndroidEventFieldHandler {
         val values = from.entityValues
 
         // take classification from main row
-        val classification = when (values.getAsInteger(Events.ACCESS_LEVEL)) {
+        TODO("ical4j 4.x")
+        /*val classification = when (values.getAsInteger(Events.ACCESS_LEVEL)) {
             Events.ACCESS_PUBLIC ->
                 Clazz.PUBLIC
 
@@ -30,11 +31,11 @@ class AccessLevelHandler: AndroidEventFieldHandler {
             Events.ACCESS_CONFIDENTIAL ->
                 Clazz.CONFIDENTIAL
 
-            else /* Events.ACCESS_DEFAULT */ ->
+            else *//* Events.ACCESS_DEFAULT *//* ->
                 retainedClassification(from)
         }
         if (classification != null)
-            to.properties += classification
+            to.properties += classification*/
     }
 
     private fun retainedClassification(from: Entity): Clazz? {

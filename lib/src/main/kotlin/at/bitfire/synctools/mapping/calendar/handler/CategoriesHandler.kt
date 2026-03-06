@@ -20,9 +20,10 @@ class CategoriesHandler: AndroidEventFieldHandler {
         val categories = extended.firstOrNull { it.getAsString(ExtendedProperties.NAME) == EventsContract.EXTNAME_CATEGORIES }
         val listValue = categories?.getAsString(ExtendedProperties.VALUE)
         if (listValue != null) {
-            to.properties += Categories(TextList(
+            TODO("ical4j 4.x")
+            /*to.properties += Categories(TextList(
                 listValue.split(EventsContract.CATEGORIES_SEPARATOR).toTypedArray()
-            ))
+            ))*/
         }
     }
 

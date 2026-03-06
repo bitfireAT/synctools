@@ -7,8 +7,6 @@
 package at.bitfire.ical4android.util
 
 import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.DateProperty
@@ -90,14 +88,18 @@ object DateUtils {
      * @param date date property to check
      * @return *true* if the date is a DATE value; *false* otherwise (for instance, when the argument is a DATE-TIME value or null)
      */
-    fun isDate(date: DateProperty?) = date != null && date.date is Date && date.date !is DateTime
+    fun isDate(date: DateProperty<*>?): Boolean =
+        TODO("ical4j 4.x")
+        //date != null && date.date is Date && date.date !is DateTime
 
     /**
      * Determines whether a given date represents a DATE-TIME value.
      * @param date date property to check
      * @return *true* if the date is a DATE-TIME value; *false* otherwise (for instance, when the argument is a DATE value or null)
      */
-    fun isDateTime(date: DateProperty?) = date != null && date.date is DateTime
+    fun isDateTime(date: DateProperty<*>?): Boolean =
+        TODO("ical4j 4.x")
+        //date != null && date.date is DateTime
 
     /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.
@@ -110,7 +112,8 @@ object DateUtils {
         val builder = CalendarBuilder()
         try {
             val cal = builder.build(StringReader(timezoneDef))
-            return cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone
+            return TODO("ical4j 4.x")
+            //return cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone
         } catch (_: Exception) {
             // Couldn't parse timezone definition
             return null

@@ -26,7 +26,8 @@ class OriginalInstanceTimeHandler(
             return
 
         val values = from.entityValues
-        values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
+        TODO("ical4j 4.x")
+        /*values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (values.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
             val originalDate =
                 if (originalAllDay)
@@ -48,7 +49,7 @@ class OriginalInstanceTimeHandler(
             }
 
             to.properties += RecurrenceId(originalDate)
-        }
+        }*/
     }
 
 }

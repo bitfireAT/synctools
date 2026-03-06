@@ -79,10 +79,11 @@ object AttendeeMappings {
 
         }
 
-        if (cuType != null && cuType != CuType.INDIVIDUAL)
+        TODO("ical4j 4.x")
+        /*if (cuType != null && cuType != CuType.INDIVIDUAL)
             attendee.parameters.add(cuType)
         if (role != null && role != Role.REQ_PARTICIPANT)
-            attendee.parameters.add(role)
+            attendee.parameters.add(role)*/
     }
 
 
@@ -112,8 +113,10 @@ object AttendeeMappings {
         val type: Int
         var relationship: Int
 
-        val cuType = attendee.getParameter(Parameter.CUTYPE) ?: CuType.INDIVIDUAL
-        val role = attendee.getParameter(Parameter.ROLE) ?: Role.REQ_PARTICIPANT
+        val cuType: CuType = TODO("ical4j 4.x")
+        // attendee.getParameter(Parameter.CUTYPE) ?: CuType.INDIVIDUAL
+        val role: Role = TODO("ical4j 4.x")
+        // attendee.getParameter(Parameter.ROLE) ?: Role.REQ_PARTICIPANT
 
         when (cuType) {
             CuType.RESOURCE -> {
@@ -160,7 +163,8 @@ object AttendeeMappings {
             val email = if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
             else
-                attendee.getParameter<Email>(Parameter.EMAIL)?.value
+                TODO("ical4j 4.x")
+                //attendee.getParameter<Email>(Parameter.EMAIL)?.value
 
             if (email == organizer)
                 relationship = Attendees.RELATIONSHIP_ORGANIZER

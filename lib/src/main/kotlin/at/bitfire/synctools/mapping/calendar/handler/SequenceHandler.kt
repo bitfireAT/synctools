@@ -15,8 +15,9 @@ class SequenceHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val seqNo = from.entityValues.getAsInteger(EventsContract.COLUMN_SEQUENCE)
-        if (seqNo != null && seqNo > 0)
-            to.properties += Sequence(seqNo)
+        TODO("ical4j 4.x")
+        /*if (seqNo != null && seqNo > 0)
+            to.properties += Sequence(seqNo)*/
     }
 
 }

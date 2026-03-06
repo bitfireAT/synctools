@@ -17,7 +17,8 @@ import net.fortuna.ical4j.model.property.Categories
 class CategoriesBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        val categories = from.getProperty<Categories>(Property.CATEGORIES)?.categories
+        TODO("ical4j 4.x")
+        /*val categories = from.getProperty<Categories>(Property.CATEGORIES)?.categories
         if (categories != null && !categories.isEmpty) {
             val rawCategories = categories.joinToString(EventsContract.CATEGORIES_SEPARATOR.toString()) { category ->
                 // drop occurrences of CATEGORIES_SEPARATOR in category names
@@ -31,7 +32,7 @@ class CategoriesBuilder: AndroidEntityBuilder {
                     ExtendedProperties.VALUE to rawCategories
                 )
             )
-        }
+        }*/
     }
 
 }
