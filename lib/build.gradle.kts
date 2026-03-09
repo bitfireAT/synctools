@@ -129,6 +129,7 @@ dependencies {
     // instrumented tests
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotlin.coroutines.test)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
