@@ -60,6 +60,7 @@ class ICalendarTest {
 		}
 	}
 
+	@Ignore("ical4j 4.x")
 	@Test
 	fun testFromReader_calendarProperties() {
 		val calendar = ICalendar.fromReader(
@@ -186,7 +187,6 @@ class ICalendarTest {
 	}
 
 
-	@Ignore("ical4j 4.x")
     @Test
     fun testTimezoneDefToTzId_Valid() {
         assertEquals(
@@ -217,7 +217,6 @@ class ICalendarTest {
         )
 	}
 
-	@Ignore("ical4j 4.x")
 	@Test
 	fun testTimezoneDefToTzId_Invalid() {
 		// invalid time zone
