@@ -199,8 +199,20 @@ data class Contact(
         .toString()
 
 
+    /**
+     * Downloads data (like photos) from a specified URL.
+     */
     interface Downloader {
-        fun download(url: String, accepts: String): ByteArray?
+
+        /**
+         * Downloads data from the specified URL.
+         *
+         * @param url The URL to download data from.
+         * @param accepts The accept header value for the download request.
+         * @return The downloaded data as a byte array, or null if the download failed.
+         */
+        suspend fun download(url: String, accepts: String): ByteArray?
+
     }
 
 }
