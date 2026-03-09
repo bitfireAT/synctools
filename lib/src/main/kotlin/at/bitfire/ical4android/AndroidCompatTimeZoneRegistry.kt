@@ -47,6 +47,9 @@ class AndroidCompatTimeZoneRegistry(
      * @return time zone
      */
     override fun getTimeZone(id: String): TimeZone? {
+        // If the timezone is empty, or format is not valid, return null
+        if (id.isEmpty()) return null
+
         val tz: TimeZone = base.getTimeZone(id)
             ?: return null      // ical4j doesn't know time zone, return null
 

@@ -16,7 +16,7 @@ import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestCalendar
-import at.bitfire.ical4android.util.MiscUtils.closeCompat
+
 import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
@@ -62,7 +62,7 @@ class AndroidRecurringCalendarTest {
     @After
     fun tearDown() {
         calendar.delete()
-        client.closeCompat()
+        client.close()
     }
     
     
