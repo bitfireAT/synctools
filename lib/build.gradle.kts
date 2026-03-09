@@ -135,6 +135,7 @@ dependencies {
 
     // unit tests
     testImplementation(libs.junit)
+    testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.roboelectric)
 }

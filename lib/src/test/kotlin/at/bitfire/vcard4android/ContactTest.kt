@@ -15,6 +15,7 @@ import ezvcard.parameter.TelephoneType
 import ezvcard.property.Birthday
 import ezvcard.property.Email
 import ezvcard.util.PartialDate
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,12 +34,12 @@ import java.util.LinkedList
 
 class ContactTest {
 
-    private fun parseContact(fname: String, charset: Charset = Charsets.UTF_8) =
-            javaClass.classLoader!!.getResourceAsStream(fname).use { stream ->
-                Contact.fromReader(InputStreamReader(stream, charset), false, null).first()
-            }
+    private suspend fun parseContact(fname: String, charset: Charset = Charsets.UTF_8): Contact =
+        javaClass.classLoader!!.getResourceAsStream(fname).use { stream ->
+            Contact.fromReader(InputStreamReader(stream, charset), false, null).first()
+        }
 
-    private fun regenerate(c: Contact, vCardVersion: VCardVersion): Contact {
+    private suspend fun regenerate(c: Contact, vCardVersion: VCardVersion): Contact {
         val os = ByteArrayOutputStream()
         c.writeVCard(vCardVersion, os, testProductId)
         return Contact.fromReader(InputStreamReader(ByteArrayInputStream(os.toByteArray()), Charsets.UTF_8), false,null).first()
@@ -61,7 +62,7 @@ class ContactTest {
 
 
     @Test
-    fun testVCard3FieldsAsVCard3() {
+    fun testVCard3FieldsAsVCard3() = runTest {
         val c = regenerate(parseContact("allfields-vcard3.vcf"), VCardVersion.V3_0)
 
         // UID
@@ -225,7 +226,7 @@ class ContactTest {
     }
 
     @Test
-    fun testVCard3FieldsAsVCard4() {
+    fun testVCard3FieldsAsVCard4() = runTest {
         val c = regenerate(parseContact("allfields-vcard3.vcf"), VCardVersion.V4_0)
         // let's check only things that should be different when VCard 4.0 is generated
 
@@ -247,20 +248,20 @@ class ContactTest {
     }
 
     @Test
-    fun testVCard4FieldsAsVCard3() {
+    fun testVCard4FieldsAsVCard3() = runTest {
         val c = regenerate(parseContact("vcard4.vcf"), VCardVersion.V3_0)
         assertEquals(Birthday(PartialDate.parse("--04-16")), c.birthDay)
     }
 
     @Test
-    fun testVCard4FieldsAsVCard4() {
+    fun testVCard4FieldsAsVCard4() = runTest {
         val c = regenerate(parseContact("vcard4.vcf"), VCardVersion.V4_0)
         assertEquals(Birthday(PartialDate.parse("--04-16")), c.birthDay)
     }
 
 
     @Test
-    fun testStrangeREV() {
+    fun testStrangeREV() = runTest {
         val c = parseContact("strange-rev.vcf")
         assertNull(c.unknownProperties)
     }

@@ -103,7 +103,7 @@ data class Contact(
          * @throws IOException on I/O errors when reading the stream
          * @throws ezvcard.io.CannotParseException when the vCard can't be parsed
          */
-        fun fromReader(reader: Reader, jCard: Boolean, downloader: Downloader?): List<Contact>  {
+        suspend fun fromReader(reader: Reader, jCard: Boolean, downloader: Downloader?): List<Contact>  {
             // create new reader and add custom scribes
             val vCards =
                 if (jCard)
