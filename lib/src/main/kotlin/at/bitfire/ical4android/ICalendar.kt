@@ -12,6 +12,8 @@ import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
+import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Parameter
@@ -31,6 +33,7 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.Trigger
 import net.fortuna.ical4j.validate.ValidationException
 import java.io.Reader
+import java.io.StringReader
 import java.time.Duration
 import java.time.Period
 import java.time.ZonedDateTime
@@ -224,15 +227,14 @@ open class ICalendar {
          * @return time zone id (TZID) if VTIMEZONE contains a TZID, null otherwise
          */
         fun timezoneDefToTzId(timezoneDef: String): String? {
-            TODO("ical4j 4.x")
-            /*try {
+            try {
                 val builder = CalendarBuilder()
                 val cal = builder.build(StringReader(timezoneDef))
-                val timezone = cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone?
+                val timezone = cal.getComponent<VTimeZone>(VTimeZone.VTIMEZONE).getOrNull()
                 timezone?.timeZoneId?.let { return it.value }
             } catch (e: ParserException) {
                 logger.log(Level.SEVERE, "Can't understand time zone definition", e)
-            }*/
+            }
             return null
         }
 
