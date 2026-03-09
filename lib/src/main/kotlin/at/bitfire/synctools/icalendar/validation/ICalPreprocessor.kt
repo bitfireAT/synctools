@@ -9,13 +9,19 @@ package at.bitfire.synctools.icalendar.validation
 import androidx.annotation.VisibleForTesting
 import com.google.common.io.CharSource
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.property.Created
 import net.fortuna.ical4j.transform.compliance.DateListPropertyRule
 import net.fortuna.ical4j.transform.compliance.DatePropertyRule
+import net.fortuna.ical4j.transform.compliance.Rfc5545PropertyRule
 import java.io.BufferedReader
 import java.io.Reader
+import java.text.ParseException
 import java.util.logging.Logger
 import javax.annotation.WillNotClose
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
@@ -30,8 +36,7 @@ class ICalPreprocessor {
         get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
-        TODO("ical4j 4.x"),
-        //CreatedPropertyRule(),      // make sure CREATED is UTC
+        CreatedPropertyRule(),      // make sure CREATED is UTC - TODO: maybe replace by TzIdRule() ?
 
         DatePropertyRule(),         // These two rules also replace VTIMEZONEs of the iCalendar ...
         DateListPropertyRule()      // ... by the ical4j VTIMEZONE with the same TZID!
@@ -96,16 +101,14 @@ class ICalPreprocessor {
      * @param calendar the calendar object that is going to be modified
      */
     fun preprocessCalendar(calendar: Calendar) {
-        TODO("ical4j 4.x")
-        /*for (component in calendar.components)
-            for (property in component.properties)
-                applyRules(property)*/
+        for (component in calendar.getComponents<CalendarComponent>())
+            for (property in component.getProperties<Property>())
+                applyRules(property)
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun applyRules(property: Property) {
-        TODO("ical4j 4.x")
-        /*propertyRules
+        propertyRules
             .filter { rule -> rule.supportedType.isAssignableFrom(property::class.java) }
             .forEach { rule ->
                 val beforeStr = property.toString()
@@ -113,7 +116,35 @@ class ICalPreprocessor {
                 val afterStr = property.toString()
                 if (beforeStr != afterStr)
                     logger.info("${rule.javaClass.name}: $beforeStr -> $afterStr")
-            }*/
+            }
+    }
+
+    /**
+     * Ensures that CREATED properties are in UTC format by adding "Z" marker if missing.
+     * Note: This rule was removed in ical 4.x so for the migration we recreate ourselves here.
+     * Maybe it will not be needed in the future or can be replaced by TzIdRule()
+     */
+    class CreatedPropertyRule : Rfc5545PropertyRule<Created> {
+
+        override fun apply(created: Created): Created {
+            val hasTZID = created.getParameter<Parameter>(Parameter.TZID).getOrNull() != null
+            if (created.isUtc || hasTZID)
+                return created
+            try {
+                created.value += UTC_MARKER
+            } catch (_: ParseException) {
+                // Let the value as it is
+            }
+            return created
+        }
+
+        override fun getSupportedType(): Class<Created> =
+            Created::class.java
+
+        companion object {
+            private const val UTC_MARKER = "Z"
+        }
+
     }
 
 }

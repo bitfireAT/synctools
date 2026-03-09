@@ -25,6 +25,7 @@ import net.fortuna.ical4j.model.component.Standard
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
@@ -105,17 +106,16 @@ open class ICalendar {
 
             // fill calendar properties
             properties?.let {
-                TODO("ical4j 4.x")
-                /*calendar.getProperty<Property>(CALENDAR_NAME)?.let { calName ->
+                calendar.getProperty<Property>(CALENDAR_NAME).getOrNull()?.let { calName ->
                     properties[CALENDAR_NAME] = calName.value
                 }
 
-                calendar.getProperty<Property>(Color.PROPERTY_NAME)?.let { calColor ->
+                calendar.getProperty<Property>(Color.PROPERTY_NAME).getOrNull()?.let { calColor ->
                     properties[Color.PROPERTY_NAME] = calColor.value
                 }
-                calendar.getProperty<Property>(CALENDAR_COLOR)?.let { calColor ->
+                calendar.getProperty<Property>(CALENDAR_COLOR).getOrNull()?.let { calColor ->
                     properties[CALENDAR_COLOR] = calColor.value
-                }*/
+                }
             }
 
             return calendar

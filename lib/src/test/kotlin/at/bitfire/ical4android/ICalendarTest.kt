@@ -8,12 +8,14 @@ package at.bitfire.ical4android
 
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Property.TRIGGER
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
@@ -23,7 +25,6 @@ import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
 import java.time.LocalDateTime
@@ -60,7 +61,7 @@ class ICalendarTest {
 		}
 	}
 
-	@Ignore("ical4j 4.x")
+
 	@Test
 	fun testFromReader_calendarProperties() {
 		val calendar = ICalendar.fromReader(
@@ -75,13 +76,11 @@ class ICalendarTest {
                         "END:VCALENDAR"
             )
 		)
-		TODO("ical4j 4.x")
-        /*assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).value)
-        assertEquals("darkred", calendar.getProperty<Property>(Color.PROPERTY_NAME).value)
-        assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).value)*/
+		assertEquals("Some Calendar", calendar.getProperty<Property>(ICalendar.CALENDAR_NAME).getOrNull()?.value)
+        assertEquals("darkred", calendar.getProperty<Property>(Color.PROPERTY_NAME).getOrNull()?.value)
+        assertEquals("#123456", calendar.getProperty<Property>(ICalendar.CALENDAR_COLOR).getOrNull()?.value)
 	}
 
-	@Ignore("ical4j 4.x")
 	@Test
 	fun testFromReader_invalidProperty() {
 		// The GEO property is invalid and should be ignored.
