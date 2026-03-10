@@ -45,6 +45,7 @@ import ezvcard.property.Uid
 import ezvcard.property.Url
 import ezvcard.util.PartialDate
 import ezvcard.util.TelUri
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -59,7 +60,7 @@ class ContactReaderTest {
     // test specific fields
 
     @Test
-    fun testAddress() {
+    fun testAddress() = runTest {
         val address = Address().apply {
             streetAddress = "Street 101"
             country = "XX"
@@ -71,7 +72,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testAddressLabel_vCard3() {
+    fun testAddressLabel_vCard3() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addOrphanedLabel(Label("Formatted Address"))
         })
@@ -82,7 +83,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testAnniversary() {
+    fun testAnniversary() = runTest {
         val instant = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             anniversary = Anniversary(instant)
@@ -92,7 +93,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testBirthday_Date() {
+    fun testBirthday_Date() = runTest {
         val instant = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             birthday = Birthday(instant)
@@ -101,7 +102,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testBirthday_vCard3_PartialDate() {
+    fun testBirthday_vCard3_PartialDate() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             birthday = Birthday(LocalDate.of(1900, 7, 30)).apply {
                 addParameter(Contact.DATE_PARAMETER_OMIT_YEAR, "1900")
@@ -111,7 +112,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testBirthday_vCard4_PartialDate() {
+    fun testBirthday_vCard4_PartialDate() = runTest {
         val b = Birthday(PartialDate.parse("--0730"))
         val c = ContactReader.fromVCard(VCard().apply {
             birthday = b
@@ -121,7 +122,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testCategories() {
+    fun testCategories() = runTest {
         val cat = Categories().apply {
             values.add("Cat1")
             values.add("Cat2")
@@ -134,7 +135,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testEmail() {
+    fun testEmail() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addEmail("test@example.com")
         })
@@ -143,7 +144,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testFn() {
+    fun testFn() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             formattedName = FormattedName("Formatted Name")
         })
@@ -152,7 +153,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testImpp_Xmpp() {
+    fun testImpp_Xmpp() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addImpp(Impp.xmpp("test@example.com"))
         })
@@ -160,7 +161,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testImpp_XSip() {
+    fun testImpp_XSip() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XSip("test@example.com"))
         })
@@ -169,7 +170,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testKind_Group() {
+    fun testKind_Group() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.group()
         })
@@ -177,7 +178,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testKind_Group_Uppercase() {
+    fun testKind_Group_Uppercase() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind("GROUP")
         })
@@ -185,7 +186,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testKind_Individual() {
+    fun testKind_Individual() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.individual()
         })
@@ -194,7 +195,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testLogo_Url() {
+    fun testLogo_Url() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V4_0).apply {
             addLogo(Logo("https://example.com/logo.png", ImageType.PNG))
         })
@@ -202,7 +203,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testLogo_Url_TooLarge() {
+    fun testLogo_Url_TooLarge() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V4_0).apply {
             addLogo(Logo(ByteArray(ContactReader.MAX_BINARY_DATA_SIZE + 1), ImageType.PNG))
         })
@@ -211,7 +212,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testMember_Uid() {
+    fun testMember_Uid() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.group()
             members += Member("member1")
@@ -220,7 +221,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testMember_Uid_Empty() {
+    fun testMember_Uid_Empty() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.group()
             members += Member("")
@@ -229,7 +230,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testMember_UrnUiid() {
+    fun testMember_UrnUiid() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.group()
             members += Member("urn:uuid:be829cf2-4244-42f8-bd4c-ab39b4b5fcd3")
@@ -238,7 +239,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testMember_UrnUiid_Empty() {
+    fun testMember_UrnUiid_Empty() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             kind = Kind.group()
             members += Member("urn:uuid:")
@@ -248,7 +249,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testN() {
+    fun testN() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             structuredName = StructuredName().apply {
                 prefixes.add("P1.")
@@ -270,7 +271,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testNickname() {
+    fun testNickname() = runTest {
         val nick = Nickname().apply {
             values.add("Nick1")
             values.add("Nick2")
@@ -283,7 +284,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testNote() {
+    fun testNote() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addNote("Note 1")
             addNote("Note 2")
@@ -293,7 +294,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testOrganization() {
+    fun testOrganization() = runTest {
         val org = Organization().apply {
             values.add("Org")
             values.add("Dept")
@@ -306,7 +307,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testProdId() {
+    fun testProdId() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             productId = ProductId("Test")
         })
@@ -315,7 +316,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testRelated_Uri() {
+    fun testRelated_Uri() = runTest {
         val rel = Related.email("112@example.com")
         rel.types.add(RelatedType.EMERGENCY)
         val c = ContactReader.fromVCard(VCard().apply {
@@ -325,7 +326,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testRelated_String() {
+    fun testRelated_String() = runTest {
         val rel = Related().apply {
             text = "My Best Friend"
             types.add(RelatedType.FRIEND)
@@ -338,7 +339,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testRev() {
+    fun testRev() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             revision = Revision.now()
         })
@@ -346,7 +347,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testRev_Invalid() {
+    fun testRev_Invalid() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addExtendedProperty("REV", "+invalid-format!")
         })
@@ -355,7 +356,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testRole() {
+    fun testRole() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addRole("Job Description")
         })
@@ -364,7 +365,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testSortString() {
+    fun testSortString() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V3_0).apply {
             sortString = SortString("Harten")
         })
@@ -373,7 +374,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testSource() {
+    fun testSource() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V3_0).apply {
             addSource("https://example.com/sample.vcf")
         })
@@ -382,7 +383,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testSound_Url() {
+    fun testSound_Url() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V4_0).apply {
             addSound(Sound("https://example.com/ding.wav", SoundType.WAV))
         })
@@ -390,7 +391,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testSound_Url_TooLarge() {
+    fun testSound_Url_TooLarge() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V4_0).apply {
             addSound(Sound(ByteArray(ContactReader.MAX_BINARY_DATA_SIZE + 1), SoundType.WAV))
         })
@@ -399,7 +400,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testTelephone() {
+    fun testTelephone() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             // number of type TEXT
             addTelephoneNumber("+1 555 12345")
@@ -412,7 +413,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testTitle() {
+    fun testTitle() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addTitle("Job Title")
         })
@@ -421,7 +422,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testUid() {
+    fun testUid() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             uid = Uid("12345")
         })
@@ -430,7 +431,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testUnkownProperty_vCard3() {
+    fun testUnkownProperty_vCard3() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V3_0).apply {
             addProperty(RawProperty("FUTURE-PROPERTY", "12345"))
         })
@@ -441,7 +442,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testUnkownProperty_vCard4() {
+    fun testUnkownProperty_vCard4() = runTest {
         val c = ContactReader.fromVCard(VCard(VCardVersion.V4_0).apply {
             addProperty(RawProperty("FUTURE-PROPERTY", "12345"))
         })
@@ -453,7 +454,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testUrl() {
+    fun testUrl() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             urls += Url("https://example.com")
         })
@@ -462,7 +463,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testXAbDate_WithoutLabel() {
+    fun testXAbDate_WithoutLabel() = runTest {
         val date = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbDate(date))
@@ -471,7 +472,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbDate_WithLabel_AppleAnniversary() {
+    fun testXAbDate_WithLabel_AppleAnniversary() = runTest {
         val date = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbDate(date).apply { group = "test1" })
@@ -482,7 +483,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbDate_WithLabel_AppleOther() {
+    fun testXAbDate_WithLabel_AppleOther() = runTest {
         val date = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbDate(date).apply { group = "test1" })
@@ -493,7 +494,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbDate_WithLabel_Custom() {
+    fun testXAbDate_WithLabel_Custom() = runTest {
         val date = LocalDate.of(101, 6, 30)
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbDate(date).apply { group = "test1" })
@@ -505,7 +506,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testXAbRelatedNames_Sister() {
+    fun testXAbRelatedNames_Sister() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbRelatedNames("My Sis").apply { group = "item1" })
             addProperty(XAbLabel(XAbRelatedNames.APPLE_SISTER).apply { group = "item1" })
@@ -516,7 +517,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbRelatedNames_Custom() {
+    fun testXAbRelatedNames_Custom() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbRelatedNames("Someone Other").apply { group = "item1" })
             addProperty(XAbLabel("Someone").apply { group = "item1" })
@@ -527,7 +528,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbRelatedNames_Custom_Acquitance() {
+    fun testXAbRelatedNames_Custom_Acquitance() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbRelatedNames("Someone Other").apply { group = "item1" })
             addProperty(XAbLabel(RelatedType.ACQUAINTANCE.value).apply { group = "item1" })
@@ -538,7 +539,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAbRelatedNames_Custom_TwoValues() {
+    fun testXAbRelatedNames_Custom_TwoValues() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAbRelatedNames("Someone Other").apply { group = "item1" })
             addProperty(XAbLabel("dog, cat").apply { group = "item1" })
@@ -551,7 +552,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testXAddressBookServerKind_Group() {
+    fun testXAddressBookServerKind_Group() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAddressBookServerKind(Kind.GROUP))
         })
@@ -559,7 +560,7 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testXAddressBookServerKind_Individual() {
+    fun testXAddressBookServerKind_Individual() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XAddressBookServerKind(Kind.INDIVIDUAL))
         })
@@ -568,7 +569,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testXPhoneticName() {
+    fun testXPhoneticName() = runTest {
         val c = ContactReader.fromVCard(VCard().apply {
             addProperty(XPhoneticFirstName("First"))
             addProperty(XPhoneticMiddleName("Middle"))
@@ -666,7 +667,7 @@ class ContactReaderTest {
 
 
     @Test
-    fun testGetPhotoBytes_Binary() {
+    fun testGetPhotoBytes_Binary() = runTest {
         val sample = ByteArray(128)
         assertEquals(sample, ContactReader.fromVCard(VCard().apply {
             addPhoto(Photo(sample, ImageType.JPEG))
@@ -674,11 +675,11 @@ class ContactReaderTest {
     }
 
     @Test
-    fun testGetPhotoBytes_Downloader() {
+    fun testGetPhotoBytes_Downloader() = runTest {
         val sample = ByteArray(128)
         val sampleUrl = "http://example.com/photo.jpg"
         val downloader = object: Contact.Downloader {
-            override fun download(url: String, accepts: String): ByteArray? {
+            override suspend fun download(url: String, accepts: String): ByteArray? {
                 return if (url == sampleUrl && accepts == "image/*")
                     sample
                 else
