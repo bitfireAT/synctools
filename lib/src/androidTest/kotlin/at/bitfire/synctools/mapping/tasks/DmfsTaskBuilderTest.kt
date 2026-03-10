@@ -402,10 +402,9 @@ class DmfsTaskBuilderTest (
         buildTask {
             dtStart = DtStart(LocalDate.of(2020, 1, 1))
             due = Due(
-                ZonedDateTime.of(
+                LocalDateTime.of(
                     LocalDate.of(2020, 2, 1),
-                    LocalTime.of(1, 2, 3),
-                    ZoneOffset.UTC
+                    LocalTime.of(1, 2, 3)
                 )
             )
         }.let { result ->
@@ -760,7 +759,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RelatedTo_Custom() {
         buildTask {
             relatedTo.add(RelatedTo("Sibling-Task").apply {
-                parameterList.add(RelType("custom-relationship"))
+                add<RelatedTo>(RelType("custom-relationship"))
             })
         }.let { result ->
             val taskId = result.getAsLong(TaskContract.Tasks._ID)
@@ -800,8 +799,8 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_UnknownProperty() {
         val xProperty = XProperty("X-TEST-PROPERTY", "test-value").apply {
-            parameterList.add(TzId(tzVienna.id))
-            parameterList.add(XParameter("X-TEST-PARAMETER", "12345"))
+            add<XProperty>(TzId(tzVienna.id))
+            add<XProperty>(XParameter("X-TEST-PARAMETER", "12345"))
         }
         buildTask {
             unknownProperties.add(xProperty)
