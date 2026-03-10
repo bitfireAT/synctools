@@ -6,32 +6,15 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils
 import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.Period
-import net.fortuna.ical4j.model.PeriodList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VTimeZone
-import net.fortuna.ical4j.model.parameter.TzId
-import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.DateListProperty
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.ExDate
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
 import java.time.Duration
+import java.time.temporal.Temporal
 
 @Ignore("ical4j 4.x")
 class AndroidTimeUtilsTest {
@@ -68,7 +51,7 @@ class AndroidTimeUtilsTest {
     @Test
     fun testAndroidifyTimeZone_Null() {
         // must not throw an exception
-        AndroidTimeUtils.androidifyTimeZone(null, tzRegistry)
+        AndroidTimeUtils.androidifyTimeZone<Temporal>(null, tzRegistry)
     }
 
     // androidifyTimeZone
