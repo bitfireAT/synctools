@@ -9,6 +9,7 @@ package at.bitfire
 import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TimeZone
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
@@ -28,4 +29,8 @@ fun dateTimeValue(value: String, timeZone: TimeZone): ZonedDateTime {
     } else {
         error("Unexpected temporal type: ${temporal::class}")
     }
+}
+
+fun dateValue(value: String): LocalDate {
+    return TemporalAdapter.parse<LocalDate>(value, CalendarDateFormat.DATE_FORMAT).temporal
 }
