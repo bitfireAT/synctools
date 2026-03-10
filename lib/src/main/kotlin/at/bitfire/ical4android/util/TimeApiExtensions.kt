@@ -132,6 +132,9 @@ object TimeApiExtensions {
         }
     }
 
+    fun Temporal.toInstant(): Instant =
+        toIcal4jZonedDateTime().toInstant()
+
     fun ZonedDateTime.toEpochMillis() =
         toEpochSecond() * MILLIS_PER_SECOND
 
