@@ -190,7 +190,6 @@ class DmfsTaskBuilder(
         // 'Z' is not a valid timezone id, replace it by the UTC definition
         if (tzId == "Z") tzId = TimeZones.UTC_ID
 
-        // TODO: Check this works fine, I don't know if TzId will be resolved by the registry
         val timeZone: TimeZone? = tzRegistry.getTimeZone(tzId)
         return timeZone ?: throw NullPointerException("Could not find timezone '$tzId' in registry.")
     }
