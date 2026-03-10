@@ -36,7 +36,7 @@ object DateUtils {
      * 1. Use a case-insensitive match ("EUROPE/VIENNA" will return "Europe/Vienna",
      *    assuming "Europe/Vienna") is available in Android.
      * 2. Find partial matches (case-sensitive) in both directions, so both "Vienna"
-     *    and "MyClient: Europe/Vienna" will return "Europe/Vienna". This shouln't be
+     *    and "MyClient: Europe/Vienna" will return "Europe/Vienna". This shouldn't be
      *    case-insensitive, because that would for instance return "EST" for "Westeuropäische Sommerzeit".
      * 3. If nothing can be found or [tzID] is `null`, return the system default time zone.
      *
@@ -98,8 +98,7 @@ object DateUtils {
      * @return *true* if the date is a DATE-TIME value; *false* otherwise (for instance, when the argument is a DATE value or null)
      */
     fun isDateTime(date: DateProperty<*>?): Boolean =
-        TODO("ical4j 4.x")
-        //date != null && date.date is DateTime
+        date != null && TemporalAdapter.isDateTimePrecision(date.date)
 
     /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.

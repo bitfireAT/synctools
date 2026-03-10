@@ -132,6 +132,9 @@ object TimeApiExtensions {
         }
     }
 
+    fun ZonedDateTime.toEpochMillis() =
+        toEpochSecond() * MILLIS_PER_SECOND
+
     /**
      * Converts this zoned date-time (date/time with specific time zone) to an
      * ical4j [DateTime] object.

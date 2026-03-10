@@ -9,21 +9,32 @@ package at.bitfire.synctools.mapping.calendar.builder
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.ical4android.util.TimeApiExtensions.toEpochMillis
+import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jZonedDateTime
 import at.bitfire.synctools.icalendar.requireDtStart
 import at.bitfire.synctools.util.AndroidTimeUtils
+import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.TemporalAdapter
+import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.parameter.TzId
 import java.time.ZoneId
+import java.time.temporal.Temporal
 
 class StartTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        TODO("ical4j 4.x")
-        /*val values = to.entityValues
+        val values = to.entityValues
 
-        val dtStart = from.requireDtStart()
+        val dtStart = from.requireDtStart<Temporal>()
+        val dtStartZonedDateTime = dtStart.date.toIcal4jZonedDateTime()
+
+        dtStart.getParameter<Related>(Parameter.RELATED).orElse(Related.START)
+
 
         // start time: UNIX timestamp
-        values.put(Events.DTSTART, dtStart.date.time)
+        values.put(Events.DTSTART, dtStartZonedDateTime.toEpochMillis())
 
         // start time: timezone ID
         if (DateUtils.isDateTime(dtStart)) {
@@ -36,9 +47,10 @@ class StartTimeBuilder: AndroidEntityBuilder {
                 // UTC
                 values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
 
-            } else if (dtStart.timeZone != null) {
+            } else if (!TemporalAdapter.isFloating(dtStart.date)) {
                 // timezone reference – make sure that time zone is known by Android
-                values.put(Events.EVENT_TIMEZONE, DateUtils.findAndroidTimezoneID(dtStart.timeZone.id))
+                val tzid = dtStart.getRequiredParameter<TzId>(Parameter.TZID).value
+                values.put(Events.EVENT_TIMEZONE, DateUtils.findAndroidTimezoneID(tzid))
 
             } else {
                 // floating time, use system default
@@ -48,7 +60,7 @@ class StartTimeBuilder: AndroidEntityBuilder {
         } else {
             // DTSTART is a DATE
             values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }*/
+        }
     }
 
 }
