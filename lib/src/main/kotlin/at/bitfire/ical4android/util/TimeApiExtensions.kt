@@ -14,11 +14,14 @@ import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.Calendar
 import java.util.TimeZone
@@ -85,6 +88,48 @@ object TimeApiExtensions {
         val cal = Calendar.getInstance(TimeZones.getDateTimeZone())
         cal.set(year, monthValue - 1, dayOfMonth, 0, 0, 0)
         return Date(cal)
+    }
+
+    fun Temporal.toLocalDate(): LocalDate {
+        return when (this) {
+            is LocalDate -> atStartOfDay().atZone(ZoneOffset.UTC).toLocalDate()
+            is LocalDateTime -> atZone(ZoneOffset.UTC).toLocalDate()
+            is OffsetDateTime -> toLocalDate()
+            is ZonedDateTime -> toLocalDate()
+            is Instant -> atZone(ZoneOffset.UTC).toLocalDate()
+            else -> error("Unsupported Temporal type: ${this::class}")
+        }
+    }
+
+    fun Temporal.toLocalTime(): LocalTime {
+        return when (this) {
+            is LocalDate -> atStartOfDay().toLocalTime()
+            is LocalDateTime -> atZone(ZoneOffset.UTC).toLocalTime()
+            is OffsetDateTime -> toLocalTime()
+            is ZonedDateTime -> toLocalTime()
+            is Instant -> atZone(ZoneOffset.UTC).toLocalTime()
+            else -> error("Unsupported Temporal type: ${this::class}")
+        }
+    }
+
+    fun Temporal.requireZoneId(): ZoneId {
+        return when (this) {
+            is LocalDate, is LocalDateTime, is Instant -> ZoneOffset.UTC
+            is OffsetDateTime -> toZonedDateTime().zone
+            is ZonedDateTime -> zone
+            else -> error("Unsupported Temporal type: ${this::class}")
+        }
+    }
+
+    fun Temporal.toIcal4jZonedDateTime(): ZonedDateTime {
+        return when (this) {
+            is LocalDate -> atStartOfDay().atZone(TimeZones.getDateTimeZone().toZoneIdCompat())
+            is LocalDateTime -> atZone(TimeZones.getDefault().toZoneIdCompat())
+            is OffsetDateTime -> toZonedDateTime()
+            is ZonedDateTime -> this
+            is Instant -> atZone(ZoneOffset.UTC)
+            else -> error("Unsupported Temporal type: ${this::class}")
+        }
     }
 
     /**
