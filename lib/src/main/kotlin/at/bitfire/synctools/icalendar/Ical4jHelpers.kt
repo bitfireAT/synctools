@@ -7,6 +7,7 @@
 package at.bitfire.synctools.icalendar
 
 import at.bitfire.synctools.BuildConfig
+import at.bitfire.synctools.exception.InvalidICalendarException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.ComponentContainer
 import net.fortuna.ical4j.model.ComponentList
@@ -50,9 +51,8 @@ fun <T: Temporal> CalendarComponent.dtStart(): DtStart<T>? {
     return getProperty<DtStart<T>>(Property.DTSTART).getOrNull()
 }
 
-fun VEvent.requireDtStart(): DtStart<*> =
-    TODO("ical4j 4.x")
-    // startDate ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
+fun <T: Temporal> VEvent.requireDtStart(): DtStart<T> =
+    getProperty<DtStart<T>>(Property.DTSTART).getOrNull() ?: throw InvalidICalendarException("Missing DTSTART in VEVENT")
 
 operator fun PropertyContainer.plusAssign(property: Property) {
     add<PropertyContainer>(property)

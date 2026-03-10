@@ -12,6 +12,7 @@ import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.transform.compliance.DateListPropertyRule
 import net.fortuna.ical4j.transform.compliance.DatePropertyRule
+import net.fortuna.ical4j.transform.compliance.Rfc5545PropertyRule
 import java.io.BufferedReader
 import java.io.Reader
 import java.util.logging.Logger
@@ -20,7 +21,6 @@ import javax.annotation.WillNotClose
 /**
  * Applies some rules to increase compatibility of parsed (incoming) iCalendars:
  *
- *   - [CreatedPropertyRule] to make sure CREATED is UTC
  *   - [DatePropertyRule] and [DateListPropertyRule] to rename Outlook-specific TZID parameters
  * (like "W. Europe Standard Time" to an Android-friendly name like "Europe/Vienna")
  */
@@ -30,9 +30,6 @@ class ICalPreprocessor {
         get() = Logger.getLogger(javaClass.name)
 
     private val propertyRules = arrayOf(
-        TODO("ical4j 4.x"),
-        //CreatedPropertyRule(),      // make sure CREATED is UTC
-
         DatePropertyRule(),         // These two rules also replace VTIMEZONEs of the iCalendar ...
         DateListPropertyRule()      // ... by the ical4j VTIMEZONE with the same TZID!
     )
@@ -96,24 +93,22 @@ class ICalPreprocessor {
      * @param calendar the calendar object that is going to be modified
      */
     fun preprocessCalendar(calendar: Calendar) {
-        TODO("ical4j 4.x")
-        /*for (component in calendar.components)
-            for (property in component.properties)
-                applyRules(property)*/
+        for (component in calendar.componentList.all)
+            for (property in component.propertyList.all)
+                applyRules(property)
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun applyRules(property: Property) {
-        TODO("ical4j 4.x")
-        /*propertyRules
+        propertyRules
             .filter { rule -> rule.supportedType.isAssignableFrom(property::class.java) }
             .forEach { rule ->
                 val beforeStr = property.toString()
-                (rule as Rfc5545PropertyRule<Property>).applyTo(property)
+                (rule as Rfc5545PropertyRule<Property>).apply(property)
                 val afterStr = property.toString()
                 if (beforeStr != afterStr)
                     logger.info("${rule.javaClass.name}: $beforeStr -> $afterStr")
-            }*/
+            }
     }
 
 }
