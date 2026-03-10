@@ -16,6 +16,7 @@ import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyBuilder
 import net.fortuna.ical4j.model.PropertyFactory
 import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Helpers to (de)serialize unknown properties as JSON to store it in an Android ExtendedProperty row.
@@ -81,13 +82,13 @@ object UnknownProperty {
         json.put(prop.name)
         json.put(prop.value)
 
-        TODO("ical4j 4.x")
-        /*if (!prop.parameters.isEmpty) {
+        val parameters = prop.parameterList.all
+        if (parameters.isNotEmpty()) {
             val jsonParams = JSONObject()
-            for (param in prop.parameters)
+            for (param in parameters)
                 jsonParams.put(param.name, param.value)
             json.put(jsonParams)
-        }*/
+        }
 
         return json.toString()
     }

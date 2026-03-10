@@ -10,20 +10,14 @@ import android.content.ContentValues
 import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.ical4android.util.DateUtils.toLocalDate
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.parameter.RelType
-import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.Completed
-import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.Duration
@@ -42,6 +36,8 @@ import org.dmfs.tasks.contract.TaskContract.Property.Comment
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.net.URISyntaxException
+import java.time.Instant
+import java.time.temporal.Temporal
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -88,24 +84,23 @@ class DmfsTaskProcessor(
 
         values.getAsInteger(Tasks.PRIORITY)?.let { to.priority = it }
 
-        TODO("ical4j 4.x")
         // Note: big method – maybe split? Depends on how we want to proceed with refactoring.
 
-        /*to.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
-            Tasks.CLASSIFICATION_PUBLIC ->       Clazz.PUBLIC
-            Tasks.CLASSIFICATION_PRIVATE ->      Clazz.PRIVATE
-            Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz.CONFIDENTIAL
+        to.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
+            Tasks.CLASSIFICATION_PUBLIC ->       Clazz(Clazz.VALUE_PUBLIC)
+            Tasks.CLASSIFICATION_PRIVATE ->      Clazz(Clazz.VALUE_PRIVATE)
+            Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz(Clazz.VALUE_CONFIDENTIAL)
             else ->                              null
         }
 
-        values.getAsLong(Tasks.COMPLETED)?.let { to.completedAt = Completed(DateTime(it)) }
+        values.getAsLong(Tasks.COMPLETED)?.let { to.completedAt = Completed(Instant.ofEpochMilli(it)) }
         values.getAsInteger(Tasks.PERCENT_COMPLETE)?.let { to.percentComplete = it }
 
         to.status = when (values.getAsInteger(Tasks.STATUS)) {
-            Tasks.STATUS_IN_PROCESS -> Status.VTODO_IN_PROCESS
-            Tasks.STATUS_COMPLETED ->  Status.VTODO_COMPLETED
-            Tasks.STATUS_CANCELLED ->  Status.VTODO_CANCELLED
-            else ->                    Status.VTODO_NEEDS_ACTION
+            Tasks.STATUS_IN_PROCESS -> Status(Status.VALUE_IN_PROCESS)
+            Tasks.STATUS_COMPLETED ->  Status(Status.VALUE_COMPLETED)
+            Tasks.STATUS_CANCELLED ->  Status(Status.VALUE_CANCELLED)
+            else ->                    Status(Status.VALUE_NEEDS_ACTION)
         }
 
         val allDay = (values.getAsInteger(Tasks.IS_ALLDAY) ?: 0) != 0
@@ -120,34 +115,28 @@ class DmfsTaskProcessor(
         values.getAsLong(Tasks.LAST_MODIFIED)?.let { to.lastModified = it }
 
         values.getAsLong(Tasks.DTSTART)?.let { dtStart ->
+            val instant = Instant.ofEpochMilli(dtStart)
             to.dtStart =
                 if (allDay)
-                    DtStart(Date(dtStart))
+                    DtStart(instant.toLocalDate())
                 else {
-                    val dt = DateTime(dtStart)
                     if (tz == null)
-                        DtStart(dt, true)
+                        DtStart(instant)
                     else
-                        DtStart(dt.apply {
-                            timeZone = tz
-                        })
+                        DtStart(instant.atZone(tz.toZoneId()))
                 }
         }
 
         values.getAsLong(Tasks.DUE)?.let { due ->
+            val instant = Instant.ofEpochMilli(due)
             to.due =
                 if (allDay)
-                    Due(Date(due))
+                    Due(instant.toLocalDate())
                 else {
-                    val dt = DateTime(due)
                     if (tz == null)
-                        Due(dt).apply {
-                            isUtc = true
-                        }
+                        Due(instant)
                     else
-                        Due(dt.apply {
-                            timeZone = tz
-                        })
+                        Due(instant.atZone(tz.toZoneId()))
                 }
         }
 
@@ -163,7 +152,7 @@ class DmfsTaskProcessor(
             to.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> ExDate(dates) }
         }
 
-        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule(it) }*/
+        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule<Temporal>(it) }
     }
 
     fun populateProperty(row: ContentValues, to: Task) {
