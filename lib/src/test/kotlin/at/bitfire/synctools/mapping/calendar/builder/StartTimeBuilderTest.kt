@@ -84,14 +84,3 @@ class StartTimeBuilderTest {
     }
 
 }
-
-private inline fun withDefaultTimeZone(timeZone: TimeZone, block: () -> Unit) {
-    val originalTimeZone = TimeZone.getDefault()
-    try {
-        TimeZone.setDefault(timeZone)
-
-        block()
-    } finally {
-        TimeZone.setDefault(originalTimeZone)
-    }
-}
