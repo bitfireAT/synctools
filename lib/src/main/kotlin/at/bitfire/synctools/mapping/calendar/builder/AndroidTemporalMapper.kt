@@ -39,6 +39,14 @@ object AndroidTemporalMapper {
     }
 
     /**
+     * Converts this [Temporal] to a [ZonedDateTime] that is created from the timestamp returned by
+     * [toTimestamp] and the time zone returned by [androidTimezoneId].
+     */
+    fun Temporal.toZonedDateTime(): ZonedDateTime {
+        return Instant.ofEpochMilli(toTimestamp()).atZone(ZoneId.of(androidTimezoneId()))
+    }
+
+    /**
      * Returns the timezone ID that should be used when writing an event to the Android calendar provider.
      *
      * Note: For date-times with a given time zone, it needs to be a system time zone. Call
