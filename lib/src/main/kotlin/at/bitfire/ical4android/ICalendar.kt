@@ -12,33 +12,38 @@ import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
+import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
-import net.fortuna.ical4j.model.Date
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TemporalAdapter
-import net.fortuna.ical4j.model.TemporalComparator
 import net.fortuna.ical4j.model.component.Daylight
 import net.fortuna.ical4j.model.component.Observance
 import net.fortuna.ical4j.model.component.Standard
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import net.fortuna.ical4j.model.property.Trigger
 import net.fortuna.ical4j.validate.ValidationException
 import java.io.Reader
+import java.io.StringReader
+import java.time.Duration
+import java.time.Period
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
-import java.time.temporal.TemporalAccessor
-import java.time.temporal.TemporalAdjuster
 import java.util.LinkedList
 import java.util.UUID
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 open class ICalendar {
 
@@ -101,17 +106,16 @@ open class ICalendar {
 
             // fill calendar properties
             properties?.let {
-                TODO("ical4j 4.x")
-                /*calendar.getProperty<Property>(CALENDAR_NAME)?.let { calName ->
+                calendar.getProperty<Property>(CALENDAR_NAME).getOrNull()?.let { calName ->
                     properties[CALENDAR_NAME] = calName.value
                 }
 
-                calendar.getProperty<Property>(Color.PROPERTY_NAME)?.let { calColor ->
+                calendar.getProperty<Property>(Color.PROPERTY_NAME).getOrNull()?.let { calColor ->
                     properties[Color.PROPERTY_NAME] = calColor.value
                 }
-                calendar.getProperty<Property>(CALENDAR_COLOR)?.let { calColor ->
+                calendar.getProperty<Property>(CALENDAR_COLOR).getOrNull()?.let { calColor ->
                     properties[CALENDAR_COLOR] = calColor.value
-                }*/
+                }
             }
 
             return calendar
@@ -223,15 +227,14 @@ open class ICalendar {
          * @return time zone id (TZID) if VTIMEZONE contains a TZID, null otherwise
          */
         fun timezoneDefToTzId(timezoneDef: String): String? {
-            TODO("ical4j 4.x")
-            /*try {
+            try {
                 val builder = CalendarBuilder()
                 val cal = builder.build(StringReader(timezoneDef))
-                val timezone = cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone?
+                val timezone = cal.getComponent<VTimeZone>(VTimeZone.VTIMEZONE).getOrNull()
                 timezone?.timeZoneId?.let { return it.value }
             } catch (e: ParserException) {
                 logger.log(Level.SEVERE, "Can't understand time zone definition", e)
-            }*/
+            }
             return null
         }
 
@@ -261,7 +264,7 @@ open class ICalendar {
         // misc. iCalendar helpers
 
         /**
-         * Calculates the minutes before/after an event/task a given alarm occurs.
+         * Calculates the minutes before/after an event/task to know when a given alarm occurs.
          *
          * @param alarm         the alarm to calculate the minutes from
          * @param refStart      reference `DTSTART` from the calendar component
@@ -286,34 +289,34 @@ open class ICalendar {
             refDuration: net.fortuna.ical4j.model.property.Duration?,
             allowRelEnd: Boolean
         ): Pair<Related, Int>? {
-            val trigger = alarm.trigger ?: return null
+            val trigger = alarm.getProperty<Trigger>(Property.TRIGGER).getOrNull() ?: return null
 
-            TODO("ical4j 4.x")
             // Note: big method – maybe split?
 
-            /*val minutes: Int    // minutes before/after the event
-            var related = trigger.getParameter(Parameter.RELATED) ?: Related.START
+            val minutes: Int    // minutes before/after the event
+            var related: Related = trigger.getParameter<Related>(Parameter.RELATED).getOrNull() ?: Related.START
 
-            // event/task start time
-            val start: java.util.Date? = refStart?.date
-            var end: java.util.Date? = refEnd?.date
+            // event/task start/end time
+            val start: Temporal? = refStart?.date
+            var end: Temporal? = refEnd?.date
 
             // event/task end time
-            if (end == null && start != null) {
-                val duration = refDuration?.duration
-                if (duration != null)
-                    end = java.util.Date.from(start.toInstant() + duration)
-            }
+            if (end == null && start != null)
+                end = when (val refDur = refDuration?.duration) {
+                    is Duration -> start + refDur
+                    is Period -> start + Duration.between(start, start + refDur)
+                    else -> null
+                }
 
             // event/task duration
             val duration: Duration? =
                 if (start != null && end != null)
-                    Duration.between(start.toInstant(), end.toInstant())
+                    Duration.between(start, end)
                 else
                     null
 
             val triggerDur = trigger.duration
-            val triggerTime = trigger.dateTime
+            val triggerTime = trigger.date
 
             if (triggerDur != null) {
                 // TRIGGER value is a DURATION. Important:
@@ -323,9 +326,11 @@ open class ICalendar {
                 var millisBefore =
                     when (triggerDur) {
                         is Duration -> -triggerDur.toMillis()
-                        is Period -> // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
+                        is Period -> {
+                            // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
                             // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
-                            -triggerDur.days.toLong()*24*3600000     // months and years are not used in DURATION values; weeks are calculated to days
+                            -Duration.ofDays(triggerDur.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
+                        }
                         else -> throw AssertionError("triggerDur must be Duration or Period")
                     }
 
@@ -343,14 +348,14 @@ open class ICalendar {
             } else if (triggerTime != null && start != null) {
                 // TRIGGER value is a DATE-TIME, calculate minutes from start time
                 related = Related.START
-                minutes = Duration.between(triggerTime.toInstant(), start.toInstant()).toMinutes().toInt()
+                minutes = Duration.between(triggerTime, start).toMinutes().toInt()
 
             } else {
                 logger.log(Level.WARNING, "VALARM TRIGGER type is not DURATION or DATE-TIME (requires event DTSTART for Android), ignoring alarm", alarm)
                 return null
             }
 
-            return Pair(related, minutes)*/
+            return Pair(related, minutes)
         }
 
     }
