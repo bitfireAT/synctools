@@ -264,7 +264,7 @@ open class ICalendar {
         // misc. iCalendar helpers
 
         /**
-         * Calculates the minutes before/after an event/task to know whem given alarm occurs.
+         * Calculates the minutes before/after an event/task to know when a given alarm occurs.
          *
          * @param alarm         the alarm to calculate the minutes from
          * @param refStart      reference `DTSTART` from the calendar component
