@@ -7,15 +7,20 @@
 package at.bitfire.synctools.util
 
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.property.DateListProperty
+import net.fortuna.ical4j.model.property.RDate
 import org.junit.Assert.assertEquals
-import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
 import java.time.Duration
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 
-@Ignore("ical4j 4.x")
 class AndroidTimeUtilsTest {
 
     val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()!!
@@ -44,10 +49,6 @@ class AndroidTimeUtilsTest {
 
     val tzIdDefault = java.util.TimeZone.getDefault().id!!
     val tzDefault = tzRegistry.getTimeZone(tzIdDefault)!!
-
-    init {
-        TODO("ical4j 4.x")
-    }
 
     // androidifyTimeZone
     // DateListProperty - date
@@ -367,52 +368,64 @@ class AndroidTimeUtilsTest {
             "20150101T103010Z,20150102T103020Z",
             AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150101T103010ZZ"))
         )
-    }
+    }*/
 
 
     // recurrenceSetsToOpenTasksString
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_UtcTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000Z,20150702T060000Z", Value.DATE_TIME)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, ZoneOffset.UTC),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, ZoneOffset.UTC)
+        )))
         assertEquals("20150101T060000Z,20150702T060000Z", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_ZonedTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101T120000,20150702T120000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_MixedTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000Z,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 1, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101T070000,20150702T120000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_TimesAlthougAllDay() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101,20150702", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, null))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_Dates() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(LocalDate.of(2015, 1, 1), LocalDate.of(2015, 7, 2))))
         assertEquals("20150101,20150702", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, null))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_DatesAlthoughTimeZone() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(LocalDate.of(2015, 1, 1), LocalDate.of(2015, 7, 2))))
         assertEquals("20150101T000000,20150702T000000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
-    }*/
+    }
 
 
     @Test

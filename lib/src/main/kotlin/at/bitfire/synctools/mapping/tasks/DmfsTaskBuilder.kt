@@ -13,6 +13,7 @@ import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.DateUtils.toEpochMilli
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
@@ -27,6 +28,8 @@ import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
@@ -143,8 +146,8 @@ class DmfsTaskBuilder(
             builder .withValue(Tasks.IS_ALLDAY, 1)
                 .withValue(Tasks.TZ, null)
         } else {
-            AndroidTimeUtils.androidifyTimeZone(task.dtStart, tzRegistry)
-            AndroidTimeUtils.androidifyTimeZone(task.due, tzRegistry)
+            task.dtStart = task.dtStart?.normalizedDate()?.let { DtStart(it) }
+            task.due = task.due?.normalizedDate()?.let { Due(it) }
             builder .withValue(Tasks.IS_ALLDAY, 0)
                 .withValue(Tasks.TZ, getTimeZone().id)
         }
