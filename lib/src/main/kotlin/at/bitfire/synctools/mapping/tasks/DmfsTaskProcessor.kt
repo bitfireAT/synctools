@@ -16,8 +16,12 @@ import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.parameter.RelType
+import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.Completed
+import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.Duration
@@ -177,27 +181,36 @@ class DmfsTaskProcessor(
     private fun populateAlarm(row: ContentValues, to: Task) {
         val props = PropertyList()
 
-        val trigger = Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE)))
-        TODO("ical4j 4.x")
-        /*when (row.getAsInteger(Alarm.REFERENCE)) {
-            Alarm.ALARM_REFERENCE_START_DATE ->
-                trigger.parameters.add(Related.START)
-            Alarm.ALARM_REFERENCE_DUE_DATE ->
-                trigger.parameters.add(Related.END)
-        }
-        props += trigger
+        props.add(
+            Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE))).let {
+                when (row.getAsInteger(Alarm.REFERENCE)) {
+                    Alarm.ALARM_REFERENCE_START_DATE ->
+                        it.add(Related.START)
+                    Alarm.ALARM_REFERENCE_DUE_DATE ->
+                        it.add(Related.END)
+                    else ->
+                        it
+                }
+            }
+        )
 
-        props += when (row.getAsInteger(Alarm.ALARM_TYPE)) {
-            Alarm.ALARM_TYPE_EMAIL ->
-                Action.EMAIL
-            Alarm.ALARM_TYPE_SOUND ->
-                Action.AUDIO
-            else ->
-                // show alarm by default
-                Action.DISPLAY
-        }
+        props.add(
+            Action(
+                when (row.getAsInteger(Alarm.ALARM_TYPE)) {
+                    Alarm.ALARM_TYPE_EMAIL ->
+                        Action.VALUE_EMAIL
+                    Alarm.ALARM_TYPE_SOUND ->
+                        Action.VALUE_AUDIO
+                    else ->
+                        // show alarm by default
+                        Action.VALUE_DISPLAY
+                }
+            )
+        )
 
-        props += Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)*/
+        props.add(
+            Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)
+        )
 
         to.alarms += VAlarm(props)
     }
@@ -209,20 +222,20 @@ class DmfsTaskProcessor(
             return
         }
 
-        val relatedTo = RelatedTo(uid)
-
-        // add relation type as reltypeparam
-        TODO("ical4j 4.x")
-        /*relatedTo.parameters.add(when (row.getAsInteger(Relation.RELATED_TYPE)) {
-            Relation.RELTYPE_CHILD ->
-                RelType.CHILD
-            Relation.RELTYPE_SIBLING ->
-                RelType.SIBLING
-            else *//* Relation.RELTYPE_PARENT, default value *//* ->
-                RelType.PARENT
-        })*/
-
-        to.relatedTo.add(relatedTo)
+        to.relatedTo.add(
+            RelatedTo(uid)
+                // add relation type as reltypeparam
+                .add(
+                    when (row.getAsInteger(Relation.RELATED_TYPE)) {
+                        Relation.RELTYPE_CHILD ->
+                            RelType.CHILD
+                        Relation.RELTYPE_SIBLING ->
+                            RelType.SIBLING
+                        else /* Relation.RELTYPE_PARENT, default value */ ->
+                            RelType.PARENT
+                    }
+                )
+        )
     }
 
 }
