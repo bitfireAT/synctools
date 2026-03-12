@@ -7,6 +7,7 @@
 package at.bitfire.ical4android.util
 
 import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.DateProperty
@@ -97,7 +98,8 @@ object DateUtils {
      * @param date date property to check
      * @return *true* if the date is a DATE value; *false* otherwise (for instance, when the argument is a DATE-TIME value or null)
      */
-    fun isDate(date: DateProperty<*>?): Boolean = date != null && !date.date.isSupported(ChronoUnit.HOURS)
+    fun isDate(date: DateProperty<*>?): Boolean =
+        date != null && !TemporalAdapter.isDateTimePrecision(date.date)
 
     /**
      * Determines whether a given date represents a DATE-TIME value.

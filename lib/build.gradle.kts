@@ -138,3 +138,11 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.roboelectric)
 }
+
+tasks.withType<Test>().configureEach {
+    options {
+        // Prevent Robolectric from instrumenting ical4j classes to avoid problems with registering
+        // ical4j's ZoneRulesProviderImpl more than once with Java's ZoneRulesProvider.
+        systemProperty("org.robolectric.packagesToNotAcquire", "net.fortuna.ical4j")
+    }
+}
