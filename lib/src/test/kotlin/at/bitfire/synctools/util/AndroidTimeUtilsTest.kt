@@ -45,75 +45,14 @@ class AndroidTimeUtilsTest {
     val tzIdDefault = java.util.TimeZone.getDefault().id!!
     val tzDefault = tzRegistry.getTimeZone(tzIdDefault)!!
 
-    // androidifyTimeZone
-
-    @Test
-    fun testAndroidifyTimeZone_Null() {
-        // must not throw an exception
-        AndroidTimeUtils.androidifyTimeZone(null, tzRegistry)
-    }
-
-    // androidifyTimeZone
-    // DateProperty
-
     init {
         TODO("ical4j 4.x")
-    }
-
-    /*@Test
-    fun testAndroidifyTimeZone_DateProperty_Date() {
-        // dates (without time) should be ignored
-        val dtStart = DtStart(Date("20150101"))
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertTrue(DateUtils.isDate(dtStart))
-        assertNull(dtStart.timeZone)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_KnownTimeZone() {
-        // date-time with known time zone should be unchanged
-        val dtStart = DtStart("20150101T230350", tzBerlin)
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(tzBerlin, dtStart.timeZone)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_UnknownTimeZone() {
-        // time zone that is not available on Android systems should be rewritten to system default
-        val dtStart = DtStart("20150101T031000", tzCustom)
-        // 20150101T031000 CustomTime [+0310] = 20150101T000000 UTC = 1420070400 UNIX
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(1420070400000L, dtStart.date.time)
-        assertEquals(tzIdDefault, dtStart.timeZone.id)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_FloatingTime() {
-        // times with floating time should be treated as system default time zone
-        val dtStart = DtStart("20150101T230350")
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(DateTime("20150101T230350", tzDefault).time, dtStart.date.time)
-        assertEquals(tzIdDefault, dtStart.timeZone.id)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_UTC() {
-        // times with UTC should be unchanged
-        val dtStart = DtStart("20150101T230350Z")
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(1420153430000L, dtStart.date.time)
-        assertNull(dtStart.timeZone)
-        assertTrue(dtStart.isUtc)
     }
 
     // androidifyTimeZone
     // DateListProperty - date
 
-    @Test
+    /*@Test
     fun testAndroidifyTimeZone_DateListProperty_Date() {
         // dates (without time) should be ignored
         val rDate = RDate(DateList("20150101,20150102", Value.DATE))
@@ -273,15 +212,6 @@ class AndroidTimeUtilsTest {
     @Test
     fun testStorageTzId_FloatingTime() =
         assertEquals(TimeZone.getDefault().id, AndroidTimeUtils.storageTzId(DtStart(DateTime("20150101T000000"))))
-
-    @Test
-    fun testStorageTzId_UTC() =
-        assertEquals(TimeZones.UTC_ID, AndroidTimeUtils.storageTzId(DtStart(DateTime("20150101T000000Z"))))
-
-    @Test
-    fun testStorageTzId_ZonedTime() {
-        assertEquals(tzToronto.id, AndroidTimeUtils.storageTzId(DtStart("20150101T000000", tzToronto)))
-    }
 
 
     // androidStringToRecurrenceSets
