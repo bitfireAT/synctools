@@ -41,7 +41,8 @@ object AndroidTimeUtils {
         get() = Logger.getLogger(javaClass.name)
 
 
-    @Deprecated("Use DatePropertyTzMapper instead")
+    @Deprecated("Use DatePropertyTzMapper instead", replaceWith =
+        ReplaceWith("date.normalizedDate()", "at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate"))
     fun androidifyTimeZone(date: DateProperty<*>?, tzRegistry: TimeZoneRegistry) {
         TODO("Will be removed during ical4j 4.x update")
     }
