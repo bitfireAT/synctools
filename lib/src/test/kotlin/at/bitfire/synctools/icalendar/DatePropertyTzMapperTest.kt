@@ -79,7 +79,7 @@ class DatePropertyTzMapperTest {
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
-        assertEquals("Europe/Vienna", normalizedDate.zone.id)
+        assertEquals(ZoneId.systemDefault(), normalizedDate.zone)
         assertEquals(timestamp, normalizedDate.toInstant())
 
         // We could NOT just generate the DTSTART from the time string and the system time zone
