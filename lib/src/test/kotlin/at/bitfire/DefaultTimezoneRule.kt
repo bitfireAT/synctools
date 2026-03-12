@@ -20,7 +20,6 @@ import java.util.TimeZone
  * timezone is restored after the test completes, even if the test fails.
  *
  * @param defaultTzId The ID of the timezone to set as the default during the test.
- *                    Defaults to "Europe/Vienna" if not specified.
  */
 class DefaultTimezoneRule(
     defaultTzId: String
