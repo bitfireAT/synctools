@@ -13,7 +13,6 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.impl.TestTaskList
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
@@ -31,6 +30,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
+import java.time.ZonedDateTime
 
 class DmfsTaskTest(
     providerName: TaskProvider.ProviderName
@@ -82,14 +83,21 @@ class DmfsTaskTest(
     @Test
     fun testAddTask() {
         // build and write event to calendar provider
-        TODO("ical4j 4.x")
-        /*val task = Task()
+        val task = Task()
         task.uid = "sample1@testAddEvent"
         task.summary = "Sample event"
         task.description = "Sample event with date/time"
         task.location = "Sample location"
-        task.dtStart = DtStart("20150501T120000", tzVienna)
-        task.due = Due("20150501T140000", tzVienna)
+        task.dtStart = DtStart(ZonedDateTime.of(
+            2015, 5, 1,
+            12, 0, 0, 0,
+            tzVienna.toZoneId()
+        ))
+        task.due = Due(ZonedDateTime.of(
+            2015, 5, 1,
+            14, 0, 0, 0,
+            tzVienna.toZoneId()
+        ))
         task.organizer = Organizer("mailto:organizer@example.com")
         assertFalse(task.isAllDay())
 
@@ -97,9 +105,10 @@ class DmfsTaskTest(
         task.categories.addAll(arrayOf("Cat1", "Cat2"))
         task.comment = "A comment"
 
-        val sibling = RelatedTo("most-fields2@example.com")
-        sibling.parameters.add(RelType.SIBLING)
-        task.relatedTo.add(sibling)
+        task.relatedTo.add(
+            RelatedTo("most-fields2@example.com")
+                .add(RelType.SIBLING)
+        )
 
         task.unknownProperties += XProperty("X-UNKNOWN-PROP", "Unknown Value")
 
@@ -126,19 +135,18 @@ class DmfsTaskTest(
             assertEquals(task.unknownProperties, task2.unknownProperties)
         } finally {
             testTask.delete()
-        }*/
+        }
     }
 
     @Test(expected = LocalStorageException::class)
     fun testAddTaskWithInvalidDue() {
         val task = Task()
-        TODO("ical4j 4.x")
-        /*task.uid = "invalidDUE@ical4android.tests"
+        task.uid = "invalidDUE@ical4android.tests"
         task.summary = "Task with invalid DUE"
-        task.dtStart = DtStart(Date("20150102"))
+        task.dtStart = DtStart(LocalDate.of(2015, 1, 2))
 
-        task.due = Due(Date("20150101"))
-        DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()*/
+        task.due = Due(LocalDate.of(2015, 1, 1))
+        DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
     }
 
     @Test
@@ -146,8 +154,7 @@ class DmfsTaskTest(
         val task = Task()
         task.uid = "TaskWithManyAlarms"
         task.summary = "Task with many alarms"
-        TODO("ical4j 4.x")
-        //task.dtStart = DtStart(Date("20150102"))
+        task.dtStart = DtStart(LocalDate.of(2015, 1, 2))
 
         for (i in 1..1050)
             task.alarms += VAlarm(java.time.Duration.ofMinutes(i.toLong()))
@@ -165,8 +172,11 @@ class DmfsTaskTest(
         task.summary = "Sample event"
         task.description = "Sample event with date/time"
         task.location = "Sample location"
-        TODO("ical4j 4.x")
-        //task.dtStart = DtStart("20150501T120000", tzVienna)
+        task.dtStart = DtStart(ZonedDateTime.of(
+            2015, 5, 1,
+            12, 0, 0, 0,
+            tzVienna.toZoneId()
+        ))
         assertFalse(task.isAllDay())
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         assertNotNull(uri)
