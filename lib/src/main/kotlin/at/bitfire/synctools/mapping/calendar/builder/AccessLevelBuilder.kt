@@ -20,20 +20,19 @@ class AccessLevelBuilder: AndroidEntityBuilder {
         val accessLevel: Int
         val retainValue: Boolean
 
-        TODO("ical4j 4.x")
-        /*val classification = from.classification
-        when (classification) {
-            Clazz.PUBLIC -> {
+        val classification: Clazz? = from.classification
+        when (classification?.value?.uppercase()) {
+            Clazz.VALUE_PUBLIC -> {
                 accessLevel = Events.ACCESS_PUBLIC
                 retainValue = false
             }
 
-            Clazz.PRIVATE -> {
+            Clazz.VALUE_PRIVATE -> {
                 accessLevel = Events.ACCESS_PRIVATE
                 retainValue = false
             }
 
-            Clazz.CONFIDENTIAL -> {
+            Clazz.VALUE_CONFIDENTIAL -> {
                 accessLevel = Events.ACCESS_CONFIDENTIAL
                 retainValue = true
             }
@@ -61,7 +60,6 @@ class AccessLevelBuilder: AndroidEntityBuilder {
                     ExtendedProperties.VALUE to UnknownProperty.toJsonString(classification)
                 )
             )
-        */
     }
 
 }

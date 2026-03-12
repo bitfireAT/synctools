@@ -10,6 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
 import androidx.core.content.contentValuesOf
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.test.assertContentValuesEqual
 import io.mockk.every
@@ -24,13 +25,11 @@ import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Organizer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.net.URI
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class AttendeesBuilderTest {
 
@@ -41,16 +40,12 @@ class AttendeesBuilderTest {
 
     private val builder = AttendeesBuilder(mockCalendar)
 
-    init {
-        TODO("ical4j 4.x")
-    }
-
-    /*@Test
+    @Test
     fun `Attendee is email address`() {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee1@example.com")
+                this += Attendee("mailto:attendee1@example.com")
             },
             main = VEvent(),
             to = result
@@ -63,7 +58,7 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("https://example.com/principals/attendee")
+                this += Attendee("https://example.com/principals/attendee")
             },
             main = VEvent(),
             to = result
@@ -79,8 +74,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("sample:uri").apply {
-                    parameters.add(Email("attendee1@example.com"))
+                this += Attendee("sample:uri").apply {
+                    add<Attendee>(Email("attendee1@example.com"))
                 }
             },
             main = VEvent(),
@@ -98,8 +93,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(Cn("Sample Attendee"))
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(Cn("Sample Attendee"))
                 }
             },
             main = VEvent(),
@@ -116,11 +111,11 @@ class AttendeesBuilderTest {
                 val reqParticipant = Entity(ContentValues())
                 builder.build(
                     from = VEvent().apply {
-                        properties += Attendee("mailto:attendee@example.com").apply {
+                        this += Attendee("mailto:attendee@example.com").apply {
                             if (cuType != null)
-                                parameters.add(cuType)
+                                add<Attendee>(cuType)
                             if (role != null)
-                                parameters.add(role)
+                                add<Attendee>(role)
                         }
                     },
                     main = VEvent(),
@@ -136,10 +131,10 @@ class AttendeesBuilderTest {
             val optParticipant = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
+                    this += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
-                            parameters.add(cuType)
-                        parameters.add(Role.OPT_PARTICIPANT)
+                            add<Attendee>(cuType)
+                        add<Attendee>(Role.OPT_PARTICIPANT)
                     }
                 },
                 main = VEvent(),
@@ -154,10 +149,10 @@ class AttendeesBuilderTest {
             val nonParticipant = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
+                    this += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
-                            parameters.add(cuType)
-                        parameters.add(Role.NON_PARTICIPANT)
+                            add<Attendee>(cuType)
+                        add<Attendee>(Role.NON_PARTICIPANT)
                     }
                 },
                 main = VEvent(),
@@ -177,10 +172,10 @@ class AttendeesBuilderTest {
             val reqParticipant = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
-                        parameters.add(CuType.UNKNOWN)
+                    this += Attendee("mailto:attendee@example.com").apply {
+                        add<Attendee>(CuType.UNKNOWN)
                         if (role != null)
-                            parameters.add(role)
+                            add<Attendee>(role)
                     }
                 },
                 main = VEvent(),
@@ -197,9 +192,9 @@ class AttendeesBuilderTest {
         val optParticipant = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(CuType.UNKNOWN)
-                    parameters.add(Role.OPT_PARTICIPANT)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(CuType.UNKNOWN)
+                    add<Attendee>(Role.OPT_PARTICIPANT)
                 }
             },
             main = VEvent(),
@@ -215,9 +210,9 @@ class AttendeesBuilderTest {
         val nonParticipant = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(CuType.UNKNOWN)
-                    parameters.add(Role.NON_PARTICIPANT)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(CuType.UNKNOWN)
+                    add<Attendee>(Role.NON_PARTICIPANT)
                 }
             },
             main = VEvent(),
@@ -237,10 +232,10 @@ class AttendeesBuilderTest {
             val reqParticipant = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
-                        parameters.add(CuType.GROUP)
+                    this += Attendee("mailto:attendee@example.com").apply {
+                        add<Attendee>(CuType.GROUP)
                         if (role != null)
-                            parameters.add(role)
+                            add<Attendee>(role)
                     }
                 },
                 main = VEvent(),
@@ -257,9 +252,9 @@ class AttendeesBuilderTest {
         val optParticipant = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(CuType.GROUP)
-                    parameters.add(Role.OPT_PARTICIPANT)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(CuType.GROUP)
+                    add<Attendee>(Role.OPT_PARTICIPANT)
                 }
             },
             main = VEvent(),
@@ -275,9 +270,9 @@ class AttendeesBuilderTest {
         val nonParticipant = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(CuType.GROUP)
-                    parameters.add(Role.NON_PARTICIPANT)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(CuType.GROUP)
+                    add<Attendee>(Role.NON_PARTICIPANT)
                 }
             },
             main = VEvent(),
@@ -296,10 +291,10 @@ class AttendeesBuilderTest {
             val result = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
-                        parameters.add(CuType.RESOURCE)
+                    this += Attendee("mailto:attendee@example.com").apply {
+                        add<Attendee>(CuType.RESOURCE)
                         if (role != null)
-                            parameters.add(role)
+                            add<Attendee>(role)
                     }
                 },
                 main = VEvent(),
@@ -316,9 +311,9 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(CuType.RESOURCE)
-                    parameters.add(Role.CHAIR)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(CuType.RESOURCE)
+                    add<Attendee>(Role.CHAIR)
                 }
             },
             main = VEvent(),
@@ -337,10 +332,10 @@ class AttendeesBuilderTest {
             val result = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
-                        parameters.add(CuType.ROOM)
+                    this += Attendee("mailto:attendee@example.com").apply {
+                        add<Attendee>(CuType.ROOM)
                         if (role != null)
-                            parameters.add(role)
+                            add<Attendee>(role)
                     }
                 },
                 main = VEvent(),
@@ -360,10 +355,10 @@ class AttendeesBuilderTest {
             val result = Entity(ContentValues())
             builder.build(
                 from = VEvent().apply {
-                    properties += Attendee("mailto:attendee@example.com").apply {
+                    this += Attendee("mailto:attendee@example.com").apply {
                         if (cuType != null)
-                            parameters.add(cuType)
-                        parameters.add(Role.CHAIR)
+                            add<Attendee>(cuType)
+                        add<Attendee>(Role.CHAIR)
                     }
                 },
                 main = VEvent(),
@@ -382,7 +377,7 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee(URI("mailto", accountName, null))
+                this += Attendee(URI("mailto", accountName, null))
             },
             main = VEvent(),
             to = result
@@ -400,7 +395,7 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com")
+                this += Attendee("mailto:attendee@example.com")
             },
             main = VEvent(),
             to = result
@@ -413,8 +408,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat.NEEDS_ACTION)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat.NEEDS_ACTION)
                 }
             },
             main = VEvent(),
@@ -428,8 +423,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat.ACCEPTED)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat.ACCEPTED)
                 }
             },
             main = VEvent(),
@@ -443,8 +438,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat.DECLINED)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat.DECLINED)
                 }
             },
             main = VEvent(),
@@ -458,8 +453,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat.TENTATIVE)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat.TENTATIVE)
                 }
             },
             main = VEvent(),
@@ -473,8 +468,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat.DELEGATED)
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat.DELEGATED)
                 }
             },
             main = VEvent(),
@@ -488,8 +483,8 @@ class AttendeesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Attendee("mailto:attendee@example.com").apply {
-                    parameters.add(PartStat("X-WILL-ASK"))
+                this += Attendee("mailto:attendee@example.com").apply {
+                    add<Attendee>(PartStat("X-WILL-ASK"))
                 }
             },
             main = VEvent(),
@@ -507,8 +502,8 @@ class AttendeesBuilderTest {
     @Test
     fun testOrganizerEmail_EmailParameter() {
         assertEquals("organizer@example.com", builder.organizerEmail(VEvent().apply {
-            properties += Organizer("SomeFancyOrganizer").apply {
-                parameters.add(Email("organizer@example.com"))
+            this += Organizer("SomeFancyOrganizer").apply {
+                add<Attendee>(Email("organizer@example.com"))
             }
         }))
     }
@@ -516,7 +511,7 @@ class AttendeesBuilderTest {
     @Test
     fun testOrganizerEmail_MailtoValue() {
         assertEquals("organizer@example.com", builder.organizerEmail(VEvent().apply {
-            properties += Organizer("mailto:organizer@example.com")
+            this += Organizer("mailto:organizer@example.com")
         }))
     }
 
@@ -530,6 +525,6 @@ class AttendeesBuilderTest {
             result.subValues.first { it.uri == Attendees.CONTENT_URI }.values,
             onlyFieldsInExpected = true
         )
-    }*/
+    }
 
 }
