@@ -20,6 +20,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.StringReader
 import java.time.Instant
+import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
@@ -28,7 +30,7 @@ class DatePropertyTzMapperTest {
 
     @Test
     fun `normalizedDate with TZID known to system`() {
-        val dtStart = DtStart<Temporal>(
+        val dtStart = DtStart<ZonedDateTime>(
             ParameterList(listOf<Parameter>(TzId("Europe/Vienna"))),
             "20260311T224734"
         )
@@ -73,6 +75,7 @@ class DatePropertyTzMapperTest {
             /* 20250828T130000Z */ 1756386000000
             /* offset -0300 */ + 3*3600000
         )
+        assertEquals(timestamp, ical4jDate.toInstant())
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
@@ -85,6 +88,45 @@ class DatePropertyTzMapperTest {
             ZonedDateTime.of(2025, 8, 28, 13, 0, 0, 0, ZoneId.systemDefault()).toInstant()
         )
     }
+
+    @Test
+    fun `normalizedDate with Instant remains unchanged`() {
+        // Test that Instant dates remain unchanged
+        val dtStart = DtStart(Instant.now())
+
+        val originalDate = dtStart.date
+        val normalizedDate = dtStart.normalizedDate()
+
+        // Should be the same instance since Instant doesn't have timezone
+        assertEquals(originalDate, normalizedDate)
+        assertTrue(normalizedDate is Instant)
+    }
+
+    @Test
+    fun `normalizedDate with LocalDate remains unchanged`() {
+        // Test that LocalDate dates remain unchanged
+        val dtStart = DtStart<Temporal>("20260311")
+
+        val originalDate = dtStart.date
+        val normalizedDate = dtStart.normalizedDate()
+
+        // Should be the same instance since LocalDate doesn't have timezone
+        assertEquals(originalDate, normalizedDate)
+        assertTrue(normalizedDate is LocalDate)
+    }
+
+    @Test
+    fun `normalizedDate with OffsetDateTime becomes an Instant`() {
+        // Test that OffsetDateTime dates remain unchanged
+        val dtStart = DtStart<Temporal>("20260311T224734Z")
+
+        val originalDate = dtStart.date                 // OffsetDateTime
+        val normalizedDate = dtStart.normalizedDate()   // Instant
+
+        // Should be the same timestamp
+        assertEquals((originalDate as OffsetDateTime).toInstant(), normalizedDate)
+    }
+
 
     @Test
     fun `systemTzId with exact match`() {
@@ -115,5 +157,6 @@ class DatePropertyTzMapperTest {
         val result = DatePropertyTzMapper.systemTzId("Unknown/Timezone")
         assertEquals(null, result)
     }
+
 
 }
