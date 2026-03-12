@@ -6,33 +6,20 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.util.AndroidTimeUtils.androidifyTimeZone
-import at.bitfire.synctools.util.AndroidTimeUtils.storageTzId
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZoneRegistry
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Period
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAmount
 import java.util.LinkedList
 import java.util.Locale
-import java.util.TimeZone
 import java.util.logging.Logger
 
 object AndroidTimeUtils {
@@ -54,24 +41,10 @@ object AndroidTimeUtils {
         get() = Logger.getLogger(javaClass.name)
 
 
-    /**
-     * Ensures that a given [net.fortuna.ical4j.model.property.DateProperty] either
-     *
-     * 1. has a time zone with an ID that is available in Android, or
-     * 2. is an UTC property ([net.fortuna.ical4j.model.property.DateProperty.isUtc] = *true*).
-     *
-     * To get the time zone ID which shall be given to the Calendar provider,
-     * use [storageTzId].
-     *
-     * @param date [net.fortuna.ical4j.model.property.DateProperty] to validate. Values which are not DATE-TIME will be ignored.
-     * @param tzRegistry    time zone registry to get time zones from
-     */
+    @Deprecated("Use DatePropertyTzMapper instead", replaceWith =
+        ReplaceWith("date.normalizedDate()", "at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate"))
     fun androidifyTimeZone(date: DateProperty<*>?, tzRegistry: TimeZoneRegistry) {
-        TODO("ical4j 4.x")
-        /*if (DateUtils.isDateTime(date) && date?.isUtc == false) {
-            val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
-            date.timeZone = tzRegistry.getTimeZone(tzID)
-        }*/
+        TODO("Will be removed during ical4j 4.x update")
     }
 
     /**
@@ -82,12 +55,14 @@ object AndroidTimeUtils {
      * *
      * @param dateList [net.fortuna.ical4j.model.property.DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
      */
-    fun androidifyTimeZone(dateList: DateListProperty<*>) {
-        val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
+    @Deprecated("Use DatePropertyTzMapper instead")
+    fun androidifyTimeZone(dateList: DateListProperty<*>): DateListProperty<*> =
+        TODO("Should be implemented in DatePropertyTzMapper, if needed")
+        /*val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
         // periods (RDate only)
         TODO("ical4j 4.x")
-        /*val periods = (dateList as? RDate)?.periods
+        val periods = (dateList as? RDate)?.periods
         if (periods != null && periods.isNotEmpty() && !periods.isUtc) {
             val tzID = DateUtils.findAndroidTimezoneID(periods.timeZone?.id)
 
@@ -106,38 +81,10 @@ object AndroidTimeUtils {
                 dateList.timeZone = tzRegistry.getTimeZone(tzID)
             }
         }*/
-    }
 
-    /**
-     * Returns the time-zone ID for a given date or date-time that should be used to store it
-     * in the Android calendar provider.
-     *
-     * Does not check whether Android actually knows the time zone ID – use [androidifyTimeZone] for that.
-     *
-     * @param date DateProperty (DATE or DATE-TIME) whose time-zone information is used
-     *
-     * @return - UTC for dates and UTC date-times
-     *         - the specified time zone ID for date-times with given time zone
-     *         - the currently set default time zone ID for floating date-times
-     */
+    @Deprecated("Implementation may vary by provider and should be done in the respective mapper")
     fun storageTzId(date: DateProperty<*>): String =
-        TODO("ical4j 4.x")
-        /*if (DateUtils.isDateTime(date)) {
-            // DATE-TIME
-            when {
-                date.isUtc ->
-                    // DATE-TIME in UTC format
-                    TimeZones.UTC_ID
-                date.timeZone != null ->
-                    // DATE-TIME with given time-zone
-                    date.timeZone.id
-                else ->
-                    // DATE-TIME in local format (floating)
-                    TimeZone.getDefault().id
-            }
-        } else
-            // DATE
-            TZID_UTC*/
+        TODO("Will be removed during ical4j 4.x update")
 
 
     // recurrence sets
