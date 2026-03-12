@@ -11,7 +11,6 @@ import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.ParameterList
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DtStart
@@ -86,4 +85,35 @@ class DatePropertyTzMapperTest {
             ZonedDateTime.of(2025, 8, 28, 13, 0, 0, 0, ZoneId.systemDefault()).toInstant()
         )
     }
+
+    @Test
+    fun `systemTzId with exact match`() {
+        val result = DatePropertyTzMapper.systemTzId("Europe/Vienna")
+        assertEquals("Europe/Vienna", result)
+    }
+
+    @Test
+    fun `systemTzId with case insensitive match`() {
+        val result = DatePropertyTzMapper.systemTzId("europe/vienna")
+        assertEquals("Europe/Vienna", result)
+    }
+
+    @Test
+    fun `systemTzId with partial match`() {
+        val result = DatePropertyTzMapper.systemTzId("/freeassociation.sourceforge.net/Tzfile/Europe/Vienna")
+        assertEquals("Europe/Vienna", result)
+    }
+
+    @Test
+    fun `systemTzId with null input`() {
+        val result = DatePropertyTzMapper.systemTzId(null)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `systemTzId with unknown timezone`() {
+        val result = DatePropertyTzMapper.systemTzId("Unknown/Timezone")
+        assertEquals(null, result)
+    }
+
 }

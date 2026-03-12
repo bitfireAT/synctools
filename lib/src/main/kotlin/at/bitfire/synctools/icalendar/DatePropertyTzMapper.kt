@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.icalendar
 
+import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DateProperty
@@ -75,14 +76,16 @@ object DatePropertyTzMapper {
      * @param origTzId The original timezone ID to match against system timezone IDs. Can be null.
      * @return The matching system timezone ID if found, otherwise null. Returns null if the input is null.
      */
-    private fun systemTzId(origTzId: String?): String? {
+    @VisibleForTesting
+    internal fun systemTzId(origTzId: String?): String? {
         if (origTzId == null)
             return null
 
         val systemIds = ZoneId.getAvailableZoneIds()
         // First, try to find an exact match (case-insensitive)
-        if (systemIds.any { origTzId.equals(it, ignoreCase = true) })
-            return origTzId
+        for (systemId in systemIds)
+            if (origTzId.equals(systemId, ignoreCase = true))
+                return systemId
 
         // Otherwise, try to find a partial match (sometimes the origTzId is something like
         // "/freeassociation.sourceforge.net/Tzfile/Europe/Vienna")
