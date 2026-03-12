@@ -21,6 +21,7 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.util.TimeZones
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
@@ -75,9 +76,9 @@ object AndroidTimeUtils {
             return
         }
         if (DateUtils.isDateTime(date) && !date.isUtc) {
-            val tzID = DateUtils.findAndroidTimezoneID(
-                date.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
-            )
+            val originalTzId = date.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
+                ?.let { if (it == "Z") TimeZones.UTC_ID else it }
+            val tzID = DateUtils.findAndroidTimezoneID(originalTzId)
             val tz = tzRegistry.getTimeZone(tzID)
             val newDate = Instant.from(date.date).atZone(tz.toZoneId())
             if (T::class == ZonedDateTime::class) {
