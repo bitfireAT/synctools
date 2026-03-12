@@ -6,37 +6,24 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.synctools.util.AndroidTimeUtils.androidifyTimeZone
 import at.bitfire.synctools.util.AndroidTimeUtils.storageTzId
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import java.text.SimpleDateFormat
 import java.time.Duration
-import java.time.Instant
-import java.time.OffsetDateTime
 import java.time.Period
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoField
-import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.LinkedList
 import java.util.Locale
-import java.util.TimeZone
 import java.util.logging.Logger
-import kotlin.jvm.optionals.getOrDefault
-import kotlin.jvm.optionals.getOrNull
 
 object AndroidTimeUtils {
 
@@ -69,24 +56,12 @@ object AndroidTimeUtils {
      * @param date [net.fortuna.ical4j.model.property.DateProperty] to validate. Values which are not DATE-TIME will be ignored.
      * @param tzRegistry    time zone registry to get time zones from
      */
-    inline fun <reified T: Temporal> androidifyTimeZone(date: DateProperty<T>?, tzRegistry: TimeZoneRegistry) {
-        date ?: return
-        if (!date.date.isSupported(ChronoField.INSTANT_SECONDS)) {
-            // Date type does not support timezone, no need to convert
-            return
-        }
-        if (DateUtils.isDateTime(date) && !date.isUtc) {
-            val originalTzId = date.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
-                ?.let { if (it == "Z") TimeZones.UTC_ID else it }
-            val tzID = DateUtils.findAndroidTimezoneID(originalTzId)
-            val tz = tzRegistry.getTimeZone(tzID)
-            val newDate = Instant.from(date.date).atZone(tz.toZoneId())
-            if (T::class == ZonedDateTime::class) {
-                date.date = newDate as T
-            } else if (T::class == OffsetDateTime::class) {
-                date.date = newDate.toOffsetDateTime() as T
-            }
-        }
+    fun androidifyTimeZone(date: DateProperty<*>?, tzRegistry: TimeZoneRegistry) {
+        TODO("ical4j 4.x")
+        /*if (DateUtils.isDateTime(date) && date?.isUtc == false) {
+            val tzID = DateUtils.findAndroidTimezoneID(date.timeZone?.id)
+            date.timeZone = tzRegistry.getTimeZone(tzID)
+        }*/
     }
 
     /**
@@ -324,53 +299,32 @@ object AndroidTimeUtils {
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty<*>>, tz: TimeZone?): String {
-        val allDay = tz == null
+    fun recurrenceSetsToOpenTasksString(dates: List<DateListProperty<*>>, tz: net.fortuna.ical4j.model.TimeZone?): String {
+        TODO("ical4j 4.x")
+
+        /*val allDay = tz == null
         val strDates = LinkedList<String>()
         for (dateListProp in dates) {
-            if (dateListProp is RDate && dateListProp.periods.getOrDefault(emptyList()).isNotEmpty())
+            if (dateListProp is RDate && dateListProp.periods.isNotEmpty())
                 logger.warning("RDATE PERIOD not supported, ignoring")
 
-            fun Int.padWithZeros(length: Int = 2) = toString().padStart(length, '0')
-
             for (date in dateListProp.dates) {
-                // The timezone is handled externally by a specific timezone column. We just need
-                // to use the datetime adjusted by this tz
-                val isUtc: Boolean
-                val adjDate = if (!allDay && date.isSupported(ChronoField.OFFSET_SECONDS)) {
-                    isUtc = date.get(ChronoField.OFFSET_SECONDS) == 0
-                    if (isUtc)
-                        // UTC dates are not converted, they get 'Z' added at the end
-                        date
-                    else
-                        OffsetDateTime.from(date).atZoneSameInstant(tz.toZoneId())
-                } else {
-                    isUtc = false
-                    date
-                }
+                val dateToUse =
+                    when (date) {
+                        is DateTime if allDay ->    // VALUE=DATE-TIME, but allDay=1
+                            Date(date)
 
-                val sb = StringBuilder()
-                sb.append(adjDate.get(ChronoField.YEAR))
-                sb.append(adjDate.get(ChronoField.MONTH_OF_YEAR).padWithZeros())
-                sb.append(adjDate.get(ChronoField.DAY_OF_MONTH).padWithZeros())
-                sb.append('T')
-                if (!allDay && adjDate.isSupported(ChronoField.HOUR_OF_DAY)) {
-                    sb.append(adjDate.get(ChronoField.HOUR_OF_DAY).padWithZeros())
-                    sb.append(adjDate.get(ChronoField.MINUTE_OF_HOUR).padWithZeros())
-                    sb.append(adjDate.get(ChronoField.SECOND_OF_MINUTE).padWithZeros())
-                } else {
-                    // Time not supported - date doesn't have time (LocalDate)
-                    // Force time to start of day
-                    sb.append("000000")
-                }
+                        !is DateTime if !allDay ->  // VALUE=DATE, but allDay=0
+                            DateTime(date.toString(), tz)
 
-                // If the original date was UTC, append 'Z' at the end
-                if (isUtc) sb.append('Z')
-
-                strDates += sb.toString()
+                        else -> date
+                    }
+                if (dateToUse is DateTime && !dateToUse.isUtc)
+                    dateToUse.timeZone = tz!!
+                strDates += dateToUse.toString()
             }
         }
-        return strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR)
+        return strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR)*/
     }
 
 
