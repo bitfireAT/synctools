@@ -30,6 +30,9 @@ import java.time.temporal.Temporal
 
 class DatePropertyTzMapperTest {
 
+    /* Sets "Europe/Vienna" as default TZ for the tests. Note that tests in this class expect that
+    the ical4j timestamps and system timestamps are the same, which is only guaranteed if the
+    system timezone rules match the ical4j timezone rules. */
     @get:Rule
     val tzRule = DefaultTimezoneRule("Europe/Vienna")
 
