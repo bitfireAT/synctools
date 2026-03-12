@@ -106,7 +106,8 @@ object DateUtils {
      * @param date date property to check
      * @return *true* if the date is a DATE-TIME value; *false* otherwise (for instance, when the argument is a DATE value or null)
      */
-    fun isDateTime(date: DateProperty<*>?): Boolean = date != null && date.date.isSupported(ChronoUnit.HOURS)
+    fun isDateTime(date: DateProperty<*>?): Boolean =
+        date != null && TemporalAdapter.isDateTimePrecision(date.date)
 
     /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.
