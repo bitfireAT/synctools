@@ -55,6 +55,38 @@ class DatePropertyTzMapperTest {
     }
 
     @Test
+    fun `normalizedDate with TZID known to system, but different VTIMEZONE`() {
+        val cal = CalendarBuilder().build(StringReader("BEGIN:VCALENDAR\r\n" +
+                "VERSION:2.0\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Europe/Vienna\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:-03\n" +
+                "TZOFFSETFROM:-0300\n" +
+                "TZOFFSETTO:-0300\n" +
+                "DTSTART:19700101T000000\n" +
+                "END:STANDARD\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "SUMMARY:Test Timezones\n" +
+                "DTSTART;TZID=Europe/Vienna:20250828T130000\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR"
+        ))
+        val vEvent = cal.getComponent<VEvent>(Component.VEVENT).get()
+        val dtStart = vEvent.requireDtStart<Temporal>()
+
+        // ical4j returns ZonedDatetime with custom timezone from VTIMEZONE
+        val ical4jDate = dtStart.date as ZonedDateTime
+        assertTrue(ical4jDate.zone.id.startsWith("ical4j-local-"))
+
+        // normalizedDate returns ZonedDatetime (with other timestamp because TZ OFFSET is different) with system time zone
+        val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
+        assertEquals(tzRule.defaultZoneId, normalizedDate.zone)
+        assertNotEquals(ical4jDate.toInstant(), normalizedDate.toInstant())
+    }
+
+    @Test
     fun `normalizedDate with TZID unknown to system`() {
         val cal = CalendarBuilder().build(StringReader("BEGIN:VCALENDAR\r\n" +
                 "VERSION:2.0\n" +
