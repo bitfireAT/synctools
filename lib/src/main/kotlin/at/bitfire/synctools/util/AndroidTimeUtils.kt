@@ -6,33 +6,20 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
-import at.bitfire.synctools.util.AndroidTimeUtils.androidifyTimeZone
-import at.bitfire.synctools.util.AndroidTimeUtils.storageTzId
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZoneRegistry
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
-import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Period
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAmount
 import java.util.LinkedList
 import java.util.Locale
-import java.util.TimeZone
 import java.util.logging.Logger
 
 object AndroidTimeUtils {

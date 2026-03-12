@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.icalendar
 
+import at.bitfire.DefaultTimezoneRule
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
@@ -16,17 +17,22 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import java.io.StringReader
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 
 class DatePropertyTzMapperTest {
+
+    @get:Rule
+    val tzRule = DefaultTimezoneRule("Europe/Vienna")
+
 
     @Test
     fun `normalizedDate with TZID known to system`() {
@@ -41,7 +47,7 @@ class DatePropertyTzMapperTest {
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
-        assertEquals("Europe/Vienna", normalizedDate.zone.id)
+        assertEquals(tzRule.defaultZoneId, normalizedDate.zone)
         assertEquals(ical4jDate.toInstant(), normalizedDate.toInstant())
     }
 
@@ -79,13 +85,13 @@ class DatePropertyTzMapperTest {
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
-        assertEquals(ZoneId.systemDefault(), normalizedDate.zone)
+        assertEquals(tzRule.defaultZoneId, normalizedDate.zone)
         assertEquals(timestamp, normalizedDate.toInstant())
 
         // We could NOT just generate the DTSTART from the time string and the system time zone
         assertNotEquals(
             timestamp,
-            ZonedDateTime.of(2025, 8, 28, 13, 0, 0, 0, ZoneId.systemDefault()).toInstant()
+            ZonedDateTime.of(2025, 8, 28, 13, 0, 0, 0, tzRule.defaultZoneId).toInstant()
         )
     }
 
@@ -97,8 +103,7 @@ class DatePropertyTzMapperTest {
         val originalDate = dtStart.date
         val normalizedDate = dtStart.normalizedDate()
 
-        // Should be the same instance since Instant doesn't have timezone
-        assertEquals(originalDate, normalizedDate)
+        assertSame(originalDate, normalizedDate)
         assertTrue(normalizedDate is Instant)
     }
 
@@ -110,8 +115,7 @@ class DatePropertyTzMapperTest {
         val originalDate = dtStart.date
         val normalizedDate = dtStart.normalizedDate()
 
-        // Should be the same instance since LocalDate doesn't have timezone
-        assertEquals(originalDate, normalizedDate)
+        assertSame(originalDate, normalizedDate)
         assertTrue(normalizedDate is LocalDate)
     }
 
@@ -141,9 +145,21 @@ class DatePropertyTzMapperTest {
     }
 
     @Test
-    fun `systemTzId with partial match`() {
+    fun `systemTzId with partial match (iCalendar TZID contains system TZID)`() {
         val result = DatePropertyTzMapper.systemTzId("/freeassociation.sourceforge.net/Tzfile/Europe/Vienna")
         assertEquals("Europe/Vienna", result)
+    }
+
+    @Test
+    fun `systemTzId with partial match (system TZID contains iCalendar TZID)`() {
+        val result = DatePropertyTzMapper.systemTzId("Vienna")
+        assertEquals("Europe/Vienna", result)
+    }
+
+    @Test
+    fun `systemTzId with no match (system TZID contains iCalendar TZID, but in lowercase)`() {
+        val result = DatePropertyTzMapper.systemTzId("Westeuropäische Sommerzeit")
+        assertEquals(null, result)
     }
 
     @Test
