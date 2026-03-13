@@ -12,6 +12,7 @@ import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.DateProperty
 import java.io.StringReader
 import java.time.ZoneId
+import java.time.temporal.Temporal
 
 /**
  * Date/time utilities
@@ -55,6 +56,18 @@ object DateUtils {
     fun isDateTime(date: DateProperty<*>?): Boolean =
         TODO("ical4j 4.x")
         //date != null && date.date is DateTime
+
+    /**
+     * Determines whether a given [Temporal] represents a DATE value.
+     */
+    fun isDate(date: Temporal?): Boolean =
+        date != null && !TemporalAdapter.isDateTimePrecision(date)
+
+    /**
+     * Determines whether a given [Temporal] represents a DATE-TIME value.
+     */
+    fun isDateTime(date: Temporal?): Boolean =
+        date != null && TemporalAdapter.isDateTimePrecision(date)
 
     /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.

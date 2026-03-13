@@ -8,6 +8,7 @@ package at.bitfire.ical4android.util
 
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
@@ -45,7 +46,7 @@ class DateUtilsTest {
         TODO("ical4j 4.x")
         /*assertTrue(DateUtils.isDate(DtStart(Date("20200101"))))
         assertFalse(DateUtils.isDate(DtStart(DateTime("20200101T010203Z"))))*/
-        assertFalse(DateUtils.isDate(null))
+        assertFalse(DateUtils.isDate(null as DateProperty<*>?))
     }
 
     @Test
@@ -53,7 +54,7 @@ class DateUtilsTest {
         TODO("ical4j 4.x")
         /*assertFalse(DateUtils.isDateTime(DtEnd(Date("20200101"))))
         assertTrue(DateUtils.isDateTime(DtEnd(DateTime("20200101T010203Z"))))*/
-        assertFalse(DateUtils.isDateTime(null))
+        assertFalse(DateUtils.isDateTime(null as DateProperty<*>?))
     }
 
 
