@@ -24,7 +24,9 @@ import org.junit.Test
 import java.io.StringReader
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 
@@ -50,8 +52,48 @@ class DatePropertyTzMapperTest {
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
-        assertEquals(tzRule.defaultZoneId, normalizedDate.zone)
+        assertEquals(ZonedDateTime.of(
+            LocalDate.of(2026, 3, 11),
+            LocalTime.of(22, 47, 34),
+            ZoneId.of("Europe/Vienna")
+        ), normalizedDate)
         assertEquals(ical4jDate.toInstant(), normalizedDate.toInstant())
+    }
+
+    @Test
+    fun `normalizedDate with TZID known to system, but different VTIMEZONE`() {
+        val cal = CalendarBuilder().build(StringReader("BEGIN:VCALENDAR\r\n" +
+                "VERSION:2.0\n" +
+                "BEGIN:VTIMEZONE\n" +
+                "TZID:Europe/Berlin\n" +
+                "BEGIN:STANDARD\n" +
+                "TZNAME:-03\n" +
+                "TZOFFSETFROM:-0300\n" +
+                "TZOFFSETTO:-0300\n" +
+                "DTSTART:19700101T000000\n" +
+                "END:STANDARD\n" +
+                "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "SUMMARY:Test Timezones\n" +
+                "DTSTART;TZID=Europe/Berlin:20250828T130000\n" +
+                "END:VEVENT\n" +
+                "END:VCALENDAR"
+        ))
+        val vEvent = cal.getComponent<VEvent>(Component.VEVENT).get()
+        val dtStart = vEvent.requireDtStart<Temporal>()
+
+        // ical4j returns ZonedDatetime with custom timezone from VTIMEZONE
+        val ical4jDate = dtStart.date as ZonedDateTime
+        assertTrue(ical4jDate.zone.id.startsWith("ical4j-local-"))
+
+        // normalizedDate returns ZonedDatetime (with other timestamp because TZ OFFSET is different) with system time zone
+        val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
+        assertEquals(ZonedDateTime.of(
+            LocalDate.of(2025, 8, 28),
+            LocalTime.of(13, 0, 0),
+            ZoneId.of("Europe/Berlin")
+        ), normalizedDate)
+        assertNotEquals(ical4jDate.toInstant(), normalizedDate.toInstant())
     }
 
     @Test
@@ -88,8 +130,7 @@ class DatePropertyTzMapperTest {
 
         // normalizedDate returns ZonedDatetime (at same timestamp) with system time zone
         val normalizedDate = dtStart.normalizedDate() as ZonedDateTime
-        assertEquals(tzRule.defaultZoneId, normalizedDate.zone)
-        assertEquals(timestamp, normalizedDate.toInstant())
+        assertEquals(ZonedDateTime.ofInstant(timestamp, tzRule.defaultZoneId), normalizedDate)
 
         // We could NOT just generate the DTSTART from the time string and the system time zone
         assertNotEquals(
