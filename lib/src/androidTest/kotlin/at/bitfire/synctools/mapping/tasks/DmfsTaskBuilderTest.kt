@@ -18,15 +18,13 @@ import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestTaskList
+import at.bitfire.ical4android.util.DateUtils.toEpochMilli
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.TzId
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.Completed
@@ -46,11 +44,16 @@ import org.junit.After
 import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 
-@Ignore("ical4j 4.x")
 class DmfsTaskBuilderTest (
     providerName: TaskProvider.ProviderName
 ): DmfsStyleProvidersTaskTest(providerName) {
@@ -84,11 +87,7 @@ class DmfsTaskBuilderTest (
 
     // builder tests
 
-    init {
-        TODO("ical4j 4.x")
-    }
-
-    /*@Test
+    @Test
     fun testBuildTask_Sequence() {
         buildTask {
             ICalendar.apply { sequence = 12345 }
@@ -188,7 +187,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_Organizer_EmailParameter() {
         buildTask {
             organizer = Organizer("uri:unknown").apply {
-                parameters.add(Email("organizer@example.com"))
+                add<Organizer>(Email("organizer@example.com"))
             }
         }.let { result ->
             assertEquals(
@@ -219,7 +218,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Public() {
         buildTask {
-            classification = Clazz.PUBLIC
+            classification = Clazz(Clazz.VALUE_PUBLIC)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_PUBLIC,
@@ -231,7 +230,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Private() {
         buildTask {
-            classification = Clazz.PRIVATE
+            classification = Clazz(Clazz.VALUE_PRIVATE)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_PRIVATE,
@@ -243,7 +242,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Confidential() {
         buildTask {
-            classification = Clazz.CONFIDENTIAL
+            classification = Clazz(Clazz.VALUE_CONFIDENTIAL)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_CONFIDENTIAL,
@@ -269,7 +268,7 @@ class DmfsTaskBuilderTest (
         buildTask {
         }.let { result ->
             assertEquals(
-                TaskContract.Tasks.CLASSIFICATION_DEFAULT *//* null *//*,
+                TaskContract.Tasks.CLASSIFICATION_DEFAULT /* null */,
                 result.getAsInteger(TaskContract.Tasks.CLASSIFICATION)
             )
         }
@@ -278,7 +277,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_NeedsAction() {
         buildTask {
-            status = Status.VTODO_NEEDS_ACTION
+            status = Status(Status.VALUE_NEEDS_ACTION)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_NEEDS_ACTION,
@@ -290,7 +289,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_Completed() {
         buildTask {
-            status = Status.VTODO_COMPLETED
+            status = Status(Status.VALUE_COMPLETED)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_COMPLETED,
@@ -302,7 +301,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_InProcess() {
         buildTask {
-            status = Status.VTODO_IN_PROCESS
+            status = Status(Status.VALUE_IN_PROCESS)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_IN_PROCESS,
@@ -314,7 +313,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_Cancelled() {
         buildTask {
-            status = Status.VTODO_CANCELLED
+            status = Status(Status.VALUE_CANCELLED)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_CANCELLED,
@@ -326,7 +325,13 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart() {
         buildTask {
-            dtStart = DtStart("20200703T155722", tzVienna)
+            dtStart = DtStart(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(15, 57, 22),
+                    tzVienna.toZoneId()
+                )
+            )
         }.let { result ->
             Assert.assertEquals(1593784642000L, result.getAsLong(TaskContract.Tasks.DTSTART))
             assertEquals(tzVienna.id, result.getAsString(TaskContract.Tasks.TZ))
@@ -337,7 +342,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_AllDay() {
         buildTask {
-            dtStart = DtStart(Date("20200703"))
+            dtStart = DtStart(LocalDate.of(2020, 7, 3))
         }.let { result ->
             Assert.assertEquals(1593734400000L, result.getAsLong(TaskContract.Tasks.DTSTART))
             Assert.assertNull(result.get(TaskContract.Tasks.TZ))
@@ -348,7 +353,13 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Due() {
         buildTask {
-            due = Due(DateTime("20200703T155722", tzVienna))
+            due = Due(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(15, 57, 22),
+                    tzVienna.toZoneId()
+                )
+            )
         }.let { result ->
             Assert.assertEquals(1593784642000L, result.getAsLong(TaskContract.Tasks.DUE))
             assertEquals(tzVienna.id, result.getAsString(TaskContract.Tasks.TZ))
@@ -359,7 +370,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Due_AllDay() {
         buildTask {
-            due = Due(Date("20200703"))
+            due = Due(LocalDate.of(2020, 7, 3))
         }.let { result ->
             Assert.assertEquals(1593734400000L, result.getAsLong(TaskContract.Tasks.DUE))
             Assert.assertNull(result.getAsString(TaskContract.Tasks.TZ))
@@ -370,8 +381,13 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_NonAllDay_Due_AllDay() {
         buildTask {
-            dtStart = DtStart(DateTime("20200101T010203"))
-            due = Due(Date("20200201"))
+            dtStart = DtStart(
+                LocalDateTime.of(
+                    LocalDate.of(2020, 1, 1),
+                    LocalTime.of(1, 2, 3)
+                )
+            )
+            due = Due(LocalDate.of(2020, 2, 1))
         }.let { result ->
             assertEquals(
                 ZoneId.systemDefault().id,
@@ -384,8 +400,13 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_AllDay_Due_NonAllDay() {
         buildTask {
-            dtStart = DtStart(Date("20200101"))
-            due = Due(DateTime("20200201T010203"))
+            dtStart = DtStart(LocalDate.of(2020, 1, 1))
+            due = Due(
+                LocalDateTime.of(
+                    LocalDate.of(2020, 2, 1),
+                    LocalTime.of(1, 2, 3)
+                )
+            )
         }.let { result ->
             Assert.assertNull(result.getAsString(TaskContract.Tasks.TZ))
             assertEquals(1, result.getAsInteger(TaskContract.Tasks.IS_ALLDAY))
@@ -395,8 +416,8 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_AllDay_Due_AllDay() {
         buildTask {
-            dtStart = DtStart(Date("20200101"))
-            due = Due(Date("20200201"))
+            dtStart = DtStart(LocalDate.of(2020, 1, 1))
+            due = Due(LocalDate.of(2020, 2, 1))
         }.let { result ->
             assertEquals(1, result.getAsInteger(TaskContract.Tasks.IS_ALLDAY))
         }
@@ -405,10 +426,19 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_FloatingTime() {
         buildTask {
-            dtStart = DtStart("20200703T010203")
+            dtStart = DtStart(
+                LocalDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(1, 2, 3)
+                )
+            )
         }.let { result ->
             Assert.assertEquals(
-                DateTime("20200703T010203").time,
+                // we cannot hardcode the epoch timestamp since it depends on the system timezone (it's local)
+                LocalDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(1, 2, 3)
+                ).toEpochMilli(),
                 result.getAsLong(TaskContract.Tasks.DTSTART)
             )
             assertEquals(
@@ -422,7 +452,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_DtStart_Utc() {
         buildTask {
-            dtStart = DtStart(DateTime(1593730923000), true)
+            dtStart = DtStart(Instant.ofEpochMilli(1593730923000))
         }.let { result ->
             Assert.assertEquals(1593730923000L, result.getAsLong(TaskContract.Tasks.DTSTART))
             assertEquals("Etc/UTC", result.getAsString(TaskContract.Tasks.TZ))
@@ -433,10 +463,18 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Due_FloatingTime() {
         buildTask {
-            due = Due("20200703T010203")
+            due = Due(
+                LocalDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(1, 2, 3)
+                )
+            )
         }.let { result ->
             Assert.assertEquals(
-                DateTime("20200703T010203").time,
+                LocalDateTime.of(
+                    LocalDate.of(2020, 7, 3),
+                    LocalTime.of(1, 2, 3)
+                ).toEpochMilli(),
                 result.getAsLong(TaskContract.Tasks.DUE)
             )
             assertEquals(
@@ -450,7 +488,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Due_Utc() {
         buildTask {
-            due = Due(DateTime(1593730923000).apply { isUtc = true })
+            due = Due(Instant.ofEpochMilli(1593730923000))
         }.let { result ->
             Assert.assertEquals(1593730923000L, result.getAsLong(TaskContract.Tasks.DUE))
             assertEquals("Etc/UTC", result.getAsString(TaskContract.Tasks.TZ))
@@ -461,7 +499,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Duration() {
         buildTask {
-            dtStart = DtStart(DateTime())
+            dtStart = DtStart(Instant.now())
             duration = Duration(null, "P1D")
         }.let { result ->
             assertEquals("P1D", result.get(TaskContract.Tasks.DURATION))
@@ -470,13 +508,13 @@ class DmfsTaskBuilderTest (
 
     @Test
     fun testBuildTask_CompletedAt() {
-        val now = DateTime()
+        val now = Instant.now()
         buildTask {
             completedAt = Completed(now)
         }.let { result ->
             // Note: iCalendar does not allow COMPLETED to be all-day [RFC 5545 3.8.2.1]
             assertEquals(0, result.getAsInteger(TaskContract.Tasks.COMPLETED_IS_ALLDAY))
-            Assert.assertEquals(now.time, result.getAsLong(TaskContract.Tasks.COMPLETED))
+            Assert.assertEquals(now.toEpochMilli(), result.getAsLong(TaskContract.Tasks.COMPLETED))
         }
     }
 
@@ -493,7 +531,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RRule() {
         // Note: OpenTasks only supports one RRULE per VTODO (iCalendar: multiple RRULEs are allowed, but SHOULD not be used)
         buildTask {
-            rRule = RRule("FREQ=DAILY;COUNT=10")
+            rRule = RRule<Temporal>("FREQ=DAILY;COUNT=10")
         }.let { result ->
             assertEquals("FREQ=DAILY;COUNT=10", result.getAsString(TaskContract.Tasks.RRULE))
         }
@@ -502,11 +540,41 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_RDate() {
         buildTask {
-            dtStart = DtStart(DateTime("20200101T010203", tzVienna))
-            rDates += RDate(DateList("20200102T020304", Value.DATE_TIME, tzVienna))
-            rDates += RDate(DateList("20200102T020304", Value.DATE_TIME, tzChicago))
-            rDates += RDate(DateList("20200103T020304Z", Value.DATE_TIME))
-            rDates += RDate(DateList("20200103", Value.DATE))
+            dtStart = DtStart(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 1, 1),
+                    LocalTime.of(1, 2, 3),
+                    tzVienna.toZoneId()
+                )
+            )
+            rDates += RDate(
+                DateList(
+                    ZonedDateTime.of(
+                        LocalDate.of(2020, 1, 2),
+                        LocalTime.of(2, 3, 4),
+                        tzVienna.toZoneId()
+                    )
+                )
+            )
+            rDates += RDate(
+                DateList(
+                    ZonedDateTime.of(
+                        LocalDate.of(2020, 1, 2),
+                        LocalTime.of(2, 3, 4),
+                        tzChicago.toZoneId()
+                    )
+                )
+            )
+            rDates += RDate(
+                DateList(
+                    ZonedDateTime.of(
+                        LocalDate.of(2020, 1, 3),
+                        LocalTime.of(2, 3, 4),
+                        ZoneOffset.UTC
+                    )
+                )
+            )
+            rDates += RDate(DateList(LocalDate.of(2020, 1, 3)))
         }.let { result ->
             assertEquals(tzVienna.id, result.getAsString(TaskContract.Tasks.TZ))
             assertEquals(
@@ -519,12 +587,34 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_ExDate() {
         buildTask {
-            dtStart = DtStart(DateTime("20200101T010203", tzVienna))
-            rRule = RRule("FREQ=DAILY;COUNT=10")
-            exDates += ExDate(DateList("20200102T020304", Value.DATE_TIME, tzVienna))
-            exDates += ExDate(DateList("20200102T020304", Value.DATE_TIME, tzChicago))
-            exDates += ExDate(DateList("20200103T020304Z", Value.DATE_TIME))
-            exDates += ExDate(DateList("20200103", Value.DATE))
+            dtStart = DtStart(ZonedDateTime.of(
+                LocalDate.of(2020, 1, 2),
+                LocalTime.of(1, 2, 3),
+                tzVienna.toZoneId()
+            ))
+            rRule = RRule<Temporal>("FREQ=DAILY;COUNT=10")
+            exDates += ExDate(DateList(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 1, 2),
+                    LocalTime.of(2, 3, 4),
+                    tzVienna.toZoneId()
+                )
+            ))
+            exDates += ExDate(DateList(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 1, 2),
+                    LocalTime.of(2, 3, 4),
+                    tzChicago.toZoneId()
+                )
+            ))
+            exDates += ExDate(DateList(
+                ZonedDateTime.of(
+                    LocalDate.of(2020, 1, 3),
+                    LocalTime.of(2, 3, 4),
+                    ZoneOffset.UTC
+                )
+            ))
+            exDates += ExDate(DateList(LocalDate.of(2020, 1, 3)))
         }.let { result ->
             assertEquals(tzVienna.id, result.getAsString(TaskContract.Tasks.TZ))
             assertEquals(
@@ -606,7 +696,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RelatedTo_Parent() {
         buildTask {
             relatedTo.add(RelatedTo("Parent-Task").apply {
-                parameters.add(RelType.PARENT)
+                add<RelatedTo>(RelType.PARENT)
             })
         }.let { result ->
             val taskId = result.getAsLong(TaskContract.Tasks._ID)
@@ -627,7 +717,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RelatedTo_Child() {
         buildTask {
             relatedTo.add(RelatedTo("Child-Task").apply {
-                parameters.add(RelType.CHILD)
+                add<RelatedTo>(RelType.CHILD)
             })
         }.let { result ->
             val taskId = result.getAsLong(TaskContract.Tasks._ID)
@@ -648,7 +738,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RelatedTo_Sibling() {
         buildTask {
             relatedTo.add(RelatedTo("Sibling-Task").apply {
-                parameters.add(RelType.SIBLING)
+                add<RelatedTo>(RelType.SIBLING)
             })
         }.let { result ->
             val taskId = result.getAsLong(TaskContract.Tasks._ID)
@@ -669,7 +759,7 @@ class DmfsTaskBuilderTest (
     fun testBuildTask_RelatedTo_Custom() {
         buildTask {
             relatedTo.add(RelatedTo("Sibling-Task").apply {
-                parameters.add(RelType("custom-relationship"))
+                add<RelatedTo>(RelType("custom-relationship"))
             })
         }.let { result ->
             val taskId = result.getAsLong(TaskContract.Tasks._ID)
@@ -709,8 +799,8 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_UnknownProperty() {
         val xProperty = XProperty("X-TEST-PROPERTY", "test-value").apply {
-            parameters.add(TzId(tzVienna.id))
-            parameters.add(XParameter("X-TEST-PARAMETER", "12345"))
+            add<XProperty>(TzId(tzVienna.id))
+            add<XProperty>(XParameter("X-TEST-PARAMETER", "12345"))
         }
         buildTask {
             unknownProperties.add(xProperty)
@@ -731,8 +821,8 @@ class DmfsTaskBuilderTest (
         task.summary = "All-day task"
         task.description = "All-day task for testing"
         task.location = "Sample location testBuildAllDayTask"
-        task.dtStart = DtStart(Date("20150501"))
-        task.due = Due(Date("20150502"))
+        task.dtStart = DtStart(LocalDate.of(2015, 5, 1))
+        task.due = Due(LocalDate.of(2015, 5, 2))
         Assert.assertTrue(task.isAllDay())
         val uri = DmfsTask(taskList!!, task, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0).add()
         Assert.assertNotNull(uri)
@@ -766,7 +856,7 @@ class DmfsTaskBuilderTest (
         val task = Task()
         val builder = DmfsTaskBuilder(taskList!!, task, 0, "410c19d7-df79-4d65-8146-40b7bec5923b", null, 0)
         val dmfsTask = DmfsTask(taskList!!, task, "410c19d7-df79-4d65-8146-40b7bec5923b", null, 0)
-        dmfsTask.task!!.dtStart = DtStart("20150101")
+        dmfsTask.task!!.dtStart = DtStart(LocalDate.of(2015, 1, 1))
         assertEquals(tzDefault, builder.getTimeZone())
     }
 
@@ -775,9 +865,9 @@ class DmfsTaskBuilderTest (
         val task = Task()
         val builder = DmfsTaskBuilder(taskList!!, task, 0, "9468a4cf-0d5b-4379-a704-12f1f84100ba", null, 0)
         val dmfsTask = DmfsTask(taskList!!, task, "9dc64544-1816-4f04-b952-e894164467f6", null, 0)
-        dmfsTask.task!!.dtStart = DtStart("20150101", tzVienna)
+        dmfsTask.task!!.dtStart = DtStart(LocalDate.of(2015, 1, 1).atStartOfDay(tzVienna.toZoneId()))
         assertEquals(tzVienna, builder.getTimeZone())
-    }*/
+    }
 
 
     // helpers

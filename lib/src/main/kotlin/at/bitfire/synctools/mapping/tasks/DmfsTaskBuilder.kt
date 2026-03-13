@@ -12,18 +12,24 @@ import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.ical4android.util.DateUtils.toEpochMilli
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
@@ -36,6 +42,7 @@ import java.time.ZoneId
 import java.util.Locale
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Writes [at.bitfire.ical4android.Task] to dmfs task provider data rows
@@ -94,15 +101,14 @@ class DmfsTaskBuilder(
             .withValue(Tasks.PARENT_ID, null)
 
         // organizer
-        TODO("ical4j 4.x")
         // Note: big method – maybe split? Depends on how we want to proceed with refactoring.
 
-        /*task.organizer?.let { organizer ->
+        task.organizer?.let { organizer ->
             val uri = organizer.calAddress
             val email = if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
             else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
+                organizer.getParameter<Email>(Parameter.EMAIL).getOrNull()?.value
             if (email != null)
                 builder.withValue(Tasks.ORGANIZER, email)
             else
@@ -110,24 +116,26 @@ class DmfsTaskBuilder(
         }
 
         // Priority, classification
-        builder .withValue(Tasks.PRIORITY, task.priority)
-            .withValue(Tasks.CLASSIFICATION, when (task.classification) {
-                Clazz.PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
-                Clazz.CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
+        builder
+            .withValue(Tasks.PRIORITY, task.priority)
+            .withValue(Tasks.CLASSIFICATION, when (task.classification?.value) {
+                Clazz.VALUE_PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
+                Clazz.VALUE_CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
                 null -> Tasks.CLASSIFICATION_DEFAULT
                 else -> Tasks.CLASSIFICATION_PRIVATE    // all unknown classifications MUST be treated as PRIVATE
             })
 
         // COMPLETED must always be a DATE-TIME
-        builder .withValue(Tasks.COMPLETED, task.completedAt?.date?.time)
+        builder
+            .withValue(Tasks.COMPLETED, task.completedAt?.date?.toEpochMilli())
             .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
             .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
 
         // Status
-        val status = when (task.status) {
-            Status.VTODO_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
-            Status.VTODO_COMPLETED  -> Tasks.STATUS_COMPLETED
-            Status.VTODO_CANCELLED  -> Tasks.STATUS_CANCELLED
+        val status = when (task.status?.value) {
+            Status.VALUE_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
+            Status.VALUE_COMPLETED  -> Tasks.STATUS_COMPLETED
+            Status.VALUE_CANCELLED  -> Tasks.STATUS_CANCELLED
             else                    -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
         }
         builder.withValue(Tasks.STATUS, status)
@@ -138,16 +146,17 @@ class DmfsTaskBuilder(
             builder .withValue(Tasks.IS_ALLDAY, 1)
                 .withValue(Tasks.TZ, null)
         } else {
-            AndroidTimeUtils.androidifyTimeZone(task.dtStart, tzRegistry)
-            AndroidTimeUtils.androidifyTimeZone(task.due, tzRegistry)
+            task.dtStart = task.dtStart?.normalizedDate()?.let { DtStart(it) }
+            task.due = task.due?.normalizedDate()?.let { Due(it) }
             builder .withValue(Tasks.IS_ALLDAY, 0)
                 .withValue(Tasks.TZ, getTimeZone().id)
         }
-        builder .withValue(Tasks.CREATED, task.createdAt)
+        builder
+            .withValue(Tasks.CREATED, task.createdAt)
             .withValue(Tasks.LAST_MODIFIED, task.lastModified)
 
-            .withValue(Tasks.DTSTART, task.dtStart?.date?.time)
-            .withValue(Tasks.DUE, task.due?.date?.time)
+            .withValue(Tasks.DTSTART, task.dtStart?.date?.toEpochMilli())
+            .withValue(Tasks.DUE, task.due?.date?.toEpochMilli())
             .withValue(Tasks.DURATION, task.duration?.value)
 
             .withValue(Tasks.RDATE,
@@ -163,24 +172,29 @@ class DmfsTaskBuilder(
                 else
                     AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
 
-        logger.log(Level.FINE, "Built task object", builder.build())*/
+        logger.log(Level.FINE, "Built task object", builder.build())
     }
 
     fun getTimeZone(): TimeZone {
-        TODO("ical4j 4.x")
-        /*return  task.dtStart?.let { dtStart ->
+        var tzId = task.dtStart?.let { dtStart ->
             if (dtStart.isUtc)
-                tzRegistry.getTimeZone(TimeZones.UTC_ID)
+                TimeZones.UTC_ID
             else
-                dtStart.timeZone
+                dtStart.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
         } ?:
         task.due?.let { due ->
             if (due.isUtc)
-                tzRegistry.getTimeZone(TimeZones.UTC_ID)
+                TimeZones.UTC_ID
             else
-                due.timeZone
+                due.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
         } ?:
-        tzRegistry.getTimeZone(ZoneId.systemDefault().id)!!*/
+        ZoneId.systemDefault().id
+
+        // 'Z' is not a valid timezone id, replace it by the UTC definition
+        if (tzId == "Z") tzId = TimeZones.UTC_ID
+
+        val timeZone: TimeZone? = tzRegistry.getTimeZone(tzId)
+        return timeZone ?: throw NullPointerException("Could not find timezone '$tzId' in registry.")
     }
 
     fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
@@ -207,16 +221,13 @@ class DmfsTaskBuilder(
                     Alarm.ALARM_REFERENCE_START_DATE
             }
 
-            TODO("ical4j 4.x")
-            /*val alarmType = when (alarm.action?.value?.uppercase(Locale.ROOT)) {
-                Action.AUDIO.value ->
-                    Alarm.ALARM_TYPE_SOUND
-                Action.DISPLAY.value ->
-                    Alarm.ALARM_TYPE_MESSAGE
-                Action.EMAIL.value ->
-                    Alarm.ALARM_TYPE_EMAIL
-                else ->
-                    Alarm.ALARM_TYPE_NOTHING
+            val alarmType = when (
+                alarm.getProperty<Action>(Property.ACTION).getOrNull()?.value?.uppercase(Locale.ROOT)
+            ) {
+                Action.VALUE_AUDIO -> Alarm.ALARM_TYPE_SOUND
+                Action.VALUE_DISPLAY -> Alarm.ALARM_TYPE_MESSAGE
+                Action.VALUE_EMAIL -> Alarm.ALARM_TYPE_EMAIL
+                else -> Alarm.ALARM_TYPE_NOTHING
             }
 
             val builder = CpoBuilder
@@ -229,7 +240,7 @@ class DmfsTaskBuilder(
                 .withValue(Alarm.ALARM_TYPE, alarmType)
 
             logger.log(Level.FINE, "Inserting alarm", builder.build())
-            batch += builder*/
+            batch += builder
         }
     }
 
@@ -255,14 +266,13 @@ class DmfsTaskBuilder(
     }
 
     private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
-        TODO("ical4j 4.x")
-        /*for (relatedTo in task.relatedTo) {
-            val relType = when ((relatedTo.getParameter(Parameter.RELTYPE) as RelType?)) {
+        for (relatedTo in task.relatedTo) {
+            val relType = when ((relatedTo.getParameter<RelType>(Parameter.RELTYPE)).getOrNull()) {
                 RelType.CHILD ->
                     Relation.RELTYPE_CHILD
                 RelType.SIBLING ->
                     Relation.RELTYPE_SIBLING
-                else *//* RelType.PARENT, default value *//* ->
+                else /* RelType.PARENT, default value */ ->
                     Relation.RELTYPE_PARENT
             }
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
@@ -272,7 +282,7 @@ class DmfsTaskBuilder(
                 .withValue(Relation.RELATED_TYPE, relType)
             logger.log(Level.FINE, "Inserting relation", builder.build())
             batch += builder
-        }*/
+        }
     }
 
     private fun insertUnknownProperties(batch: TasksBatchOperation, idxTask: Int?) {
