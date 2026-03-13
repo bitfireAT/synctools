@@ -100,13 +100,11 @@ object DatePropertyTzMapper {
                 return systemId
 
         // Otherwise, try to find a partial match (sometimes the origTzId is something like
-        // "/freeassociation.sourceforge.net/Tzfile/Europe/Vienna")
-        for (systemId in systemIds) {
-            val systemIdContainsOrigId = systemId.lowercase().contains(origTzId.lowercase())
-            val origIdContainsSystemId = origTzId.lowercase().contains(systemId.lowercase())
-            if (systemIdContainsOrigId || origIdContainsSystemId)
+        // "/freeassociation.sourceforge.net/Tzfile/Europe/Vienna"). This shouldn't be
+        // case-insensitive, because that would for instance return "EST" for "Westeuropäische Sommerzeit".
+        for (systemId in systemIds)
+            if (systemId.contains(origTzId) || origTzId.contains(systemId))
                 return systemId
-        }
 
         // No result
         return null
