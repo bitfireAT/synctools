@@ -1110,9 +1110,6 @@ duration?.let(props::add)
                 priority?.let {
                     props += Priority(it)
                 }
-            else {
-                props += Priority(Priority.UNDEFINED.level)
-            }
 
             due?.let {
                 when {
