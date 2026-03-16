@@ -11,9 +11,9 @@ import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.util.DateUtils.toLocalDate
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
@@ -65,7 +65,7 @@ class DmfsTaskProcessor(
         to.location = values.getAsString(Tasks.LOCATION)
         to.userAgents += taskList.providerName.packageName
 
-        values.getAsString(Tasks.GEO)?.let { geo ->
+        values.getAsString(Tasks.GEO)?.takeIf { it.contains(",") }?.let { geo ->
             val (lng, lat) = geo.split(',')
             try {
                 to.geoPosition = Geo(lat.toBigDecimal(), lng.toBigDecimal())
@@ -179,36 +179,22 @@ class DmfsTaskProcessor(
     }
 
     private fun populateAlarm(row: ContentValues, to: Task) {
-        val props = PropertyList()
-
-        props.add(
+        val props = propertyListOf(
             Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE))).let {
                 when (row.getAsInteger(Alarm.REFERENCE)) {
-                    Alarm.ALARM_REFERENCE_START_DATE ->
-                        it.add(Related.START)
-                    Alarm.ALARM_REFERENCE_DUE_DATE ->
-                        it.add(Related.END)
-                    else ->
-                        it
+                    Alarm.ALARM_REFERENCE_START_DATE -> it.add(Related.START)
+                    Alarm.ALARM_REFERENCE_DUE_DATE -> it.add(Related.END)
+                    else -> it
                 }
-            }
-        )
-
-        props.add(
+            },
             Action(
                 when (row.getAsInteger(Alarm.ALARM_TYPE)) {
-                    Alarm.ALARM_TYPE_EMAIL ->
-                        Action.VALUE_EMAIL
-                    Alarm.ALARM_TYPE_SOUND ->
-                        Action.VALUE_AUDIO
-                    else ->
-                        // show alarm by default
-                        Action.VALUE_DISPLAY
+                    Alarm.ALARM_TYPE_EMAIL -> Action.VALUE_EMAIL
+                    Alarm.ALARM_TYPE_SOUND -> Action.VALUE_AUDIO
+                    // show alarm by default
+                    else -> Action.VALUE_DISPLAY
                 }
-            )
-        )
-
-        props.add(
+            ),
             Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)
         )
 

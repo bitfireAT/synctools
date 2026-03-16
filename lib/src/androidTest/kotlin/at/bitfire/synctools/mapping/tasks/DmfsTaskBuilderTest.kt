@@ -39,6 +39,8 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RelatedTo
 import net.fortuna.ical4j.model.property.Status
 import net.fortuna.ical4j.model.property.XProperty
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import org.dmfs.tasks.contract.TaskContract
 import org.junit.After
 import org.junit.Assert
@@ -218,7 +220,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Public() {
         buildTask {
-            classification = Clazz(Clazz.VALUE_PUBLIC)
+            classification = Clazz(ImmutableClazz.VALUE_PUBLIC)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_PUBLIC,
@@ -230,7 +232,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Private() {
         buildTask {
-            classification = Clazz(Clazz.VALUE_PRIVATE)
+            classification = Clazz(ImmutableClazz.VALUE_PRIVATE)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_PRIVATE,
@@ -242,7 +244,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Classification_Confidential() {
         buildTask {
-            classification = Clazz(Clazz.VALUE_CONFIDENTIAL)
+            classification = Clazz(ImmutableClazz.VALUE_CONFIDENTIAL)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.CLASSIFICATION_CONFIDENTIAL,
@@ -277,7 +279,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_NeedsAction() {
         buildTask {
-            status = Status(Status.VALUE_NEEDS_ACTION)
+            status = Status(ImmutableStatus.VALUE_NEEDS_ACTION)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_NEEDS_ACTION,
@@ -289,7 +291,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_Completed() {
         buildTask {
-            status = Status(Status.VALUE_COMPLETED)
+            status = Status(ImmutableStatus.VALUE_COMPLETED)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_COMPLETED,
@@ -301,7 +303,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_InProcess() {
         buildTask {
-            status = Status(Status.VALUE_IN_PROCESS)
+            status = Status(ImmutableStatus.VALUE_IN_PROCESS)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_IN_PROCESS,
@@ -313,7 +315,7 @@ class DmfsTaskBuilderTest (
     @Test
     fun testBuildTask_Status_Cancelled() {
         buildTask {
-            status = Status(Status.VALUE_CANCELLED)
+            status = Status(ImmutableStatus.VALUE_CANCELLED)
         }.let { result ->
             assertEquals(
                 TaskContract.Tasks.STATUS_CANCELLED,

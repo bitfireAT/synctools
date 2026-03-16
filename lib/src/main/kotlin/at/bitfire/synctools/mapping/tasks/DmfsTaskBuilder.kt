@@ -27,10 +27,11 @@ import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
-import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.immutable.ImmutableAction
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Property.Alarm
@@ -118,9 +119,9 @@ class DmfsTaskBuilder(
         // Priority, classification
         builder
             .withValue(Tasks.PRIORITY, task.priority)
-            .withValue(Tasks.CLASSIFICATION, when (task.classification?.value) {
-                Clazz.VALUE_PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
-                Clazz.VALUE_CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
+            .withValue(Tasks.CLASSIFICATION, when (task.classification?.value?.uppercase()) {
+                ImmutableClazz.VALUE_PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
+                ImmutableClazz.VALUE_CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
                 null -> Tasks.CLASSIFICATION_DEFAULT
                 else -> Tasks.CLASSIFICATION_PRIVATE    // all unknown classifications MUST be treated as PRIVATE
             })
@@ -133,10 +134,10 @@ class DmfsTaskBuilder(
 
         // Status
         val status = when (task.status?.value) {
-            Status.VALUE_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
-            Status.VALUE_COMPLETED  -> Tasks.STATUS_COMPLETED
-            Status.VALUE_CANCELLED  -> Tasks.STATUS_CANCELLED
-            else                    -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
+            ImmutableStatus.VALUE_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
+            ImmutableStatus.VALUE_COMPLETED  -> Tasks.STATUS_COMPLETED
+            ImmutableStatus.VALUE_CANCELLED  -> Tasks.STATUS_CANCELLED
+            else                             -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
         }
         builder.withValue(Tasks.STATUS, status)
 
@@ -224,10 +225,10 @@ class DmfsTaskBuilder(
             val alarmType = when (
                 alarm.getProperty<Action>(Property.ACTION).getOrNull()?.value?.uppercase(Locale.ROOT)
             ) {
-                Action.VALUE_AUDIO -> Alarm.ALARM_TYPE_SOUND
-                Action.VALUE_DISPLAY -> Alarm.ALARM_TYPE_MESSAGE
-                Action.VALUE_EMAIL -> Alarm.ALARM_TYPE_EMAIL
-                else -> Alarm.ALARM_TYPE_NOTHING
+                ImmutableAction.VALUE_AUDIO   -> Alarm.ALARM_TYPE_SOUND
+                ImmutableAction.VALUE_DISPLAY -> Alarm.ALARM_TYPE_MESSAGE
+                ImmutableAction.VALUE_EMAIL   -> Alarm.ALARM_TYPE_EMAIL
+                else                          -> Alarm.ALARM_TYPE_NOTHING
             }
 
             val builder = CpoBuilder
@@ -268,12 +269,9 @@ class DmfsTaskBuilder(
     private fun insertRelatedTo(batch: TasksBatchOperation, idxTask: Int?) {
         for (relatedTo in task.relatedTo) {
             val relType = when ((relatedTo.getParameter<RelType>(Parameter.RELTYPE)).getOrNull()) {
-                RelType.CHILD ->
-                    Relation.RELTYPE_CHILD
-                RelType.SIBLING ->
-                    Relation.RELTYPE_SIBLING
-                else /* RelType.PARENT, default value */ ->
-                    Relation.RELTYPE_PARENT
+                RelType.CHILD                            -> Relation.RELTYPE_CHILD
+                RelType.SIBLING                          -> Relation.RELTYPE_SIBLING
+                else /* RelType.PARENT, default value */ -> Relation.RELTYPE_PARENT
             }
             val builder = CpoBuilder.newInsert(taskList.tasksPropertiesUri())
                 .withTaskId(Relation.TASK_ID, idxTask)
