@@ -158,16 +158,4 @@ class ICalendarGenerator {
         return timeZones
     }
 
-    /*private fun Temporal?.toZonedDateTime(zoneId: ZoneId): ZonedDateTime? {
-        return when (this) {
-            is LocalDate -> this.atStartOfDay().atZone(zoneId)
-            is LocalDateTime -> this.atZone(zoneId)
-            is OffsetDateTime -> this.atZoneSameInstant(zoneId)
-            is Instant -> this.atZone(zoneId)
-            is ZonedDateTime -> this
-            else -> null
-        }
-    }
-    */
-
 }

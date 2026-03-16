@@ -200,6 +200,52 @@ class ICalendarGeneratorTest {
     }
 
 
-    // TODO: tests for timeZonesOf
+    @Test
+    fun `timeZonesOf extracts TZIDs from date properties`() {
+        val tzBerlin = ZoneId.of("Europe/Berlin")
+        val tzLondon = ZoneId.of("Europe/London")
+        
+        val component = VEvent(propertyListOf(
+            DtStart(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T10:00:00"), tzBerlin)),
+            DtEnd(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T12:00:00"), tzLondon))
+        ))
+        
+        val result = writer.timeZonesOf(component)
+        assertEquals(setOf("Europe/Berlin", "Europe/London"), result)
+    }
+
+    @Test
+    fun `timeZonesOf returns empty set when no TZIDs present`() {
+        val component = VEvent(propertyListOf(
+            DtStart(Instant.parse("2019-01-01T10:00:00Z")),
+            DtEnd(Instant.parse("2019-01-01T12:00:00Z"))
+        ))
+        
+        val result = writer.timeZonesOf(component)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `timeZonesOf extracts TZIDs from subcomponents`() {
+        val tzBerlin = ZoneId.of("Europe/Berlin")
+        val tzLondon = ZoneId.of("Europe/London")
+        
+        val component = VEvent(propertyListOf(
+            DtStart(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T10:00:00"), tzBerlin))
+        ), ComponentList(listOf(
+            VAlarm(propertyListOf(
+                DtStart(ZonedDateTime.of(LocalDateTime.parse("2019-01-01T09:00:00"), tzLondon))
+            ))
+        )))
+        
+        val result = writer.timeZonesOf(component)
+        assertEquals(setOf("Europe/Berlin", "Europe/London"), result)
+    }
+
+    @Test
+    fun `timeZonesOf returns empty set for empty component`() {
+        val result = writer.timeZonesOf(VEvent())
+        assertTrue(result.isEmpty())
+    }
 
 }
