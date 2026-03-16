@@ -18,11 +18,13 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Uid
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.StringWriter
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 
@@ -122,6 +124,46 @@ class ICalendarGeneratorTest {
                 "END:VCALENDAR\r\n", iCal.toString())
     }
 
+    @Test
+    fun `Write event that uses old Kiev timezone`() {
+        // Test the special case where Android uses "Europe/Kiev" but ical4j uses "Europe/Kyiv".
+        // The output should preserve the original Android timezone name.
+
+        // We will provide Europe/Kiev for ICalendarGenerator
+        val tzKiev = ZoneId.of("Europe/Kiev")
+        assertEquals("Europe/Kiev", tzKiev.id)
+
+        // Verify that ical4j returns a VTIMEZONE with the new Europe/Kyiv TZID (by alias)
+        val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
+        // We call getTimeZone(Europe/Kiev), but we get VTIMEZONE(Europe/Kyiv):
+        assertEquals("Europe/Kyiv", tzReg.getTimeZone(tzKiev.id).id)
+
+        // Generate the iCalendar (must NOT map Europe/Kiev to Europe/Kyiv silently)
+        val iCal = StringWriter()
+        writer.write(AssociatedEvents(
+            main = VEvent(propertyListOf(
+                Uid("KIEVTEST"),
+                DtStart(ZonedDateTime.of(LocalDateTime.parse("2023-01-01T12:00:00"), tzKiev)),
+                DtEnd(ZonedDateTime.of(LocalDateTime.parse("2023-01-01T14:00:00"), tzKiev)),
+                DtStamp("20230101T120000Z")
+            )),
+            prodId = userAgent,
+            exceptions = listOf()
+        ), iCal)
+
+        // Check TZID of generated VTIMEZONE (must match original timezone ID)
+        assertTrue(iCal.toString().contains("BEGIN:VCALENDAR\r\n" +
+                "VERSION:2.0\r\n" +
+                "PRODID:TestUA/1.0\r\n" +
+                "BEGIN:VEVENT\r\n" +
+                "UID:KIEVTEST\r\n" +
+                "DTSTART;TZID=Europe/Kiev:20230101T120000\r\n" +
+                "DTEND;TZID=Europe/Kiev:20230101T140000\r\n" +
+                "DTSTAMP:20230101T120000Z\r\n" +
+                "END:VEVENT\r\n" +
+                "BEGIN:VTIMEZONE\r\n" +
+                "TZID:Europe/Kiev\r\n"))     // not Europe/Kyiv!
+    }
 
     // TODO: tests for timeZonesOf
 

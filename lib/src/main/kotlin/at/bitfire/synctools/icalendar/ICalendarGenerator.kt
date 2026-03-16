@@ -19,6 +19,7 @@ import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
 import java.io.Writer
 import java.time.temporal.Temporal
+import java.util.logging.Logger
 import javax.annotation.WillNotClose
 import kotlin.jvm.optionals.getOrNull
 
@@ -27,6 +28,9 @@ import kotlin.jvm.optionals.getOrNull
  * (VCALENDAR with respective components and optional VTIMEZONEs).
  */
 class ICalendarGenerator {
+
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
 
     /**
      * Generates an iCalendar from the given [AssociatedComponents].
@@ -74,7 +78,18 @@ class ICalendarGenerator {
         for (tzId in usedTimezoneIds) {
             val vTimeZone = tzReg.getTimeZone(tzId).vTimeZone
 
-            // TODO update vTimezone TZID if != tzId + example (Kiev)
+            /* Special case: sometimes, the timezone may have been loaded by an alias.
+            For instance, old Androids may use the "Europe/Kiev" timezone (which is then in tzId),
+            but ical4j returns the new "Europe/Kyiv" timezone. In that case, we want the original
+            name used by Android because if we would use the new TZ ID, it wouldn't be understood
+            by Android (and thus downgraded to the system default timezone) if we get it back
+            again from the server. */
+            val ical4jTzId = vTimeZone.timeZoneId.value
+            if (ical4jTzId != tzId) {
+                logger.warning("Android timezone $tzId maps to ical4j $ical4jTzId. Using Android TZID.")
+                // TODO can we modify the timezone from the registry without damage? Or create copy?
+                vTimeZone.timeZoneId.value = tzId
+            }
 
             // TODO: extract minifyVTimeZone to class
             /*val minifiedVTimeZone = ICalendar.minifyVTimeZone(vTimeZone, earliestStart)
