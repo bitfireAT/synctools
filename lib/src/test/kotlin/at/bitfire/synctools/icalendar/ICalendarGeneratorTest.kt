@@ -16,8 +16,10 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import net.fortuna.ical4j.model.property.TzId
 import net.fortuna.ical4j.model.property.Uid
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.StringWriter
@@ -152,18 +154,51 @@ class ICalendarGeneratorTest {
         ), iCal)
 
         // Check TZID of generated VTIMEZONE (must match original timezone ID)
-        assertTrue(iCal.toString().contains("BEGIN:VCALENDAR\r\n" +
-                "VERSION:2.0\r\n" +
-                "PRODID:TestUA/1.0\r\n" +
-                "BEGIN:VEVENT\r\n" +
-                "UID:KIEVTEST\r\n" +
-                "DTSTART;TZID=Europe/Kiev:20230101T120000\r\n" +
-                "DTEND;TZID=Europe/Kiev:20230101T140000\r\n" +
-                "DTSTAMP:20230101T120000Z\r\n" +
-                "END:VEVENT\r\n" +
-                "BEGIN:VTIMEZONE\r\n" +
-                "TZID:Europe/Kiev\r\n"))     // not Europe/Kyiv!
+        val pattern = Regex(
+            "BEGIN:VCALENDAR\r\n" +
+                    "VERSION:2.0\r\n" +
+                    "PRODID:TestUA/1.0\r\n" +
+                    "BEGIN:VEVENT\r\n" +
+                    "UID:KIEVTEST\r\n" +
+                    "DTSTART;TZID=Europe/Kiev:20230101T120000\r\n" +
+                    "DTEND;TZID=Europe/Kiev:20230101T140000\r\n" +
+                    "DTSTAMP:20230101T120000Z\r\n" +
+                    "END:VEVENT\r\n" +
+                    "BEGIN:VTIMEZONE\r\n" +
+                    ".*TZID:Europe/Kiev\r\n" +
+                    ".*END:VTIMEZONE",
+            setOf(RegexOption.MULTILINE, RegexOption.DOT_MATCHES_ALL)
+        )
+        assertTrue(iCal.toString().contains(pattern))
     }
+
+
+    @Test
+    fun `copyVTimeZone result properties can be added without modifying original'`() {
+        // Get a timezone from the registry
+        val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
+        val originalVTimeZone = tzReg.getTimeZone("Europe/Berlin").vTimeZone
+        val originalVTZ = originalVTimeZone.toString()
+
+        // Create a copy using the method
+        val copiedVTimeZone = writer.copyVTimeZone(originalVTimeZone)
+
+        // Verify that the copy uses new lists
+        assertEquals(originalVTimeZone.propertyList, copiedVTimeZone.propertyList)
+        assertNotSame(originalVTimeZone.propertyList, copiedVTimeZone.propertyList)
+        assertEquals(originalVTimeZone.observances, copiedVTimeZone.observances)
+        assertNotSame(originalVTimeZone.observances, copiedVTimeZone.observances)
+
+        // Remove/add properties from/to the copy and ensure the original is not affected
+        copiedVTimeZone.propertyList.replace(TzId("Something/Else"))
+
+        // This would still modify the original, causing the cache to be corrupted and the test to fail:
+        // copiedVTimeZone.timeZoneId.value = "Something/Else"
+
+        // Verify original timezone is unmodified by checking string representation
+        assertEquals(originalVTZ, originalVTimeZone.toString())
+    }
+
 
     // TODO: tests for timeZonesOf
 

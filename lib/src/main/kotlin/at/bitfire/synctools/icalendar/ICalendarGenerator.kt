@@ -10,10 +10,14 @@ import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.PropertyContainer
+import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
@@ -76,7 +80,7 @@ class ICalendarGenerator {
         and experiments"], and Android/Java/IANA timezones are usually known to all clients. */
         val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
         for (tzId in usedTimezoneIds) {
-            val vTimeZone = tzReg.getTimeZone(tzId).vTimeZone
+            var vTimeZone = tzReg.getTimeZone(tzId).vTimeZone
 
             /* Special case: sometimes, the timezone may have been loaded by an alias.
             For instance, old Androids may use the "Europe/Kiev" timezone (which is then in tzId),
@@ -87,8 +91,11 @@ class ICalendarGenerator {
             val ical4jTzId = vTimeZone.timeZoneId.value
             if (ical4jTzId != tzId) {
                 logger.warning("Android timezone $tzId maps to ical4j $ical4jTzId. Using Android TZID.")
-                // TODO can we modify the timezone from the registry without damage? Or create copy?
-                vTimeZone.timeZoneId.value = tzId
+
+                /* Better not modify the VTIMEZONE because it's cached by TimeZoneRegistry, and we don't
+                want to modify the cache. Create a copy instead. */
+                vTimeZone = copyVTimeZone(vTimeZone)
+                vTimeZone.replace<PropertyContainer>(net.fortuna.ical4j.model.property.TzId(tzId))
             }
 
             // TODO: extract minifyVTimeZone to class
@@ -99,6 +106,24 @@ class ICalendarGenerator {
 
         CalendarOutputter(false).output(ical, to)
     }
+
+    /**
+     * Creates a one-level deep copy of the given [VTimeZone] instance.
+     *
+     * This method copies the property list and observances list from the original [VTimeZone],
+     * **but does not perform a deep copy of the individual properties or observances**.
+     *
+     * This allows properties and observances to be added or removed in the copied instance without affecting
+     * the original, but modifications to existing properties or observances will still impact the original.
+     *
+     * @param vTimeZone The [VTimeZone] instance to be copied.
+     * @return A new [VTimeZone] instance, safe for properties/observances to be added and removed, **but not to be modified**
+     */
+    @VisibleForTesting
+    internal fun copyVTimeZone(vTimeZone: VTimeZone): VTimeZone = VTimeZone(
+        PropertyList(vTimeZone.propertyList.all),
+        ComponentList(vTimeZone.observances.toList())
+    )
 
     /**
      * Extracts all unique time zone identifiers from the given component and its subcomponents.
