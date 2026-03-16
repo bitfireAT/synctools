@@ -14,51 +14,52 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalTime
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.icalendar.requireDtStart
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
 import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
+import java.time.LocalDate
 import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 
 class OriginalInstanceTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        TODO("ical4j 4.x")
-
-        /*val values = to.entityValues
+        val values = to.entityValues
         if (from !== main) {
             // only for exceptions
-            val originalDtStart = main.requireDtStart()
+            val originalDtStart = main.requireDtStart<Temporal>()
             values.put(Events.ORIGINAL_ALL_DAY, if (DateUtils.isDate(originalDtStart)) 1 else 0)
 
-            var recurrenceDate = from.recurrenceId?.date
-            val originalDate = originalDtStart.date
+            var recurrenceDate = from.recurrenceId?.normalizedDate()
+            val originalDate = originalDtStart.normalizedDate()
 
             // rewrite recurrenceDate, if necessary
-            if (recurrenceDate is DateTime && originalDate != null && originalDate !is DateTime) {
+            if (DateUtils.isDateTime(recurrenceDate) && DateUtils.isDate(originalDate)) {
                 // rewrite RECURRENCE-ID;VALUE=DATE-TIME to VALUE=DATE for all-day events
-                val localDate = recurrenceDate.toLocalDate()
-                recurrenceDate = Date(localDate.toIcal4jDate())
+                recurrenceDate = recurrenceDate!!.toZonedDateTime().toLocalDate()
 
-            } else if (recurrenceDate != null && recurrenceDate !is DateTime && originalDate is DateTime) {
+            } else if (recurrenceDate is LocalDate && DateUtils.isDateTime(originalDate)) {
                 // rewrite RECURRENCE-ID;VALUE=DATE to VALUE=DATE-TIME for non-all-day-events
-                val localDate = recurrenceDate.toLocalDate()
                 // guess time and time zone from DTSTART
-                val zonedTime = ZonedDateTime.of(
-                    localDate,
-                    originalDate.toLocalTime(),
-                    originalDate.requireZoneId()
+                val zonedDateTime = originalDate.toZonedDateTime()
+                recurrenceDate = ZonedDateTime.of(
+                    recurrenceDate,
+                    zonedDateTime.toLocalTime(),
+                    zonedDateTime.zone
                 )
-                recurrenceDate = zonedTime.toIcal4jDateTime()
             }
-            values.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate?.time)
+            values.put(Events.ORIGINAL_INSTANCE_TIME, recurrenceDate?.toTimestamp())
 
         } else {
             // main event
             values.putNull(Events.ORIGINAL_ALL_DAY)
             values.putNull(Events.ORIGINAL_INSTANCE_TIME)
-        }*/
+        }
     }
 
 }
