@@ -41,7 +41,6 @@ import java.util.logging.Level
 import java.util.logging.Logger
 
 
-@Suppress("unused")
 object JtxContract {
 
     private val logger
@@ -141,12 +140,12 @@ object JtxContract {
             return null
 
         val jsonObject = JSONObject()
-        TODO("ical4j 4.x")
+
         // Note: probably the contract should be separated from methods that do things, especially if they depend on ical4j
 
-        /*parameters.forEach { parameter ->
+        parameters.all.forEach { parameter ->
             jsonObject.put(parameter.name, parameter.value)
-        }*/
+        }
         return if (jsonObject.length() == 0)
             null
         else
@@ -163,17 +162,16 @@ object JtxContract {
         if (propertyList == null)
             return null
 
-        TODO("ical4j 4.x")
         // Note: probably the contract should be separated from methods that do things, especially if they depend on ical4j
 
-        /*val jsonObject = JSONObject()
-        propertyList.forEach { property ->
+        val jsonObject = JSONObject()
+        propertyList.all.forEach { property ->
             jsonObject.put(property.name, property.value)
         }
         return if (jsonObject.length() == 0)
             null
         else
-            jsonObject.toString()*/
+            jsonObject.toString()
     }
 
 
@@ -192,7 +190,7 @@ object JtxContract {
         stringList.forEach {
             try {
                 longList.add(it.toLong())
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 logger.log(Level.WARNING, "String could not be cast to Long ($it)")
                 return@forEach
             }
@@ -201,7 +199,6 @@ object JtxContract {
     }
 
 
-    @Suppress("unused")
     object JtxICalObject {
 
         /** The name of the the content URI for IcalObjects.
@@ -659,7 +656,6 @@ object JtxContract {
     }
 
 
-    @Suppress("unused")
     object JtxAttendee {
 
         /** The name of the the table for Attendees that are linked to an ICalObject.
@@ -818,19 +814,16 @@ object JtxContract {
         }
 
         /** This enum class defines the possible values for the attribute [JtxAttendee] for the Component VJOURNAL  */
-        @Suppress("unused")
         enum class PartstatJournal {
             `NEEDS-ACTION`, ACCEPTED, DECLINED
         }
 
         /** This enum class defines the possible values for the attribute [JtxAttendee] for the Component VTODO  */
-        @Suppress("unused")
         enum class PartstatTodo {
             `NEEDS-ACTION`, ACCEPTED, DECLINED, TENTATIVE, DELEGATED, COMPLETED, `IN-PROCESS`
         }
     }
 
-    @Suppress("unused")
     object JtxCategory {
 
         /** The name of the the table for Categories that are linked to an ICalObject.
@@ -880,7 +873,7 @@ object JtxContract {
         const val OTHER = "other"
     }
 
-    @Suppress("unused")
+
     object JtxComment {
 
         /** The name of the the table for Comments that are linked to an ICalObject.
@@ -938,7 +931,7 @@ object JtxContract {
     }
 
 
-    @Suppress("unused")
+
     object JtxOrganizer {
         /** The name of the the table for Organizer that are linked to an ICalObject.
          * [https://tools.ietf.org/html/rfc5545#section-3.8.4.3]
@@ -1017,7 +1010,7 @@ object JtxContract {
 
     }
 
-    @Suppress("unused")
+
     object JtxRelatedto {
 
         /** The name of the the table for Relationships (related-to) that are linked to an ICalObject.
@@ -1087,7 +1080,7 @@ object JtxContract {
 
     }
 
-    @Suppress("unused")
+
     object JtxResource {
         /** The name of the the table for Resources that are linked to an ICalObject.
          * [https://tools.ietf.org/html/rfc5545#section-3.8.1.10]*/
@@ -1137,7 +1130,7 @@ object JtxContract {
 
     }
 
-    @Suppress("unused")
+
     object JtxCollection {
 
         /** The name of the the table for Collections
@@ -1261,7 +1254,7 @@ object JtxContract {
     }
 
 
-    @Suppress("unused")
+
     object JtxAttachment {
 
         /** The name of the the table for Attachments that are linked to an ICalObject.*/
@@ -1325,7 +1318,7 @@ object JtxContract {
     }
 
 
-    @Suppress("unused")
+
     object JtxAlarm {
 
         /** The name of the the table for Alarms that are linked to an ICalObject.*/
@@ -1459,19 +1452,17 @@ object JtxContract {
         const val TRIGGER_RELATIVE_DURATION = "triggerRelativeDuration"
 
         /** This enum class defines the possible values for the attribute [TRIGGER_RELATIVE_TO] for the Component VALARM  */
-        @Suppress("unused")
         enum class AlarmRelativeTo {
             START, END
         }
 
         /** This enum class defines the possible values for the attribute [ACTION] for the Component VALARM  */
-        @Suppress("unused")
         enum class AlarmAction {
             AUDIO, DISPLAY, EMAIL
         }
     }
 
-    @Suppress("unused")
+
     object JtxUnknown {
 
         /** The name of the the table for Unknown properties that are linked to an ICalObject.*/
