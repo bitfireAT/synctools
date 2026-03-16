@@ -6,10 +6,12 @@
 
 package at.bitfire.synctools.util
 
+import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.ical4android.util.DateUtils.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions
-import net.fortuna.ical4j.model.Date
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
@@ -17,13 +19,18 @@ import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
-import java.text.SimpleDateFormat
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.Period
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
-import java.util.LinkedList
 import java.util.Locale
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrDefault
@@ -101,86 +108,92 @@ object AndroidTimeUtils {
      *
      * Android [expects this format](https://android.googlesource.com/platform/frameworks/opt/calendar/+/68b3632330e7a9a4f9813b7eb671dbfd78c25bcd/src/com/android/calendarcommon2/RecurrenceSet.java#138):
      * `[TZID;]date1,date2,date3` where date is `yyyymmddThhmmss` (when
-     * TZID is given) or `yyyymmddThhmmssZ`. We don't use the TZID format here because then we're limited
-     * to one time-zone, while an iCalendar may contain multiple EXDATE/RDATE lines with different time zones.
+     * TZID is given) or `yyyymmddThhmmssZ`.
      *
-     * This method converts the values to the type of [dtStart], if necessary:
+     * This method converts the values to the type of [startDate], if necessary:
      *
      * - DTSTART (DATE-TIME) and RDATE/EXDATE (DATE) → method converts RDATE/EXDATE to DATE-TIME with same time as DTSTART
      * - DTSTART (DATE) and RDATE/EXDATE (DATE-TIME) → method converts RDATE/EXDATE to DATE (just drops time)
      *
-     * @param dates     one more more lists of RDATE or EXDATE
-     * @param dtStart   used to determine whether the event is an all-day event or not; also used to
+     * @param dates     list of `Temporal`s from RDATE or EXDATE properties
+     * @param startDate used to determine whether the event is an all-day event or not; also used to
      *                  generate the date-time if the event is not all-day but the exception is
      *
      * @return formatted string for Android calendar provider
      */
-    fun recurrenceSetsToAndroidString(dates: List<DateListProperty<*>>, dtStart: Date): String {
+    fun recurrenceSetsToAndroidString(dates: List<Temporal>, startDate: Temporal): String {
         /*  rdate/exdate:       DATE                                DATE_TIME
             all-day             store as ...T000000Z                cut off time and store as ...T000000Z
-            event with time     (undefined)                         store as ...ThhmmssZ
+            event with time     use time and zone from DTSTART      store as ...ThhmmssZ
         */
-        val dateFormatUtcMidnight = SimpleDateFormat("yyyyMMdd'T'000000'Z'", Locale.ROOT)
-        val strDates = LinkedList<String>()
-        val allDay = dtStart !is DateTime
+        val utcDateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT)
+        val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss", Locale.ROOT)
+        val convertedDates = mutableListOf<ZonedDateTime>()
+        val allDay = DateUtils.isDate(startDate)
 
         // use time zone of first entry for the whole set; null for UTC
-        TODO("ical4j 4.x")
-        /*val tz =
-            (dates.firstOrNull() as? RDate)?.periods?.timeZone ?:   // VALUE=PERIOD (only RDate)
-            dates.firstOrNull()?.dates?.timeZone                    // VALUE=DATE/DATE-TIME
+        val zoneId = (dates.firstOrNull() as? ZonedDateTime)?.zone
 
-        for (dateListProp in dates) {
-            if (dateListProp is RDate && dateListProp.periods.isNotEmpty()) {
-                logger.warning("RDATE PERIOD not supported, ignoring")
-                break
-            }
+        for (date in dates) {
+            if (date is LocalDate) {
+                // RDATE/EXDATE is DATE
+                if (allDay) {
+                    // DTSTART is DATE; DATE values have to be returned as <date>T000000Z for Android
 
-            when (dateListProp.dates.type) {
-                Value.DATE_TIME -> {        // RDATE/EXDATE is DATE-TIME
-                    if (tz == null && !dateListProp.dates.isUtc)
-                        dateListProp.setUtc(true)
-                    else if (tz != null && dateListProp.timeZone != tz)
-                        dateListProp.timeZone = tz
-
-                    if (allDay)
-                        // DTSTART is DATE
-                        dateListProp.dates.mapTo(strDates) { dateFormatUtcMidnight.format(it) }
-                    else
-                        // DTSTART is DATE-TIME
-                        strDates.add(dateListProp.value)
-                }
-                Value.DATE ->               // RDATE/EXDATE is DATE
-                    if (allDay) {
-                        // DTSTART is DATE; DATE values have to be returned as <date>T000000Z for Android
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            dateFormatUtcMidnight.format(date)
-                        }
+                    convertedDates.add(date.atStartOfDay().atZone(ZoneOffset.UTC))
+                } else {
+                    // DTSTART is DATE-TIME; amend DATE-TIME with clock time from DTSTART
+                    val zonedStartDate = startDate.toZonedDateTime() 
+                    val amendedDate = ZonedDateTime.of(
+                        date,
+                        zonedStartDate.toLocalTime(),
+                        zonedStartDate.zone
+                    )
+                    
+                    val convertedDate = if (zoneId != null) {
+                        amendedDate.withZoneSameInstant(zoneId)
                     } else {
-                        // DTSTART is DATE-TIME; amend DATE-TIME with clock time from dtStart
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            // take time (including time zone) from dtStart and date from date
-                            val dtStartTime = dtStart.toZonedDateTime()
-                            val localDate = date.toLocalDate()
-                            val dtStartTimeUtc = ZonedDateTime.of(
-                                localDate,
-                                dtStartTime.toLocalTime(),
-                                dtStartTime.zone
-                            ).withZoneSameInstant(ZoneOffset.UTC)
-
-                            val dateFormatUtc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT)
-                            dtStartTimeUtc.format(dateFormatUtc)
-                        }
+                        amendedDate.withZoneSameInstant(ZoneOffset.UTC)
                     }
+                    
+                    convertedDates.add(convertedDate)
+                }
+
+            } else {
+                // RDATE/EXDATE is DATE-TIME
+                val convertedDate = if (allDay) {
+                    // DTSTART is DATE
+                    val localDate = if (date is LocalDateTime) {
+                        date.toLocalDate()
+                    } else {
+                        Instant.ofEpochMilli(date.toTimestamp()).atZone(ZoneOffset.UTC).toLocalDate()
+                    }
+                    localDate.atStartOfDay().atZone(ZoneOffset.UTC)
+                } else {
+                    // DTSTART is DATE-TIME
+                    val instant = Instant.ofEpochMilli(date.toTimestamp())
+                    if (zoneId != null) {
+                        instant.atZone(zoneId)
+                    } else {
+                        instant.atZone(ZoneOffset.UTC)
+                    }
+                }
+                convertedDates.add(convertedDate)
             }
         }
 
         // format expected by Android: [tzid;]value1,value2,...
-        val result = StringBuilder()
-        if (tz != null)
-            result.append(tz.id).append(RECURRENCE_LIST_TZID_SEPARATOR)
-        result.append(strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR))
-        return result.toString()*/
+        return buildString {
+            if (zoneId != null) {
+                append(zoneId.id)
+                append(RECURRENCE_LIST_TZID_SEPARATOR)
+            }
+
+            val formatter = if (zoneId == null) utcDateFormatter else dateFormatter
+            convertedDates.joinTo(buffer = this, separator = RECURRENCE_LIST_VALUE_SEPARATOR) {
+                formatter.format(it)
+            }
+        }
     }
 
     /**

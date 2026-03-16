@@ -8,16 +8,19 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDates
 import at.bitfire.synctools.icalendar.requireDtStart
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import java.time.temporal.Temporal
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrDefault
 
 class RecurrenceFieldsBuilder: AndroidEntityBuilder {
 
@@ -27,56 +30,70 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
     override fun build(from: VEvent, main: VEvent, to: Entity) {
         val values = to.entityValues
 
-        TODO("ical4j 4.x")
-        /*val rRules = from.getProperties<RRule>(Property.RRULE)
-        val rDates = from.getProperties<RDate>(Property.RDATE)
+        val rRules = from.getProperties<RRule<*>>(Property.RRULE)
+        val rDates = from.getProperties<RDate<*>>(Property.RDATE)
         val recurring = rRules.isNotEmpty() || rDates.isNotEmpty()
         if (recurring && from === main) {
             // generate recurrence fields only for recurring main events
-            val dtStart = from.requireDtStart()
+            val startDate = from.requireDtStart<Temporal>().normalizedDate()
 
             // RRULE
             if (rRules.isNotEmpty())
-                values.put(Events.RRULE, rRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+                values.put(Events.RRULE, androidRecurrenceRuleString(rRules))
             else
                 values.putNull(Events.RRULE)
 
             // RDATE (start with null value)
-            values.putNull(Events.RDATE)
             if (rDates.isNotEmpty()) {
                 // ignore RDATEs when there's also an infinite RRULE [https://issuetracker.google.com/issues/216374004]
                 val infiniteRrule = rRules.any { rRule ->
                     rRule.recur.count == -1 &&  // no COUNT AND
                     rRule.recur.until == null   // no UNTIL
                 }
-                if (infiniteRrule)
+
+                if (infiniteRrule) {
                     logger.warning("Android can't handle infinite RRULE + RDATE [https://issuetracker.google.com/issues/216374004]; ignoring RDATE(s)")
-                else {
-                    for (rDate in rDates)
-                        AndroidTimeUtils.androidifyTimeZone(rDate)
+                    values.putNull(Events.RDATE)
 
-                    // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
-                    val listWithDtStart = DateList()
-                    listWithDtStart.add(dtStart.date)
-                    rDates.add(0, RDate(listWithDtStart))
+                } else {
+                    val normalizedRDates = rDates.flatMap { rDate ->
+                        if (rDate.periods.getOrDefault(emptySet()).isNotEmpty()) {
+                            logger.warning("RDATE PERIOD not supported, ignoring")
+                            emptyList()
+                        } else {
+                            rDate.normalizedDates()
+                        }
+                    }
 
-                    values.put(Events.RDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(rDates, dtStart.date))
+                    if (normalizedRDates.isNotEmpty()) {
+                        // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
+                        val listWithDtStart = listOf(startDate) + normalizedRDates
+                        val recurrenceDates = AndroidTimeUtils.recurrenceSetsToAndroidString(
+                            listWithDtStart,
+                            startDate
+                        )
+
+                        values.put(Events.RDATE, recurrenceDates)
+                    } else {
+                        values.putNull(Events.RDATE)
+                    }
                 }
+            } else {
+                values.putNull(Events.RDATE)
             }
 
             // EXRULE
-            val exRules = from.getProperties<ExRule>(Property.EXRULE)
+            val exRules = from.getProperties<ExRule<*>>(Property.EXRULE)
             if (exRules.isNotEmpty())
-                values.put(Events.EXRULE, exRules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value })
+                values.put(Events.EXRULE, androidRecurrenceRuleString(exRules))
             else
                 values.putNull(Events.EXRULE)
 
             // EXDATE
-            val exDates = from.getProperties<ExDate>(Property.EXDATE)
+            val exDates = from.getProperties<ExDate<Temporal>>(Property.EXDATE)
             if (exDates.isNotEmpty()) {
-                for (exDate in exDates)
-                    AndroidTimeUtils.androidifyTimeZone(exDate)
-                values.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(exDates, dtStart.date))
+                val normalizedExDates = exDates.flatMap { exDate -> exDate.normalizedDates() }
+                values.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(normalizedExDates, startDate))
             } else
                 values.putNull(Events.EXDATE)
 
@@ -85,7 +102,11 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
             values.putNull(Events.EXRULE)
             values.putNull(Events.RDATE)
             values.putNull(Events.EXDATE)
-        }*/
+        }
+    }
+
+    private fun androidRecurrenceRuleString(rules: List<Property>): String {
+        return rules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value }
     }
 
 }

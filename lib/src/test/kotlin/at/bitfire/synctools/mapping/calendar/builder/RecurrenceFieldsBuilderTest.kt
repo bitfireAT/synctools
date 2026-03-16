@@ -10,43 +10,41 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.Period
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.temporal.Temporal
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class RecurrenceFieldsBuilderTest {
 
     private val builder = RecurrenceFieldsBuilder()
 
-    init {
-        TODO("ical4j 4.x")
-    }
-
-    /*@Test
+    @Test
     fun `Exception event`() {
         // Exceptions (of recurring events) must never have recurrence properties themselves.
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(),
-                RRule("FREQ=DAILY;COUNT=1"),
-                RDate(),
-                ExDate()
+                DtStart<Temporal>(),
+                RRule<Temporal>("FREQ=DAILY;COUNT=1"),
+                RDate<Temporal>(),
+                ExDate<Temporal>()
             )),
             main = VEvent(),
             to = result
@@ -62,8 +60,8 @@ class RecurrenceFieldsBuilderTest {
     @Test
     fun `EXDATE for non-recurring event`() {
         val main = VEvent(propertyListOf(
-            DtStart(),
-            ExDate()
+            DtStart<Temporal>(),
+            ExDate<Temporal>()
         ))
         val result = Entity(ContentValues())
         builder.build(
@@ -83,8 +81,8 @@ class RecurrenceFieldsBuilderTest {
     fun `Single RRULE`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(),
-            RRule("FREQ=DAILY;COUNT=10")
+            DtStart(LocalDateTime.now()),
+            RRule<Temporal>("FREQ=DAILY;COUNT=10")
         ))
         builder.build(
             from = event,
@@ -103,9 +101,9 @@ class RecurrenceFieldsBuilderTest {
     fun `Multiple RRULEs`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(),
-            RRule("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU"),
-            RRule("FREQ=YEARLY;BYMONTH=10;BYDAY=1SU")
+            DtStart(LocalDateTime.now()),
+            RRule<Temporal>("FREQ=YEARLY;BYMONTH=4;BYDAY=-1SU"),
+            RRule<Temporal>("FREQ=YEARLY;BYMONTH=10;BYDAY=1SU")
         ))
         builder.build(
             from = event,
@@ -124,10 +122,8 @@ class RecurrenceFieldsBuilderTest {
     fun `Single RDATE`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(Date("20250917")),
-            RDate(DateList().apply {
-                add(Date("20250918"))
-            })
+            DtStart(dateValue("20250917")),
+            RDate(DateList(dateValue("20250918")))
         ))
         builder.build(
             from = event,
@@ -146,11 +142,9 @@ class RecurrenceFieldsBuilderTest {
     fun `RDATE with infinite RRULE present`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(Date("20250917")),
-            RRule("FREQ=DAILY"),
-            RDate(DateList().apply {
-                add(Date("20250918"))
-            })
+            DtStart(dateValue("20250917")),
+            RRule<Temporal>("FREQ=DAILY"),
+            RDate(DateList(dateValue("20250918")))
         ))
         builder.build(
             from = event,
@@ -166,12 +160,33 @@ class RecurrenceFieldsBuilderTest {
     }
 
     @Test
+    fun `RDATE with PERIOD`() {
+        val result = Entity(ContentValues())
+        val event = VEvent(propertyListOf(
+            DtStart(dateValue("20250917")),
+            RDate(listOf(
+                Period(dateTimeValue("19960403T020000Z"), dateTimeValue("19960403T040000Z")),
+                Period(dateTimeValue("19960404T010000Z"), Duration.ofHours(3))
+            ))
+        ))
+
+        builder.build(from = event, main = event, to = result)
+
+        assertContentValuesEqual(contentValuesOf(
+            Events.RRULE to null,
+            Events.RDATE to null,   // RDATE PERIOD not supported yet
+            Events.EXRULE to null,
+            Events.EXDATE to null
+        ), result.entityValues)
+    }
+
+    @Test
     fun `Single EXRULE`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(),
-            RRule("FREQ=DAILY"),
-            ExRule(ParameterList(), "FREQ=WEEKLY")
+            DtStart(LocalDateTime.now()),
+            RRule<Temporal>("FREQ=DAILY"),
+            ExRule<Temporal>(ParameterList(), "FREQ=WEEKLY")
         ))
         builder.build(
             from = event,
@@ -190,9 +205,9 @@ class RecurrenceFieldsBuilderTest {
     fun `Single EXDATE`() {
         val result = Entity(ContentValues())
         val event = VEvent(propertyListOf(
-            DtStart(Date("20250918")),
-            RRule("FREQ=DAILY"),
-            ExDate(DateList("20250920", Value.DATE))
+            DtStart(dateValue("20250918")),
+            RRule<Temporal>("FREQ=DAILY"),
+            ExDate(DateList(dateValue("20250920")))
         ))
         builder.build(
             from = event,
@@ -205,6 +220,6 @@ class RecurrenceFieldsBuilderTest {
             Events.EXRULE to null,
             Events.EXDATE to "20250920T000000Z"
         ), result.entityValues)
-    }*/
+    }
 
 }
