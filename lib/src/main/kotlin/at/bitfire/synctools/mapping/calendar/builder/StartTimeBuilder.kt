@@ -8,47 +8,26 @@ package at.bitfire.synctools.mapping.calendar.builder
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.util.AndroidTimeUtils
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.androidTimezoneId
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
 import net.fortuna.ical4j.model.component.VEvent
-import java.time.ZoneId
+import java.time.temporal.Temporal
 
 class StartTimeBuilder: AndroidEntityBuilder {
 
     override fun build(from: VEvent, main: VEvent, to: Entity) {
-        TODO("ical4j 4.x")
-        /*val values = to.entityValues
+        val values = to.entityValues
 
-        val dtStart = from.requireDtStart()
+        val dtStart = from.requireDtStart<Temporal>()
+        val normalizedDate = dtStart.normalizedDate()
 
         // start time: UNIX timestamp
-        values.put(Events.DTSTART, dtStart.date.time)
+        values.put(Events.DTSTART, normalizedDate.toTimestamp())
 
         // start time: timezone ID
-        if (DateUtils.isDateTime(dtStart)) {
-            /* DTSTART is a DATE-TIME. This can be:
-               - date/time with timezone ID ("DTSTART;TZID=Europe/Vienna:20251006T155623")
-               - UTC ("DTSTART:20251006T155623Z")
-               - floating time ("DTSTART:20251006T155623") */
-
-            if (dtStart.isUtc) {
-                // UTC
-                values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-
-            } else if (dtStart.timeZone != null) {
-                // timezone reference – make sure that time zone is known by Android
-                values.put(Events.EVENT_TIMEZONE, DateUtils.findAndroidTimezoneID(dtStart.timeZone.id))
-
-            } else {
-                // floating time, use system default
-                values.put(Events.EVENT_TIMEZONE, ZoneId.systemDefault().id)
-            }
-
-        } else {
-            // DTSTART is a DATE
-            values.put(Events.EVENT_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }*/
+        values.put(Events.EVENT_TIMEZONE, normalizedDate.androidTimezoneId())
     }
 
 }

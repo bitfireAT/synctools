@@ -66,6 +66,18 @@ object DateUtils {
         date != null && TemporalAdapter.isDateTimePrecision(date.date)
 
     /**
+     * Determines whether a given [Temporal] represents a DATE value.
+     */
+    fun isDate(date: Temporal?): Boolean =
+        date != null && !TemporalAdapter.isDateTimePrecision(date)
+
+    /**
+     * Determines whether a given [Temporal] represents a DATE-TIME value.
+     */
+    fun isDateTime(date: Temporal?): Boolean =
+        date != null && TemporalAdapter.isDateTimePrecision(date)
+
+    /**
      * Parses an iCalendar that only contains a `VTIMEZONE` definition to a VTimeZone object.
      *
      * @param timezoneDef iCalendar with only a `VTIMEZONE` definition
