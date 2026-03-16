@@ -2,7 +2,7 @@
 agp = "9.1.0"
 android-desugar = "2.1.5"
 androidx-annotation = "1.9.1"
-androidx-core = "1.17.0"
+androidx-core = "1.18.0"
 androidx-test-rules = "1.7.0"
 androidx-test-runner = "1.7.0"
 dokka = "2.1.0"
