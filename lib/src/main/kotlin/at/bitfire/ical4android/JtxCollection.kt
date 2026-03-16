@@ -12,12 +12,17 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.component.VJournal
+import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.property.ProdId
+import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
 import java.util.LinkedList
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -256,19 +261,18 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
             logger.fine("getICSForCollection: found ${cursor?.count} records in ${account.name}")
 
             val ical = Calendar()
-            TODO("ical4j 4.x")
-            /*ical.properties += Version.VERSION_2_0
-            ical.properties += prodId
+            ical += ImmutableVersion.VERSION_2_0
+            ical += prodId
 
             while (cursor?.moveToNext() == true) {
                 val jtxIcalObject = JtxICalObject(this)
                 jtxIcalObject.populateFromContentValues(cursor.toContentValues())
                 val singleICS = jtxIcalObject.getICalendarFormat(prodId)
-                singleICS?.components?.forEach { component ->
+                singleICS?.getComponents<CalendarComponent>()?.forEach { component ->
                     if(component is VToDo || component is VJournal)
-                        ical.components += component
+                        ical.getComponents<CalendarComponent>() += component
                 }
-            }*/
+            }
             return ical.toString()
         }
     }
