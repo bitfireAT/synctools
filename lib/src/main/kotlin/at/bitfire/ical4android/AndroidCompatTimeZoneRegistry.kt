@@ -6,11 +6,15 @@
 
 package at.bitfire.ical4android
 
+import net.fortuna.ical4j.model.ComponentList
 import net.fortuna.ical4j.model.DefaultTimeZoneRegistryFactory
+import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.TimeZoneRegistryImpl
+import net.fortuna.ical4j.model.component.VTimeZone
+import net.fortuna.ical4j.model.property.TzId
 import java.time.ZoneId
 import java.util.logging.Logger
 
@@ -50,8 +54,12 @@ class AndroidCompatTimeZoneRegistry(
         // If the timezone is empty, or format is not valid, return null
         if (id.isEmpty()) return null
 
-        val tz: TimeZone = base.getTimeZone(id)
-            ?: return null      // ical4j doesn't know time zone, return null
+        val tz: TimeZone = try {
+            base.getTimeZone(id) ?: return null // ical4j doesn't know time zone, return null
+        } catch (_: NullPointerException) {
+            // The registry sometimes throws NullPointerException instead of returning null
+            return null
+        }
 
         // check whether time zone is available on Android, too
         val androidTzId =
@@ -76,14 +84,12 @@ class AndroidCompatTimeZoneRegistry(
             logger.fine("Using ical4j timezone ${tz.id} data to construct Android timezone $androidTzId")
 
             // create a copy of the VTIMEZONE so that we don't modify the original registry values (which are not immutable)
-            val vTimeZone = tz.vTimeZone
-            TODO("ical4j 4.x")
-            /*val newVTimeZoneProperties = PropertyList<Property>()
-            newVTimeZoneProperties += TzId(androidTzId)
-            return TimeZone(VTimeZone(
-                newVTimeZoneProperties,
-                vTimeZone.observances
-            ))*/
+            return TimeZone(
+                VTimeZone(
+                    PropertyList(listOf(TzId(androidTzId))),
+                    ComponentList(tz.vTimeZone.observances)
+                )
+            )
         } else
             return tz
     }
