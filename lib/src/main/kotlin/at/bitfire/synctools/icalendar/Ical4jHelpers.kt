@@ -58,6 +58,10 @@ operator fun PropertyContainer.plusAssign(property: Property) {
     add<PropertyContainer>(property)
 }
 
+operator fun PropertyList.plusAssign(property: Property) {
+    add(property)
+}
+
 operator fun <T : Component> ComponentContainer<T>.plusAssign(component: T) {
     add<ComponentContainer<T>>(component)
 }

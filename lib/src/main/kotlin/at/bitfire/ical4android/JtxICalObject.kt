@@ -6,27 +6,110 @@
 
 package at.bitfire.ical4android
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.core.content.contentValuesOf
+import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.synctools.exception.InvalidICalendarException
+import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDates
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
 import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
+import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.ComponentList
+import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyList
+import net.fortuna.ical4j.model.TextList
+import net.fortuna.ical4j.model.component.CalendarComponent
+import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VJournal
+import net.fortuna.ical4j.model.component.VToDo
+import net.fortuna.ical4j.model.parameter.AltRep
+import net.fortuna.ical4j.model.parameter.Cn
+import net.fortuna.ical4j.model.parameter.CuType
+import net.fortuna.ical4j.model.parameter.DelegatedFrom
+import net.fortuna.ical4j.model.parameter.DelegatedTo
+import net.fortuna.ical4j.model.parameter.Dir
+import net.fortuna.ical4j.model.parameter.FmtType
+import net.fortuna.ical4j.model.parameter.Language
+import net.fortuna.ical4j.model.parameter.Member
+import net.fortuna.ical4j.model.parameter.PartStat
+import net.fortuna.ical4j.model.parameter.RelType
+import net.fortuna.ical4j.model.parameter.Related
+import net.fortuna.ical4j.model.parameter.Role
+import net.fortuna.ical4j.model.parameter.Rsvp
+import net.fortuna.ical4j.model.parameter.SentBy
+import net.fortuna.ical4j.model.parameter.TzId
+import net.fortuna.ical4j.model.parameter.XParameter
+import net.fortuna.ical4j.model.property.Action
+import net.fortuna.ical4j.model.property.Attach
+import net.fortuna.ical4j.model.property.Categories
+import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.Color
+import net.fortuna.ical4j.model.property.Completed
+import net.fortuna.ical4j.model.property.Contact
+import net.fortuna.ical4j.model.property.Created
+import net.fortuna.ical4j.model.property.Description
+import net.fortuna.ical4j.model.property.DtEnd
+import net.fortuna.ical4j.model.property.DtStamp
+import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.Due
+import net.fortuna.ical4j.model.property.Duration
+import net.fortuna.ical4j.model.property.ExDate
+import net.fortuna.ical4j.model.property.Geo
+import net.fortuna.ical4j.model.property.LastModified
+import net.fortuna.ical4j.model.property.Location
+import net.fortuna.ical4j.model.property.PercentComplete
+import net.fortuna.ical4j.model.property.Priority
 import net.fortuna.ical4j.model.property.ProdId
+import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.model.property.RRule
+import net.fortuna.ical4j.model.property.RecurrenceId
+import net.fortuna.ical4j.model.property.Repeat
+import net.fortuna.ical4j.model.property.Resources
+import net.fortuna.ical4j.model.property.Sequence
+import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.Summary
+import net.fortuna.ical4j.model.property.Trigger
+import net.fortuna.ical4j.model.property.Uid
+import net.fortuna.ical4j.model.property.Url
+import net.fortuna.ical4j.model.property.XProperty
+import net.fortuna.ical4j.model.property.immutable.ImmutableAction
+import net.fortuna.ical4j.model.property.immutable.ImmutablePriority
+import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.OutputStream
 import java.io.Reader
+import java.net.URI
+import java.net.URISyntaxException
+import java.nio.ByteBuffer
+import java.text.ParseException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeParseException
+import java.time.temporal.Temporal
 import java.util.UUID
+import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 open class JtxICalObject(
     val collection: JtxCollection<JtxICalObject>
@@ -222,30 +305,28 @@ open class JtxICalObject(
 
             val iCalObjectList = mutableListOf<JtxICalObject>()
 
-            TODO("ical4j 4.x")
-            /*
-            ical.components.forEach { component ->
+            ical.getComponents<CalendarComponent>().forEach { component ->
 
                 val iCalObject = JtxICalObject(collection)
                 when(component) {
                     is VToDo -> {
                         iCalObject.component = JtxContract.JtxICalObject.Component.VTODO.name
-                        if (component.uid != null)
-                            iCalObject.uid = component.uid.value                         // generated UID is overwritten here (if present)
-                        extractProperties(iCalObject, component.properties)
-                        extractVAlarms(iCalObject, component.components)                 // accessing the components needs an explicit type
+                        if (component.uid.isPresent)
+                            iCalObject.uid = component.uid.get().value // generated UID is overwritten here (if present)
+                        extractProperties(iCalObject, component.propertyList)
+                        extractVAlarms(iCalObject, component.componentList) // accessing the components needs an explicit type
                         iCalObjectList.add(iCalObject)
                     }
                     is VJournal -> {
                         iCalObject.component = JtxContract.JtxICalObject.Component.VJOURNAL.name
-                        if (component.uid != null)
-                            iCalObject.uid = component.uid.value
-                        extractProperties(iCalObject, component.properties)
-                        extractVAlarms(iCalObject, component.components)                  // accessing the components needs an explicit type
+                        if (component.uid.isPresent)
+                            iCalObject.uid = component.uid.get().value
+                        extractProperties(iCalObject, component.propertyList)
+                        extractVAlarms(iCalObject, component.componentList) // accessing the components needs an explicit type
                         iCalObjectList.add(iCalObject)
                     }
                 }
-            }*/
+            }
             return iCalObjectList
         }
 
@@ -256,43 +337,43 @@ open class JtxICalObject(
          * @param [calComponents] from which the VAlarms should be extracted
          */
         private fun extractVAlarms(iCalObject: JtxICalObject, calComponents: ComponentList<*>) {
-            TODO("ical4j 4.x")
-            /*calComponents.forEach { component ->
+            calComponents.all.forEach { component ->
                 if(component is VAlarm) {
                     val jtxAlarm = Alarm().apply {
-                        component.action?.value?.let { vAlarmAction -> this.action = vAlarmAction }
-                        component.summary?.value?.let { vAlarmSummary -> this.summary = vAlarmSummary }
-                        component.description?.value?.let { vAlarmDesc -> this.description = vAlarmDesc }
-                        component.duration?.value?.let { vAlarmDur -> this.duration = vAlarmDur }
-                        component.attachment?.uri?.let { uri -> this.attach = uri.toString() }
-                        component.repeat?.value?.let { vAlarmRep -> this.repeat = vAlarmRep }
+                        component.getProperty<Action>(Property.ACTION).getOrNull()?.let { vAlarmAction -> this.action = vAlarmAction.value }
+                        component.summary?.let { vAlarmSummary -> this.summary = vAlarmSummary.value }
+                        component.description?.let { vAlarmDesc -> this.description = vAlarmDesc.value }
+                        component.getProperty<Duration>(Property.DURATION).getOrNull()?.let { vAlarmDur -> this.duration = vAlarmDur.value }
+                        component.getProperty<Attach>(Property.ATTACH).getOrNull()?.uri?.let { uri -> this.attach = uri.toString() }
+                        component.getProperty<Repeat>(Property.REPEAT)?.getOrNull()?.let { vAlarmRep -> this.repeat = vAlarmRep.value }
 
                         // alarms can have a duration or an absolute dateTime, but not both!
-                        if(component.trigger.duration != null) {
-                            component.trigger?.duration?.let { duration -> this.triggerRelativeDuration = duration.toString() }
-                            component.trigger?.getParameter<Related>(Parameter.RELATED)?.let { related -> this.triggerRelativeTo = related.value }
-                        } else if(component.trigger.dateTime != null) {
-                            component.trigger?.dateTime?.let { dateTime -> this.triggerTime = dateTime.time  }
-                            component.trigger?.dateTime?.timeZone?.let { timezone -> this.triggerTimezone = timezone.id }
+                        component.getProperty<Trigger>(Property.TRIGGER).getOrNull()?.let { trigger ->
+                            if(trigger.duration != null) {
+                                trigger.duration?.let { duration -> this.triggerRelativeDuration = duration.toString() }
+                                trigger.getParameter<Related>(Parameter.RELATED)?.getOrNull()?.let { related -> this.triggerRelativeTo = related.value }
+                            } else if(trigger.isAbsolute) { // self-contained (not relative to dtstart/dtend)
+                                val normalizedTrigger = trigger.normalizedDate() // Ensure timezone exists in system
+                                this.triggerTime = normalizedTrigger.toEpochMilli()
+                                this.triggerTimezone =  normalizedTrigger.getTimeZoneId()
+                            }
                         }
 
                         // remove properties to add the rest to other
-                        component.properties.removeAll(
-                            setOf(
-                                component.action,
-                                component.summary,
-                                component.description,
-                                component.duration,
-                                component.attachment,
-                                component.repeat,
-                                component.trigger
-                            )
+                        component.propertyList.removeAll(
+                            Property.ACTION,
+                            Property.SUMMARY,
+                            Property.DESCRIPTION,
+                            Property.DURATION,
+                            Property.ATTACH,
+                            Property.REPEAT,
+                            Property.TRIGGER
                         )
-                        component.properties?.let { vAlarmProps -> this.other = JtxContract.getJsonStringFromXProperties(vAlarmProps) }
+                        component.propertyList?.let { vAlarmProps -> this.other = JtxContract.getJsonStringFromXProperties(vAlarmProps) }
                     }
                     iCalObject.alarms.add(jtxAlarm)
                 }
-            }*/
+            }
         }
 
         /**
@@ -304,17 +385,16 @@ open class JtxICalObject(
             // sequence must only be null for locally created, not-yet-synchronized events
             iCalObject.sequence = 0
 
-            TODO("ical4j 4.x")
-            /*for (prop in properties) {
+            for (prop in properties.all) {
                 when (prop) {
                     is Sequence -> iCalObject.sequence = prop.sequenceNo.toLong()
-                    is Created -> iCalObject.created = prop.dateTime.time
-                    is LastModified -> iCalObject.lastModified = prop.dateTime.time
+                    is Created -> iCalObject.created = prop.date.toEpochMilli() // Instant. No need to normalize
+                    is LastModified -> iCalObject.lastModified = prop.date.toEpochMilli() // Instant. No need to normalize
                     is Summary -> iCalObject.summary = prop.value
                     is Location -> {
                         iCalObject.location = prop.value
-                        if(!prop.parameters.isEmpty && prop.parameters.getParameter<AltRep>(Parameter.ALTREP) != null)
-                            iCalObject.locationAltrep = prop.parameters.getParameter<AltRep>(Parameter.ALTREP).value
+                        if(!prop.parameterList.all.isEmpty() && prop.parameterList.getFirst<AltRep>(Parameter.ALTREP) != null)
+                            iCalObject.locationAltrep = prop.parameterList.getFirst<AltRep>(Parameter.ALTREP).getOrNull()?.value
                     }
                     is Geo -> {
                         iCalObject.geoLat = prop.latitude.toDouble()
@@ -327,37 +407,29 @@ open class JtxICalObject(
                     is Priority -> iCalObject.priority = prop.level
                     is Clazz -> iCalObject.classification = prop.value
                     is Status -> iCalObject.status = prop.value
-                    is DtEnd -> logger.warning("The property DtEnd must not be used for VTODO and VJOURNAL, this value is rejected.")
+                    is DtEnd<*> -> logger.warning("The property DtEnd must not be used for VTODO and VJOURNAL, this value is rejected.")
                     is Completed -> {
-                        if (iCalObject.component == JtxContract.JtxICalObject.Component.VTODO.name) {
-                            iCalObject.completed = prop.date.time
-                        } else
+                        if (iCalObject.component != JtxContract.JtxICalObject.Component.VTODO.name) {
                             logger.warning("The property Completed is only supported for VTODO, this value is rejected.")
+                            continue
+                        }
+                        iCalObject.completed = prop.normalizedDate().toEpochMilli()
                     }
 
-                    is Due -> {
-                        if (iCalObject.component == JtxContract.JtxICalObject.Component.VTODO.name) {
-                            iCalObject.due = prop.date.time
-                            when {
-                                prop.date is DateTime && prop.timeZone != null -> iCalObject.dueTimezone = prop.timeZone.id
-                                prop.date is DateTime && prop.isUtc -> iCalObject.dueTimezone = TimeZone.getTimeZone("UTC").id
-                                prop.date is DateTime && !prop.isUtc && prop.timeZone == null -> iCalObject.dueTimezone = null                   // this comparison is kept on purpose as "prop.date is Date" did not work as expected.
-                                else -> iCalObject.dueTimezone = TZ_ALLDAY     // prop.date is Date (and not DateTime), therefore it must be Allday
-                            }
-                        } else
+                    is Due<*> -> {
+                        if (iCalObject.component != JtxContract.JtxICalObject.Component.VTODO.name) {
                             logger.warning("The property Due is only supported for VTODO, this value is rejected.")
+                            continue
+                        }
+                        iCalObject.due = prop.normalizedDate().toEpochMilli()
+                        iCalObject.dueTimezone = prop.normalizedDate().getTimeZoneId()
                     }
 
                     is Duration -> iCalObject.duration = prop.value
 
-                    is DtStart -> {
-                        iCalObject.dtstart = prop.date.time
-                        when {
-                            prop.date is DateTime && prop.timeZone != null -> iCalObject.dtstartTimezone = prop.timeZone.id
-                            prop.date is DateTime && prop.isUtc -> iCalObject.dtstartTimezone = TimeZone.getTimeZone("UTC").id
-                            prop.date is DateTime && !prop.isUtc && prop.timeZone == null -> iCalObject.dtstartTimezone = null                   // this comparison is kept on purpose as "prop.date is Date" did not work as expected.
-                            else -> iCalObject.dtstartTimezone = TZ_ALLDAY     // prop.date is Date (and not DateTime), therefore it must be Allday
-                        }
+                    is DtStart<*> -> {
+                        iCalObject.dtstart = prop.normalizedDate().toEpochMilli()
+                        iCalObject.dtstartTimezone = prop.normalizedDate().getTimeZoneId()
                     }
 
                     is PercentComplete -> {
@@ -367,84 +439,79 @@ open class JtxICalObject(
                             logger.warning("The property PercentComplete is only supported for VTODO, this value is rejected.")
                     }
 
-                    is RRule -> iCalObject.rrule = prop.value
-                    is RDate -> {
-                        val rdateList = if(iCalObject.rdate.isNullOrEmpty())
+                    is RRule<*> -> iCalObject.rrule = prop.value
+                    is RDate<*> -> {
+                        val rdateList: MutableList<Long> = if(iCalObject.rdate.isNullOrEmpty())
                             mutableListOf()
                         else
                             JtxContract.getLongListFromString(iCalObject.rdate!!)
-                        prop.dates.forEach {
-                            rdateList.add(it.time)
+                        prop.normalizedDates().forEach { date ->
+                            date.toEpochMilli()?.let { rdateList.add(it) }
                         }
                         iCalObject.rdate = rdateList.toTypedArray().joinToString(separator = ",")
                     }
-                    is ExDate -> {
-                        val exdateList = if(iCalObject.exdate.isNullOrEmpty())
+                    is ExDate<*> -> {
+                        val exdateList: MutableList<Long> = if(iCalObject.exdate.isNullOrEmpty())
                             mutableListOf()
                         else
                             JtxContract.getLongListFromString(iCalObject.exdate!!)
-                        prop.dates.forEach {
-                            exdateList.add(it.time)
+                        prop.normalizedDates().forEach { date ->
+                            date.toEpochMilli()?.let { exdateList.add(it) }
                         }
                         iCalObject.exdate = exdateList.toTypedArray().joinToString(separator = ",")
                     }
-                    is RecurrenceId -> {
-                        iCalObject.recurid = prop.date.toString()
-                        iCalObject.recuridTimezone = when {
-                            prop.date is DateTime && prop.timeZone != null ->  prop.timeZone.id
-                            prop.date is DateTime && prop.isUtc -> TimeZone.getTimeZone("UTC").id
-                            prop.date is DateTime && !prop.isUtc && prop.timeZone == null -> null
-                            else -> TZ_ALLDAY     // prop.date is Date (and not DateTime), therefore it must be Allday
-                        }
+                    is RecurrenceId<*> -> {
+                        iCalObject.recurid = prop.toString()
+                        iCalObject.recuridTimezone = prop.normalizedDate().getTimeZoneId()
                     }
 
                     //is RequestStatus -> iCalObject.rstatus = prop.value
 
                     is Categories ->
-                        for (category in prop.categories)
+                        for (category in prop.categories.texts)
                             iCalObject.categories.add(Category(text = category))
 
                     is net.fortuna.ical4j.model.property.Comment -> {
                         iCalObject.comments.add(
                             Comment().apply {
                                 this.text = prop.value
-                                this.language = prop.parameters?.getParameter<Language>(Parameter.LANGUAGE)?.value
-                                this.altrep = prop.parameters?.getParameter<AltRep>(Parameter.ALTREP)?.value
+                                this.language = prop.getParameter<Language>(Parameter.LANGUAGE)?.getOrNull()?.value
+                                this.altrep = prop.getParameter<AltRep>(Parameter.ALTREP)?.getOrNull()?.value
 
                                 // remove the known parameter
-                                prop.parameters?.removeAll(Parameter.LANGUAGE)
-                                prop.parameters?.removeAll(Parameter.ALTREP)
+                                prop.parameterList?.removeAll(Parameter.LANGUAGE)
+                                prop.parameterList?.removeAll(Parameter.ALTREP)
 
                                 // save unknown parameters in the other field
-                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameters)
+                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameterList)
                             })
 
                     }
 
                     is Resources ->
-                        for (resource in prop.resources)
+                        for (resource in prop.resources.texts)
                             iCalObject.resources.add(Resource(text = resource))
 
                     is Attach -> {
                         val attachment = Attachment()
                         prop.uri?.let { attachment.uri = it.toString() }
-                        prop.binary?.let {
+                        prop.binary.array().let {
                             attachment.binary = Base64.encodeToString(it, Base64.DEFAULT)
                         }
-                        prop.parameters?.getParameter<FmtType>(Parameter.FMTTYPE)?.let {
+                        prop.getParameter<FmtType>(Parameter.FMTTYPE)?.getOrNull()?.let {
                             attachment.fmttype = it.value
-                            prop.parameters?.remove(it)
+                            prop.parameterList?.remove(it)
                         }
-                        prop.parameters?.getParameter<XParameter>(X_PARAM_ATTACH_LABEL)?.let {
+                        prop.getParameter<XParameter>(X_PARAM_ATTACH_LABEL)?.getOrNull()?.let {
                             attachment.filename = it.value
-                            prop.parameters.remove(it)
+                            prop.parameterList.remove(it)
                         }
-                        prop.parameters?.getParameter<XParameter>(X_PARAM_FILENAME)?.let {
+                        prop.getParameter<XParameter>(X_PARAM_FILENAME)?.getOrNull()?.let {
                             attachment.filename = it.value
-                            prop.parameters.remove(it)
+                            prop.parameterList.remove(it)
                         }
 
-                        attachment.other = JtxContract.getJsonStringFromXParameters(prop.parameters)
+                        attachment.other = JtxContract.getJsonStringFromXParameters(prop.parameterList)
 
                         if (attachment.uri?.isNotEmpty() == true || attachment.binary?.isNotEmpty() == true)   // either uri or value must be present!
                             iCalObject.attachments.add(attachment)
@@ -455,13 +522,13 @@ open class JtxICalObject(
                         iCalObject.relatedTo.add(
                             RelatedTo().apply {
                                 this.text = prop.value
-                                this.reltype = prop.getParameter<RelType>(RelType.RELTYPE)?.value ?: JtxContract.JtxRelatedto.Reltype.PARENT.name
+                                this.reltype = prop.getParameter<RelType>(RelType.RELTYPE)?.getOrNull()?.value ?: JtxContract.JtxRelatedto.Reltype.PARENT.name
 
                                 // remove the known parameter
-                                prop.parameters?.removeAll(RelType.RELTYPE)
+                                prop.parameterList?.removeAll(RelType.RELTYPE)
 
                                 // save unknown parameters in the other field
-                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameters)
+                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameterList)
                             })
                     }
 
@@ -469,52 +536,52 @@ open class JtxICalObject(
                         iCalObject.attendees.add(
                             Attendee().apply {
                                 this.caladdress = prop.calAddress.toString()
-                                this.cn = prop.parameters?.getParameter<Cn>(Parameter.CN)?.value
-                                this.delegatedto = prop.parameters?.getParameter<DelegatedTo>(Parameter.DELEGATED_TO)?.value
-                                this.delegatedfrom = prop.parameters?.getParameter<DelegatedFrom>(Parameter.DELEGATED_FROM)?.value
-                                this.cutype = prop.parameters?.getParameter<CuType>(Parameter.CUTYPE)?.value
-                                this.dir = prop.parameters?.getParameter<Dir>(Parameter.DIR)?.value
-                                this.language = prop.parameters?.getParameter<Language>(Parameter.LANGUAGE)?.value
-                                this.member = prop.parameters?.getParameter<Member>(Parameter.MEMBER)?.value
-                                this.partstat = prop.parameters?.getParameter<PartStat>(Parameter.PARTSTAT)?.value
-                                this.role = prop.parameters?.getParameter<Role>(Parameter.ROLE)?.value
-                                this.rsvp = prop.parameters?.getParameter<Rsvp>(Parameter.RSVP)?.value?.toBoolean()
-                                this.sentby = prop.parameters?.getParameter<SentBy>(Parameter.SENT_BY)?.value
+                                this.cn = prop.getParameter<Cn>(Parameter.CN)?.getOrNull()?.value
+                                this.delegatedto = prop.getParameter<DelegatedTo>(Parameter.DELEGATED_TO)?.getOrNull()?.value
+                                this.delegatedfrom = prop.getParameter<DelegatedFrom>(Parameter.DELEGATED_FROM)?.getOrNull()?.value
+                                this.cutype = prop.getParameter<CuType>(Parameter.CUTYPE)?.getOrNull()?.value
+                                this.dir = prop.getParameter<Dir>(Parameter.DIR)?.getOrNull()?.value
+                                this.language = prop.getParameter<Language>(Parameter.LANGUAGE)?.getOrNull()?.value
+                                this.member = prop.getParameter<Member>(Parameter.MEMBER)?.getOrNull()?.value
+                                this.partstat = prop.getParameter<PartStat>(Parameter.PARTSTAT)?.getOrNull()?.value
+                                this.role = prop.getParameter<Role>(Parameter.ROLE)?.getOrNull()?.value
+                                this.rsvp = prop.getParameter<Rsvp>(Parameter.RSVP)?.getOrNull()?.value?.toBoolean()
+                                this.sentby = prop.getParameter<SentBy>(Parameter.SENT_BY)?.getOrNull()?.value
 
                                 // remove all known parameters so that only unknown parameters remain
-                                prop.parameters?.removeAll(Parameter.CN)
-                                prop.parameters?.removeAll(Parameter.DELEGATED_TO)
-                                prop.parameters?.removeAll(Parameter.DELEGATED_FROM)
-                                prop.parameters?.removeAll(Parameter.CUTYPE)
-                                prop.parameters?.removeAll(Parameter.DIR)
-                                prop.parameters?.removeAll(Parameter.LANGUAGE)
-                                prop.parameters?.removeAll(Parameter.MEMBER)
-                                prop.parameters?.removeAll(Parameter.PARTSTAT)
-                                prop.parameters?.removeAll(Parameter.ROLE)
-                                prop.parameters?.removeAll(Parameter.RSVP)
-                                prop.parameters?.removeAll(Parameter.SENT_BY)
+                                prop.parameterList?.removeAll(Parameter.CN)
+                                prop.parameterList?.removeAll(Parameter.DELEGATED_TO)
+                                prop.parameterList?.removeAll(Parameter.DELEGATED_FROM)
+                                prop.parameterList?.removeAll(Parameter.CUTYPE)
+                                prop.parameterList?.removeAll(Parameter.DIR)
+                                prop.parameterList?.removeAll(Parameter.LANGUAGE)
+                                prop.parameterList?.removeAll(Parameter.MEMBER)
+                                prop.parameterList?.removeAll(Parameter.PARTSTAT)
+                                prop.parameterList?.removeAll(Parameter.ROLE)
+                                prop.parameterList?.removeAll(Parameter.RSVP)
+                                prop.parameterList?.removeAll(Parameter.SENT_BY)
 
                                 // save unknown parameters in the other field
-                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameters)
+                                this.other = JtxContract.getJsonStringFromXParameters(prop.parameterList)
                             }
                         )
                     }
                     is net.fortuna.ical4j.model.property.Organizer -> {
                     iCalObject.organizer = Organizer().apply {
                         this.caladdress = prop.calAddress.toString()
-                        this.cn = prop.parameters?.getParameter<Cn>(Parameter.CN)?.value
-                        this.dir = prop.parameters?.getParameter<Dir>(Parameter.DIR)?.value
-                        this.language = prop.parameters?.getParameter<Language>(Parameter.LANGUAGE)?.value
-                        this.sentby = prop.parameters?.getParameter<SentBy>(Parameter.SENT_BY)?.value
+                        this.cn = prop.getParameter<Cn>(Parameter.CN)?.getOrNull()?.value
+                        this.dir = prop.getParameter<Dir>(Parameter.DIR)?.getOrNull()?.value
+                        this.language = prop.getParameter<Language>(Parameter.LANGUAGE)?.getOrNull()?.value
+                        this.sentby = prop.getParameter<SentBy>(Parameter.SENT_BY)?.getOrNull()?.value
 
                         // remove all known parameters so that only unknown parameters remain
-                        prop.parameters?.removeAll(Parameter.CN)
-                        prop.parameters?.removeAll(Parameter.DIR)
-                        prop.parameters?.removeAll(Parameter.LANGUAGE)
-                        prop.parameters?.removeAll(Parameter.SENT_BY)
+                        prop.parameterList?.removeAll(Parameter.CN)
+                        prop.parameterList?.removeAll(Parameter.DIR)
+                        prop.parameterList?.removeAll(Parameter.LANGUAGE)
+                        prop.parameterList?.removeAll(Parameter.SENT_BY)
 
                         // save unknown parameters in the other field
-                        this.other = JtxContract.getJsonStringFromXParameters(prop.parameters)
+                        this.other = JtxContract.getJsonStringFromXParameters(prop.parameterList)
                         }
                     }
 
@@ -553,7 +620,33 @@ open class JtxICalObject(
             if (iCalObject.duration != null && iCalObject.dtstart == null) {
                 logger.warning("Found DURATION without DTSTART; ignoring")
                 iCalObject.duration = null
-            }*/
+            }
+        }
+        private fun Temporal.toEpochMilli(): Long? = when (this) {
+            is ZonedDateTime -> this.toInstant().toEpochMilli() // Calculate from contained time zone
+            is Instant -> this.toEpochMilli() // Calculated from UTC time
+            is LocalDateTime -> this
+                .atZone(ZoneId.systemDefault()) // Use system default time zone to interpret as local time
+                .toInstant()
+                .toEpochMilli()
+            is LocalDate -> this
+                .atStartOfDay(ZoneOffset.UTC) // Use start of day for local date without time (ie. local all-day events)
+                .toInstant()
+                .toEpochMilli()
+            else -> {
+                logger.warning("Ignoring unsupported temporal type: ${this::class}")
+                null
+            }
+        }
+        private fun Temporal.getTimeZoneId(): String? = when (this) {
+            is ZonedDateTime -> this.zone.id // We got a timezone
+            is Instant -> ZoneOffset.UTC.id // Instant is a point on the UTC timeline
+            is LocalDateTime -> null // Timezone unknown => floating time
+            is LocalDate -> TZ_ALLDAY // Without time, it is considered all-day
+            else -> {
+                logger.warning("Ignoring unsupported temporal type: ${this::class}")
+                null
+            }
         }
     }
 
@@ -566,27 +659,26 @@ open class JtxICalObject(
      */
     fun getICalendarFormat(prodId: ProdId): Calendar? {
         val ical = Calendar()
-        TODO("ical4j 4.x")
-        /*ical.properties += Version.VERSION_2_0
-        ical.properties += prodId.withUserAgents(listOf(TaskProvider.ProviderName.JtxBoard.packageName))
+        ical += ImmutableVersion.VERSION_2_0
+        ical += prodId.withUserAgents(listOf(TaskProvider.ProviderName.JtxBoard.packageName))
 
         val calComponent = when (component) {
             JtxContract.JtxICalObject.Component.VTODO.name -> VToDo(true /* generates DTSTAMP */)
             JtxContract.JtxICalObject.Component.VJOURNAL.name -> VJournal(true /* generates DTSTAMP */)
             else -> return null
         }
-        ical.components += calComponent
-        addProperties(calComponent.properties)
+        ical += calComponent
+        addProperties(calComponent.propertyList)
 
         alarms.forEach { alarm ->
 
             val vAlarm = VAlarm()
-            vAlarm.properties.apply {
+            vAlarm.propertyList.apply {
                 alarm.action?.let {
                     when (it) {
-                        JtxContract.JtxAlarm.AlarmAction.DISPLAY.name -> add(Action.DISPLAY)
-                        JtxContract.JtxAlarm.AlarmAction.AUDIO.name -> add(Action.AUDIO)
-                        JtxContract.JtxAlarm.AlarmAction.EMAIL.name -> add(Action.EMAIL)
+                        JtxContract.JtxAlarm.AlarmAction.DISPLAY.name -> add(ImmutableAction.DISPLAY)
+                        JtxContract.JtxAlarm.AlarmAction.AUDIO.name -> add(ImmutableAction.AUDIO)
+                        JtxContract.JtxAlarm.AlarmAction.EMAIL.name -> add(ImmutableAction.EMAIL)
                         else -> return@let
                     }
                 }
@@ -599,9 +691,9 @@ open class JtxICalObject(
                             // Add the RELATED parameter if present
                             alarm.triggerRelativeTo?.let {
                                 if(it == JtxContract.JtxAlarm.AlarmRelativeTo.START.name)
-                                    this.parameters.add(Related.START)
+                                    this.parameterList.add(Related.START)
                                 if(it == JtxContract.JtxAlarm.AlarmRelativeTo.END.name)
-                                    this.parameters.add(Related.END)
+                                    this.parameterList.add(Related.END)
                             }
                         } catch (e: DateTimeParseException) {
                             logger.log(Level.WARNING, "Could not parse Trigger duration as Duration.", e)
@@ -612,18 +704,11 @@ open class JtxICalObject(
                     add(Trigger().apply {
                         try {
                             when {
-                                alarm.triggerTimezone == TimeZone.getTimeZone("UTC").id -> this.dateTime = DateTime(alarm.triggerTime!!).apply {
-                                    this.isUtc = true
-                                }
-                                alarm.triggerTimezone.isNullOrEmpty() -> this.dateTime = DateTime(alarm.triggerTime!!).apply {
-                                    this.isUtc = true
-                                }
+                                alarm.triggerTimezone == ZoneOffset.UTC.id ||
+                                alarm.triggerTimezone.isNullOrEmpty() ->
+                                    this.date = Instant.ofEpochMilli(alarm.triggerTime!!)
                                 else -> {
-                                    val timezone = TimeZoneRegistryFactory.getInstance().createRegistry()
-                                        .getTimeZone(alarm.triggerTimezone)
-                                    this.dateTime = DateTime(alarm.triggerTime!!).apply{
-                                        this.timeZone = timezone
-                                    }
+                                    this.date = ZonedDateTime.ofInstant(Instant.ofEpochMilli(alarm.triggerTime!!), ZoneId.of(alarm.triggerTimezone)).toInstant()
                                 }
                             }
                         } catch (e: ParseException) {
@@ -642,10 +727,10 @@ open class JtxICalObject(
                 }) }
                 alarm.description?.let { add(Description(it)) }
                 alarm.attach?.let { add(Attach().apply { value = it }) }
-                alarm.other?.let { addAll(JtxContract.getXPropertyListFromJson(it)) }
+                alarm.other?.let { addAll(JtxContract.getXPropertyListFromJson(it).all) }
 
             }
-            calComponent.components.add(vAlarm)
+            calComponent.componentList.add(vAlarm)
         }
 
 
@@ -655,11 +740,11 @@ open class JtxICalObject(
                 JtxContract.JtxICalObject.Component.VJOURNAL.name -> VJournal(true /* generates DTSTAMP */)
                 else -> return null
             }
-            ical.components += recurCalComponent
-            recurInstance.addProperties(recurCalComponent.properties)
+            ical += recurCalComponent
+            recurInstance.addProperties(recurCalComponent.propertyList)
         }
 
-        ICalendar.softValidate(ical)*/
+        ICalendar.softValidate(ical)
         return ical
     }
 
@@ -678,16 +763,11 @@ open class JtxICalObject(
      * @param [props] The PropertyList where the properties should be added
      */
     private fun addProperties(props: PropertyList) {
-        TODO("ical4j 4.x")
-        /*uid.let { props += Uid(it) }
+        uid.let { props += Uid(it) }
         sequence.let { props += Sequence(it.toInt()) }
 
-        created.let { props += Created(DateTime(it).apply {
-            this.isUtc = true
-        }) }
-        lastModified.let { props += LastModified(DateTime(it).apply {
-            this.isUtc = true
-        }) }
+        created.let { props += Created(Instant.ofEpochMilli(it)) }
+        lastModified.let { props += LastModified(Instant.ofEpochMilli(it))}
 
         summary.let { props += Summary(it) }
         description?.let { props += Description(it) }
@@ -695,7 +775,7 @@ open class JtxICalObject(
         location?.let { location ->
             val loc = Location(location)
             locationAltrep?.let { locationAltrep ->
-                loc.parameters.add(AltRep(locationAltrep))
+                loc.parameterList.add(AltRep(locationAltrep))
             }
             props += loc
         }
@@ -725,7 +805,7 @@ open class JtxICalObject(
         categories.forEach {
             categoryTextList.add(it.text)
         }
-        if (!categoryTextList.isEmpty)
+        if (!categoryTextList.texts.isEmpty())
             props += Categories(categoryTextList)
 
 
@@ -733,18 +813,18 @@ open class JtxICalObject(
         resources.forEach {
             resourceTextList.add(it.text)
         }
-        if (!resourceTextList.isEmpty)
-            props += Resources(resourceTextList)
+        if (!resourceTextList.texts.isEmpty())
+            props += Resources(resourceTextList.texts.toList())
 
 
         comments.forEach { comment ->
-            val c = Comment(comment.text).apply {
-                comment.altrep?.let { this.parameters.add(AltRep(it)) }
-                comment.language?.let { this.parameters.add(Language(it)) }
+            val c = net.fortuna.ical4j.model.property.Comment(comment.text).apply {
+                comment.altrep?.let { this.parameterList.add(AltRep(it)) }
+                comment.language?.let { this.parameterList.add(Language(it)) }
                 comment.other?.let {
                     val xparams = JtxContract.getXParametersFromJson(it)
                     xparams.forEach { xparam ->
-                        this.parameters.add(xparam)
+                        this.parameterList.add(xparam)
                     }
                 }
             }
@@ -757,49 +837,49 @@ open class JtxICalObject(
                 this.calAddress = URI(attendee.caladdress)
 
                 attendee.cn?.let {
-                    this.parameters.add(Cn(it))
+                    this.parameterList.add(Cn(it))
                 }
                 attendee.cutype?.let {
                     when {
-                        it.equals(CuType.INDIVIDUAL.value, ignoreCase = true) -> this.parameters.add(CuType.INDIVIDUAL)
-                        it.equals(CuType.GROUP.value, ignoreCase = true) -> this.parameters.add(CuType.GROUP)
-                        it.equals(CuType.ROOM.value, ignoreCase = true) -> this.parameters.add(CuType.ROOM)
-                        it.equals(CuType.RESOURCE.value, ignoreCase = true) -> this.parameters.add(CuType.RESOURCE)
-                        it.equals(CuType.UNKNOWN.value, ignoreCase = true) -> this.parameters.add(CuType.UNKNOWN)
-                        else -> this.parameters.add(CuType.UNKNOWN)
+                        it.equals(CuType.INDIVIDUAL.value, ignoreCase = true) -> this.parameterList.add(CuType.INDIVIDUAL)
+                        it.equals(CuType.GROUP.value, ignoreCase = true) -> this.parameterList.add(CuType.GROUP)
+                        it.equals(CuType.ROOM.value, ignoreCase = true) -> this.parameterList.add(CuType.ROOM)
+                        it.equals(CuType.RESOURCE.value, ignoreCase = true) -> this.parameterList.add(CuType.RESOURCE)
+                        it.equals(CuType.UNKNOWN.value, ignoreCase = true) -> this.parameterList.add(CuType.UNKNOWN)
+                        else -> this.parameterList.add(CuType.UNKNOWN)
                     }
                 }
                 attendee.delegatedfrom?.let {
-                    this.parameters.add(DelegatedFrom(it))
+                    this.parameterList.add(DelegatedFrom(it))
                 }
                 attendee.delegatedto?.let {
-                    this.parameters.add(DelegatedTo(it))
+                    this.parameterList.add(DelegatedTo(it))
                 }
                 attendee.dir?.let {
-                    this.parameters.add(Dir(it))
+                    this.parameterList.add(Dir(it))
                 }
                 attendee.language?.let {
-                    this.parameters.add(Language(it))
+                    this.parameterList.add(Language(it))
                 }
                 attendee.member?.let {
-                    this.parameters.add(Member(it))
+                    this.parameterList.add(Member(it))
                 }
                 attendee.partstat?.let {
-                    this.parameters.add(PartStat(it))
+                    this.parameterList.add(PartStat(it))
                 }
                 attendee.role?.let {
-                    this.parameters.add(Role(it))
+                    this.parameterList.add(Role(it))
                 }
                 attendee.rsvp?.let {
-                    this.parameters.add(Rsvp(it))
+                    this.parameterList.add(Rsvp(it))
                 }
                 attendee.sentby?.let {
-                    this.parameters.add(SentBy(it))
+                    this.parameterList.add(SentBy(it))
                 }
                 attendee.other?.let {
                     val params = JtxContract.getXParametersFromJson(it)
                     params.forEach { xparam ->
-                        this.parameters.add(xparam)
+                        this.parameterList.add(xparam)
                     }
                 }
             }
@@ -812,21 +892,21 @@ open class JtxICalObject(
                     this.calAddress = URI(organizer.caladdress)
 
                 organizer.cn?.let {
-                    this.parameters.add(Cn(it))
+                    this.parameterList.add(Cn(it))
                 }
                 organizer.dir?.let {
-                    this.parameters.add(Dir(it))
+                    this.parameterList.add(Dir(it))
                 }
                 organizer.language?.let {
-                    this.parameters.add(Language(it))
+                    this.parameterList.add(Language(it))
                 }
                 organizer.sentby?.let {
-                    this.parameters.add(SentBy(it))
+                    this.parameterList.add(SentBy(it))
                 }
                 organizer.other?.let {
                     val params = JtxContract.getXParametersFromJson(it)
                     params.forEach { xparam ->
-                        this.parameters.add(xparam)
+                        this.parameterList.add(xparam)
                     }
                 }
             }
@@ -840,12 +920,12 @@ open class JtxICalObject(
 
                     val attachmentUri = ContentUris.withAppendedId(JtxContract.JtxAttachment.CONTENT_URI.asSyncAdapter(collection.account), attachment.attachmentId)
                     val attachmentFile = collection.client.openFile(attachmentUri, "r")
-                    val attachmentBytes = ParcelFileDescriptor.AutoCloseInputStream(attachmentFile).readBytes()
+                    val attachmentBytes = ByteBuffer.wrap(ParcelFileDescriptor.AutoCloseInputStream(attachmentFile).readBytes())
                     val att = Attach(attachmentBytes).apply {
-                        attachment.fmttype?.let { this.parameters.add(FmtType(it)) }
+                        attachment.fmttype?.let { this.parameterList.add(FmtType(it)) }
                         attachment.filename?.let {
-                            this.parameters.add(XParameter(X_PARAM_ATTACH_LABEL, it))
-                            this.parameters.add(XParameter(X_PARAM_FILENAME, it))
+                            this.parameterList.add(XParameter(X_PARAM_ATTACH_LABEL, it))
+                            this.parameterList.add(XParameter(X_PARAM_FILENAME, it))
                         }
                     }
                     props += att
@@ -853,10 +933,10 @@ open class JtxICalObject(
                 } else {
                     attachment.uri?.let { uri ->
                         val att = Attach(URI(uri)).apply {
-                            attachment.fmttype?.let { this.parameters.add(FmtType(it)) }
+                            attachment.fmttype?.let { this.parameterList.add(FmtType(it)) }
                             attachment.filename?.let {
-                                this.parameters.add(XParameter(X_PARAM_ATTACH_LABEL, it))
-                                this.parameters.add(XParameter(X_PARAM_FILENAME, it))
+                                this.parameterList.add(XParameter(X_PARAM_ATTACH_LABEL, it))
+                                this.parameterList.add(XParameter(X_PARAM_FILENAME, it))
                             }
                         }
                         props += att
@@ -887,78 +967,60 @@ open class JtxICalObject(
                 }
             val parameterList = ParameterList()
             parameterList.add(param)
-            props += RelatedTo(parameterList, it.text)
+            props += net.fortuna.ical4j.model.property.RelatedTo(parameterList, it.text)
         }
 
         dtstart?.let {
-            when {
-                dtstartTimezone == TZ_ALLDAY -> props += DtStart(Date(it))
-                dtstartTimezone == TimeZone.getTimeZone("UTC").id -> props += DtStart(DateTime(it).apply {
-                    this.isUtc = true
-                })
-                dtstartTimezone.isNullOrEmpty() -> props += DtStart(DateTime(it).apply {
-                    this.isUtc = false
-                })
-                else -> {
-                    val timezone = TimeZoneRegistryFactory.getInstance().createRegistry()
-                        .getTimeZone(dtstartTimezone)
-                    val withTimezone = DtStart(DateTime(it))
-                    withTimezone.timeZone = timezone
-                    props += withTimezone
-                }
+            props += if (dtstartTimezone == TZ_ALLDAY || // allday uses UTC
+                dtstartTimezone.isNullOrEmpty() || // floating time -> use UTC to calculate instant
+                dtstartTimezone == ZoneOffset.UTC.id // UTC -> TZID=UTC
+            ) {
+                DtStart(Instant.ofEpochMilli(it))
+            } else {
+                DtStart(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.of(dtstartTimezone)))
             }
         }
 
         rrule?.let { rrule ->
-            props += RRule(rrule)
+            props += RRule<Temporal>(rrule)
         }
         recurid?.let { recurid ->
-            props += when {
-                recuridTimezone == TZ_ALLDAY -> RecurrenceId(Date(recurid))
-                recuridTimezone == TimeZone.getTimeZone("UTC").id -> RecurrenceId(DateTime(recurid).apply { this.isUtc = true })
-                recuridTimezone.isNullOrEmpty() -> RecurrenceId(DateTime(recurid).apply { this.isUtc = false })
-                else -> RecurrenceId(DateTime(recurid, TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone(recuridTimezone)))
-            }
+            props += if (recuridTimezone == TZ_ALLDAY || recuridTimezone.isNullOrEmpty())
+                RecurrenceId<Temporal>(recurid)
+            else
+                RecurrenceId<Temporal>(ParameterList(listOf(TzId(recuridTimezone))), recurid)
         }
 
         rdate?.let { rdateString ->
 
             when {
                 dtstartTimezone == TZ_ALLDAY -> {
-                    val dateListDate = DateList(Value.DATE)
+                    val localDates = DateList<LocalDate>()
                     JtxContract.getLongListFromString(rdateString).forEach {
-                        dateListDate.add(Date(it))
+                        localDates.add(LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
                     }
-                    props += RDate(dateListDate)
-
+                    props += RDate(localDates)
                 }
-                dtstartTimezone == TimeZone.getTimeZone("UTC").id -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
+                dtstartTimezone == ZoneOffset.UTC.id -> {
+                    val zonedDateTimes = DateList<ZonedDateTime>()
                     JtxContract.getLongListFromString(rdateString).forEach {
-                        dateListDateTime.add(DateTime(it).apply {
-                            this.isUtc = true
-                        })
+                        zonedDateTimes.add(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
                     }
-                    props += RDate(dateListDateTime)
+                    props += RDate(zonedDateTimes)
                 }
                 dtstartTimezone.isNullOrEmpty() -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
+                    val localDateTimes = DateList<LocalDateTime>()
                     JtxContract.getLongListFromString(rdateString).forEach {
-                        dateListDateTime.add(DateTime(it).apply {
-                            this.isUtc = false
-                        })
+                        localDateTimes.add(LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
                     }
-                    props += RDate(dateListDateTime)
+                    props += RDate(localDateTimes)
                 }
                 else -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
-                    val timezone = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone(dtstartTimezone)
+                    val zonedDateTimes = DateList<ZonedDateTime>()
                     JtxContract.getLongListFromString(rdateString).forEach {
-                        val withTimezone = DateTime(it)
-                        withTimezone.timeZone = timezone
-                        dateListDateTime.add(DateTime(withTimezone))
+                        zonedDateTimes.add(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.of(dtstartTimezone)))
                     }
-                    props += RDate(dateListDateTime)
+                    props += RDate(zonedDateTimes)
                 }
             }
         }
@@ -967,40 +1029,32 @@ open class JtxICalObject(
 
             when {
                 dtstartTimezone == TZ_ALLDAY -> {
-                    val dateListDate = DateList(Value.DATE)
+                    val localDates = DateList<LocalDate>()
                     JtxContract.getLongListFromString(exdateString).forEach {
-                        dateListDate.add(Date(it))
+                        localDates.add(LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
                     }
-                    props += ExDate(dateListDate)
-
+                    props += ExDate(localDates)
                 }
-                dtstartTimezone == TimeZone.getTimeZone("UTC").id -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
+                dtstartTimezone == ZoneOffset.UTC.id -> {
+                    val zonedDateTimes = DateList<ZonedDateTime>()
                     JtxContract.getLongListFromString(exdateString).forEach {
-                        dateListDateTime.add(DateTime(it).apply {
-                            this.isUtc = true
-                        })
+                        zonedDateTimes.add(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
                     }
-                    props += ExDate(dateListDateTime)
+                    props += ExDate(zonedDateTimes)
                 }
                 dtstartTimezone.isNullOrEmpty() -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
+                    val localDateTimes = DateList<LocalDateTime>()
                     JtxContract.getLongListFromString(exdateString).forEach {
-                        dateListDateTime.add(DateTime(it).apply {
-                            this.isUtc = false
-                        })
+                        localDateTimes.add(LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
                     }
-                    props += ExDate(dateListDateTime)
+                    props += ExDate(localDateTimes)
                 }
                 else -> {
-                    val dateListDateTime = DateList(Value.DATE_TIME)
-                    val timezone = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone(dtstartTimezone)
+                    val zonedDateTimes = DateList<ZonedDateTime>()
                     JtxContract.getLongListFromString(exdateString).forEach {
-                        val withTimezone = DateTime(it)
-                        withTimezone.timeZone = timezone
-                        dateListDateTime.add(DateTime(withTimezone))
+                        zonedDateTimes.add(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.of(dtstartTimezone)))
                     }
-                    props += ExDate(dateListDateTime)
+                    props += ExDate(zonedDateTimes)
                 }
             }
         }
@@ -1021,10 +1075,10 @@ duration?.let(props::add)
 
         if(component == JtxContract.JtxICalObject.Component.VTODO.name) {
             completed?.let {
-                //Completed is defines as always DateTime! And is always UTC! But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
-                props += Completed(DateTime(it))
+                // Completed is UNIX timestamp (milliseconds). But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
+                props += Completed(Instant.ofEpochMilli(it))
 
-                // only take completedTimezone if there was the completed time set
+                // only take completedTimezone if completed time is set
                 completedTimezone?.let { complTZ ->
                     props += XProperty(X_PROP_COMPLETEDTIMEZONE, complTZ)
                 }
@@ -1035,34 +1089,26 @@ duration?.let(props::add)
             }
 
 
-            if (priority != null && priority != Priority.UNDEFINED.level)
+            if (priority != null && priority != ImmutablePriority.UNDEFINED.level)
                 priority?.let {
                     props += Priority(it)
                 }
             else {
-                props += Priority(Priority.UNDEFINED.level)
+                props += Priority(ImmutablePriority.UNDEFINED.level)
             }
 
             due?.let {
-                when {
-                    dueTimezone == TZ_ALLDAY -> props += Due(Date(it))
-                    dueTimezone == TimeZone.getTimeZone("UTC").id -> props += Due(DateTime(it).apply {
-                    this.isUtc = true
-                    })
-                    dueTimezone.isNullOrEmpty() -> props += Due(DateTime(it).apply {
-                        this.isUtc = false
-                    })
-                    else -> {
-                        val timezone = TimeZoneRegistryFactory.getInstance().createRegistry()
-                            .getTimeZone(dueTimezone)
-                        val withTimezone = Due(DateTime(it))
-                        withTimezone.timeZone = timezone
-                        props += withTimezone
-                    }
+                props += when {
+                    dueTimezone == TZ_ALLDAY -> Due(LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
+                    dueTimezone == ZoneOffset.UTC.id -> Due(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC))
+                    dueTimezone.isNullOrEmpty() -> Due(LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
+                    else -> Due(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.of(dueTimezone)))
                 }
             }
         }
+        }
 
+        /*
     // determine earliest referenced date
     val earliest = arrayOf(
         dtStart?.date,
@@ -1072,9 +1118,7 @@ duration?.let(props::add)
     // add VTIMEZONE components
     for (tz in usedTimeZones)
         ical.components += ICalendar.minifyVTimeZone(tz.vTimeZone, earliest)
-
-        TODO */
-    }
+    } */
 
 
     fun prepareForUpload(): String {
@@ -1117,8 +1161,7 @@ duration?.let(props::add)
      * @return the Content [Uri] of the inserted object
      */
     fun add(): Uri {
-        TODO("ical4j 4.x")
-        /*val values = this.toContentValues()
+        val values = this.toContentValues()
 
         val newUri = collection.client.insert(
             JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account),
@@ -1128,7 +1171,7 @@ duration?.let(props::add)
 
         insertOrUpdateListProperties(false)
 
-        return newUri*/
+        return newUri
     }
 
     /**
@@ -1137,8 +1180,7 @@ duration?.let(props::add)
      * @return [Uri] of the updated entry
      */
     fun update(data: JtxICalObject): Uri {
-        TODO("ical4j 4.x")
-        /*this.applyNewData(data)
+        this.applyNewData(data)
         val values = this.toContentValues()
 
         var updateUri = JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account)
@@ -1152,7 +1194,7 @@ duration?.let(props::add)
 
         insertOrUpdateListProperties(true)
 
-        return updateUri*/
+        return updateUri
     }
 
 
