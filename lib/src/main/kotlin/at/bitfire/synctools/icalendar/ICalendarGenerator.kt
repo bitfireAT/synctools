@@ -7,6 +7,7 @@
 package at.bitfire.synctools.icalendar
 
 import androidx.annotation.VisibleForTesting
+import at.bitfire.vcard4android.Utils.trimToNull
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
@@ -73,14 +74,14 @@ class ICalendarGenerator {
             usedTimezoneIds += timeZonesOf(exception)
         }
 
-        /* Add VTIMEZONE components. Unfortunately can't generate VTIMEZONEs from the actual ZoneIds,
-        so we have to include the VTIMEZONEs shipped with ical4j, even if those are not the same
+        /* Add VTIMEZONE components. Unfortunately we can't generate VTIMEZONEs from the actual ZoneIds,
+        so we have to include the VTIMEZONEs shipped with ical4j – even if those are not the same
         as the system time zones. This is a known problem, but there's currently no known solution.
         Most clients ignore the VTIMEZONE anyway if they know the TZID [RFC 7809 3.1.3 "Observation
         and experiments"], and Android/Java/IANA timezones are usually known to all clients. */
         val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
         for (tzId in usedTimezoneIds) {
-            var vTimeZone = tzReg.getTimeZone(tzId).vTimeZone
+            var vTimeZone = tzReg.getTimeZone(tzId)?.vTimeZone ?: continue
 
             /* Special case: sometimes, the timezone may have been loaded by an alias.
             For instance, old Androids may use the "Europe/Kiev" timezone (which is then in tzId),
@@ -98,6 +99,7 @@ class ICalendarGenerator {
                 vTimeZone.replace<PropertyContainer>(net.fortuna.ical4j.model.property.TzId(tzId))
             }
 
+            // Minify VTIMEZONE and attach to iCalendar
             val minifiedVTimeZone = VTimeZoneMinifier().minify(vTimeZone, earliestStart)
             ical += minifiedVTimeZone
         }
@@ -144,7 +146,7 @@ class ICalendarGenerator {
                 /* Note: When a property like DTSTART is created like DtStart(ZonedDateTime()),
                 the setDate() calls refreshParameters.refreshParameters() and that one sets the TZID
                 from the actual timezone ID. */
-                it.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
+                it.getParameter<TzId>(Parameter.TZID).getOrNull()?.value?.trimToNull()
             }
             .toSet()
 

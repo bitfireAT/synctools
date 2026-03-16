@@ -6,15 +6,9 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.synctools.icalendar.VTimeZoneMinifier
-import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Property.TRIGGER
-import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
-import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.DtEnd
@@ -22,13 +16,11 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.Duration
 import net.fortuna.ical4j.model.property.Trigger
-import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.StringReader
-import java.time.LocalDateTime
 import java.time.Period
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal

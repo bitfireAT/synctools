@@ -174,7 +174,7 @@ class ICalendarGeneratorTest {
 
 
     @Test
-    fun `copyVTimeZone result properties can be added without modifying original'`() {
+    fun `copyVTimeZone result properties can be added without modifying original`() {
         // Get a timezone from the registry
         val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
         val originalVTimeZone = tzReg.getTimeZone("Europe/Berlin").vTimeZone

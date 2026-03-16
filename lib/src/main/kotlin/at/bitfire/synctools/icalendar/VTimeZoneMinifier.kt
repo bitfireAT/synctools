@@ -34,9 +34,9 @@ class VTimeZoneMinifier {
     /**
      * Minifies a VTIMEZONE so that only these observances are kept:
      *
-     *   - the last STANDARD observance matching [start], and
-     *   - the last DAYLIGHT observance matching [start], and
-     *   - observances beginning after [start]
+     *   - the last STANDARD observance matching [startTemporal], and
+     *   - the last DAYLIGHT observance matching [startTemporal], and
+     *   - observances beginning after [startTemporal]
      *
      * Additionally, all properties other than observances and TZID are dropped.
      *
@@ -45,13 +45,20 @@ class VTimeZoneMinifier {
      * @return              minified time zone definition
      */
     fun minify(originalTz: VTimeZone, startTemporal: Temporal?): VTimeZone {
-        if (startTemporal == null) return originalTz
-        val start: ZonedDateTime? = asZonedDateTime(startTemporal)
+        // Make sure we have the earliest date available as ZonedDateTime.
+        if (startTemporal == null)
+            return originalTz
+        val start = asZonedDateTime(
+            startTemporal,
+            zoneId = try {
+                ZoneId.of(originalTz.timeZoneId.value)
+            } catch (_: Exception) {
+                ZoneId.systemDefault()
+            }
+        ) ?: return originalTz
 
-        var newTz: VTimeZone? = null
+        // list of observances that we want to keep (those at/after start)
         val keep = mutableSetOf<Observance>()
-
-        // Note: big method – maybe split?
 
         // find latest matching STANDARD/DAYLIGHT observances
         var latestDaylight: Pair<Temporal, Observance>? = null
@@ -90,7 +97,7 @@ class VTimeZoneMinifier {
             }
 
             // Observance data is using LocalDateTime. Drop time zone information for comparisons.
-            val startLocal = start?.toLocalDateTime()
+            val startLocal = start.toLocalDateTime()
 
             // check RRULEs
             for (rRule in daylight.getProperties<RRule<Temporal>>(Property.RRULE)) {
@@ -114,7 +121,7 @@ class VTimeZoneMinifier {
         // construct minified time zone that only contains the ID and relevant observances
         val relevantProperties = propertyListOf(originalTz.timeZoneId)
         val relevantObservances = ComponentList(keep.toList())
-        newTz = VTimeZone(relevantProperties, relevantObservances)
+        val newTz = VTimeZone(relevantProperties, relevantObservances)
 
         // validate minified timezone
         try {
@@ -122,11 +129,10 @@ class VTimeZoneMinifier {
         } catch (e: ValidationException) {
             // This should never happen!
             logger.log(Level.WARNING, "Minified timezone is invalid, using original one", e)
-            newTz = null
         }
 
         // use original time zone if we couldn't calculate a minified one
-        return newTz ?: originalTz
+        return newTz
     }
 
     private fun asZonedDateTime(temporal: Temporal, zoneId: ZoneId = ZoneId.systemDefault()): ZonedDateTime? =

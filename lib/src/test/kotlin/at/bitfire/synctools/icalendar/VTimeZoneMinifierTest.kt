@@ -27,7 +27,7 @@ class VTimeZoneMinifierTest {
     // Austria (Europa/Vienna) uses DST regularly
     private val vtzVienna = readTimeZone("Vienna.ics")
 
-    // Pakistan (Asia/Karachi) used DST only in 2002, 2008 and 2009; no knkown future occurrences
+    // Pakistan (Asia/Karachi) used DST only in 2002, 2008 and 2009; no known future occurrences
     private val vtzKarachi = readTimeZone("Karachi.ics")
 
     // Somalia (Africa/Mogadishu) has never used DST
@@ -66,7 +66,7 @@ class VTimeZoneMinifierTest {
     @Test
     fun testMinifyTimezone_removeObsoleteObservances() {
         // Remove obsolete observances when DST is not used. Mogadishu had several time zone changes,
-        // but now there is a simple offest without DST.
+        // but now there is a simple offset without DST.
         assertEquals(4, vtzMogadishu.observances.size)
 
         val minified = minifier.minify(vtzMogadishu, vtzMogadishu.zonedDateTime("1961-10-01"))
