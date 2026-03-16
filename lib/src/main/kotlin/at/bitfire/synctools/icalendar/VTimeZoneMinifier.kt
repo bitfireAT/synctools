@@ -16,6 +16,11 @@ import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.validate.ValidationException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 import java.util.logging.Level
@@ -36,11 +41,12 @@ class VTimeZoneMinifier {
      * Additionally, all properties other than observances and TZID are dropped.
      *
      * @param originalTz    time zone definition to minify
-     * @param start         start date for components (usually DTSTART); *null* if unknown
+     * @param startTemporal start date for components (usually DTSTART); *null* if unknown
      * @return              minified time zone definition
      */
-    fun minifyVTimeZone(originalTz: VTimeZone, start: ZonedDateTime?): VTimeZone {
-        if (start == null) return originalTz
+    fun minify(originalTz: VTimeZone, startTemporal: Temporal?): VTimeZone {
+        if (startTemporal == null) return originalTz
+        val start: ZonedDateTime? = asZonedDateTime(startTemporal)
 
         var newTz: VTimeZone? = null
         val keep = mutableSetOf<Observance>()
@@ -84,7 +90,7 @@ class VTimeZoneMinifier {
             }
 
             // Observance data is using LocalDateTime. Drop time zone information for comparisons.
-            val startLocal = start.toLocalDateTime()
+            val startLocal = start?.toLocalDateTime()
 
             // check RRULEs
             for (rRule in daylight.getProperties<RRule<Temporal>>(Property.RRULE)) {
@@ -122,5 +128,15 @@ class VTimeZoneMinifier {
         // use original time zone if we couldn't calculate a minified one
         return newTz ?: originalTz
     }
+
+    private fun asZonedDateTime(temporal: Temporal, zoneId: ZoneId = ZoneId.systemDefault()): ZonedDateTime? =
+        when (temporal) {
+            is LocalDate -> temporal.atStartOfDay().atZone(zoneId)
+            is LocalDateTime -> temporal.atZone(zoneId)
+            is OffsetDateTime -> temporal.atZoneSameInstant(zoneId)
+            is Instant -> temporal.atZone(zoneId)
+            is ZonedDateTime -> temporal
+            else -> null
+        }
 
 }

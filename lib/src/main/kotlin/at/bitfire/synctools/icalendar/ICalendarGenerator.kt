@@ -98,10 +98,8 @@ class ICalendarGenerator {
                 vTimeZone.replace<PropertyContainer>(net.fortuna.ical4j.model.property.TzId(tzId))
             }
 
-            // TODO: extract minifyVTimeZone to class
-            /*val minifiedVTimeZone = ICalendar.minifyVTimeZone(vTimeZone, earliestStart)
-            ical += minifiedVTimeZone*/
-            ical += vTimeZone
+            val minifiedVTimeZone = VTimeZoneMinifier().minify(vTimeZone, earliestStart)
+            ical += minifiedVTimeZone
         }
 
         CalendarOutputter(false).output(ical, to)
