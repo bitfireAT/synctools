@@ -6,24 +6,21 @@
 
 package at.bitfire.synctools.icalendar
 
-import at.bitfire.ical4android.ICalendar
+import androidx.annotation.VisibleForTesting
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
 import java.io.Writer
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 import javax.annotation.WillNotClose
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Writes an ical4j [net.fortuna.ical4j.model.Calendar] to a stream that contains an iCalendar
@@ -45,16 +42,16 @@ class ICalendarGenerator {
         if (event.prodId != null)
             ical += event.prodId
 
-        // keep record of used timezones and earliest DTSTART to generate minified VTIMEZONEs
+        // keep record of used timezone IDs and earliest DTSTART in order to be able to add VTIMEZONEs
         var earliestStart: Temporal? = null
-        val usedTimeZones = mutableSetOf<ZoneId>()
+        val usedTimezoneIds = mutableSetOf<String>()
 
         // add main event
         if (event.main != null) {
             ical += event.main
 
             earliestStart = event.main.dtStart<Temporal>()?.date
-            usedTimeZones += timeZonesOf(event.main)
+            usedTimezoneIds += timeZonesOf(event.main)
         }
 
         // recurrence exceptions
@@ -65,39 +62,63 @@ class ICalendarGenerator {
                 if (earliestStart == null || TemporalAdapter.isBefore(start, earliestStart))
                     earliestStart = start
             }
-            usedTimeZones += timeZonesOf(exception)
+            usedTimezoneIds += timeZonesOf(exception)
         }
 
-        // add VTIMEZONE components
+        /* Add VTIMEZONE components. Unfortunately can't generate VTIMEZONEs from the actual ZoneIds,
+        so we have to include the VTIMEZONEs shipped with ical4j, even if those are not the same
+        as the system time zones. This is a known problem, but there's currently no known solution.
+        Most clients ignore the VTIMEZONE anyway if they know the TZID [RFC 7809 3.1.3 "Observation
+        and experiments"], and Android/Java/IANA timezones are usually known to all clients. */
         val tzReg = TimeZoneRegistryFactory.getInstance().createRegistry()
-        for (tz in usedTimeZones) {
-            val vTimeZone = tzReg.getTimeZone(tz.id).vTimeZone
-            val minifiedVTimeZone = ICalendar.minifyVTimeZone(vTimeZone, earliestStart.toZonedDateTime(tz))
-            ical += minifiedVTimeZone
+        for (tzId in usedTimezoneIds) {
+            val vTimeZone = tzReg.getTimeZone(tzId).vTimeZone
+
+            // TODO update vTimezone TZID if != tzId + example (Kiev)
+
+            // TODO: extract minifyVTimeZone to class
+            /*val minifiedVTimeZone = ICalendar.minifyVTimeZone(vTimeZone, earliestStart)
+            ical += minifiedVTimeZone*/
+            ical += vTimeZone
         }
 
         CalendarOutputter(false).output(ical, to)
     }
 
-    private fun timeZonesOf(component: CalendarComponent): Set<ZoneId> {
-        val timeZones = mutableSetOf<ZoneId>()
+    /**
+     * Extracts all unique time zone identifiers from the given component and its subcomponents.
+     *
+     * This method searches through all properties of the component, filtering for date properties
+     * that contain a TZID parameter. It also recursively processes subcomponents (such as alarms)
+     * if the component is a VEvent.
+     *
+     * @param component The component to extract time zone identifiers from.
+     * @return A set of unique time zone identifiers found in the component and its subcomponents.
+     */
+    @VisibleForTesting
+    internal fun timeZonesOf(component: Component): Set<String> {
+        val timeZones = mutableSetOf<String>()
 
-        // properties
+        // iterate through all properties
         timeZones += component.propertyList.all
             .filterIsInstance<DateProperty<*>>()
-            .mapNotNull { (it.date as? ZonedDateTime)?.zone }
+            .mapNotNull {
+                /* Note: When a property like DTSTART is created like DtStart(ZonedDateTime()),
+                the setDate() calls refreshParameters.refreshParameters() and that one sets the TZID
+                from the actual timezone ID. */
+                it.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
+            }
+            .toSet()
 
-        // properties of subcomponents (alarms)
+        // also iterate through subcomponents like alarms recursively
         if (component is VEvent)
             for (subcomponent in component.componentList.all)
-                timeZones += subcomponent.propertyList.all
-                    .filterIsInstance<DateProperty<*>>()
-                    .mapNotNull { (it.date as? ZonedDateTime)?.zone }
+                timeZones += timeZonesOf(subcomponent)
 
         return timeZones
     }
 
-    private fun Temporal?.toZonedDateTime(zoneId: ZoneId): ZonedDateTime? {
+    /*private fun Temporal?.toZonedDateTime(zoneId: ZoneId): ZonedDateTime? {
         return when (this) {
             is LocalDate -> this.atStartOfDay().atZone(zoneId)
             is LocalDateTime -> this.atZone(zoneId)
@@ -107,4 +128,6 @@ class ICalendarGenerator {
             else -> null
         }
     }
+    */
+
 }

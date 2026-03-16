@@ -122,4 +122,7 @@ class ICalendarGeneratorTest {
                 "END:VCALENDAR\r\n", iCal.toString())
     }
 
+
+    // TODO: tests for timeZonesOf
+
 }
