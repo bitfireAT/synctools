@@ -15,12 +15,11 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.jvm.optionals.getOrNull
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class ColorHandlerTest {
 
@@ -31,7 +30,7 @@ class ColorHandlerTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
-        assertNull(result.getProperty<Color>(Color.PROPERTY_NAME))
+        assertNull(result.getProperty<Color>(Color.PROPERTY_NAME).getOrNull())
     }
 
     @Test
@@ -41,8 +40,7 @@ class ColorHandlerTest {
             Events.EVENT_COLOR_KEY to Css3Color.silver.name
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
+        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME)?.getOrNull()?.value)
     }
 
     @Test
@@ -52,8 +50,7 @@ class ColorHandlerTest {
             Events.EVENT_COLOR to Css3Color.silver.argb
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME).value)
+        assertEquals("silver", result.getProperty<Color>(Color.PROPERTY_NAME)?.getOrNull()?.value)
     }
 
 }
