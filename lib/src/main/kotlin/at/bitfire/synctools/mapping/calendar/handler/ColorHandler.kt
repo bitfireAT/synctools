@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Color
 import java.util.logging.Logger
@@ -34,9 +35,8 @@ class ColorHandler: AndroidEventFieldHandler {
                 Css3Color.entries.firstOrNull { it.argb == color }
             }
 
-        TODO("ical4j 4.x")
-        /*if (color != null)
-            to.properties += Color(null, color.name)*/
+        if (color != null)
+            to += Color(null, color.name)
     }
 
 }
