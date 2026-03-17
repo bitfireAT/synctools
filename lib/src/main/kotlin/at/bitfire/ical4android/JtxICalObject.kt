@@ -36,6 +36,7 @@ import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VJournal
+import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.parameter.AltRep
 import net.fortuna.ical4j.model.parameter.Cn
@@ -649,6 +650,9 @@ open class JtxICalObject(
         ical.components += calComponent
         addProperties(calComponent.properties)
 
+        for (vTimeZone in getVTimeZones(calComponent.properties))
+            ical.components += vTimeZone
+
         alarms.forEach { alarm ->
 
             val vAlarm = VAlarm()
@@ -825,7 +829,12 @@ open class JtxICalObject(
 
         attendees.forEach { attendee ->
             val attendeeProp = net.fortuna.ical4j.model.property.Attendee().apply {
-                this.calAddress = URI(attendee.caladdress)
+                this.calAddress = try {
+                    URI(attendee.caladdress)
+                } catch (_: Exception) {
+                    logger.warning("Ignoring invalid attendee URI: ${attendee.caladdress}")
+                    return@forEach
+                }
 
                 attendee.cn?.let {
                     this.parameters.add(Cn(it))
@@ -1082,17 +1091,9 @@ open class JtxICalObject(
             props += dur
         }
 
-
-        /*
-// remember used time zones
-val usedTimeZones = HashSet<TimeZone>()
-duration?.let(props::add)
-*/
-
-
         if(component == JtxContract.JtxICalObject.Component.VTODO.name) {
             completed?.let {
-                //Completed is defines as always DateTime! And is always UTC! But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
+                //Completed is defined as always DateTime! And is always UTC! But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
                 props += Completed(DateTime(it))
 
                 // only take completedTimezone if there was the completed time set
@@ -1130,19 +1131,24 @@ duration?.let(props::add)
                 }
             }
         }
+    }
 
-        /*
 
-    // determine earliest referenced date
-    val earliest = arrayOf(
-        dtStart?.date,
-        due?.date,
-        completedAt?.date
-    ).filterNotNull().min()
-    // add VTIMEZONE components
-    for (tz in usedTimeZones)
-        ical.components += ICalendar.minifyVTimeZone(tz.vTimeZone, earliest)
-*/
+    /**
+     * This function maps the date-time properties DtStart, Due and Completed to VTimeZone
+     */
+    private fun getVTimeZones(props: PropertyList<Property>): List<VTimeZone> {
+
+        val dates = arrayOf(
+            props.getProperty<DtStart>("DtStart").takeIf { it.timeZone != null },
+            props.getProperty<Due>("Due").takeIf { it.timeZone != null },
+            props.getProperty<Completed>("Completed").takeIf { it.timeZone != null },
+        )
+        val earliest = dates.mapNotNull { it?.date }.min()
+
+        return dates.mapNotNull { date ->
+            date?.timeZone?.vTimeZone?.let { ICalendar.minifyVTimeZone(it, earliest) }
+        }
     }
 
 
