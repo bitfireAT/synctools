@@ -11,6 +11,7 @@ import at.bitfire.synctools.exception.InvalidICalendarException
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.ComponentContainer
 import net.fortuna.ical4j.model.ComponentList
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.PropertyContainer
 import net.fortuna.ical4j.model.PropertyList
@@ -60,6 +61,10 @@ operator fun PropertyContainer.plusAssign(property: Property) {
 
 operator fun PropertyList.plusAssign(property: Property) {
     add(property)
+}
+
+operator fun Property.plusAssign(parameter: Parameter) {
+    add<Property>(parameter)
 }
 
 operator fun <T : Component> ComponentContainer<T>.plusAssign(component: T) {

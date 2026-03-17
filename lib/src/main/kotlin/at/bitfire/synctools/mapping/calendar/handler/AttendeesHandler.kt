@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Attendees
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.mapping.calendar.AttendeeMappings
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Cn
@@ -34,8 +35,7 @@ class AttendeesHandler: AndroidEventFieldHandler {
     private fun populateAttendee(row: ContentValues, to: VEvent) {
         logger.log(Level.FINE, "Read event attendee from calendar provider", row)
 
-        TODO("ical4j 4.x")
-        /*try {
+        try {
             val attendee: Attendee
             val email = row.getAsString(Attendees.ATTENDEE_EMAIL)
             val idNS = row.getAsString(Attendees.ATTENDEE_ID_NAMESPACE)
@@ -44,33 +44,32 @@ class AttendeesHandler: AndroidEventFieldHandler {
             if (idNS != null || id != null) {
                 // attendee identified by namespace and ID
                 attendee = Attendee(URI(idNS, id, null))
-                email?.let { attendee.parameters.add(Email(it)) }
+                email?.let { attendee.add<Attendee>(Email(it)) }
             } else
                 // attendee identified by email address
                 attendee = Attendee(URI("mailto", email, null))
-            val params = attendee.parameters
 
             // always add RSVP (offer attendees to accept/decline)
-            params.add(Rsvp.TRUE)
+            attendee += Rsvp.TRUE
 
-            row.getAsString(Attendees.ATTENDEE_NAME)?.let { cn -> params.add(Cn(cn)) }
+            row.getAsString(Attendees.ATTENDEE_NAME)?.let { cn -> attendee += Cn(cn) }
 
             // type/relation mapping is complex and thus outsourced to AttendeeMappings
             AttendeeMappings.androidToICalendar(row, attendee)
 
             // status
             when (row.getAsInteger(Attendees.ATTENDEE_STATUS)) {
-                Attendees.ATTENDEE_STATUS_INVITED -> params.add(PartStat.NEEDS_ACTION)
-                Attendees.ATTENDEE_STATUS_ACCEPTED -> params.add(PartStat.ACCEPTED)
-                Attendees.ATTENDEE_STATUS_DECLINED -> params.add(PartStat.DECLINED)
-                Attendees.ATTENDEE_STATUS_TENTATIVE -> params.add(PartStat.TENTATIVE)
+                Attendees.ATTENDEE_STATUS_INVITED -> attendee += PartStat.NEEDS_ACTION
+                Attendees.ATTENDEE_STATUS_ACCEPTED -> attendee += PartStat.ACCEPTED
+                Attendees.ATTENDEE_STATUS_DECLINED -> attendee += PartStat.DECLINED
+                Attendees.ATTENDEE_STATUS_TENTATIVE -> attendee += PartStat.TENTATIVE
                 Attendees.ATTENDEE_STATUS_NONE -> { /* no information, don't add PARTSTAT */ }
             }
 
-            to.properties += attendee
+            to += attendee
         } catch (e: URISyntaxException) {
             logger.log(Level.WARNING, "Couldn't parse attendee information, ignoring", e)
-        }*/
+        }
     }
 
 }
