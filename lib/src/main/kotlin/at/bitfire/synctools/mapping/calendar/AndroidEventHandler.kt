@@ -35,7 +35,6 @@ import at.bitfire.synctools.mapping.calendar.handler.UrlHandler
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ProdId
@@ -56,8 +55,6 @@ class AndroidEventHandler(
     private val prodIdGenerator: ProdIdGenerator
 ) {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-
     private val fieldHandlers: Array<AndroidEventFieldHandler> = arrayOf(
         // event row fields
         UidHandler(),
@@ -67,7 +64,7 @@ class AndroidEventHandler(
         StartTimeHandler(),
         EndTimeHandler(),
         DurationHandler(),
-        RecurrenceFieldsHandler(tzRegistry),
+        RecurrenceFieldsHandler(),
         DescriptionHandler(),
         ColorHandler(),
         AccessLevelHandler(),

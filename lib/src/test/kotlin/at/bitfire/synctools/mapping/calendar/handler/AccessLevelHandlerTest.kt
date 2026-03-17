@@ -14,14 +14,13 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.UnknownProperty
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class AccessLevelHandlerTest {
 
@@ -78,8 +77,7 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_PUBLIC
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals(Clazz.PUBLIC, result.classification)
+        assertEquals(ImmutableClazz.PUBLIC, result.classification)
     }
 
     @Test
@@ -89,8 +87,7 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_PRIVATE
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals(Clazz.PRIVATE, result.classification)
+        assertEquals(ImmutableClazz.PRIVATE, result.classification)
     }
 
     @Test
@@ -100,8 +97,7 @@ class AccessLevelHandlerTest {
             Events.ACCESS_LEVEL to Events.ACCESS_CONFIDENTIAL
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals(Clazz.CONFIDENTIAL, result.classification)
+        assertEquals(ImmutableClazz.CONFIDENTIAL, result.classification)
     }
 
 }

@@ -10,42 +10,41 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Recur
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ExRule
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
+import net.fortuna.ical4j.transform.recurrence.Frequency
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.Temporal
+import kotlin.jvm.optionals.getOrNull
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class RecurrenceFieldHandlerTest {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
+    private val tzVienna = ZoneId.of("Europe/Vienna")
 
-    private val handler = RecurrenceFieldsHandler(tzRegistry)
+    private val handler = RecurrenceFieldsHandler()
 
-    init {
-        TODO("ical4j 4.x")
-    }
 
-    /*@Test
+    @Test
     fun `Recurring exception`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
@@ -57,10 +56,10 @@ class RecurrenceFieldHandlerTest {
         ))
         handler.process(entity, Entity(ContentValues()), result)
         // exceptions must never have recurrence properties
-        assertNull(result.getProperty<RRule>(Property.RRULE))
-        assertNull(result.getProperty<RDate>(Property.RDATE))
-        assertNull(result.getProperty<ExRule>(Property.EXRULE))
-        assertNull(result.getProperty<ExDate>(Property.EXDATE))
+        assertNull(result.getProperty<RRule<*>>(Property.RRULE).getOrNull())
+        assertNull(result.getProperty<RDate<*>>(Property.RDATE).getOrNull())
+        assertNull(result.getProperty<ExRule<*>>(Property.EXRULE).getOrNull())
+        assertNull(result.getProperty<ExDate<*>>(Property.EXDATE).getOrNull())
     }
 
     @Test
@@ -73,10 +72,10 @@ class RecurrenceFieldHandlerTest {
         ))
         handler.process(entity, entity, result)
         // non-recurring events must never have recurrence properties
-        assertNull(result.getProperty<RRule>(Property.RRULE))
-        assertNull(result.getProperty<RDate>(Property.RDATE))
-        assertNull(result.getProperty<ExRule>(Property.EXRULE))
-        assertNull(result.getProperty<ExDate>(Property.EXDATE))
+        assertNull(result.getProperty<RRule<*>>(Property.RRULE).getOrNull())
+        assertNull(result.getProperty<RDate<*>>(Property.RDATE).getOrNull())
+        assertNull(result.getProperty<ExRule<*>>(Property.EXRULE).getOrNull())
+        assertNull(result.getProperty<ExDate<*>>(Property.EXDATE).getOrNull())
     }
 
     @Test
@@ -84,6 +83,7 @@ class RecurrenceFieldHandlerTest {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
             Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
+            Events.EVENT_TIMEZONE to "UTC",
             Events.RRULE to "FREQ=DAILY;COUNT=10",      // Oct 02 ... Oct 12
             Events.RDATE to "20251002T111413Z,20251015T010203Z",    // RDATE at event start as required by Android plus Oct 15
             Events.EXRULE to "FREQ=WEEKLY;COUNT=1",     // meaningless EXRULE/EXDATE
@@ -91,20 +91,20 @@ class RecurrenceFieldHandlerTest {
         ))
         handler.process(entity, entity, result)
         assertEquals(
-            listOf(RRule("FREQ=DAILY;COUNT=10")),
-            result.getProperties<RRule>(Property.RRULE)
+            listOf(RRule<Temporal>("FREQ=DAILY;COUNT=10")),
+            result.getProperties<RRule<Temporal>>(Property.RRULE)
         )
         assertEquals(
-            listOf(RDate(ParameterList(), "20251015T010203Z")),
-            result.getProperties<RDate>(Property.RDATE)
+            listOf(RDate<Temporal>(ParameterList(), "20251015T010203Z")),
+            result.getProperties<RDate<Temporal>>(Property.RDATE)
         )
         assertEquals(
             "FREQ=WEEKLY;COUNT=1",
-            result.getProperties<ExRule>(Property.EXRULE).joinToString { it.value }
+            result.getProperties<ExRule<Temporal>>(Property.EXRULE).joinToString { it.value }
         )
         assertEquals(
             "20260201T010203Z",
-            result.getProperties<ExDate>(Property.EXDATE).joinToString { it.value }
+            result.getProperties<ExDate<Temporal>>(Property.EXDATE).joinToString { it.value }
         )
     }
 
@@ -121,20 +121,20 @@ class RecurrenceFieldHandlerTest {
         ))
         handler.process(entity, entity, result)
         assertEquals(
-            listOf(RRule("FREQ=DAILY;COUNT=10")),
-            result.getProperties<RRule>(Property.RRULE)
+            listOf(RRule<Temporal>("FREQ=DAILY;COUNT=10")),
+            result.getProperties<RRule<Temporal>>(Property.RRULE)
         )
         assertEquals(
-            listOf(RDate(DateList(Value.DATE).apply { add(Date("20251015")) })),
-            result.getProperties<RDate>(Property.RDATE)
+            listOf(RDate(ParameterList(listOf(Value.DATE)), DateList(listOf(dateValue("20251015"))))),
+            result.getProperties<RDate<LocalDate>>(Property.RDATE)
         )
         assertEquals(
             "FREQ=WEEKLY;COUNT=1",
-            result.getProperties<ExRule>(Property.EXRULE).joinToString { it.value }
+            result.getProperties<ExRule<Temporal>>(Property.EXRULE).joinToString { it.value }
         )
         assertEquals(
             "20260201",
-            result.getProperties<ExDate>(Property.EXDATE).joinToString { it.value }
+            result.getProperties<ExDate<Temporal>>(Property.EXDATE).joinToString { it.value }
         )
     }
 
@@ -148,8 +148,8 @@ class RecurrenceFieldHandlerTest {
                                                         // so the whole event isn't recurring anymore
         ))
         handler.process(entity, entity, result)
-        assertNull(result.getProperty<RRule>(Property.RRULE))
-        assertNull(result.getProperty<ExDate>(Property.EXDATE))
+        assertNull(result.getProperty<RRule<*>>(Property.RRULE).getOrNull())
+        assertNull(result.getProperty<ExDate<*>>(Property.EXDATE).getOrNull())
     }
 
     @Test
@@ -161,31 +161,31 @@ class RecurrenceFieldHandlerTest {
             Events.EXRULE to "FREQ=DAILY;UNTIL=20251002T111300Z"
         ))
         handler.process(entity, entity, result)
-        assertNull(result.getProperty<ExRule>(Property.EXRULE))
+        assertNull(result.getProperty<ExRule<*>>(Property.EXRULE).getOrNull())
     }
 
 
     @Test
     fun `alignUntil(recurUntil=null)`() {
-        val recur = Recur.Builder()
-            .frequency(Recur.Frequency.DAILY)
+        val recur = Recur.Builder<Temporal>()
+            .frequency(Frequency.DAILY)
             .build()
         val result = handler.alignUntil(
             recur = recur,
-            startDate = mockk()
+            startTemporal = mockk()
         )
         assertSame(recur, result)
     }
 
     @Test
     fun `alignUntil(recurUntil=DATE, startDate=DATE)`() {
-        val recur = Recur.Builder()
-            .frequency(Recur.Frequency.DAILY)
-            .until(Date("20251015"))
+        val recur = Recur.Builder<Temporal>()
+            .frequency(Frequency.DAILY)
+            .until(dateValue("20251015"))
             .build()
         val result = handler.alignUntil(
             recur = recur,
-            startDate = Date()
+            startTemporal = LocalDate.now()
         )
         assertSame(recur, result)
     }
@@ -193,16 +193,16 @@ class RecurrenceFieldHandlerTest {
     @Test
     fun `alignUntil(recurUntil=DATE, startDate=DATE-TIME)`() {
         val result = handler.alignUntil(
-            recur = Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(Date("20251015"))
+            recur = Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateValue("20251015"))
                 .build(),
-            startDate = DateTime("20250101T010203", tzVienna)
+            startTemporal = dateTimeValue("20250101T010203", tzVienna)
         )
         assertEquals(
-            Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(DateTime("20251014T230203Z"))
+            Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateTimeValue("20251014T230203Z"))
                 .build(),
             result
         )
@@ -211,16 +211,16 @@ class RecurrenceFieldHandlerTest {
     @Test
     fun `alignUntil(recurUntil=DATE-TIME, startDate=DATE)`() {
         val result = handler.alignUntil(
-            recur = Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(DateTime("20251015T153118", tzVienna))
+            recur = Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateTimeValue("20251015T153118", tzVienna))
                 .build(),
-            startDate = Date()
+            startTemporal = LocalDate.now()
         )
         assertEquals(
-            Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(Date("20251015"))
+            Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateValue("20251015"))
                 .build(),
             result
         )
@@ -229,19 +229,19 @@ class RecurrenceFieldHandlerTest {
     @Test
     fun `alignUntil(recurUntil=DATE-TIME, startDate=DATE-TIME)`() {
         val result = handler.alignUntil(
-            recur = Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(DateTime("20251015T153118", tzVienna))
+            recur = Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateTimeValue("20251015T153118", tzVienna))
                 .build(),
-            startDate = DateTime()
+            startTemporal = LocalDateTime.now()
         )
         assertEquals(
-            Recur.Builder()
-                .frequency(Recur.Frequency.DAILY)
-                .until(DateTime("20251015T133118Z"))
+            Recur.Builder<Temporal>()
+                .frequency(Frequency.DAILY)
+                .until(dateTimeValue("20251015T133118Z"))
                 .build(),
             result
         )
-    }*/
+    }
 
 }
