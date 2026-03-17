@@ -66,7 +66,7 @@ class AndroidEventHandler(
         LocationHandler(),
         StartTimeHandler(),
         EndTimeHandler(),
-        DurationHandler(tzRegistry),
+        DurationHandler(),
         RecurrenceFieldsHandler(tzRegistry),
         DescriptionHandler(),
         ColorHandler(),
