@@ -12,11 +12,11 @@ import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.ical4android.util.TimeApiExtensions.toDuration
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
 import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RDate
@@ -131,8 +131,8 @@ class DurationBuilder: AndroidEntityBuilder {
             // - DTSTART and DTEND are DATE → DURATION is exact number of days (no time part)
             // - DTSTART is DATE, DTEND is DATE-TIME → only use date part of DTEND → DURATION is exact number of days (no time part)
             // - DTSTART is DATE-TIME, DTEND is DATE → amend DTEND with time of DTSTART → DURATION is exact number of days (no time part)
-            val dateStart = startDate.toZonedDateTime().toLocalDate()
-            val dateEnd = endDate.toZonedDateTime().toLocalDate()
+            val dateStart = startDate.toLocalDate()
+            val dateEnd = endDate.toLocalDate()
             Period.between(dateStart, dateEnd)
         }
     }

@@ -14,11 +14,14 @@ import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.Calendar
 import java.util.TimeZone
@@ -216,6 +219,23 @@ object TimeApiExtensions {
         } else
             throw NotImplementedError("Only Duration and Period is supported")
         return builder.toString()
+    }
+
+
+    /***** Temporals *****/
+
+    /**
+     * Gets the [LocalDate] part of this [Temporal] instance.
+     */
+    fun Temporal.toLocalDate(): LocalDate {
+        return when (this) {
+            is LocalDate -> this
+            is LocalDateTime -> toLocalDate()
+            is OffsetDateTime -> toLocalDate()
+            is ZonedDateTime -> toLocalDate()
+            is Instant -> LocalDate.ofInstant(this, ZoneOffset.UTC)
+            else -> error("Unsupported Temporal type: ${this::class.qualifiedName}")
+        }
     }
 
 }
