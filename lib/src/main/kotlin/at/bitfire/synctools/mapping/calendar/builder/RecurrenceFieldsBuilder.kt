@@ -11,7 +11,8 @@ import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDates
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.util.AndroidTimeUtils
+import at.bitfire.synctools.mapping.calendar.builder.AndroidRecurrenceMapper.androidRecurrenceRuleString
+import at.bitfire.synctools.mapping.calendar.builder.AndroidRecurrenceMapper.androidRecurrenceDatesString
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.ExDate
@@ -68,10 +69,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
                     if (normalizedRDates.isNotEmpty()) {
                         // Calendar provider drops DTSTART instance when using RDATE [https://code.google.com/p/android/issues/detail?id=171292]
                         val listWithDtStart = listOf(startDate) + normalizedRDates
-                        val recurrenceDates = AndroidTimeUtils.recurrenceSetsToAndroidString(
-                            listWithDtStart,
-                            startDate
-                        )
+                        val recurrenceDates = androidRecurrenceDatesString(listWithDtStart, startDate)
 
                         values.put(Events.RDATE, recurrenceDates)
                     } else {
@@ -93,7 +91,7 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
             val exDates = from.getProperties<ExDate<Temporal>>(Property.EXDATE)
             if (exDates.isNotEmpty()) {
                 val normalizedExDates = exDates.flatMap { exDate -> exDate.normalizedDates() }
-                values.put(Events.EXDATE, AndroidTimeUtils.recurrenceSetsToAndroidString(normalizedExDates, startDate))
+                values.put(Events.EXDATE, androidRecurrenceDatesString(normalizedExDates, startDate))
             } else
                 values.putNull(Events.EXDATE)
 
@@ -103,10 +101,6 @@ class RecurrenceFieldsBuilder: AndroidEntityBuilder {
             values.putNull(Events.RDATE)
             values.putNull(Events.EXDATE)
         }
-    }
-
-    private fun androidRecurrenceRuleString(rules: List<Property>): String {
-        return rules.joinToString(AndroidTimeUtils.RECURRENCE_RULE_SEPARATOR) { it.value }
     }
 
 }
