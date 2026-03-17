@@ -7,9 +7,7 @@
 package at.bitfire.synctools.util
 
 import at.bitfire.ical4android.util.TimeApiExtensions
-import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
@@ -17,14 +15,11 @@ import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
-import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.Period
 import java.time.temporal.ChronoField
 import java.time.temporal.TemporalAmount
-import java.util.LinkedList
-import java.util.Locale
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrDefault
 
@@ -37,11 +32,6 @@ object AndroidTimeUtils {
 
     private const val RECURRENCE_LIST_TZID_SEPARATOR = ';'
     private const val RECURRENCE_LIST_VALUE_SEPARATOR = ","
-
-    /**
-     * Used to separate multiple RRULEs/EXRULEs in the RRULE/EXRULE storage field.
-     */
-    const val RECURRENCE_RULE_SEPARATOR = "\n"
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
@@ -94,94 +84,6 @@ object AndroidTimeUtils {
 
 
     // recurrence sets
-
-    /**
-     * Concatenates, if necessary, multiple RDATE/EXDATE lists and converts them to
-     * a formatted string which Android calendar provider can process.
-     *
-     * Android [expects this format](https://android.googlesource.com/platform/frameworks/opt/calendar/+/68b3632330e7a9a4f9813b7eb671dbfd78c25bcd/src/com/android/calendarcommon2/RecurrenceSet.java#138):
-     * `[TZID;]date1,date2,date3` where date is `yyyymmddThhmmss` (when
-     * TZID is given) or `yyyymmddThhmmssZ`. We don't use the TZID format here because then we're limited
-     * to one time-zone, while an iCalendar may contain multiple EXDATE/RDATE lines with different time zones.
-     *
-     * This method converts the values to the type of [dtStart], if necessary:
-     *
-     * - DTSTART (DATE-TIME) and RDATE/EXDATE (DATE) → method converts RDATE/EXDATE to DATE-TIME with same time as DTSTART
-     * - DTSTART (DATE) and RDATE/EXDATE (DATE-TIME) → method converts RDATE/EXDATE to DATE (just drops time)
-     *
-     * @param dates     one more more lists of RDATE or EXDATE
-     * @param dtStart   used to determine whether the event is an all-day event or not; also used to
-     *                  generate the date-time if the event is not all-day but the exception is
-     *
-     * @return formatted string for Android calendar provider
-     */
-    fun recurrenceSetsToAndroidString(dates: List<DateListProperty<*>>, dtStart: Date): String {
-        /*  rdate/exdate:       DATE                                DATE_TIME
-            all-day             store as ...T000000Z                cut off time and store as ...T000000Z
-            event with time     (undefined)                         store as ...ThhmmssZ
-        */
-        val dateFormatUtcMidnight = SimpleDateFormat("yyyyMMdd'T'000000'Z'", Locale.ROOT)
-        val strDates = LinkedList<String>()
-        val allDay = dtStart !is DateTime
-
-        // use time zone of first entry for the whole set; null for UTC
-        TODO("ical4j 4.x")
-        /*val tz =
-            (dates.firstOrNull() as? RDate)?.periods?.timeZone ?:   // VALUE=PERIOD (only RDate)
-            dates.firstOrNull()?.dates?.timeZone                    // VALUE=DATE/DATE-TIME
-
-        for (dateListProp in dates) {
-            if (dateListProp is RDate && dateListProp.periods.isNotEmpty()) {
-                logger.warning("RDATE PERIOD not supported, ignoring")
-                break
-            }
-
-            when (dateListProp.dates.type) {
-                Value.DATE_TIME -> {        // RDATE/EXDATE is DATE-TIME
-                    if (tz == null && !dateListProp.dates.isUtc)
-                        dateListProp.setUtc(true)
-                    else if (tz != null && dateListProp.timeZone != tz)
-                        dateListProp.timeZone = tz
-
-                    if (allDay)
-                        // DTSTART is DATE
-                        dateListProp.dates.mapTo(strDates) { dateFormatUtcMidnight.format(it) }
-                    else
-                        // DTSTART is DATE-TIME
-                        strDates.add(dateListProp.value)
-                }
-                Value.DATE ->               // RDATE/EXDATE is DATE
-                    if (allDay) {
-                        // DTSTART is DATE; DATE values have to be returned as <date>T000000Z for Android
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            dateFormatUtcMidnight.format(date)
-                        }
-                    } else {
-                        // DTSTART is DATE-TIME; amend DATE-TIME with clock time from dtStart
-                        dateListProp.dates.mapTo(strDates) { date ->
-                            // take time (including time zone) from dtStart and date from date
-                            val dtStartTime = dtStart.toZonedDateTime()
-                            val localDate = date.toLocalDate()
-                            val dtStartTimeUtc = ZonedDateTime.of(
-                                localDate,
-                                dtStartTime.toLocalTime(),
-                                dtStartTime.zone
-                            ).withZoneSameInstant(ZoneOffset.UTC)
-
-                            val dateFormatUtc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT)
-                            dtStartTimeUtc.format(dateFormatUtc)
-                        }
-                    }
-            }
-        }
-
-        // format expected by Android: [tzid;]value1,value2,...
-        val result = StringBuilder()
-        if (tz != null)
-            result.append(tz.id).append(RECURRENCE_LIST_TZID_SEPARATOR)
-        result.append(strDates.joinToString(RECURRENCE_LIST_VALUE_SEPARATOR))
-        return result.toString()*/
-    }
 
     /**
      * Takes a formatted string as provided by the Android calendar provider and returns a DateListProperty

@@ -23,16 +23,20 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.chrono.JapaneseDate
 
 class TimeApiExtensionsTest {
 
@@ -238,6 +242,63 @@ class TimeApiExtensionsTest {
         assertEquals("P2W", Period.ofDays(14).toRfc5545Duration(date20200601))
         assertEquals("P15D", Period.ofDays(15).toRfc5545Duration(date20200601))
         assertEquals("P30D", Period.ofMonths(1).toRfc5545Duration(date20200601))
+    }
+
+
+    @Test
+    fun `LocalDate_toLocalDate()`() {
+        val localDate = LocalDate.now()
+
+        val result = localDate.toLocalDate()
+
+        assertEquals(localDate, result)
+    }
+
+    @Test
+    fun `LocalDateTime_toLocalDate()`() {
+        val localDateTime = LocalDateTime.of(2026, 3, 17, 0, 0, 0)
+
+        val result = localDateTime.toLocalDate()
+
+        assertEquals(LocalDate.of(2026, 3, 17), result)
+    }
+
+    @Test
+    fun `OffsetDateTime_toLocalDate()`() {
+        val offsetDateTime = OffsetDateTime.of(2026, 3, 17, 0, 0, 0, 0, ZoneOffset.UTC)
+
+        val result = offsetDateTime.toLocalDate()
+
+        assertEquals(LocalDate.of(2026, 3, 17), result)
+    }
+
+    @Test
+    fun `ZonedDateTime_toLocalDate()`() {
+        val zonedDateTime = ZonedDateTime.of(2026, 3, 17, 0, 0, 0, 0, ZoneOffset.UTC)
+
+        val result = zonedDateTime.toLocalDate()
+
+        assertEquals(LocalDate.of(2026, 3, 17), result)
+    }
+
+    @Test
+    fun `Instant_toLocalDate()`() {
+        val instant = Instant.ofEpochSecond(1773754730)
+
+        val result = instant.toLocalDate()
+
+        assertEquals(LocalDate.of(2026, 3, 17), result)
+    }
+
+    @Test
+    fun `toLocalDate() on unsupported type`() {
+        try {
+            JapaneseDate.now().toLocalDate()
+
+            fail("Expected exception")
+        } catch (e: IllegalStateException) {
+            assertEquals("Unsupported Temporal type: java.time.chrono.JapaneseDate", e.message)
+        }
     }
 
 }
