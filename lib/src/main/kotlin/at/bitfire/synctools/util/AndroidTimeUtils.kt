@@ -7,6 +7,7 @@
 package at.bitfire.synctools.util
 
 import at.bitfire.ical4android.util.TimeApiExtensions
+import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
@@ -16,9 +17,14 @@ import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.Period
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.temporal.ChronoField
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrDefault
@@ -104,53 +110,57 @@ object AndroidTimeUtils {
         dbStr: String,
         tzRegistry: TimeZoneRegistry,
         allDay: Boolean,
-        exclude: Long? = null,
+        exclude: Temporal? = null,
         generator: (DateList<*>) -> T
     ): T
     {
-        TODO("ical4j 4.x")
-
-        // 1. split string into time zone and actual dates
-        /*var timeZone: net.fortuna.ical4j.model.TimeZone?
+        // split string into time zone and actual dates
+        var zoneId: ZoneId?
         val datesStr: String
 
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
             val tzId = dbStr.take(limiter)
-            timeZone = tzRegistry.getTimeZone(tzId)
-            if (TimeZones.isUtc(timeZone))
-                timeZone = null
+            //FIXME: validate timezone identifier from db actually exists
+            zoneId = ZoneId.of(tzId).takeIf { it != ZoneOffset.UTC }
             datesStr = dbStr.substring(limiter + 1)
         } else {
-            timeZone = null
+            zoneId = null
             datesStr = dbStr
         }
 
-        // 2. process date string and generate list of DATEs or DATE-TIMEs
-        val dateList =
-                if (allDay)
-                    DateList(datesStr, Value.DATE)
-                else
-                    DateList(datesStr, Value.DATE_TIME, timeZone)
+        // process date string and generate list of Temporals (exluding `exclude`)
+        val dates = datesStr
+            .splitToSequence(RECURRENCE_LIST_VALUE_SEPARATOR)
+            .map { dateString ->
+                //FIXME: don't assume dates will parse without error
+                if (zoneId == null) {
+                    val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
+                    if (allDay) {
+                        instant.atZone(ZoneOffset.UTC).toLocalDate()
+                    } else {
+                        instant
+                    }
+                } else {
+                    val localDateTime = TemporalAdapter.parse<LocalDateTime>(dateString, CalendarDateFormat.FLOATING_DATE_TIME_FORMAT).temporal
+                    if (allDay) {
+                        localDateTime.toLocalDate()
+                    } else {
+                        localDateTime.atZone(zoneId)
+                    }
+                }
+            }
+            .filterNot { date ->
+                // filter excluded date
+                date == exclude
+            }
+            .toList()
 
-        // 3. filter excludes
-        val iter = dateList.iterator()
-        while (iter.hasNext()) {
-            val date = iter.next()
-            if (date.time == exclude)
-                iter.remove()
-        }
 
-        // 4. generate requested DateListProperty (RDate/ExDate) from list of DATEs or DATE-TIMEs
-        val property = generator(dateList)
-        if (!allDay) {
-            if (timeZone != null)
-                property.timeZone = timeZone
-            else
-                property.setUtc(true)
-        }
+        val dateList = DateList(dates)
 
-        return property*/
+        // generate requested DateListProperty (RDate/ExDate) from list of DATEs or DATE-TIMEs
+        return generator(dateList)
     }
 
     /**
