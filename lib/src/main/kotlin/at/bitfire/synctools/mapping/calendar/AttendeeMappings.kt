@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar
 import android.content.ContentValues
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Attendees
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Email
@@ -81,11 +82,10 @@ object AttendeeMappings {
 
         }
 
-        TODO("ical4j 4.x")
-        /*if (cuType != null && cuType != CuType.INDIVIDUAL)
-            attendee.parameters.add(cuType)
+        if (cuType != null && cuType != CuType.INDIVIDUAL)
+            attendee += cuType
         if (role != null && role != Role.REQ_PARTICIPANT)
-            attendee.parameters.add(role)*/
+            attendee += role
     }
 
 

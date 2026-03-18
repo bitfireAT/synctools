@@ -8,23 +8,24 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Transp
+import net.fortuna.ical4j.model.property.immutable.ImmutableTransp
 
 class AvailabilityHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
-        TODO("ical4j 4.x")
-        /*val transp: Transp = when (from.entityValues.getAsInteger(Events.AVAILABILITY)) {
+        val transp: Transp = when (from.entityValues.getAsInteger(Events.AVAILABILITY)) {
             Events.AVAILABILITY_FREE ->
-                Transp.TRANSPARENT
+                ImmutableTransp.TRANSPARENT
 
             /* Events.AVAILABILITY_BUSY, Events.AVAILABILITY_TENTATIVE */
             else ->
-                Transp.OPAQUE
+                ImmutableTransp.OPAQUE
         }
-        if (transp != Transp.OPAQUE)    // iCalendar default value is OPAQUE
-            to.properties += transp*/
+        if (transp != ImmutableTransp.OPAQUE)    // iCalendar default value is OPAQUE
+            to += transp
     }
 
 }

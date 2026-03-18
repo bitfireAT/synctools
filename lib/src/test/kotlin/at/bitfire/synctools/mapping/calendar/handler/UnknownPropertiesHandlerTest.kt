@@ -16,12 +16,10 @@ import net.fortuna.ical4j.model.parameter.XParameter
 import net.fortuna.ical4j.model.property.XProperty
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class UnknownPropertiesHandlerTest {
 
@@ -32,8 +30,7 @@ class UnknownPropertiesHandlerTest {
         val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertTrue(result.properties.isEmpty())
+        assertTrue(result.propertyList.all.isEmpty())
     }
 
     @Test
@@ -53,13 +50,11 @@ class UnknownPropertiesHandlerTest {
             ExtendedProperties.VALUE to "[\"X-PROP2\", \"value 2\", {\"arg1\": \"arg-value\"}]"
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        /*assertEquals(listOf(
+        assertEquals(listOf(
             XProperty("X-PROP1", "value 1"),
-            XProperty("X-PROP2", "value 2").apply {
-                parameters.add(XParameter("ARG1", "arg-value"))
-            },
-        ), result.properties)*/
+            XProperty("X-PROP2", "value 2")
+                .add(XParameter("ARG1", "arg-value")),
+        ), result.propertyList.all)
     }
 
 }

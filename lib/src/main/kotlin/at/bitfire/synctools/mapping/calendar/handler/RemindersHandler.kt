@@ -11,12 +11,14 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
 import android.util.Patterns
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.Attendee
 import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.Summary
+import net.fortuna.ical4j.model.property.immutable.ImmutableAction
 import java.net.URI
 import java.time.Duration
 import java.util.logging.Level
@@ -40,32 +42,30 @@ class RemindersHandler(
         val eventTitle = event.entityValues.getAsString(Events.TITLE) ?: "Calendar Event Reminder"
 
         val alarm = VAlarm(Duration.ofMinutes(-row.getAsLong(Reminders.MINUTES)))
-        TODO("ical4j 4.x")
-        /*val props = alarm.properties
         when (row.getAsInteger(Reminders.METHOD)) {
             Reminders.METHOD_EMAIL -> {
                 if (Patterns.EMAIL_ADDRESS.matcher(accountName).matches()) {
-                    props += Action.EMAIL
+                    alarm += ImmutableAction.EMAIL
                     // ACTION:EMAIL requires SUMMARY, DESCRIPTION, ATTENDEE
-                    props += Summary(eventTitle)
-                    props += Description(eventTitle)
+                    alarm += Summary(eventTitle)
+                    alarm += Description(eventTitle)
                     // Android doesn't allow to save email reminder recipients, so we always use the
                     // account name (should be account owner's email address)
-                    props += Attendee(URI("mailto", accountName, null))
+                    alarm += Attendee(URI("mailto", accountName, null))
                 } else {
                     logger.warning("Account name is not an email address; changing EMAIL reminder to DISPLAY")
-                    props += Action.DISPLAY
-                    props += Description(eventTitle)
+                    alarm += ImmutableAction.DISPLAY
+                    alarm += Description(eventTitle)
                 }
             }
 
             // default: set ACTION:DISPLAY (requires DESCRIPTION)
             else -> {
-                props += Action.DISPLAY
-                props += Description(eventTitle)
+                alarm += ImmutableAction.DISPLAY
+                alarm += Description(eventTitle)
             }
         }
-        to.components += alarm*/
+        to += alarm
     }
 
 }

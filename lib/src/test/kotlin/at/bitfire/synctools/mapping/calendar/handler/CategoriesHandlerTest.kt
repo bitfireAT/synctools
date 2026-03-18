@@ -15,13 +15,11 @@ import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Categories
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.Optional
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class CategoriesHandlerTest {
 
@@ -32,7 +30,7 @@ class CategoriesHandlerTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
-        assertNull(result.getProperty<Categories>(Property.CATEGORIES))
+        assertEquals(Optional.empty<Categories>(), result.getProperty<Categories>(Property.CATEGORIES))
     }
 
     @Test
@@ -44,8 +42,7 @@ class CategoriesHandlerTest {
             ExtendedProperties.VALUE to "Cat 1\\Cat 2"
         ))
         handler.process(entity, entity, result)
-        TODO("ical4j 4.x")
-        //assertEquals(listOf("Cat 1", "Cat 2"), result.getProperty<Categories>(Property.CATEGORIES).categories.toList())
+        assertEquals(setOf("Cat 1", "Cat 2"), result.getProperty<Categories>(Property.CATEGORIES).get().categories.texts)
     }
 
 }
