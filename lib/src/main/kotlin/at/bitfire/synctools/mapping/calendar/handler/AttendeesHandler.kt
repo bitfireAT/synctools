@@ -44,7 +44,7 @@ class AttendeesHandler: AndroidEventFieldHandler {
             if (idNS != null || id != null) {
                 // attendee identified by namespace and ID
                 attendee = Attendee(URI(idNS, id, null))
-                email?.let { attendee.add<Attendee>(Email(it)) }
+                email?.let { attendee += Email(it) }
             } else
                 // attendee identified by email address
                 attendee = Attendee(URI("mailto", email, null))
