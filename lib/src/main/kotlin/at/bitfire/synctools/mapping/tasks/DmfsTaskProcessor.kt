@@ -56,8 +56,6 @@ class DmfsTaskProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
     fun populateTask(values: ContentValues, to: Task) {
         to.uid = values.getAsString(Tasks._UID)
         to.sequence = values.getAsInteger(Tasks.SYNC_VERSION)
@@ -149,11 +147,11 @@ class DmfsTaskProcessor(
             to.duration = Duration(fixedDuration)
         }
 
-        values.getAsString(Tasks.RDATE)?.let {
-            to.rDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> RDate(dates) }
+        values.getAsString(Tasks.RDATE)?.let { rdateStr ->
+            AndroidTimeUtils.androidStringToRecurrenceSet(rdateStr, allDay) { dates -> RDate(dates) }?.let { to.rDates += it }
         }
-        values.getAsString(Tasks.EXDATE)?.let {
-            to.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> ExDate(dates) }
+        values.getAsString(Tasks.EXDATE)?.let { exdateStr ->
+            AndroidTimeUtils.androidStringToRecurrenceSet(exdateStr, allDay) { dates -> ExDate(dates) }?.let { to.exDates += it }
         }
 
         values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule<Temporal>(it) }
