@@ -168,13 +168,10 @@ object AndroidTimeUtils {
         // generate requested DateListProperty (RDate/ExDate) from list of DATEs or DATE-TIMEs
         val dateListProperty = generator(dateList)
 
-        // add TZID and DATE parameters if necessary
-        val firstTemporal = dateList.dates.first()
-        if (firstTemporal is ZonedDateTime) {
-            dateListProperty.add<T>(TzId(firstTemporal.zone.id))
-        }
-        if (firstTemporal is LocalDate) {
-            dateListProperty.add<T>(Value.DATE)
+        // add TZID or DATE parameter if necessary
+        when (val firstTemporal = dateList.dates.first()) {
+            is ZonedDateTime -> dateListProperty.add<T>(TzId(firstTemporal.zone.id))
+            is LocalDate -> dateListProperty.add<T>(Value.DATE)
         }
 
         return dateListProperty
