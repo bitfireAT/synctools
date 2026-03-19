@@ -11,7 +11,6 @@ import at.bitfire.dateValue
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.TzId
@@ -23,8 +22,6 @@ import org.junit.Test
 import java.io.StringReader
 import java.time.DateTimeException
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
 import java.time.zone.ZoneRulesException
 import java.util.Optional
@@ -59,17 +56,7 @@ class AndroidTimeUtilsTest {
     val tzDefault = tzRegistry.getTimeZone(tzIdDefault)!!
 
     val exDateGenerator: ((DateList<*>) -> ExDate<*>) = { dateList ->
-        val parameters = buildList {
-            val firstTemporal = dateList.dates.firstOrNull()
-            if (firstTemporal is ZonedDateTime) {
-                add(TzId(firstTemporal.zone.id))
-            }
-            if (firstTemporal is LocalDate) {
-                add(Value.DATE)
-            }
-        }
-
-        ExDate(ParameterList(parameters), dateList)
+        ExDate(dateList)
     }
 
     // androidifyTimeZone

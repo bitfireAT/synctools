@@ -13,20 +13,25 @@ import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistry
+import net.fortuna.ical4j.model.parameter.TzId
+import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.logging.Logger
+import kotlin.collections.buildList
 import kotlin.jvm.optionals.getOrDefault
 
 object AndroidTimeUtils {
@@ -161,7 +166,18 @@ object AndroidTimeUtils {
         val dateList = DateList(dates)
 
         // generate requested DateListProperty (RDate/ExDate) from list of DATEs or DATE-TIMEs
-        return generator(dateList)
+        val dateListProperty = generator(dateList)
+
+        // add TZID and DATE parameters if necessary
+        val firstTemporal = dateList.dates.first()
+        if (firstTemporal is ZonedDateTime) {
+            dateListProperty.add<T>(TzId(firstTemporal.zone.id))
+        }
+        if (firstTemporal is LocalDate) {
+            dateListProperty.add<T>(Value.DATE)
+        }
+
+        return dateListProperty
     }
 
     /**
