@@ -18,11 +18,15 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.StringReader
+import java.time.DateTimeException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import java.time.format.DateTimeParseException
+import java.time.zone.ZoneRulesException
 import java.util.Optional
 
 class AndroidTimeUtilsTest {
@@ -240,10 +244,9 @@ class AndroidTimeUtilsTest {
         // list of UTC times
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "20150101T103010Z,20150702T103020Z",
-            tzRegistry,
             allDay = false,
             generator = exDateGenerator,
-        )
+        )!!
 
         assertEquals(Optional.empty<TzId>(), exDate.getParameter<TzId>(Parameter.TZID))
         assertEquals(2, exDate.dates.size)
@@ -258,10 +261,9 @@ class AndroidTimeUtilsTest {
 
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "$tzid;20150103T113030,20150704T113040",
-            tzRegistry,
             allDay = false,
             generator = exDateGenerator,
-        )
+        )!!
 
         assertEquals(tzid, exDate.getParameter<TzId>(Parameter.TZID).get().value)
         assertEquals(2, exDate.dates.size)
@@ -274,10 +276,9 @@ class AndroidTimeUtilsTest {
         // list of dates
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "20150101T103010Z,20150702T103020Z",
-            tzRegistry,
             allDay = true,
             generator = exDateGenerator,
-        )
+        )!!
 
         assertEquals(Optional.empty<TzId>(), exDate.getParameter<TzId>(Parameter.TZID))
         assertEquals(Value.DATE, exDate.getParameter<Value>(Parameter.VALUE).get())
@@ -287,17 +288,64 @@ class AndroidTimeUtilsTest {
     }
 
     @Test
+    fun testAndroidStringToRecurrenceSets_ExcludePositive() {
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "${tzToronto.id};20150103T113030,20150105T113030",
+            allDay = false,
+            exclude = dateTimeValue("20150103T113030", tzToronto),
+            generator = exDateGenerator,
+        )!!
+
+        assertEquals(1, exDate.dates.size)
+        assertEquals(dateTimeValue("20150105T113030", tzToronto), exDate.dates[0])
+    }
+
+    @Test(expected = DateTimeParseException::class)
+    fun testAndroidStringToRecurrenceSets_throws_DateTimeParseException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test(expected = DateTimeException::class)
+    fun testAndroidStringToRecurrenceSets_throws_DateTimeException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "+25;20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test(expected = ZoneRulesException::class)
+    fun testAndroidStringToRecurrenceSets_throws_ZoneRulesException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "Europe/ABC;20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test
+    fun testAndroidStringToRecurrenceSets_emptyInput() {
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "",
+            allDay = false,
+            generator = { error("Should not be called") },
+        )
+        assertNull(exDate)
+    }
+
+    @Test
     fun testAndroidStringToRecurrenceSets_Exclude() {
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "${tzToronto.id};20150103T113030",
-            tzRegistry,
             allDay = false,
             exclude = dateTimeValue("20150103T113030", tzToronto),
             generator = exDateGenerator,
         )
-
-        //FIXME: We probably don't want to emit empty ExDate instances. Don't invoke generator.
-        assertEquals(0, exDate.dates.size)
+        assertNull(exDate)
     }
 
 

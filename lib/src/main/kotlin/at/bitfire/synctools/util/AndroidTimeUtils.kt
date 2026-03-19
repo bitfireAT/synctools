@@ -97,23 +97,24 @@ object AndroidTimeUtils {
      *
      * @param dbStr         formatted string from Android calendar provider (RDATE/EXDATE field)
      *                      expected format: `[TZID;]date1,date2,date3` where date is `yyyymmddThhmmss[Z]`
-     * @param tzRegistry    time zone registry
      * @param allDay        true: list will contain DATE values; false: list will contain DATE_TIME values
      * @param exclude       this time stamp won't be added to the [DateListProperty]
      * @param generator     generates the [DateListProperty]; must call the constructor with the one argument of type [net.fortuna.ical4j.model.DateList]
      *
      * @return instance of "type" containing the parsed dates/times from the string
      *
-     * @throws java.text.ParseException when the string cannot be parsed
+     * @throws java.time.format.DateTimeParseException if one of the datestrings cannot be parsed
+     * @throws java.time.DateTimeException if the TZID has an invalid format
+     * @throws java.time.zone.ZoneRulesException if the TZID is a region ID that cannot be found
      */
     fun<T: DateListProperty<*>> androidStringToRecurrenceSet(
         dbStr: String,
-        tzRegistry: TimeZoneRegistry,
         allDay: Boolean,
         exclude: Temporal? = null,
         generator: (DateList<*>) -> T
-    ): T
-    {
+    ): T? {
+        if (dbStr.isEmpty()) return null
+
         // split string into time zone and actual dates
         var zoneId: ZoneId?
         val datesStr: String
@@ -121,7 +122,6 @@ object AndroidTimeUtils {
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
             val tzId = dbStr.take(limiter)
-            //FIXME: validate timezone identifier from db actually exists
             zoneId = ZoneId.of(tzId).takeIf { it != ZoneOffset.UTC }
             datesStr = dbStr.substring(limiter + 1)
         } else {
@@ -133,7 +133,6 @@ object AndroidTimeUtils {
         val dates = datesStr
             .splitToSequence(RECURRENCE_LIST_VALUE_SEPARATOR)
             .map { dateString ->
-                //FIXME: don't assume dates will parse without error
                 if (zoneId == null) {
                     val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
                     if (allDay) {
@@ -156,6 +155,8 @@ object AndroidTimeUtils {
             }
             .toList()
 
+        if (dates.isEmpty())
+            return null
 
         val dateList = DateList(dates)
 
