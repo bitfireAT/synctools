@@ -14,9 +14,11 @@ import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TextList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VToDo
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Categories
 import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.Comment
@@ -38,9 +40,9 @@ import java.io.Writer
 import java.net.URI
 import java.net.URISyntaxException
 import java.time.Instant
-import java.time.ZonedDateTime
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Writes a [Task] data class to a stream that contains an iCalendar
@@ -151,9 +153,6 @@ class TaskWriter(
     }
 
     private fun DateProperty<*>.getTzidOrNull(): String? {
-        return when (val date = date) {
-            is ZonedDateTime -> date.zone.id
-            else -> null
-        }
+        return getParameter<TzId>(Parameter.TZID).getOrNull()?.value
     }
 }
