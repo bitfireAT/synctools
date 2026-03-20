@@ -12,7 +12,6 @@ import android.content.ContentProviderClient
 import android.provider.ContactsContract
 import android.util.Base64
 import androidx.test.filters.MediumTest
-import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.storage.LocalStorageException
@@ -24,6 +23,7 @@ import ezvcard.property.Address
 import ezvcard.property.Birthday
 import ezvcard.property.Email
 import ezvcard.util.PartialDate
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -69,7 +69,6 @@ class AndroidContactTest {
 
 
     @Test
-    @SmallTest
     fun testAddAndReadContact() {
         val samplePhoto = Base64.decode("/9j/4AAQSkZJRgABAQEASABIAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wgARCAAFAAUDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhADEAAAAVSf/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9oADAMBAAIAAwAAABCf/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPxB//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPxB//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxB//9k=", Base64.DEFAULT)
 
@@ -109,8 +108,7 @@ class AndroidContactTest {
     }
 
     @Test
-    @SmallTest
-    fun testInvalidPREF() {
+    fun testInvalidPREF() = runTest {
         val vCard = "BEGIN:VCARD\r\n" +
                 "VERSION:4.0\r\n" +
                 "FN:Test\r\n" +
@@ -134,7 +132,7 @@ class AndroidContactTest {
     }
 
     @Test
-    fun testBirthdayWithOffset() {
+    fun testBirthdayWithOffset() = runTest {
         val vCard = "BEGIN:VCARD\r\n" +
             "VERSION:3.0\n\n" +
             "N:Doe;John;;;\n\n" +

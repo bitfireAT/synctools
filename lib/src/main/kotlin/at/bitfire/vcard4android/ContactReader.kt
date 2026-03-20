@@ -81,7 +81,7 @@ class ContactReader internal constructor(val vCard: VCard, val downloader: Conta
          */
         const val MAX_BINARY_DATA_SIZE = 25*1024
 
-        fun fromVCard(vCard: VCard, downloader: Contact.Downloader? = null) =
+        suspend fun fromVCard(vCard: VCard, downloader: Contact.Downloader? = null) =
             ContactReader(vCard, downloader).toContact()
 
         /**
@@ -154,7 +154,7 @@ class ContactReader internal constructor(val vCard: VCard, val downloader: Conta
     /**
      * Converts the vCard to a [Contact].
      */
-    private fun toContact(): Contact {
+    private suspend fun toContact(): Contact {
         val c = Contact()
 
         // process standard properties; after processing, only unknown properties will remain
@@ -369,7 +369,7 @@ class ContactReader internal constructor(val vCard: VCard, val downloader: Conta
         return null
     }
 
-    fun getPhotoBytes(photo: Photo): ByteArray? {
+    suspend fun getPhotoBytes(photo: Photo): ByteArray? {
         if (photo.data != null)
             return photo.data
 
