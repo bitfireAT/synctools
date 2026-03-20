@@ -14,7 +14,6 @@ import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
 
-@Ignore("ical4j 4.x")
 class Ical4jServiceLoaderTest {
 
     @Test
@@ -32,9 +31,8 @@ class Ical4jServiceLoaderTest {
                 "END:VEVENT\n" +
                 "END:VCALENDAR\n"
         val result = CalendarBuilder().build(StringReader(iCal))
-        val vEvent = result.getComponent<VEvent>(Component.VEVENT)
-        TODO("ical4j 4.x")
-        //assertEquals("Networld+Interop Conference", vEvent.summary.value)
+        val vEvent = result.getComponent<VEvent>(Component.VEVENT).get()
+        assertEquals("Networld+Interop Conference", vEvent.summary.value)
     }
 
 }
