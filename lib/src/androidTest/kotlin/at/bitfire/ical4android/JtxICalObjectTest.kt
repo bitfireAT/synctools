@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.ical4android
@@ -402,6 +400,35 @@ class JtxICalObjectTest {
             assertEquals(attendee.language, retrievedAttendeeCV.getAsString(JtxContract.JtxAttendee.LANGUAGE))
             assertEquals(attendee.other, retrievedAttendeeCV.getAsString(JtxContract.JtxAttendee.OTHER))
         }
+    }
+
+    @Test
+    fun assertAttendeeWithNullCaladdress() {
+        val cv = ContentValues().apply {
+            put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+        }
+        val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
+        val id = uri.lastPathSegment
+
+        val attendee = at.bitfire.ical4android.JtxICalObject.Attendee(
+            caladdress = null,  // This should not cause NPE
+            cutype = JtxContract.JtxAttendee.Cutype.INDIVIDUAL.name,
+            role = JtxContract.JtxAttendee.Role.`REQ-PARTICIPANT`.name,
+            cn = "Test Attendee"
+        )
+
+        val attendeeCV = ContentValues().apply {
+            put(JtxContract.JtxAttendee.CALADDRESS, attendee.caladdress)
+            put(JtxContract.JtxAttendee.CUTYPE, attendee.cutype)
+            put(JtxContract.JtxAttendee.ROLE, attendee.role)
+            put(JtxContract.JtxAttendee.CN, attendee.cn)
+            put(JtxContract.JtxAttendee.ICALOBJECT_ID, id)
+        }
+
+        // This should not throw NPE
+        val attendeeUri = client.insert(JtxContract.JtxAttendee.CONTENT_URI.asSyncAdapter(testAccount), attendeeCV)!!
+        assertNotNull(attendeeUri)
     }
 
     @Test

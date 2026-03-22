@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.ical4android
@@ -219,8 +217,16 @@ open class JtxICalObject(
         var other: String? = null
     )
 
+    /**
+     * Represents an attendee of a task or journal entry.
+     */
     data class Attendee(
         var attendeeId: Long = 0L,
+        /**
+         * The calendar user address as a URI string.
+         * Should be a valid URI, typically in mailto: scheme format (e.g., "mailto:user@example.com").
+         * Can be null or empty if not specified.
+         */
         var caladdress: String? = null,
         var cutype: String? = JtxContract.JtxAttendee.Cutype.INDIVIDUAL.name,
         var member: String? = null,
@@ -338,7 +344,7 @@ open class JtxICalObject(
          */
         private fun extractVAlarms(iCalObject: JtxICalObject, calComponents: ComponentList<*>) {
             calComponents.all.forEach { component ->
-                if(component is VAlarm) {
+                if (component is VAlarm) {
                     val jtxAlarm = Alarm().apply {
                         component.getProperty<Action>(Property.ACTION).getOrNull()?.let { vAlarmAction -> this.action = vAlarmAction.value }
                         component.summary?.let { vAlarmSummary -> this.summary = vAlarmSummary.value }
@@ -349,10 +355,10 @@ open class JtxICalObject(
 
                         // alarms can have a duration or an absolute dateTime, but not both!
                         component.getProperty<Trigger>(Property.TRIGGER).getOrNull()?.let { trigger ->
-                            if(trigger.duration != null) {
+                            if (trigger.duration != null) {
                                 trigger.duration?.let { duration -> this.triggerRelativeDuration = duration.toString() }
                                 trigger.getParameter<Related>(Parameter.RELATED)?.getOrNull()?.let { related -> this.triggerRelativeTo = related.value }
-                            } else if(trigger.isAbsolute) { // self-contained (not relative to dtstart/dtend)
+                            } else if (trigger.isAbsolute) { // self-contained (not relative to dtstart/dtend)
                                 val normalizedTrigger = trigger.normalizedDate() // Ensure timezone exists in system
                                 this.triggerTime = normalizedTrigger.toEpochMilli()
                                 this.triggerTimezone =  normalizedTrigger.getTimeZoneId()
@@ -393,7 +399,7 @@ open class JtxICalObject(
                     is Summary -> iCalObject.summary = prop.value
                     is Location -> {
                         iCalObject.location = prop.value
-                        if(!prop.parameterList.all.isEmpty() && prop.parameterList.getFirst<AltRep>(Parameter.ALTREP) != null)
+                        if (!prop.parameterList.all.isEmpty() && prop.parameterList.getFirst<AltRep>(Parameter.ALTREP) != null)
                             iCalObject.locationAltrep = prop.parameterList.getFirst<AltRep>(Parameter.ALTREP).getOrNull()?.value
                     }
                     is Geo -> {
@@ -441,7 +447,7 @@ open class JtxICalObject(
 
                     is RRule<*> -> iCalObject.rrule = prop.value
                     is RDate<*> -> {
-                        val rdateList: MutableList<Long> = if(iCalObject.rdate.isNullOrEmpty())
+                        val rdateList: MutableList<Long> = if (iCalObject.rdate.isNullOrEmpty())
                             mutableListOf()
                         else
                             JtxContract.getLongListFromString(iCalObject.rdate!!)
@@ -451,7 +457,7 @@ open class JtxICalObject(
                         iCalObject.rdate = rdateList.toTypedArray().joinToString(separator = ",")
                     }
                     is ExDate<*> -> {
-                        val exdateList: MutableList<Long> = if(iCalObject.exdate.isNullOrEmpty())
+                        val exdateList: MutableList<Long> = if (iCalObject.exdate.isNullOrEmpty())
                             mutableListOf()
                         else
                             JtxContract.getLongListFromString(iCalObject.exdate!!)
@@ -682,7 +688,7 @@ open class JtxICalObject(
                         else -> return@let
                     }
                 }
-                if(alarm.triggerRelativeDuration != null) {
+                if (alarm.triggerRelativeDuration != null) {
                     add(Trigger().apply {
                         try {
                             val dur = java.time.Duration.parse(alarm.triggerRelativeDuration)
@@ -690,9 +696,9 @@ open class JtxICalObject(
 
                             // Add the RELATED parameter if present
                             alarm.triggerRelativeTo?.let {
-                                if(it == JtxContract.JtxAlarm.AlarmRelativeTo.START.name)
+                                if (it == JtxContract.JtxAlarm.AlarmRelativeTo.START.name)
                                     this.parameterList.add(Related.START)
-                                if(it == JtxContract.JtxAlarm.AlarmRelativeTo.END.name)
+                                if (it == JtxContract.JtxAlarm.AlarmRelativeTo.END.name)
                                     this.parameterList.add(Related.END)
                             }
                         } catch (e: DateTimeParseException) {
@@ -834,7 +840,8 @@ open class JtxICalObject(
 
         attendees.forEach { attendee ->
             val attendeeProp = net.fortuna.ical4j.model.property.Attendee().apply {
-                this.calAddress = URI(attendee.caladdress)
+                if (attendee.caladdress?.isNotEmpty() == true)
+                    this.calAddress = URI(attendee.caladdress)
 
                 attendee.cn?.let {
                     this.parameterList.add(Cn(it))
@@ -888,7 +895,7 @@ open class JtxICalObject(
 
         organizer?.let { organizer ->
             val organizerProp = net.fortuna.ical4j.model.property.Organizer().apply {
-                if(organizer.caladdress?.isNotEmpty() == true)
+                if (organizer.caladdress?.isNotEmpty() == true)
                     this.calAddress = URI(organizer.caladdress)
 
                 organizer.cn?.let {
@@ -1073,7 +1080,7 @@ duration?.let(props::add)
 */
 
 
-        if(component == JtxContract.JtxICalObject.Component.VTODO.name) {
+        if (component == JtxContract.JtxICalObject.Component.VTODO.name) {
             completed?.let {
                 // Completed is UNIX timestamp (milliseconds). But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
                 props += Completed(Instant.ofEpochMilli(it))
@@ -1329,7 +1336,7 @@ duration?.let(props::add)
                 JtxContract.JtxAttachment.FILENAME to attachment.filename
             )
             val newAttachment = collection.client.insert(JtxContract.JtxAttachment.CONTENT_URI.asSyncAdapter(collection.account), attachmentContentValues)
-            if(attachment.uri.isNullOrEmpty() && newAttachment != null) {
+            if (attachment.uri.isNullOrEmpty() && newAttachment != null) {
                 val attachmentPFD = collection.client.openFile(newAttachment, "w")
                 ParcelFileDescriptor.AutoCloseOutputStream(attachmentPFD).write(Base64.decode(attachment.binary, Base64.DEFAULT))
             }
@@ -1588,7 +1595,7 @@ duration?.let(props::add)
                 language = organizerContentValues.getAsString(JtxContract.JtxOrganizer.LANGUAGE)
                 other = organizerContentValues.getAsString(JtxContract.JtxOrganizer.OTHER)
             }
-            if(orgnzr.caladdress?.isNotEmpty() == true)   // we only take the organizer if there was a caladdress (otherwise an empty ORGANIZER is created)
+            if (orgnzr.caladdress?.isNotEmpty() == true)   // we only take the organizer if there was a caladdress (otherwise an empty ORGANIZER is created)
                 organizer = orgnzr
         }
 
@@ -1647,7 +1654,7 @@ duration?.let(props::add)
         }
 
 
-        if(rrule?.isNotEmpty() == true) {
+        if (rrule?.isNotEmpty() == true) {
             getAsContentValues(
                 uri = JtxContract.JtxICalObject.CONTENT_URI.asSyncAdapter(collection.account),
                 selection = "${JtxContract.JtxICalObject.UID} = ? AND ${JtxContract.JtxICalObject.RECURID} IS NOT NULL AND ${JtxContract.JtxICalObject.SEQUENCE} > 0",
