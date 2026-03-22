@@ -13,7 +13,6 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
-
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject
@@ -24,7 +23,6 @@ import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.Property
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assume
@@ -43,7 +41,7 @@ class JtxICalObjectTest {
     private lateinit var client: ContentProviderClient
 
     private val testAccount = Account(javaClass.name, JtxContract.JtxCollection.TEST_ACCOUNT_TYPE)
-    private var collection: JtxCollection<at.bitfire.ical4android.JtxICalObject>? = null
+    private lateinit var collection: JtxCollection<at.bitfire.ical4android.JtxICalObject>
     private var sample: at.bitfire.ical4android.JtxICalObject? = null
 
     private val url = "https://jtx.techbee.at"
@@ -67,9 +65,8 @@ class JtxICalObjectTest {
         val collectionUri = JtxCollection.create(testAccount, client, cvCollection)
         assertNotNull(collectionUri)
         collection = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)[0]
-        assertNotNull(collection)
 
-        sample = JtxICalObject(collection!!).apply {
+        sample = JtxICalObject(collection).apply {
             this.summary = "summ"
             this.description = "desc"
             this.dtstart = System.currentTimeMillis()
@@ -116,7 +113,7 @@ class JtxICalObjectTest {
     @After
     fun tearDown() {
         client.close()
-        collection?.delete()
+        collection.delete()
         val collections = JtxCollection.find(testAccount, client, context, TestJtxCollection.Factory, null, null)
         assertEquals(0, collections.size)
     }
@@ -179,7 +176,7 @@ class JtxICalObjectTest {
         val cv = ContentValues().apply {
             put(field, fieldContent)
             put(JtxICalObject.COMPONENT, component)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         client.query(uri, null, null, null, null)?.use {
@@ -198,7 +195,7 @@ class JtxICalObjectTest {
         val cv = ContentValues().apply {
             put(field, fieldContent)
             put(JtxICalObject.COMPONENT, component)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         client.query(uri, null, null, null, null)?.use {
@@ -218,7 +215,7 @@ class JtxICalObjectTest {
         val cv = ContentValues().apply {
             put(field, fieldContent)
             put(JtxICalObject.COMPONENT, component)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         client.query(uri, null, null, null, null)?.use {
@@ -236,7 +233,7 @@ class JtxICalObjectTest {
         val cv = ContentValues().apply {
             put(field, fieldContent)
             put(JtxICalObject.COMPONENT, component)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         client.query(uri, null, null, null, null)?.use {
@@ -254,7 +251,7 @@ class JtxICalObjectTest {
         val cv = ContentValues().apply {
             put(field, fieldContent)
             put(JtxICalObject.COMPONENT, component)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         client.query(uri, null, null, null, null)?.use {
@@ -270,7 +267,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -307,7 +304,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -342,7 +339,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -406,7 +403,7 @@ class JtxICalObjectTest {
     fun assertAttendeeWithNullCaladdress() {
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -436,7 +433,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -464,7 +461,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -499,7 +496,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -538,7 +535,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -575,7 +572,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -609,7 +606,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -657,7 +654,7 @@ class JtxICalObjectTest {
     fun assertAlarm_trigger_duration() {
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VTODO.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -693,7 +690,7 @@ class JtxICalObjectTest {
     fun assertAlarm_trigger_time_withoutTZ() {
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VTODO.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -726,7 +723,7 @@ class JtxICalObjectTest {
     fun assertAlarm_trigger_time_UTC() {
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VTODO.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -763,7 +760,7 @@ class JtxICalObjectTest {
     fun assertAlarm_trigger_time_Vienna() {
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VTODO.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -801,7 +798,7 @@ class JtxICalObjectTest {
 
         val cv = ContentValues().apply {
             put(JtxICalObject.COMPONENT, Component.VJOURNAL.name)
-            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection?.id)
+            put(JtxICalObject.ICALOBJECT_COLLECTIONID, collection.id)
         }
         val uri = client.insert(JtxICalObject.CONTENT_URI.asSyncAdapter(testAccount), cv)!!
         val id = uri.lastPathSegment
@@ -906,7 +903,7 @@ class JtxICalObjectTest {
 
         val stream = javaClass.classLoader!!.getResourceAsStream(filename)
         val reader = InputStreamReader(stream, Charsets.UTF_8)
-        val iCalObject = at.bitfire.ical4android.JtxICalObject.fromReader(reader, collection!!)
+        val iCalObject = at.bitfire.ical4android.JtxICalObject.fromReader(reader, collection)
 
         val os = ByteArrayOutputStream()
 
