@@ -30,7 +30,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 11:46:59 GMT+0200
             timeZone = "Europe/Paris",
             allDay = true,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()
@@ -44,7 +43,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             timeZone = "Europe/Vienna",
             allDay = false,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()
@@ -61,7 +59,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             timeZone = AndroidTimeUtils.TZID_UTC,
             allDay = false,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()
@@ -75,7 +72,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             timeZone = TimeZones.UTC_ID,
             allDay = false,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()
@@ -89,7 +85,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             timeZone = null,
             allDay = false,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()
@@ -103,7 +98,6 @@ class AndroidTimeFieldTest {
             timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
             timeZone = "absolutely/unknown",
             allDay = false,
-            tzRegistry = tzRegistry
         )
 
         val result = androidTimeField.toTemporal()

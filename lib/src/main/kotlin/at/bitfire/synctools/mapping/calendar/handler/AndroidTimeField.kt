@@ -7,7 +7,6 @@
 package at.bitfire.synctools.mapping.calendar.handler
 
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.util.TimeZones
 import java.time.DateTimeException
 import java.time.Instant
@@ -30,7 +29,6 @@ class AndroidTimeField(
     private val timestamp: Long,
     private val timeZone: String?,
     private val allDay: Boolean,
-    private val tzRegistry: TimeZoneRegistry? = null
 ) {
 
     /** ID of system default timezone */
