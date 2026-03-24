@@ -11,7 +11,12 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.util.TimeZones
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 
 /**
  * Converts timestamps from the [android.provider.CalendarContract.Events.DTSTART] or [android.provider.CalendarContract.Events.DTEND]
@@ -25,17 +30,41 @@ class AndroidTimeField(
     private val timestamp: Long,
     private val timeZone: String?,
     private val allDay: Boolean,
-    private val tzRegistry: TimeZoneRegistry
+    private val tzRegistry: TimeZoneRegistry? = null
 ) {
 
     /** ID of system default timezone */
     private val defaultTzId by lazy { ZoneId.systemDefault().id }
 
     /**
+     * Converts the given Android date/time into java time temporal object.
+     *
+     * @return `LocalDate` in case of an all-day event, `ZonedDateTime` in case of a non-all-day event
+     */
+    fun toTemporal(): Temporal {
+        val instant = Instant.ofEpochMilli(timestamp)
+
+        if (allDay)
+            return LocalDate.ofInstant(instant, ZoneId.of(timeZone ?: defaultTzId))
+
+        // non-all-day
+        val tzId = timeZone
+            ?: ZoneId.systemDefault().id    // safe fallback (should never be used/needed because the calendar provider requires EVENT_TIMEZONE)
+
+        val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID)
+            ZoneOffset.UTC
+        else
+            ZoneId.of(tzId)
+
+        return ZonedDateTime.ofInstant(instant, timezone)
+    }
+
+    /**
      * Converts the given Android date/time into an ical4j date property.
      *
      * @return `Date` in case of an all-day event, `DateTime` in case of a non-all-day event
      */
+    @Deprecated("Use asTemporal() instead.")
     fun asIcal4jDate(): Date {
         if (allDay)
             return Date(timestamp)
@@ -54,7 +83,7 @@ class AndroidTimeField(
         val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID)
             null    // indicates UTC
         else
-            (tzRegistry.getTimeZone(tzId) ?: tzRegistry.getTimeZone(defaultTzId))
+            (tzRegistry?.getTimeZone(tzId) ?: tzRegistry?.getTimeZone(defaultTzId))
 
         return DateTime(timestamp).also { dateTime ->
             if (timezone == null)

@@ -8,17 +8,16 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.Events
-import at.bitfire.ical4android.util.DateUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistry
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
-import net.fortuna.ical4j.util.TimeZones
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
-class OriginalInstanceTimeHandler(
-    private val tzRegistry: TimeZoneRegistry
-): AndroidEventFieldHandler {
+class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         // only applicable to exceptions, not to main events
@@ -26,30 +25,24 @@ class OriginalInstanceTimeHandler(
             return
 
         val values = from.entityValues
-        TODO("ical4j 4.x")
-        /*values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
+
+        val eventTimezone = DatePropertyTzMapper.systemTzId(values.getAsString(Events.EVENT_TIMEZONE))
+        val zoneId = if (eventTimezone != null) {
+            ZoneId.of(eventTimezone)
+        } else {
+            ZoneId.systemDefault()
+        }
+
+        values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (values.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-            val originalDate =
-                if (originalAllDay)
-                    Date(originalInstanceTime)
-                else
-                    DateTime(originalInstanceTime)
-
-            if (originalDate is DateTime) {
+            val instant = Instant.ofEpochMilli(originalInstanceTime)
+            to += if (originalAllDay) {
+                RecurrenceId(LocalDate.ofInstant(instant, zoneId))
+            } else {
                 // get DTSTART time zone
-                val startTzId = DateUtils.findAndroidTimezoneID(values.getAsString(Events.EVENT_TIMEZONE))
-                val startTz = tzRegistry.getTimeZone(startTzId)
-
-                if (startTz != null) {
-                    if (TimeZones.isUtc(startTz))
-                        originalDate.isUtc = true
-                    else
-                        originalDate.timeZone = startTz
-                }
+                RecurrenceId(ZonedDateTime.ofInstant(instant, zoneId))
             }
-
-            to.properties += RecurrenceId(originalDate)
-        }*/
+        }
     }
 
 }

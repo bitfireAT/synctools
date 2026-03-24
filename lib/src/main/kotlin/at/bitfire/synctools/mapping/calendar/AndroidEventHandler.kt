@@ -34,11 +34,8 @@ import at.bitfire.synctools.mapping.calendar.handler.UnknownPropertiesHandler
 import at.bitfire.synctools.mapping.calendar.handler.UrlHandler
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
-import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
@@ -58,18 +55,16 @@ class AndroidEventHandler(
     private val prodIdGenerator: ProdIdGenerator
 ) {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-
     private val fieldHandlers: Array<AndroidEventFieldHandler> = arrayOf(
         // event row fields
         UidHandler(),
-        OriginalInstanceTimeHandler(tzRegistry),
+        OriginalInstanceTimeHandler(),
         TitleHandler(),
         LocationHandler(),
-        StartTimeHandler(tzRegistry),
-        EndTimeHandler(tzRegistry),
-        DurationHandler(tzRegistry),
-        RecurrenceFieldsHandler(tzRegistry),
+        StartTimeHandler(),
+        EndTimeHandler(),
+        DurationHandler(),
+        RecurrenceFieldsHandler(),
         DescriptionHandler(),
         ColorHandler(),
         AccessLevelHandler(),

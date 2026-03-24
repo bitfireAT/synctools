@@ -10,31 +10,30 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import at.bitfire.DefaultTimezoneRule
+import at.bitfire.synctools.icalendar.recurrenceId
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
-import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class OriginalInstanceTimeHandlerTest {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+    @get:Rule
+    val tzRule = DefaultTimezoneRule("Europe/Berlin")
 
-    private val handler = OriginalInstanceTimeHandler(tzRegistry)
+    private val tzVienna = ZoneId.of("Europe/Vienna")
 
-    init {
-        TODO("ical4j 4.x")
-    }
+    private val handler = OriginalInstanceTimeHandler()
 
-    /*@Test
+    @Test
     fun `Original event is all-day`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
@@ -42,7 +41,7 @@ class OriginalInstanceTimeHandlerTest {
             Events.ORIGINAL_ALL_DAY to 1
         ))
         handler.process(entity, Entity(ContentValues()), result)
-        assertEquals(RecurrenceId(Date("20200707")), result.recurrenceId)
+        assertEquals(RecurrenceId(LocalDate.of(2020, 7, 7)), result.recurrenceId)
     }
 
     @Test
@@ -54,7 +53,8 @@ class OriginalInstanceTimeHandlerTest {
             Events.EVENT_TIMEZONE to tzVienna.id
         ))
         handler.process(entity, Entity(ContentValues()), result)
-        assertEquals(RecurrenceId(DateTime("20250922T161348", tzVienna)), result.recurrenceId)
-    }*/
+        val viennaDateTime = ZonedDateTime.of(2025, 9, 22, 16, 13, 48, 0, tzVienna)
+        assertEquals(RecurrenceId(viennaDateTime), result.recurrenceId)
+    }
 
 }

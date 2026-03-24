@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.util
 
+import at.bitfire.ical4android.util.DateUtils.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions
 import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.DateList
@@ -28,10 +29,8 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
-import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.logging.Logger
-import kotlin.collections.buildList
 import kotlin.jvm.optionals.getOrDefault
 
 object AndroidTimeUtils {
@@ -115,7 +114,7 @@ object AndroidTimeUtils {
     fun<T: DateListProperty<*>> androidStringToRecurrenceSet(
         dbStr: String,
         allDay: Boolean,
-        exclude: Temporal? = null,
+        exclude: Instant? = null,
         generator: (DateList<*>) -> T
     ): T? {
         if (dbStr.isEmpty()) return null
@@ -139,11 +138,20 @@ object AndroidTimeUtils {
             .splitToSequence(RECURRENCE_LIST_VALUE_SEPARATOR)
             .map { dateString ->
                 if (zoneId == null) {
-                    val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
-                    if (allDay) {
-                        instant.atZone(ZoneOffset.UTC).toLocalDate()
+                    if (dateString.contains('T')) {
+                        val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
+                        if (allDay) {
+                            instant.toLocalDate()
+                        } else {
+                            instant
+                        }
                     } else {
-                        instant
+                        val localDate = TemporalAdapter.parse<LocalDate>(dateString, CalendarDateFormat.DATE_FORMAT).temporal
+                        if (allDay) {
+                            localDate
+                        } else {
+                            localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+                        }
                     }
                 } else {
                     val localDateTime = TemporalAdapter.parse<LocalDateTime>(dateString, CalendarDateFormat.FLOATING_DATE_TIME_FORMAT).temporal
@@ -156,7 +164,12 @@ object AndroidTimeUtils {
             }
             .filterNot { date ->
                 // filter excluded date
-                date == exclude
+                when (date) {
+                    is LocalDate -> date == exclude?.toLocalDate()
+                    is Instant -> date == exclude
+                    is ZonedDateTime -> date.toInstant() == exclude
+                    else -> error("Unsupported Temporal type: ${this::class.qualifiedName}")
+                }
             }
             .toList()
 

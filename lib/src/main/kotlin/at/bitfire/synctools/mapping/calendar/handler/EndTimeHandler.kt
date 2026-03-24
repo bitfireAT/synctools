@@ -9,12 +9,11 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
-import net.fortuna.ical4j.model.TimeZoneRegistry
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import java.time.Duration
 import java.time.Instant
-import java.util.logging.Logger
 
 /**
  * Maps a potentially present [Events.DTEND] to a VEvent [DtEnd] property.
@@ -24,12 +23,7 @@ import java.util.logging.Logger
  * - If [Events.DURATION] is present / not null, [DurationHandler] is responsible for generating the VEvent's [DtEnd].
  * - If [Events.DURATION] is null / not present, this class is responsible for generating the VEvent's [DtEnd].
  */
-class EndTimeHandler(
-    private val tzRegistry: TimeZoneRegistry
-): AndroidEventFieldHandler {
-
-    private val logger
-        get() = Logger.getLogger(javaClass.name)
+class EndTimeHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
@@ -56,12 +50,10 @@ class EndTimeHandler(
             timestamp = tsEnd,
             timeZone = values.getAsString(Events.EVENT_END_TIMEZONE)
                 ?: values.getAsString(Events.EVENT_TIMEZONE),   // if end timezone is not present, assume same as for start
-            allDay = allDay,
-            tzRegistry = tzRegistry
-        ).asIcal4jDate()
+            allDay = allDay
+        ).toTemporal()
 
-        TODO("ical4j 4.x")
-        //to.properties += DtEnd(end)
+        to += DtEnd(end)
     }
 
     @VisibleForTesting

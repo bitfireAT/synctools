@@ -279,7 +279,7 @@ class AndroidTimeUtilsTest {
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "${tzToronto.id};20150103T113030,20150105T113030",
             allDay = false,
-            exclude = dateTimeValue("20150103T113030", tzToronto),
+            exclude = dateTimeValue("20150103T113030", tzToronto).toInstant(),
             generator = exDateGenerator,
         )!!
 
@@ -329,7 +329,7 @@ class AndroidTimeUtilsTest {
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
             "${tzToronto.id};20150103T113030",
             allDay = false,
-            exclude = dateTimeValue("20150103T113030", tzToronto),
+            exclude = dateTimeValue("20150103T113030", tzToronto).toInstant(),
             generator = exDateGenerator,
         )
         assertNull(exDate)

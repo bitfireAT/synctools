@@ -9,13 +9,11 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import net.fortuna.ical4j.model.TimeZoneRegistry
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 
-class StartTimeHandler(
-    private val tzRegistry: TimeZoneRegistry
-): AndroidEventFieldHandler {
+class StartTimeHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
@@ -25,12 +23,10 @@ class StartTimeHandler(
         val start = AndroidTimeField(
             timestamp = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART"),
             timeZone = values.getAsString(Events.EVENT_TIMEZONE),
-            allDay = allDay,
-            tzRegistry = tzRegistry
-        ).asIcal4jDate()
+            allDay = allDay
+        ).toTemporal()
 
-        TODO("ical4j 4.x")
-        //to.properties += DtStart(start)
+        to += DtStart(start)
     }
 
 }

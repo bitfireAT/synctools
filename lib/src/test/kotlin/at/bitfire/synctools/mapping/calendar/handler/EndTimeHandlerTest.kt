@@ -9,39 +9,39 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
+import at.bitfire.synctools.icalendar.dtEnd
 import junit.framework.TestCase.assertEquals
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertNull
 import org.junit.Assume
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
+import kotlin.jvm.optionals.getOrNull
 
-@Ignore("ical4j 4.x")
 @RunWith(RobolectricTestRunner::class)
 class EndTimeHandlerTest {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+    private val tzVienna = ZoneId.of("Europe/Vienna")!!
 
-    private val handler = EndTimeHandler(tzRegistry)
+    private val handler = EndTimeHandler()
 
     // Note: When the calendar provider sets a non-null DTEND, it implies that the event is not recurring.
 
-    init {
-        TODO("ical4j 4.x")
-    }
 
-    /*@Test
+    @Test
     fun `All-day event`() {
         val result = VEvent()
         val entity = Entity(contentValuesOf(
@@ -50,7 +50,8 @@ class EndTimeHandlerTest {
             Events.DTEND to 1592697600000L,     // 21/06/2020
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtEnd(Date("20200621")), result.endDate)
+        val localDate = LocalDate.of(2020, 6, 21)
+        assertEquals(DtEnd(localDate), result.dtEnd<LocalDate>())
     }
 
     @Test
@@ -61,7 +62,8 @@ class EndTimeHandlerTest {
             Events.DTSTART to 1592697600000L    // 21/06/2020; DTSTART is required for DTEND to be processed
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtEnd(Date("20200622")), result.endDate)
+        val localDate = LocalDate.of(2020, 6, 22)
+        assertEquals(DtEnd(localDate), result.dtEnd<LocalDate>())
     }
 
     @Test
@@ -75,7 +77,8 @@ class EndTimeHandlerTest {
             Events.EVENT_END_TIMEZONE to "Europe/Vienna"
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
+        val viennaDateTime = ZonedDateTime.of(2020, 6, 21, 12, 0, 0, 0, tzVienna)
+        assertEquals(DtEnd(viennaDateTime), result.dtEnd<ZonedDateTime>())
     }
 
     @Test
@@ -88,12 +91,13 @@ class EndTimeHandlerTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
+        val viennaDateTime = ZonedDateTime.of(2020, 6, 21, 12, 0, 0, 0, tzVienna)
+        assertEquals(DtEnd(viennaDateTime), result.dtEnd<ZonedDateTime>())
     }
 
     @Test
     fun `Non-all-day event without start or end timezone`() {
-        val defaultTz = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
+        val defaultTz = ZoneId.systemDefault()
         Assume.assumeTrue(defaultTz.id != TimeZones.UTC_ID)     // would cause UTC DATE-TIME
         val result = VEvent()
         val entity = Entity(contentValuesOf(
@@ -103,8 +107,11 @@ class EndTimeHandlerTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         handler.process(entity, entity, result)
-        assertEquals(1592733600000L, result.endDate?.date?.time)
-        assertEquals(defaultTz, (result.endDate?.date as? DateTime)?.timeZone)
+        assertEquals(DtEnd(dateTimeValue("20200621T120000", defaultTz)), result.dtEnd<ZonedDateTime>())
+        assertEquals(
+            defaultTz.id,
+            result.dtEnd<LocalDateTime>()?.getParameter<TzId>(Parameter.TZID)?.getOrNull()?.value
+        )
     }
 
     @Test
@@ -115,8 +122,9 @@ class EndTimeHandlerTest {
             Events.DTSTART to 1592733600000L,           // 21/06/2020 12:00 +0200; DTSTART is required for DTEND to be processed
             Events.EVENT_TIMEZONE to "Europe/Vienna"    // will be used as end time zone
         ))
+        val viennaDateTime = ZonedDateTime.of(2020,6,21,12,0,0,0, tzVienna)
         handler.process(entity, entity, result)
-        assertEquals(DtEnd(DateTime("20200621T120000", tzVienna)), result.endDate)
+        assertEquals(DtEnd(viennaDateTime), result.dtEnd<ZonedDateTime>())
     }
 
 
@@ -129,7 +137,7 @@ class EndTimeHandlerTest {
             Events.DTEND to 1592733500000L
         ))
         handler.process(entity, entity, result)
-        assertNull(result.endDate)
+        assertNull(result.dtEnd<Temporal>())
     }
 
     @Test
@@ -140,7 +148,7 @@ class EndTimeHandlerTest {
             Events.DURATION to "PT1H"
         ))
         handler.process(entity, entity, result)
-        assertNull(result.endDate)
+        assertNull(result.dtEnd<Temporal>())
     }
 
 
@@ -163,6 +171,6 @@ class EndTimeHandlerTest {
         val start = System.currentTimeMillis()
         val result = handler.calculateFromDefault(start, allDay = false)
         assertEquals(start, result)
-    }*/
+    }
 
 }
