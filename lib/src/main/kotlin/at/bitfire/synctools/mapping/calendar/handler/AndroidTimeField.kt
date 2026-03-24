@@ -11,12 +11,14 @@ import net.fortuna.ical4j.model.Date
 import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.util.TimeZones
+import java.time.DateTimeException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
+import java.time.zone.ZoneRulesException
 
 /**
  * Converts timestamps from the [android.provider.CalendarContract.Events.DTSTART] or [android.provider.CalendarContract.Events.DTEND]
@@ -51,10 +53,17 @@ class AndroidTimeField(
         val tzId = timeZone
             ?: ZoneId.systemDefault().id    // safe fallback (should never be used/needed because the calendar provider requires EVENT_TIMEZONE)
 
-        val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID)
+        val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID) {
             ZoneOffset.UTC
-        else
-            ZoneId.of(tzId)
+        } else {
+            try {
+                ZoneId.of(tzId)
+            } catch (_: DateTimeException) {
+                ZoneId.of(defaultTzId)
+            } catch (_: ZoneRulesException) {
+                ZoneId.of(defaultTzId)
+            }
+        }
 
         return ZonedDateTime.ofInstant(instant, timezone)
     }

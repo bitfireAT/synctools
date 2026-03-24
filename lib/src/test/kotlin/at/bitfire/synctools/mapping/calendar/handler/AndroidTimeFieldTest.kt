@@ -6,112 +6,109 @@
 
 package at.bitfire.synctools.mapping.calendar.handler
 
+import at.bitfire.DefaultTimezoneRule
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
 import at.bitfire.synctools.util.AndroidTimeUtils
-import io.mockk.every
-import io.mockk.mockk
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assume
-import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
-import java.time.ZoneId
+import java.time.ZoneOffset
 
-@Ignore("ical4j 4.x")
 class AndroidTimeFieldTest {
 
+    @get:Rule
+    val tzRule = DefaultTimezoneRule("Pacific/Honolulu")
+
     private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzDefault = tzRegistry.getTimeZone(ZoneId.systemDefault().id)
 
     @Test
-    fun `asIcal4jDate(all-day) returns ical4j Date`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            null,
-            true,
-            tzRegistry
-        ).asIcal4jDate()
-        assertEquals(Date("20251015"), result)
+    fun `toTemporal with all-day returns LocalDate`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 11:46:59 GMT+0200
+            timeZone = "Europe/Paris",
+            allDay = true,
+            tzRegistry = tzRegistry
+        )
+
+        val result = androidTimeField.toTemporal()
+
+        assertEquals(dateValue("20251015"), result)
     }
 
     @Test
-    fun `asIcal4jDate(non-all-day) returns ical4j zoned DateTime`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            "Europe/Vienna",
-            false,
-            tzRegistry
-        ).asIcal4jDate()
+    fun `toTemporal without all-day returns ZonedDateTime`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timeZone = "Europe/Vienna",
+            allDay = false,
+            tzRegistry = tzRegistry
+        )
+
+        val result = androidTimeField.toTemporal()
+
         assertEquals(
-            DateTime("20251015T114659", tzRegistry.getTimeZone("Europe/Vienna")),
+            dateTimeValue("20251015T114659", tzRegistry.getTimeZone("Europe/Vienna")),
             result
         )
     }
 
     @Test
-    fun `asIcal4jDate(non-all-day with Android UTC timezone ID returns ical4j UTC DateTime`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            AndroidTimeUtils.TZID_UTC,
-            false,
-            tzRegistry
-        ).asIcal4jDate() as DateTime
-        assertEquals(1760521619000, result.time)
-        assertTrue(result.isUtc)
+    fun `toTemporal with Android UTC timezone ID returns UTC ZonedDateTime`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timeZone = AndroidTimeUtils.TZID_UTC,
+            allDay = false,
+            tzRegistry = tzRegistry
+        )
+
+        val result = androidTimeField.toTemporal()
+
+        assertEquals(dateTimeValue("20251015T094659", ZoneOffset.UTC), result)
     }
 
     @Test
-    fun `asIcal4jDate(non-all-day with JVM UTC timezone ID returns ical4j UTC DateTime`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            TimeZones.UTC_ID,
-            false,
-            tzRegistry
-        ).asIcal4jDate() as DateTime
-        assertEquals(1760521619000, result.time)
-        assertTrue(result.isUtc)
+    fun `toTemporal with JVM UTC timezone ID returns UTC ZonedDateTime`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timeZone = TimeZones.UTC_ID,
+            allDay = false,
+            tzRegistry = tzRegistry
+        )
+
+        val result = androidTimeField.toTemporal()
+
+        assertEquals(dateTimeValue("20251015T094659", ZoneOffset.UTC), result)
     }
 
     @Test
-    fun `asIcal4jDate(non-all-day without timezone) returns ical4j DateTime in default zone`() {
-        Assume.assumeTrue(tzDefault.id != TimeZones.UTC_ID)     // would cause UTC DATE-TIME
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            null,
-            false,
-            tzRegistry
-        ).asIcal4jDate() as DateTime
-        assertEquals(1760521619000, result.time)
-        assertEquals(tzDefault, result.timeZone)
+    fun `toTemporal without timezone returns ZonedDateTime with default zone`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timeZone = null,
+            allDay = false,
+            tzRegistry = tzRegistry
+        )
+
+        val result = androidTimeField.toTemporal()
+
+        assertEquals(dateTimeValue("20251014T234659", tzRule.defaultZoneId), result)
     }
 
     @Test
-    fun `asIcal4jDate(non-all-day with unknown timezone) returns ical4j DateTime in default zone`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            "absolutely/unknown",
-            false,
-            tzRegistry
-        ).asIcal4jDate() as DateTime
-        assertEquals(1760521619000, result.time)
-        assertEquals(tzDefault, result.timeZone)
-    }
+    fun `toTemporal with unknown timezone returns ZonedDateTime with default zone`() {
+        val androidTimeField = AndroidTimeField(
+            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timeZone = "absolutely/unknown",
+            allDay = false,
+            tzRegistry = tzRegistry
+        )
 
-    @Test
-    fun `asIcal4jDate(non-all-day with unknown timezone and unknown system timezone) returns ical4j UTC DateTime`() {
-        val result = AndroidTimeField(
-            1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
-            "absolutely/unknown",
-            false,
-            mockk {
-                every { getTimeZone(any()) } returns null
-            }
-        ).asIcal4jDate() as DateTime
-        assertEquals(1760521619000, result.time)
-        assertTrue(result.isUtc)
+        val result = androidTimeField.toTemporal()
+
+        assertEquals(dateTimeValue("20251014T234659", tzRule.defaultZoneId), result)
     }
 
 }
