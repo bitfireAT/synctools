@@ -10,7 +10,10 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.icalendar.recurrenceId
+import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
 import at.bitfire.synctools.mapping.calendar.handler.AccessLevelHandler
 import at.bitfire.synctools.mapping.calendar.handler.AndroidEventFieldHandler
 import at.bitfire.synctools.mapping.calendar.handler.AttendeesHandler
@@ -34,13 +37,17 @@ import at.bitfire.synctools.mapping.calendar.handler.UnknownPropertiesHandler
 import at.bitfire.synctools.mapping.calendar.handler.UrlHandler
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
+import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import java.time.LocalDate
 import java.util.LinkedList
 import java.util.UUID
 
@@ -132,11 +139,10 @@ class AndroidEventHandler(
                 val recurrenceId = exceptionEvent.recurrenceId ?: continue
 
                 // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
-                TODO("ical4j 4.x")
-                /*if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                    main.properties += asExDate(exception, recurrenceId)
+                if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
+                    main += asExDate(exception, recurrenceId)
                 else
-                    exceptions += exceptionEvent*/
+                    exceptions += exceptionEvent
             }
         }
 
@@ -153,22 +159,20 @@ class AndroidEventHandler(
     }
 
     private fun asExDate(entity: Entity, recurrenceId: RecurrenceId<*>): ExDate<*> {
-        TODO("ical4j 4.x")
-        /*val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-        val list = DateList(
-            if (originalAllDay) Value.DATE else Value.DATE_TIME,
-            recurrenceId.timeZone
-        )
-        list.add(recurrenceId.date)
-        return ExDate(list).apply {
-            // also set TZ properties of ExDate (not only the list)
-            if (!originalAllDay) {
-                if (recurrenceId.isUtc)
-                    setUtc(true)
-                else
-                    timeZone = recurrenceId.timeZone
-            }
-        }*/
+        val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
+        val date = recurrenceId.normalizedDate()
+
+        // Return ExDate
+        return if (originalAllDay) {
+            // .. as date, without time
+            ExDate(DateList(LocalDate.from(date)))
+        } else {
+            // .. as ZonedDateTime, with time and TZ param
+            ExDate(
+                ParameterList(listOf(TzId(date.toZonedDateTime().zone.id))),
+                DateList(date.toZonedDateTime())
+            )
+        }
     }
 
     private fun generateProdId(main: Entity): ProdId {
