@@ -13,11 +13,9 @@ import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.TemporalAmountAdapter
 import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
-import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.RDate
 import java.time.Duration
 import java.time.Instant
@@ -45,52 +43,6 @@ object AndroidTimeUtils {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
-
-
-    @Deprecated("Use DatePropertyTzMapper instead", replaceWith =
-        ReplaceWith("date.normalizedDate()", "at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate"))
-    fun androidifyTimeZone(date: DateProperty<*>?, tzRegistry: TimeZoneRegistry) {
-        TODO("Will be removed during ical4j 4.x update")
-    }
-
-    /**
-     * Ensures that a given [net.fortuna.ical4j.model.property.DateListProperty] either
-     *
-     * 1. has a time zone with an ID that is available in Android, or
-     * 2. is an UTC property ([DateProperty.isUtc] = *true*).
-     * *
-     * @param dateList [net.fortuna.ical4j.model.property.DateListProperty] to validate. Values which are not DATE-TIME will be ignored.
-     */
-    @Deprecated("Use DatePropertyTzMapper instead")
-    fun androidifyTimeZone(dateList: DateListProperty<*>): DateListProperty<*> =
-        TODO("Should be implemented in DatePropertyTzMapper, if needed")
-        /*val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
-        // periods (RDate only)
-        TODO("ical4j 4.x")
-        val periods = (dateList as? RDate)?.periods
-        if (periods != null && periods.isNotEmpty() && !periods.isUtc) {
-            val tzID = DateUtils.findAndroidTimezoneID(periods.timeZone?.id)
-
-            // Setting the time zone won't work until resolved in ical4j (https://github.com/ical4j/ical4j/discussions/568)
-            // DateListProperty.setTimeZone() does not set the timeZone property when the DateList has PERIODs
-            dateList.timeZone = tzRegistry.getTimeZone(tzID)
-
-            return //  RDate can only contain periods OR dates - not both, bail out fast
-        }
-
-        // date-times (RDate and ExDate)
-        val dates = dateList.dates
-        if (dates != null && dates.isNotEmpty()) {
-            if (dates.type == Value.DATE_TIME && !dates.isUtc) {
-                val tzID = DateUtils.findAndroidTimezoneID(dates.timeZone?.id)
-                dateList.timeZone = tzRegistry.getTimeZone(tzID)
-            }
-        }*/
-
-    @Deprecated("Implementation may vary by provider and should be done in the respective mapper")
-    fun storageTzId(date: DateProperty<*>): String =
-        TODO("Will be removed during ical4j 4.x update")
 
 
     // recurrence sets
