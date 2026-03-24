@@ -24,7 +24,7 @@ class StartTimeHandler: AndroidEventFieldHandler {
             timestamp = values.getAsLong(Events.DTSTART) ?: throw InvalidLocalResourceException("Missing DTSTART"),
             timeZone = values.getAsString(Events.EVENT_TIMEZONE),
             allDay = allDay
-        ).asTemporal()
+        ).toTemporal()
 
         to += DtStart(start)
     }

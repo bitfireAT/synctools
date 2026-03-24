@@ -10,10 +10,12 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
+import at.bitfire.DefaultTimezoneRule
 import at.bitfire.synctools.icalendar.recurrenceId
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -23,6 +25,9 @@ import java.time.ZonedDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class OriginalInstanceTimeHandlerTest {
+
+    @get:Rule
+    val tzRule = DefaultTimezoneRule("Europe/Berlin")
 
     private val tzVienna = ZoneId.of("Europe/Vienna")
 

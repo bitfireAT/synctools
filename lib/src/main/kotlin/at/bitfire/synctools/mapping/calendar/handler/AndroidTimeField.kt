@@ -39,13 +39,13 @@ class AndroidTimeField(
     /**
      * Converts the given Android date/time into java time temporal object.
      *
-     * @return `Loca` in case of an all-day event, `DateTime` in case of a non-all-day event
+     * @return `LocalDate` in case of an all-day event, `ZonedDateTime` in case of a non-all-day event
      */
-    fun asTemporal(): Temporal {
+    fun toTemporal(): Temporal {
         val instant = Instant.ofEpochMilli(timestamp)
 
         if (allDay)
-            return LocalDate.ofInstant(instant, ZoneId.systemDefault())
+            return LocalDate.ofInstant(instant, ZoneId.of(timeZone ?: defaultTzId))
 
         // non-all-day
         val tzId = timeZone

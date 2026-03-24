@@ -44,7 +44,7 @@ class RecurrenceFieldsHandler: AndroidEventFieldHandler {
                 timestamp = tsStart,
                 timeZone = values.getAsString(Events.EVENT_TIMEZONE),
                 allDay = allDay
-            ).asTemporal()
+            ).toTemporal()
         }
 
         // Note: big method – maybe split?

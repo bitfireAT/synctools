@@ -10,15 +10,12 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper
 import at.bitfire.synctools.icalendar.plusAssign
-import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.RecurrenceId
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
 
@@ -28,19 +25,22 @@ class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
             return
 
         val values = from.entityValues
+
+        val eventTimezone = DatePropertyTzMapper.systemTzId(values.getAsString(Events.EVENT_TIMEZONE))
+        val zoneId = if (eventTimezone != null) {
+            ZoneId.of(eventTimezone)
+        } else {
+            ZoneId.systemDefault()
+        }
+
         values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (values.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
             val instant = Instant.ofEpochMilli(originalInstanceTime)
             to += if (originalAllDay) {
-                RecurrenceId(LocalDate.ofInstant(instant, ZoneId.systemDefault()))
+                RecurrenceId(LocalDate.ofInstant(instant, zoneId))
             } else {
                 // get DTSTART time zone
-                val startTzId = DatePropertyTzMapper.systemTzId(values.getAsString(Events.EVENT_TIMEZONE))
-                val zoneId = startTzId?.let { ZoneId.of(startTzId) } ?: ZoneId.systemDefault()
-                RecurrenceId(
-                    ParameterList(mutableListOf<Parameter>(TzId(startTzId))),
-                    LocalDateTime.ofInstant(instant, zoneId)
-                )
+                RecurrenceId(ZonedDateTime.ofInstant(instant, zoneId))
             }
         }
     }

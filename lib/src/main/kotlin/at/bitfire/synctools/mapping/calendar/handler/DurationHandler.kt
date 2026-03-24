@@ -60,7 +60,7 @@ class DurationHandler: AndroidEventFieldHandler {
                 timestamp = tsStart,
                 timeZone = values.getAsString(Events.EVENT_TIMEZONE),
                 allDay = false
-            ).asTemporal()
+            ).toTemporal()
 
             val start = startDateTime.toZonedDateTime()
             val end = start + duration

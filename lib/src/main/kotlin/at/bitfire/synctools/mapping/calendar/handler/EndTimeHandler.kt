@@ -51,7 +51,7 @@ class EndTimeHandler: AndroidEventFieldHandler {
             timeZone = values.getAsString(Events.EVENT_END_TIMEZONE)
                 ?: values.getAsString(Events.EVENT_TIMEZONE),   // if end timezone is not present, assume same as for start
             allDay = allDay
-        ).asTemporal()
+        ).toTemporal()
 
         to += DtEnd(end)
     }

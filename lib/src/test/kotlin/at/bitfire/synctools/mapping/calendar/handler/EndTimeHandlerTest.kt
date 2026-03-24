@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.util.DateUtils.toEpochMilli
+import at.bitfire.dateTimeValue
 import at.bitfire.synctools.icalendar.dtEnd
 import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.Parameter
@@ -107,7 +107,7 @@ class EndTimeHandlerTest {
             Events.DTEND to 1592733600000L      // 21/06/2020 12:00 +0200
         ))
         handler.process(entity, entity, result)
-        assertEquals(1592733600000L, result.dtEnd<ZonedDateTime>()?.date?.toEpochMilli())
+        assertEquals(DtEnd(dateTimeValue("20200621T120000", defaultTz)), result.dtEnd<ZonedDateTime>())
         assertEquals(
             defaultTz.id,
             result.dtEnd<LocalDateTime>()?.getParameter<TzId>(Parameter.TZID)?.getOrNull()?.value
