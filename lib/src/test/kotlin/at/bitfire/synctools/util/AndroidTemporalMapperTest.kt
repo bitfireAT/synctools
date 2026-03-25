@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools.mapping.calendar.builder
+package at.bitfire.synctools.util
 
 import at.bitfire.DefaultTimezoneRule
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.androidTimezoneId
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTemporalMapper.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTemporalMapper.toTimestamp
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.component.VEvent

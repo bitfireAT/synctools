@@ -11,7 +11,7 @@ import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.icalendar.VTimeZoneMinifier
 import at.bitfire.synctools.icalendar.plusAssign
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTemporalMapper.toTimestamp
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Parameter

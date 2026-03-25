@@ -13,7 +13,7 @@ import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTemporalMapper.toTimestamp
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation

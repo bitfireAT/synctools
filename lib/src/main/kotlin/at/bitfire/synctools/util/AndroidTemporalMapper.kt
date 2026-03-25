@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools.mapping.calendar.builder
+package at.bitfire.synctools.util
 
-import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.util.TimeZones
 import java.time.Instant

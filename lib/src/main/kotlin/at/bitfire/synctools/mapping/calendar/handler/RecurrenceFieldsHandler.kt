@@ -11,8 +11,8 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
+import at.bitfire.synctools.util.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTemporalMapper.toZonedDateTime
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.component.VEvent
