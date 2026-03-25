@@ -15,7 +15,6 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
-@Ignore("ical4j 4.x")
 class AndroidTimeZonesTest {
 
     @Test

@@ -6,14 +6,12 @@
 
 package at.bitfire.synctools.icalendar
 
-import net.fortuna.ical4j.model.Date
+import at.bitfire.dateValue
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import net.fortuna.ical4j.model.property.Uid
-import org.junit.Ignore
 import org.junit.Test
 
-@Ignore("ical4j 4.x")
 class AssociatedComponentsTest {
 
     @Test(expected = IllegalArgumentException::class)
@@ -21,15 +19,11 @@ class AssociatedComponentsTest {
         AssociatedEvents(null, emptyList())
     }
 
-    init {
-        TODO("ical4j 4.x")
-    }
-
-    /*@Test
+    @Test
     fun testOnlyExceptions_UidNull() {
         AssociatedEvents(null, listOf(
             VEvent(propertyListOf(
-                RecurrenceId(Date("20250629"))
+                RecurrenceId(dateValue("20250629"))
             ))
         ))
     }
@@ -39,7 +33,7 @@ class AssociatedComponentsTest {
         AssociatedEvents(null, listOf(
             VEvent(propertyListOf(
                 Uid("test1"),
-                RecurrenceId(Date("20250629"))
+                RecurrenceId(dateValue("20250629"))
             ))
         ))
     }
@@ -48,11 +42,11 @@ class AssociatedComponentsTest {
     fun testOnlyExceptions_UidNotIdentical() {
         AssociatedEvents(null, listOf(
             VEvent(propertyListOf(
-                RecurrenceId(Date("20250629"))
+                RecurrenceId(dateValue("20250629"))
             )),
             VEvent(propertyListOf(
                 Uid("test1"),
-                RecurrenceId(Date("20250630"))
+                RecurrenceId(dateValue("20250630"))
             ))
         ))
     }
@@ -65,7 +59,7 @@ class AssociatedComponentsTest {
     @Test(expected = IllegalArgumentException::class)
     fun testOnlyMain_RecurId() {
         AssociatedEvents(VEvent(propertyListOf(
-            RecurrenceId(Date("20250629"))
+            RecurrenceId(dateValue("20250629"))
         )), emptyList())
     }
 
@@ -78,8 +72,8 @@ class AssociatedComponentsTest {
     fun testOnlyMain_UidAndRecurId() {
         AssociatedEvents(VEvent(propertyListOf(
             Uid("test1"),
-            RecurrenceId(Date("20250629"))
+            RecurrenceId(dateValue("20250629"))
         )), emptyList())
-    }*/
+    }
 
 }
