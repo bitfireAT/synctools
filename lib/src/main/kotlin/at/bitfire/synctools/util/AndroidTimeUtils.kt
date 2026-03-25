@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TemporalAdapter

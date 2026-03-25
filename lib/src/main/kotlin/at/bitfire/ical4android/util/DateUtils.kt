@@ -16,7 +16,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
-import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
 
 /**
@@ -56,15 +55,6 @@ object DateUtils {
      */
     fun isDateTime(date: Temporal?): Boolean =
         date != null && TemporalAdapter.isDateTimePrecision(date)
-
-    /**
-     * Converts the given [Instant] by truncating it to days, and converting into [LocalDate] by its
-     * epoch timestamp.
-     */
-    fun Instant.toLocalDate(): LocalDate {
-        val epochSeconds = truncatedTo(ChronoUnit.DAYS).epochSecond
-        return LocalDate.ofEpochDay(epochSeconds / (24 * 60 * 60 /*seconds in a day*/))
-    }
 
     /**
      * Converts the given generic [Temporal] into milliseconds since epoch.
