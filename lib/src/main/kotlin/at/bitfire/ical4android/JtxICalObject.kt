@@ -13,8 +13,8 @@ import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.ical4android.util.DateUtils.toEpochMilli
-import at.bitfire.ical4android.util.DateUtils.toLocalDate
+import at.bitfire.ical4android.util.TimeApiExtensions.toEpochMilli
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
