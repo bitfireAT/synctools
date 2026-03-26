@@ -434,7 +434,7 @@ open class JtxICalObject(
                     is DtStart<*> -> {
                         val temporal = prop.normalizedDate()
                         iCalObject.dtstart = temporal.toEpochMilli()
-                        iCalObject.dtstartTimezone = prop.normalizedDate().getTimeZoneId()
+                        iCalObject.dtstartTimezone = temporal.getTimeZoneId()
                     }
 
                     is PercentComplete -> {
@@ -665,7 +665,7 @@ open class JtxICalObject(
             JtxContract.JtxICalObject.Component.VJOURNAL.name -> VJournal(true /* generates DTSTAMP */)
             else -> return null
         }
-        calComponent.propertyList = addProperties(calComponent.propertyList)
+        calComponent.propertyList = addProperties(calComponent.propertyList) // Need to re-set the immutable list
         ical += calComponent
 
         alarms.forEach { alarm ->
@@ -689,9 +689,9 @@ open class JtxICalObject(
                             // Add the RELATED parameter if present
                             alarm.triggerRelativeTo?.let {
                                 if(it == JtxContract.JtxAlarm.AlarmRelativeTo.START.name)
-                                    this.add<Property>(Related.START)
+                                    this += Related.START
                                 if(it == JtxContract.JtxAlarm.AlarmRelativeTo.END.name)
-                                    this.add<Property>(Related.END)
+                                    this += Related.END
                             }
                         } catch (e: DateTimeParseException) {
                             logger.log(Level.WARNING, "Could not parse Trigger duration as Duration.", e)
@@ -759,9 +759,10 @@ open class JtxICalObject(
     /**
      * This function maps the current JtxICalObject to a iCalendar property list
      * @param [props] The PropertyList where the properties should be added
+     * @return The PropertyList with the added properties
      */
-    private fun addProperties(props: PropertyList): PropertyList {
-        val propSet = mutableSetOf<Property>()
+    private fun addProperties(props: PropertyList): PropertyList? {
+        val propSet = mutableListOf<Property>()
         uid.let { propSet += Uid(it) }
         sequence.let { propSet += Sequence(it.toInt()) }
 
@@ -814,12 +815,12 @@ open class JtxICalObject(
 
         comments.forEach { comment ->
             val c = net.fortuna.ical4j.model.property.Comment(comment.text).apply {
-                comment.altrep?.let { this.add<Property>(AltRep(it)) }
-                comment.language?.let { this.add<Property>(Language(it)) }
+                comment.altrep?.let { this += AltRep(it) }
+                comment.language?.let { this += Language(it) }
                 comment.other?.let {
                     val xparams = JtxContract.getXParametersFromJson(it)
                     xparams.forEach { xparam ->
-                        this.add<Property>(xparam)
+                        this += xparam
                     }
                 }
             }
@@ -832,47 +833,47 @@ open class JtxICalObject(
                 this.calAddress = URI(attendee.caladdress)
 
                 attendee.cn?.let {
-                    this.add<Property>(Cn(it))
+                    this += Cn(it)
                 }
                 attendee.cutype?.let {
-                    this.add<Property>(when {
+                    this += when {
                         it.equals(CuType.INDIVIDUAL.value, ignoreCase = true) -> CuType.INDIVIDUAL
                         it.equals(CuType.GROUP.value, ignoreCase = true) -> CuType.GROUP
                         it.equals(CuType.ROOM.value, ignoreCase = true) -> CuType.ROOM
                         it.equals(CuType.RESOURCE.value, ignoreCase = true) -> CuType.RESOURCE
                         it.equals(CuType.UNKNOWN.value, ignoreCase = true) -> CuType.UNKNOWN
                         else -> CuType.UNKNOWN
-                    })
+                    }
                 }
                 attendee.delegatedfrom?.let {
-                    this.add<Property>(DelegatedFrom(it))
+                    this += DelegatedFrom(it)
                 }
                 attendee.delegatedto?.let {
-                    this.add<Property>(DelegatedTo(it))
+                    this += DelegatedTo(it)
                 }
-                attendee.dir?.let { this.add<Property>(Dir(it)) }
+                attendee.dir?.let { this += Dir(it) }
                 attendee.language?.let {
-                    this.add<Property>(Language(it))
+                    this += Language(it)
                 }
                 attendee.member?.let {
-                    this.add<Property>(Member(it))
+                    this += Member(it)
                 }
                 attendee.partstat?.let {
-                    this.add<Property>(PartStat(it))
+                    this += PartStat(it)
                 }
                 attendee.role?.let {
-                    this.add<Property>(Role(it))
+                    this += Role(it)
                 }
                 attendee.rsvp?.let {
-                    this.add<Property>(Rsvp(it))
+                    this += Rsvp(it)
                 }
                 attendee.sentby?.let {
-                    this.add<Property>(SentBy(it))
+                    this += SentBy(it)
                 }
                 attendee.other?.let {
                     val params = JtxContract.getXParametersFromJson(it)
                     params.forEach { xparam ->
-                        this.add<Property>(xparam)
+                        this += xparam
                     }
                 }
             }
@@ -913,20 +914,20 @@ open class JtxICalObject(
                     val attachmentFile = collection.client.openFile(attachmentUri, "r")
                     val attachmentBytes = ByteBuffer.wrap(ParcelFileDescriptor.AutoCloseInputStream(attachmentFile).readBytes())
                     val att = Attach(attachmentBytes).apply {
-                        attachment.fmttype?.let { this.add<Property>(FmtType(it)) }
+                        attachment.fmttype?.let { this += FmtType(it) }
                         attachment.filename?.let {
-                            this.add<Property>(XParameter(X_PARAM_ATTACH_LABEL, it))
-                            this.add<Property>(XParameter(X_PARAM_FILENAME, it))
+                            this += XParameter(X_PARAM_ATTACH_LABEL, it)
+                            this += XParameter(X_PARAM_FILENAME, it)
                         }
                     }
                     propSet += att
                 } else {
                     attachment.uri?.let { uri ->
                         val att = Attach(URI(uri)).apply {
-                            attachment.fmttype?.let { this.add<Property>(FmtType(it)) }
+                            attachment.fmttype?.let { this += FmtType(it) }
                             attachment.filename?.let {
-                                this.add<Property>(XParameter(X_PARAM_ATTACH_LABEL, it))
-                                this.add<Property>(XParameter(X_PARAM_FILENAME, it))
+                                this += XParameter(X_PARAM_ATTACH_LABEL, it)
+                                this += XParameter(X_PARAM_FILENAME, it)
                             }
                         }
                         propSet += att
@@ -1082,7 +1083,7 @@ duration?.let(props::add)
         }
 
         // Add properties to PropertyList
-        return props.addAll(propSet)
+        return props.addAll(propSet) // the list is immutable and "addAll" returns a copy which we need to return
     }
 
         /*
