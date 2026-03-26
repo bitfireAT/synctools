@@ -18,7 +18,6 @@ import at.bitfire.synctools.storage.toContentValues
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.asSyncAdapter
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.component.CalendarComponent
 import net.fortuna.ical4j.model.component.VJournal
 import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.property.ProdId
@@ -268,9 +267,9 @@ open class JtxCollection<out T: JtxICalObject>(val account: Account,
                 val jtxIcalObject = JtxICalObject(this)
                 jtxIcalObject.populateFromContentValues(cursor.toContentValues())
                 val singleICS = jtxIcalObject.getICalendarFormat(prodId)
-                singleICS?.getComponents<CalendarComponent>()?.forEach { component ->
+                singleICS?.componentList?.all?.forEach { component ->
                     if(component is VToDo || component is VJournal)
-                        ical.getComponents<CalendarComponent>() += component
+                        ical += component
                 }
             }
             return ical.toString()
