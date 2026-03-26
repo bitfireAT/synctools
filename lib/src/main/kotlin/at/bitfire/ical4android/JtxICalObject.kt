@@ -759,57 +759,57 @@ open class JtxICalObject(
     /**
      * This function maps the current JtxICalObject to a iCalendar property list
      * @param [props] The PropertyList where the properties should be added
-     * @return The PropertyList with the added properties
+     * @return A copy of given PropertyList with the added properties
      */
     private fun addProperties(props: PropertyList): PropertyList? {
-        val propSet = mutableListOf<Property>()
-        uid.let { propSet += Uid(it) }
-        sequence.let { propSet += Sequence(it.toInt()) }
+        val properties = mutableListOf<Property>()
+        uid.let { properties += Uid(it) }
+        sequence.let { properties += Sequence(it.toInt()) }
 
-        created.let { propSet += Created(Instant.ofEpochMilli(it)) }
-        lastModified.let { propSet += LastModified(Instant.ofEpochMilli(it))}
+        created.let { properties += Created(Instant.ofEpochMilli(it)) }
+        lastModified.let { properties += LastModified(Instant.ofEpochMilli(it))}
 
-        summary.let { propSet += Summary(it) }
-        description?.let { propSet += Description(it) }
+        summary.let { properties += Summary(it) }
+        description?.let { properties += Description(it) }
 
         location?.let { location ->
             val loc = Location(location)
             locationAltrep?.let { locationAltrep ->
                 loc.add<Property>(AltRep(locationAltrep))
             }
-            propSet += loc
+            properties += loc
         }
         if (geoLat != null && geoLong != null) {
-            propSet += Geo(geoLat!!.toBigDecimal(), geoLong!!.toBigDecimal())
+            properties += Geo(geoLat!!.toBigDecimal(), geoLong!!.toBigDecimal())
         }
         geofenceRadius?.let { geofenceRadius ->
-            propSet += XProperty(X_PROP_GEOFENCE_RADIUS, geofenceRadius.toString())
+            properties += XProperty(X_PROP_GEOFENCE_RADIUS, geofenceRadius.toString())
         }
-        color?.let { propSet += Color(null, Css3Color.nearestMatch(it).name) }
+        color?.let { properties += Color(null, Css3Color.nearestMatch(it).name) }
         url?.let {
             try {
-                propSet += Url(URI(it))
+                properties += Url(URI(it))
             } catch (e: URISyntaxException) {
                 logger.log(Level.WARNING, "Ignoring invalid task URL: $url", e)
             }
         }
-        contact?.let {  propSet += Contact(it) }
+        contact?.let {  properties += Contact(it) }
 
-        classification?.let { propSet += Clazz(it) }
-        status?.let { propSet += Status(it) }
+        classification?.let { properties += Clazz(it) }
+        status?.let { properties += Status(it) }
         xstatus?.let { xstatus ->
-            propSet += XProperty(X_PROP_XSTATUS, xstatus)
+            properties += XProperty(X_PROP_XSTATUS, xstatus)
         }
 
         categories.map { it.text }.let { categoryTextList ->
             if (categoryTextList.isNotEmpty())
-                propSet += Categories(TextList(categoryTextList))
+                properties += Categories(TextList(categoryTextList))
         }
 
 
         resources.map { it.text }.let { resourceTextList ->
             if (resourceTextList.isNotEmpty())
-                propSet += Resources(resourceTextList)
+                properties += Resources(resourceTextList)
         }
 
 
@@ -824,7 +824,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            propSet += c
+            properties += c
         }
 
 
@@ -877,7 +877,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            propSet += attendeeProp
+            properties += attendeeProp
         }
 
         organizer?.let { organizer ->
@@ -904,7 +904,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            propSet += organizerProp
+            properties += organizerProp
         }
 
         attachments.forEach { attachment ->
@@ -920,7 +920,7 @@ open class JtxICalObject(
                             this += XParameter(X_PARAM_FILENAME, it)
                         }
                     }
-                    propSet += att
+                    properties += att
                 } else {
                     attachment.uri?.let { uri ->
                         val att = Attach(URI(uri)).apply {
@@ -930,7 +930,7 @@ open class JtxICalObject(
                                 this += XParameter(X_PARAM_FILENAME, it)
                             }
                         }
-                        propSet += att
+                        properties += att
                     }
                 }
             } catch (e: FileNotFoundException) {
@@ -944,7 +944,7 @@ open class JtxICalObject(
 
         unknown.forEach {
             it.value?.let {  jsonString ->
-                propSet += UnknownProperty.fromJsonString(jsonString)
+                properties += UnknownProperty.fromJsonString(jsonString)
             }
         }
 
@@ -957,12 +957,12 @@ open class JtxICalObject(
                     else -> return@forEach
                 }
             val parameterList = ParameterList().add(param)
-            propSet += net.fortuna.ical4j.model.property.RelatedTo(parameterList, it.text)
+            properties += net.fortuna.ical4j.model.property.RelatedTo(parameterList, it.text)
         }
 
         dtstart?.let {
             val instant = Instant.ofEpochMilli(it)
-            propSet += DtStart(when {
+            properties += DtStart(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     instant.toLocalDate()
                 dtstartTimezone == ZoneOffset.UTC.id ->
@@ -975,10 +975,10 @@ open class JtxICalObject(
         }
 
         rrule?.let { rrule ->
-            propSet += RRule<Temporal>(rrule)
+            properties += RRule<Temporal>(rrule)
         }
         recurid?.let { recurid ->
-            propSet += if (recuridTimezone == TZ_ALLDAY || recuridTimezone.isNullOrEmpty()) {
+            properties += if (recuridTimezone == TZ_ALLDAY || recuridTimezone.isNullOrEmpty()) {
                 RecurrenceId<Temporal>(recurid)
             } else {
                 RecurrenceId<Temporal>(ParameterList(listOf(TzId(recuridTimezone))), recurid)
@@ -987,7 +987,7 @@ open class JtxICalObject(
 
         rdate?.let { rdateString ->
             val rdates: MutableList<Long> = JtxContract.getLongListFromString(rdateString)
-            propSet += RDate(when {
+            properties += RDate(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     DateList<LocalDate>(rdates.map {
                         LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC)
@@ -1009,7 +1009,7 @@ open class JtxICalObject(
 
         exdate?.let { exdateString ->
             val exdates: MutableList<Long> = JtxContract.getLongListFromString(exdateString)
-            propSet += ExDate(when {
+            properties += ExDate(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     DateList<LocalDate>(exdates.map {
                         LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC)
@@ -1032,7 +1032,7 @@ open class JtxICalObject(
         duration?.let {
             val dur = Duration()
             dur.value = it
-            propSet += dur
+            properties += dur
         }
 
 
@@ -1046,30 +1046,30 @@ duration?.let(props::add)
         if(component == JtxContract.JtxICalObject.Component.VTODO.name) {
             completed?.let {
                 // Completed is UNIX timestamp (milliseconds). But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
-                propSet += Completed(Instant.ofEpochMilli(it))
+                properties += Completed(Instant.ofEpochMilli(it))
 
                 // only take completedTimezone if completed time is set
                 completedTimezone?.let { complTZ ->
-                    propSet += XProperty(X_PROP_COMPLETEDTIMEZONE, complTZ)
+                    properties += XProperty(X_PROP_COMPLETEDTIMEZONE, complTZ)
                 }
             }
 
             percent?.let {
-                propSet += PercentComplete(it)
+                properties += PercentComplete(it)
             }
 
 
             if (priority != null && priority != ImmutablePriority.UNDEFINED.level)
                 priority?.let {
-                    propSet += Priority(it)
+                    properties += Priority(it)
                 }
             else {
-                propSet += Priority(ImmutablePriority.UNDEFINED.level)
+                properties += Priority(ImmutablePriority.UNDEFINED.level)
             }
 
             due?.let {
                 val instant = Instant.ofEpochMilli(it)
-                propSet += Due(when {
+                properties += Due(when {
                     dtstartTimezone == TZ_ALLDAY ->
                         instant.toLocalDate()
                     dtstartTimezone == ZoneOffset.UTC.id ->
@@ -1083,7 +1083,7 @@ duration?.let(props::add)
         }
 
         // Add properties to PropertyList
-        return props.addAll(propSet) // the list is immutable and "addAll" returns a copy which we need to return
+        return props.addAll(properties) // the list is immutable and "addAll" returns a copy which we need to return
     }
 
         /*
