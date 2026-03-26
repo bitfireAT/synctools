@@ -7,8 +7,8 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
 import java.time.Instant
 import java.time.LocalDate

@@ -11,7 +11,7 @@ import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.ICalendarParser
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.TemporalAdapter
 import net.fortuna.ical4j.model.component.VToDo

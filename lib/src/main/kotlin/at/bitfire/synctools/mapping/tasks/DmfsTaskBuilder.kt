@@ -12,12 +12,12 @@ import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.ICalendar
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
-import at.bitfire.ical4android.util.DateUtils.toEpochMilli
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.util.AndroidTimeUtils
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZone
@@ -156,8 +156,8 @@ class DmfsTaskBuilder(
             .withValue(Tasks.CREATED, task.createdAt)
             .withValue(Tasks.LAST_MODIFIED, task.lastModified)
 
-            .withValue(Tasks.DTSTART, task.dtStart?.date?.toEpochMilli())
-            .withValue(Tasks.DUE, task.due?.date?.toEpochMilli())
+            .withValue(Tasks.DTSTART, task.dtStart?.date?.toTimestamp())
+            .withValue(Tasks.DUE, task.due?.date?.toTimestamp())
             .withValue(Tasks.DURATION, task.duration?.value)
 
             .withValue(Tasks.RDATE,

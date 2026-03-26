@@ -18,8 +18,8 @@ import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.TaskProvider
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.ical4android.impl.TestTaskList
-import at.bitfire.ical4android.util.DateUtils.toEpochMilli
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.Email
@@ -440,7 +440,7 @@ class DmfsTaskBuilderTest (
                 LocalDateTime.of(
                     LocalDate.of(2020, 7, 3),
                     LocalTime.of(1, 2, 3)
-                ).toEpochMilli(),
+                ).toTimestamp(),
                 result.getAsLong(TaskContract.Tasks.DTSTART)
             )
             assertEquals(
@@ -476,7 +476,7 @@ class DmfsTaskBuilderTest (
                 LocalDateTime.of(
                     LocalDate.of(2020, 7, 3),
                     LocalTime.of(1, 2, 3)
-                ).toEpochMilli(),
+                ).toTimestamp(),
                 result.getAsLong(TaskContract.Tasks.DUE)
             )
             assertEquals(

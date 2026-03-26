@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TemporalAdapter
@@ -17,6 +17,7 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -27,6 +28,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrDefault
@@ -43,6 +45,67 @@ object AndroidTimeUtils {
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
+
+
+    /**
+     * Converts this [Temporal] to the timestamp that should be used when writing an event to the
+     * Android calendar provider or task providers.
+     */
+    fun Temporal.toTimestamp(): Long {
+        val epochSeconds = when (this) {
+            is LocalDate -> atStartOfDay().atZone(TimeZones.getDateTimeZone().toZoneId()).toEpochSecond()
+            is LocalDateTime -> atZone(TimeZones.getDefault().toZoneId()).toEpochSecond()
+            is OffsetDateTime -> toEpochSecond()
+            is ZonedDateTime -> toEpochSecond()
+            is Instant -> epochSecond
+            else -> error("Unsupported Temporal type: ${this::class.qualifiedName}")
+        }
+
+        return epochSeconds * 1000L
+    }
+
+    /**
+     * Converts this [Temporal] to a [ZonedDateTime] that is created from the timestamp returned by
+     * [toTimestamp] and the time zone returned by [androidTimezoneId].
+     */
+    fun Temporal.toZonedDateTime(): ZonedDateTime {
+        return Instant.ofEpochMilli(toTimestamp()).atZone(ZoneId.of(androidTimezoneId()))
+    }
+
+    /**
+     * Returns the timezone ID that should be used when writing an event to the Android calendar
+     * provider or task providers.
+     *
+     * Note: For date-times with a given time zone, it needs to be a system time zone. Call
+     * [at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate] on dates coming from
+     * ical4j before calling this function.
+     *
+     * @return - "UTC" for dates and UTC date-times
+     *         - the specified time zone ID for date-times with given time zone
+     *         - the currently set default time zone ID for floating date-times
+     */
+    fun Temporal.androidTimezoneId(): String {
+        return if (TemporalAdapter.isDateTimePrecision(this)) {
+            if (TemporalAdapter.isUtc(this)) {
+                TZID_UTC
+            } else if (TemporalAdapter.isFloating(this)) {
+                ZoneId.systemDefault().id
+            } else {
+                require(this is ZonedDateTime) { "Non-floating date-time must be a ZonedDateTime" }
+
+                val timezoneId = this.zone.id
+                require(!timezoneId.startsWith("ical4j")) {
+                    "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
+                            "before passing a date to this function."
+                }
+
+                timezoneId
+            }
+        } else {
+            // For all-day events EventsColumns.EVENT_TIMEZONE must be "UTC".
+            TZID_UTC
+        }
+    }
 
 
     // recurrence sets

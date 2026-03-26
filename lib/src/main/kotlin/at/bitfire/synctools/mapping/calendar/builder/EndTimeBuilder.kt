@@ -13,9 +13,9 @@ import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.androidTimezoneId
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toTimestamp
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
+import at.bitfire.synctools.util.AndroidTimeUtils.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RDate

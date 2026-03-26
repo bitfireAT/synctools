@@ -10,7 +10,7 @@ import android.content.ContentValues
 import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
-import at.bitfire.ical4android.util.DateUtils.toLocalDate
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.util.AndroidTimeUtils

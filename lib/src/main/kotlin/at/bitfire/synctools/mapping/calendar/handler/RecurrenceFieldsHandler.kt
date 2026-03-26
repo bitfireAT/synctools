@@ -9,11 +9,11 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.ical4android.util.DateUtils.toEpochMilli
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.synctools.exception.InvalidLocalResourceException
-import at.bitfire.synctools.mapping.calendar.builder.AndroidTemporalMapper.toZonedDateTime
 import at.bitfire.synctools.util.AndroidTimeUtils
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Recur
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.ExDate
@@ -60,7 +60,7 @@ class RecurrenceFieldsHandler: AndroidEventFieldHandler {
                     rule.recur = alignUntil(rule.recur, startDate)
 
                     // skip if UNTIL is before event's DTSTART
-                    val tsUntil = rule.recur.until?.toEpochMilli()
+                    val tsUntil = rule.recur.until?.toTimestamp()
                     if (tsUntil != null && tsUntil <= tsStart) {
                         logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
                         continue
@@ -96,7 +96,7 @@ class RecurrenceFieldsHandler: AndroidEventFieldHandler {
                     rule.recur = alignUntil(rule.recur, startDate)
 
                     // skip if UNTIL is before event's DTSTART
-                    val tsUntil = rule.recur.until?.toEpochMilli()
+                    val tsUntil = rule.recur.until?.toTimestamp()
                     if (tsUntil != null && tsUntil <= tsStart) {
                         logger.warning("Ignoring $rule because UNTIL ($tsUntil) is not after DTSTART ($tsStart)")
                         continue
