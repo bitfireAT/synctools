@@ -13,7 +13,6 @@ import android.os.ParcelFileDescriptor
 import android.util.Base64
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
-import at.bitfire.ical4android.util.TimeApiExtensions.toEpochMilli
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.Css3Color
@@ -24,6 +23,7 @@ import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.storage.JtxBatchOperation
 import at.bitfire.synctools.storage.toContentValues
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject.TZ_ALLDAY
 import at.techbee.jtx.JtxContract.asSyncAdapter
@@ -358,7 +358,7 @@ open class JtxICalObject(
                                 trigger.getParameter<Related>(Parameter.RELATED)?.getOrNull()?.let { related -> this.triggerRelativeTo = related.value }
                             } else if(trigger.isAbsolute) { // self-contained (not relative to dtstart/dtend)
                                 val normalizedTrigger = trigger.normalizedDate() // Ensure timezone exists in system
-                                this.triggerTime = normalizedTrigger.toEpochMilli()
+                                this.triggerTime = normalizedTrigger.toTimestamp()
                                 this.triggerTimezone =  normalizedTrigger.getTimeZoneId()
                             }
                         }
@@ -392,8 +392,8 @@ open class JtxICalObject(
             for (prop in properties.all) {
                 when (prop) {
                     is Sequence -> iCalObject.sequence = prop.sequenceNo.toLong()
-                    is Created -> iCalObject.created = prop.normalizedDate().toEpochMilli()
-                    is LastModified -> iCalObject.lastModified = prop.normalizedDate().toEpochMilli()
+                    is Created -> iCalObject.created = prop.normalizedDate().toTimestamp()
+                    is LastModified -> iCalObject.lastModified = prop.normalizedDate().toTimestamp()
                     is Summary -> iCalObject.summary = prop.value
                     is Location -> {
                         iCalObject.location = prop.value
@@ -417,7 +417,7 @@ open class JtxICalObject(
                             logger.warning("The property Completed is only supported for VTODO, this value is rejected.")
                             continue
                         }
-                        iCalObject.completed = prop.normalizedDate().toEpochMilli()
+                        iCalObject.completed = prop.normalizedDate().toTimestamp()
                     }
 
                     is Due<*> -> {
@@ -425,7 +425,7 @@ open class JtxICalObject(
                             logger.warning("The property Due is only supported for VTODO, this value is rejected.")
                             continue
                         }
-                        iCalObject.due = prop.normalizedDate().toEpochMilli()
+                        iCalObject.due = prop.normalizedDate().toTimestamp()
                         iCalObject.dueTimezone = prop.normalizedDate().getTimeZoneId()
                     }
 
@@ -433,7 +433,7 @@ open class JtxICalObject(
 
                     is DtStart<*> -> {
                         val temporal = prop.normalizedDate()
-                        iCalObject.dtstart = temporal.toEpochMilli()
+                        iCalObject.dtstart = temporal.toTimestamp()
                         iCalObject.dtstartTimezone = temporal.getTimeZoneId()
                     }
 
@@ -450,7 +450,7 @@ open class JtxICalObject(
                             if(!iCalObject.rdate.isNullOrEmpty())
                                 add(JtxContract.getLongListFromString(iCalObject.rdate!!))
                             prop.normalizedDates().forEach { date ->
-                                add(date.toEpochMilli())
+                                add(date.toTimestamp())
                             }
                         }.toTypedArray().joinToString(separator = ",")
                     }
@@ -459,7 +459,7 @@ open class JtxICalObject(
                             if(!iCalObject.exdate.isNullOrEmpty())
                                 add(JtxContract.getLongListFromString(iCalObject.exdate!!))
                             prop.normalizedDates().forEach { date ->
-                                add(date.toEpochMilli())
+                                add(date.toTimestamp())
                             }
                         }.toTypedArray().joinToString(separator = ",")
                     }
@@ -968,7 +968,7 @@ open class JtxICalObject(
                 dtstartTimezone == ZoneOffset.UTC.id ->
                     instant.atZone(ZoneOffset.UTC)
                 dtstartTimezone.isNullOrEmpty() ->
-                    instant.atZone(ZoneOffset.UTC).toLocalDateTime()
+                    instant.atZone(ZoneId.systemDefault()).toLocalDateTime()
                 else ->
                     instant.atZone(ZoneId.of(dtstartTimezone))
             })
@@ -1075,7 +1075,7 @@ duration?.let(props::add)
                     dtstartTimezone == ZoneOffset.UTC.id ->
                         instant.atZone(ZoneOffset.UTC)
                     dtstartTimezone.isNullOrEmpty() ->
-                        instant.atZone(ZoneOffset.UTC).toLocalDateTime()
+                        instant.atZone(ZoneId.systemDefault()).toLocalDateTime()
                     else ->
                         instant.atZone(ZoneId.of(dtstartTimezone))
                 })
