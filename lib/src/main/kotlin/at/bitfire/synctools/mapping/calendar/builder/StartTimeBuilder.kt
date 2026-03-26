@@ -10,8 +10,8 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.util.AndroidTemporalMapper.androidTimezoneId
-import at.bitfire.synctools.util.AndroidTemporalMapper.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.component.VEvent
 import java.time.temporal.Temporal
 

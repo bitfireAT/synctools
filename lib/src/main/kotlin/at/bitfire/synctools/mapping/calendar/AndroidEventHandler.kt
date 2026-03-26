@@ -13,7 +13,6 @@ import at.bitfire.synctools.icalendar.AssociatedEvents
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.icalendar.recurrenceId
-import at.bitfire.synctools.util.AndroidTemporalMapper.toZonedDateTime
 import at.bitfire.synctools.mapping.calendar.handler.AccessLevelHandler
 import at.bitfire.synctools.mapping.calendar.handler.AndroidEventFieldHandler
 import at.bitfire.synctools.mapping.calendar.handler.AttendeesHandler
@@ -37,6 +36,7 @@ import at.bitfire.synctools.mapping.calendar.handler.UnknownPropertiesHandler
 import at.bitfire.synctools.mapping.calendar.handler.UrlHandler
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
