@@ -448,7 +448,7 @@ open class JtxICalObject(
                     is RDate<*> -> {
                         iCalObject.rdate = buildList {
                             if(!iCalObject.rdate.isNullOrEmpty())
-                                add(JtxContract.getLongListFromString(iCalObject.rdate!!))
+                                addAll(JtxContract.getLongListFromString(iCalObject.rdate!!))
                             prop.normalizedDates().forEach { date ->
                                 add(date.toTimestamp())
                             }
@@ -457,7 +457,7 @@ open class JtxICalObject(
                     is ExDate<*> -> {
                         iCalObject.exdate = buildList {
                             if(!iCalObject.exdate.isNullOrEmpty())
-                                add(JtxContract.getLongListFromString(iCalObject.exdate!!))
+                                addAll(JtxContract.getLongListFromString(iCalObject.exdate!!))
                             prop.normalizedDates().forEach { date ->
                                 add(date.toTimestamp())
                             }
@@ -758,58 +758,58 @@ open class JtxICalObject(
 
     /**
      * This function maps the current JtxICalObject to a iCalendar property list
-     * @param [props] The PropertyList where the properties should be added
+     * @param [propertyList] The PropertyList where the properties should be added
      * @return A copy of given PropertyList with the added properties
      */
-    private fun addProperties(props: PropertyList): PropertyList? {
-        val properties = mutableListOf<Property>()
-        uid.let { properties += Uid(it) }
-        sequence.let { properties += Sequence(it.toInt()) }
+    private fun addProperties(propertyList: PropertyList): PropertyList? {
+        val props = mutableListOf<Property>()
+        uid.let { props += Uid(it) }
+        sequence.let { props += Sequence(it.toInt()) }
 
-        created.let { properties += Created(Instant.ofEpochMilli(it)) }
-        lastModified.let { properties += LastModified(Instant.ofEpochMilli(it))}
+        created.let { props += Created(Instant.ofEpochMilli(it)) }
+        lastModified.let { props += LastModified(Instant.ofEpochMilli(it))}
 
-        summary.let { properties += Summary(it) }
-        description?.let { properties += Description(it) }
+        summary.let { props += Summary(it) }
+        description?.let { props += Description(it) }
 
         location?.let { location ->
             val loc = Location(location)
             locationAltrep?.let { locationAltrep ->
                 loc.add<Property>(AltRep(locationAltrep))
             }
-            properties += loc
+            props += loc
         }
         if (geoLat != null && geoLong != null) {
-            properties += Geo(geoLat!!.toBigDecimal(), geoLong!!.toBigDecimal())
+            props += Geo(geoLat!!.toBigDecimal(), geoLong!!.toBigDecimal())
         }
         geofenceRadius?.let { geofenceRadius ->
-            properties += XProperty(X_PROP_GEOFENCE_RADIUS, geofenceRadius.toString())
+            props += XProperty(X_PROP_GEOFENCE_RADIUS, geofenceRadius.toString())
         }
-        color?.let { properties += Color(null, Css3Color.nearestMatch(it).name) }
+        color?.let { props += Color(null, Css3Color.nearestMatch(it).name) }
         url?.let {
             try {
-                properties += Url(URI(it))
+                props += Url(URI(it))
             } catch (e: URISyntaxException) {
                 logger.log(Level.WARNING, "Ignoring invalid task URL: $url", e)
             }
         }
-        contact?.let {  properties += Contact(it) }
+        contact?.let {  props += Contact(it) }
 
-        classification?.let { properties += Clazz(it) }
-        status?.let { properties += Status(it) }
+        classification?.let { props += Clazz(it) }
+        status?.let { props += Status(it) }
         xstatus?.let { xstatus ->
-            properties += XProperty(X_PROP_XSTATUS, xstatus)
+            props += XProperty(X_PROP_XSTATUS, xstatus)
         }
 
         categories.map { it.text }.let { categoryTextList ->
             if (categoryTextList.isNotEmpty())
-                properties += Categories(TextList(categoryTextList))
+                props += Categories(TextList(categoryTextList))
         }
 
 
         resources.map { it.text }.let { resourceTextList ->
             if (resourceTextList.isNotEmpty())
-                properties += Resources(resourceTextList)
+                props += Resources(resourceTextList)
         }
 
 
@@ -824,7 +824,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            properties += c
+            props += c
         }
 
 
@@ -877,7 +877,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            properties += attendeeProp
+            props += attendeeProp
         }
 
         organizer?.let { organizer ->
@@ -904,7 +904,7 @@ open class JtxICalObject(
                     }
                 }
             }
-            properties += organizerProp
+            props += organizerProp
         }
 
         attachments.forEach { attachment ->
@@ -920,7 +920,7 @@ open class JtxICalObject(
                             this += XParameter(X_PARAM_FILENAME, it)
                         }
                     }
-                    properties += att
+                    props += att
                 } else {
                     attachment.uri?.let { uri ->
                         val att = Attach(URI(uri)).apply {
@@ -930,7 +930,7 @@ open class JtxICalObject(
                                 this += XParameter(X_PARAM_FILENAME, it)
                             }
                         }
-                        properties += att
+                        props += att
                     }
                 }
             } catch (e: FileNotFoundException) {
@@ -944,7 +944,7 @@ open class JtxICalObject(
 
         unknown.forEach {
             it.value?.let {  jsonString ->
-                properties += UnknownProperty.fromJsonString(jsonString)
+                props += UnknownProperty.fromJsonString(jsonString)
             }
         }
 
@@ -957,12 +957,12 @@ open class JtxICalObject(
                     else -> return@forEach
                 }
             val parameterList = ParameterList().add(param)
-            properties += net.fortuna.ical4j.model.property.RelatedTo(parameterList, it.text)
+            props += net.fortuna.ical4j.model.property.RelatedTo(parameterList, it.text)
         }
 
         dtstart?.let {
             val instant = Instant.ofEpochMilli(it)
-            properties += DtStart(when {
+            props += DtStart(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     instant.toLocalDate()
                 dtstartTimezone == ZoneOffset.UTC.id ->
@@ -975,10 +975,10 @@ open class JtxICalObject(
         }
 
         rrule?.let { rrule ->
-            properties += RRule<Temporal>(rrule)
+            props += RRule<Temporal>(rrule)
         }
         recurid?.let { recurid ->
-            properties += if (recuridTimezone == TZ_ALLDAY || recuridTimezone.isNullOrEmpty()) {
+            props += if (recuridTimezone == TZ_ALLDAY || recuridTimezone.isNullOrEmpty()) {
                 RecurrenceId<Temporal>(recurid)
             } else {
                 RecurrenceId<Temporal>(ParameterList(listOf(TzId(recuridTimezone))), recurid)
@@ -987,7 +987,7 @@ open class JtxICalObject(
 
         rdate?.let { rdateString ->
             val rdates: MutableList<Long> = JtxContract.getLongListFromString(rdateString)
-            properties += RDate(when {
+            props += RDate(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     DateList<LocalDate>(rdates.map {
                         LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC)
@@ -1009,7 +1009,7 @@ open class JtxICalObject(
 
         exdate?.let { exdateString ->
             val exdates: MutableList<Long> = JtxContract.getLongListFromString(exdateString)
-            properties += ExDate(when {
+            props += ExDate(when {
                 dtstartTimezone == TZ_ALLDAY ->
                     DateList<LocalDate>(exdates.map {
                         LocalDate.ofInstant(Instant.ofEpochMilli(it), ZoneOffset.UTC)
@@ -1032,7 +1032,7 @@ open class JtxICalObject(
         duration?.let {
             val dur = Duration()
             dur.value = it
-            properties += dur
+            props += dur
         }
 
 
@@ -1046,30 +1046,30 @@ duration?.let(props::add)
         if(component == JtxContract.JtxICalObject.Component.VTODO.name) {
             completed?.let {
                 // Completed is UNIX timestamp (milliseconds). But the X_PROP_COMPLETEDTIMEZONE can still define a timezone
-                properties += Completed(Instant.ofEpochMilli(it))
+                props += Completed(Instant.ofEpochMilli(it))
 
                 // only take completedTimezone if completed time is set
                 completedTimezone?.let { complTZ ->
-                    properties += XProperty(X_PROP_COMPLETEDTIMEZONE, complTZ)
+                    props += XProperty(X_PROP_COMPLETEDTIMEZONE, complTZ)
                 }
             }
 
             percent?.let {
-                properties += PercentComplete(it)
+                props += PercentComplete(it)
             }
 
 
             if (priority != null && priority != ImmutablePriority.UNDEFINED.level)
                 priority?.let {
-                    properties += Priority(it)
+                    props += Priority(it)
                 }
             else {
-                properties += Priority(ImmutablePriority.UNDEFINED.level)
+                props += Priority(ImmutablePriority.UNDEFINED.level)
             }
 
             due?.let {
                 val instant = Instant.ofEpochMilli(it)
-                properties += Due(when {
+                props += Due(when {
                     dtstartTimezone == TZ_ALLDAY ->
                         instant.toLocalDate()
                     dtstartTimezone == ZoneOffset.UTC.id ->
@@ -1083,7 +1083,7 @@ duration?.let(props::add)
         }
 
         // Add properties to PropertyList
-        return props.addAll(properties) // the list is immutable and "addAll" returns a copy which we need to return
+        return propertyList.addAll(props) // the list is immutable and "addAll" returns a copy which we need to return
     }
 
         /*
