@@ -91,12 +91,12 @@ data class Contact(
         const val TO_STRING_MAX_VALUE_SIZE = 2000
 
         /**
-         * Parses an InputStream that contains a vCard.
+         * Parses a Reader that contains a vCard.
          *
          * @param reader     reader for the input stream containing the vCard (pay attention to the charset)
          * @param downloader will be used to download external resources like contact photos (may be null)
          *
-         * @return list of filled Event data objects (may have size 0) – doesn't return null
+         * @return list of filled Contact data objects (may have size 0) – doesn't return null
          *
          * @throws IOException on I/O errors when reading the stream
          * @throws ezvcard.io.CannotParseException when the vCard can't be parsed
