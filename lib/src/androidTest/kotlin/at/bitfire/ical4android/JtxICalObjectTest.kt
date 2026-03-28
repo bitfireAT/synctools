@@ -15,7 +15,7 @@ import androidx.core.content.pm.PackageInfoCompat
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.ical4android.impl.TestJtxCollection
 import at.bitfire.ical4android.impl.testProdId
-
+import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import at.techbee.jtx.JtxContract
 import at.techbee.jtx.JtxContract.JtxICalObject
@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
+import kotlin.jvm.optionals.getOrNull
 
 class JtxICalObjectTest {
 
@@ -837,17 +838,16 @@ class JtxICalObjectTest {
         //assertEquals(iCalIn.components[0].getProperty(Component.VTODO), iCalOut.components[0].getProperty(Component.VTODO))
 
         // there should only be one component for VJOURNAL and VTODO!
-        TODO("ical4j 4.x")
-        /*for(i in 0 until iCalIn.components.size)  {
+        for(i in 0 until iCalIn.componentList.all.size)  {
 
-            iCalIn.components[i].properties.forEach { inProp ->
+            iCalIn.componentList.all[i].propertyList.all.forEach { inProp ->
 
                 if(inProp.name == "DTSTAMP" || exceptions?.contains(inProp.name) == true)
                     return@forEach
-                val outProp = iCalOut.components[i].properties.getProperty<Property>(inProp.name)
+                val outProp = iCalOut.componentList.all[i].propertyList.getFirst<Property>(inProp.name)?.getOrNull()
                 assertEquals(inProp, outProp)
             }
-        }*/
+        }
     }
 
 
@@ -861,7 +861,7 @@ class JtxICalObjectTest {
         val stream = javaClass.classLoader!!.getResourceAsStream(filename)
         val reader = InputStreamReader(stream, Charsets.UTF_8)
 
-        val iCalIn = ICalendar.fromReader(reader)
+        val iCalIn = ICalendarParser().parse(reader)
 
         stream.close()
         reader.close()
@@ -885,7 +885,7 @@ class JtxICalObjectTest {
 
         iCalObject[0].write(os, testProdId)
 
-        val iCalOut = ICalendar.fromReader(os.toByteArray().inputStream().reader())
+        val iCalOut = ICalendarParser().parse(os.toByteArray().inputStream().reader())
 
         stream.close()
         reader.close()
