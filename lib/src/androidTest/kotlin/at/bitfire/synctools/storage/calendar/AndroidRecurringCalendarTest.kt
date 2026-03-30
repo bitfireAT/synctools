@@ -343,7 +343,7 @@ class AndroidRecurringCalendarTest {
             Events.ORIGINAL_INSTANCE_TIME to "SomeValue",
             Events.ORIGINAL_ALL_DAY to "SomeValue"
         )))
-        assertTrue(result.entityValues.isEmpty)
+        assertEquals(0, result.entityValues.size())
     }
 
     @Test
