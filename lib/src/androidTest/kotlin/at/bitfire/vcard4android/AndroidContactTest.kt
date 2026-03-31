@@ -115,7 +115,7 @@ class AndroidContactTest {
                 "TEL;CELL=;PREF=:+12345\r\n" +
                 "EMAIL;PREF=invalid:test@example.com\r\n" +
                 "END:VCARD\r\n"
-        val contacts = Contact.fromReader(StringReader(vCard), false, null)
+        val contacts = Contact.fromReader(StringReader(vCard), null)
 
         val dbContact = AndroidContact(addressBook, contacts.first(), null, null)
         dbContact.add()
@@ -139,7 +139,7 @@ class AndroidContactTest {
             "FN:John Doe\n\n" +
             "BDAY:20010415T000000+0200\n\n" +
             "END:VCARD\n\n"
-        val contacts = Contact.fromReader(StringReader(vCard), false, null)
+        val contacts = Contact.fromReader(StringReader(vCard), null)
 
         assertEquals(1, contacts.size)
         contacts.first().birthDay.let { birthday ->

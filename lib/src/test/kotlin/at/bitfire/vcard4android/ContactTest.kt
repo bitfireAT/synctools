@@ -36,13 +36,13 @@ class ContactTest {
 
     private suspend fun parseContact(fname: String, charset: Charset = Charsets.UTF_8): Contact =
         javaClass.classLoader!!.getResourceAsStream(fname).use { stream ->
-            Contact.fromReader(InputStreamReader(stream, charset), false, null).first()
+            Contact.fromReader(InputStreamReader(stream, charset), null).first()
         }
 
     private suspend fun regenerate(c: Contact, vCardVersion: VCardVersion): Contact {
         val os = ByteArrayOutputStream()
         c.writeVCard(vCardVersion, os, testProductId)
-        return Contact.fromReader(InputStreamReader(ByteArrayInputStream(os.toByteArray()), Charsets.UTF_8), false,null).first()
+        return Contact.fromReader(InputStreamReader(ByteArrayInputStream(os.toByteArray()), Charsets.UTF_8), null).first()
     }
 
 

@@ -7,8 +7,6 @@
 package at.bitfire.vcard4android.property
 
 import ezvcard.io.chain.ChainingTextWriter
-import ezvcard.io.json.JCardReader
-import ezvcard.io.json.JCardWriter
 import ezvcard.io.scribe.ScribeIndex
 import ezvcard.io.text.VCardReader
 import ezvcard.io.text.VCardWriter
@@ -39,14 +37,6 @@ object CustomScribes {
         for (scribe in customScribes)
             register(scribe)
     }
-
-    fun JCardReader.registerCustomScribes(): JCardReader {
-        scribeIndex.registerCustomScribes()
-        return this
-    }
-
-    fun JCardWriter.registerCustomScribes() =
-        scribeIndex.registerCustomScribes()
 
     fun VCardReader.registerCustomScribes(): VCardReader {
         scribeIndex.registerCustomScribes()
