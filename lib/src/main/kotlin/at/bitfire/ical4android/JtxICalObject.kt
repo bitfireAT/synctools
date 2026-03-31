@@ -465,7 +465,7 @@ open class JtxICalObject(
                     }
 
                     is RecurrenceId<*> -> {
-                        iCalObject.recurid = prop.toString()
+                        iCalObject.recurid = prop.value
                         iCalObject.recuridTimezone = prop.normalizedDate().getTimeZoneId()
                     }
 

@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
+import java.io.StringReader
 import kotlin.jvm.optionals.getOrNull
 
 class JtxICalObjectTest {
@@ -824,6 +825,32 @@ class JtxICalObjectTest {
     @Test fun check_input_equals_output_vjournal_journalonthatday() = compare_properties("jtx/vjournal/journal-on-that-day.ics", null)
     //@Test fun check_input_equals_output_vjournal_dst_only_vtimezone() = compare_properties("jtx/vjournal/dst-only-vtimezone.ics", null)    // includes custom timezones, ignored for now
     @Test fun check_input_equals_output_vjournal_all_day() = compare_properties("jtx/vjournal/all-day.ics", null)
+
+
+    @Test
+    fun fromReader_should_set_recurid_values() {
+        val ical = """
+            BEGIN:VCALENDAR
+            PRODID:irrelevant
+            VERSION:2.0
+            BEGIN:VTODO
+            SUMMARY:Test Task (Exception)
+            DTSTAMP:20250228T032800Z
+            DUE;TZID=America/New_York:20250228T130000
+            RECURRENCE-ID;TZID=America/New_York:20250228T130000
+            UID:47a23c66-8c1a-4b44-bbe8-ebf33f8cf80f
+            END:VTODO
+            END:VCALENDAR
+        """.trimIndent()
+        val reader = StringReader(ical)
+
+        val iCalObjects = at.bitfire.ical4android.JtxICalObject.fromReader(reader, collection!!)
+
+        assertEquals(1, iCalObjects.size)
+        assertEquals("20250228T130000", iCalObjects.first().recurid)
+        assertEquals("America/New_York", iCalObjects.first().recuridTimezone)
+    }
+
 
     /**
      * This function takes a file asserts if the ICalendar is the same before and after processing with getIncomingIcal and getOutgoingIcal
