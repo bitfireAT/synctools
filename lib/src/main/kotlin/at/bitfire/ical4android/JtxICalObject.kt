@@ -830,7 +830,8 @@ open class JtxICalObject(
 
         attendees.forEach { attendee ->
             val attendeeProp = net.fortuna.ical4j.model.property.Attendee().apply {
-                this.calAddress = URI(attendee.caladdress)
+                if(attendee.caladdress?.isNotEmpty() == true)
+                    this.calAddress = URI(attendee.caladdress)
 
                 attendee.cn?.let {
                     this += Cn(it)
