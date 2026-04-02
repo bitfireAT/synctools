@@ -811,6 +811,7 @@ class JtxICalObjectTest {
     @Test fun check_input_equals_output_vtodo_rfc5545_sample() = compare_properties("jtx/vtodo/rfc5545-sample1.ics", null)
     @Test fun check_input_equals_output_vtodo_empty_priority() = compare_properties("jtx/vtodo/empty-priority.ics", null)
     @Test fun check_input_equals_output_vtodo_latin1() = compare_properties("jtx/vtodo/latin1.ics", null)
+    @Test fun check_input_equals_output_vtodo_attach() = compare_properties("jtx/vtodo/attach.ics", null)
 
     // VJOURNAL
     @Test fun check_input_equals_output_vjournal_default_example() = compare_properties("jtx/vjournal/default-example.ics", null)
