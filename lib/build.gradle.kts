@@ -36,10 +36,10 @@ android {
 
     sourceSets["main"].apply {
         kotlin {
-            srcDir("${projectDir}/src/main/kotlin")
+            directories += "${projectDir}/src/main/kotlin"
         }
         java {
-            srcDir("${rootDir}/opentasks-contract/src/main/java")
+            directories += "${rootDir}/opentasks-contract/src/main/java"
         }
     }
 
