@@ -134,6 +134,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
 
+    // install third-party APKs for instrumented test
+    androidTestUtil(files("apk/at.techbee.jtx_latest.apk"))
+    androidTestUtil(files("apk/org.dmfs.tasks_latest.apk"))
+    androidTestUtil(files("apk/org.tasks_latest.apk"))
+
     // unit tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.coroutines.test)
