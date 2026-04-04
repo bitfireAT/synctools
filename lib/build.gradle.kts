@@ -134,6 +134,15 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
 
+    // install third-party APKs for instrumented tests (if available)
+    val apkDir = file("apk")
+    if (apkDir.exists() && apkDir.isDirectory) {
+        val apkFiles = apkDir.listFiles { file -> file.isFile && file.name.endsWith(".apk") }
+        if (apkFiles != null && apkFiles.isNotEmpty()) {
+            androidTestUtil(files(apkFiles))
+        }
+    }
+
     // unit tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.coroutines.test)
