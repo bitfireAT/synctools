@@ -55,6 +55,11 @@ jobs:
     if: ${{ !cancelled() }}     # even if compile didn't run (because not on main branch)
     name: Instrumented tests
     runs-on: ubuntu-latest
+    env:
+      apk-dir: apk
+      fdroid-packages:
+        - at.techbee.jtx
+        - org.tasks
     steps:
       - uses: gradle/actions/setup-gradle@v5
         with:
@@ -65,6 +70,55 @@ jobs:
         with:
           distribution: temurin
           java-version: 21   # keep in sync with gradle/gradle-daemon-jvm.properties
+
+      - name: Download F-Droid packages
+        run: |
+          # Install jq for JSON parsing
+          sudo apt-get update && sudo apt-get install -y jq
+          
+          # Create directory for APKs
+          mkdir -p ${{ env.apk-dir }}
+          
+          # Download each package from fdroid-packages env var
+          for pkg in ${{ env.fdroid-packages }}; do
+            echo "Fetching info for package: $pkg"
+            
+            # Get package info from F-Droid API
+            api_url="https://f-droid.org/api/v1/packages/$pkg"
+            response=$(curl -s "$api_url")
+            
+            # Extract package name and suggested version code
+            package_name=$(echo "$response" | jq -r '.packageName')
+            suggested_version_code=$(echo "$response" | jq -r '.suggestedVersionCode')
+            
+            if [ -z "$package_name" ] || [ "$package_name" == "null" ]; then
+              echo "Error: Could not get package info for $pkg"
+              continue
+            fi
+            
+            echo "Found package: $package_name, version code: $suggested_version_code"
+            
+            # Download the APK
+            apk_url="https://f-droid.org/repo/$package_name_$suggested_version_code.apk"
+            apk_file="${{ env.apk-dir }}/$package_name.apk"
+            
+            echo "Downloading APK from: $apk_url"
+            curl -L -o "$apk_file" "$apk_url"
+            
+            if [ -f "$apk_file" ]; then
+              echo "Successfully downloaded: $apk_file"
+              ls -la "$apk_file"
+            else
+              echo "Error: Failed to download APK for $pkg"
+            fi
+          done
+          
+          # List all downloaded APKs
+          echo "Downloaded APKs:"
+          ls -la {{ env.apk-dir }}/
+          
+          # Set environment variable for later steps
+          echo "FDROID_APKS_DIR=$(pwd)/{{ env.apk-dir }}" >> $GITHUB_ENV
 
       - name: Enable KVM group perms
         run: |
