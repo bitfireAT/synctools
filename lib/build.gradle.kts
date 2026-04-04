@@ -134,10 +134,14 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
 
-    // install third-party APKs for instrumented test
-    androidTestUtil(files("apk/at.techbee.jtx_latest.apk"))
-    androidTestUtil(files("apk/org.dmfs.tasks_latest.apk"))
-    androidTestUtil(files("apk/org.tasks_latest.apk"))
+    // install third-party APKs for instrumented tests (if available)
+    val apkDir = file("apk")
+    if (apkDir.exists() && apkDir.isDirectory) {
+        val apkFiles = apkDir.listFiles { file -> file.isFile && file.name.endsWith(".apk") }
+        if (apkFiles != null && apkFiles.isNotEmpty()) {
+            androidTestUtil(files(apkFiles))
+        }
+    }
 
     // unit tests
     testImplementation(libs.junit)
