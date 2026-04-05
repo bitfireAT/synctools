@@ -22,7 +22,7 @@ jobs:
           java-version: 21   # keep in sync with gradle/gradle-daemon-jvm.properties
 
       # See https://community.gradle.org/github-actions/docs/setup-gradle/ for more information
-      - uses: gradle/actions/setup-gradle@v5            # creates build cache when on main branch
+      - uses: gradle/actions/setup-gradle@v6            # creates build cache when on main branch
         with:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
           dependency-graph: generate-and-submit         # submit Github Dependency Graph info
@@ -40,7 +40,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21   # keep in sync with gradle/gradle-daemon-jvm.properties
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
         with:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
           cache-read-only: true
@@ -59,7 +59,7 @@ jobs:
       apk-dir: lib/apk
       fdroid-packages: "at.techbee.jtx org.dmfs.tasks org.tasks"
     steps:
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
         with:
           cache-encryption-key: ${{ secrets.gradle_encryption_key }}
           cache-read-only: true
@@ -72,9 +72,16 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Restore F-Droid APKs from cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.apk-dir }}
+          key: fdroid-apks
+          restore-keys: |       # restore nearest cache (regardless of the hash)
+            fdroid-apks-
+
       - name: Download F-Droid packages
         run: |
-          mkdir -p ${{ env.apk-dir }}
           for pkg in ${{ env.fdroid-packages }}; do
             # Get package info from F-Droid API
             api_url="https://f-droid.org/api/v1/packages/$pkg"
@@ -88,12 +95,21 @@ jobs:
               continue
             fi
             
-            # Download the APK
+            # Download the APK using ETag-based caching
             apk_url="https://f-droid.org/repo/${package_name}_${suggested_version_code}.apk"
             apk_file="${{ env.apk-dir }}/${package_name}_latest.apk"
-            echo "Downloading APK from: $apk_url into $apk_file"
-            curl -Lo "$apk_file" "$apk_url"
+            etag_file="${apk_file}.etag"
+            
+            # Use curl with ETag comparison and saving
+            echo "Downloading APK from: $apk_url"
+            curl --etag-compare "$etag_file" --etag-save "$etag_file" -Lo "$apk_file" "$apk_url"
           done
+
+      - name: Cache F-Droid APKs
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.apk-dir }}
+          key: fdroid-apks-${{ hashFiles(format('{0}/*.apk', env.apk-dir)) }}
 
       - name: Enable KVM group perms
         run: |
