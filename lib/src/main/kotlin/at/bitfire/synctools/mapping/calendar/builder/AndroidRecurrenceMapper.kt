@@ -75,8 +75,8 @@ object AndroidRecurrenceMapper {
                     // DTSTART is DATE; store as <date>T000000Z for Android
                     date.toLocalDate().atStartOfDay(ZoneOffset.UTC)
                 }
-                date is LocalDate -> {
-                    // RDATE/EXDATE is DATE, DTSTART is DATE-TIME; amend with clock time from DTSTART
+                /* allDay is already covered above, so implicitly: !allDay && */ date is LocalDate -> {
+                    // DTSTART is DATE-TIME, RDATE/EXDATE is DATE; amend with clock time from DTSTART
                     val zonedStartDate = startDate.toZonedDateTime()
                     ZonedDateTime.of(
                         /* date = */ date,
