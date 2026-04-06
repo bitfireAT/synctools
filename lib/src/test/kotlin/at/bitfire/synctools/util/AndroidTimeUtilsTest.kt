@@ -26,7 +26,6 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
 import java.io.StringReader
@@ -302,36 +301,28 @@ class AndroidTimeUtilsTest {
     @Test
     fun `androidTimezoneId on LocalDate`() {
         val date = LocalDate.now()
-
         val timezoneId = date.androidTimezoneId()
-
         assertEquals("UTC", timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on LocalDateTime`() {
         val date = LocalDateTime.now()
-
         val timezoneId = date.androidTimezoneId()
-
         assertEquals(tzRule.defaultZoneId.id, timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on ZonedDateTime`() {
         val date = LocalDateTime.now().atZone(ZoneId.of("Europe/Dublin"))
-
         val timezoneId = date.androidTimezoneId()
-
         assertEquals("Europe/Dublin", timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on Instant`() {
         val date = Instant.now()
-
         val timezoneId = date.androidTimezoneId()
-
         assertEquals("UTC", timezoneId)
     }
 
@@ -340,7 +331,7 @@ class AndroidTimeUtilsTest {
         OffsetDateTime.now().androidTimezoneId()
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun `androidTimezoneId on ZonedDateTime from ical4j`() {
         val cal = CalendarBuilder().build(StringReader(
             """
@@ -365,17 +356,7 @@ class AndroidTimeUtilsTest {
         val vEvent = cal.getComponent<VEvent>(Component.VEVENT).get()
         val date = vEvent.requireDtStart<Temporal>().date
 
-        try {
-            date.androidTimezoneId()
-
-            fail("Expected exception")
-        } catch (e: IllegalArgumentException) {
-            assertEquals(
-                "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
-                        "before passing a date to this function.",
-                e.message
-            )
-        }
+        date.androidTimezoneId()
     }
 
 }
