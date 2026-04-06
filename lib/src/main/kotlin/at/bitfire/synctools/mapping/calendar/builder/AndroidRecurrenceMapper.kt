@@ -7,6 +7,7 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
 import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
@@ -101,12 +102,12 @@ object AndroidRecurrenceMapper {
                     val localDate = if (date is LocalDateTime) {
                         date.toLocalDate()
                     } else {
-                        Instant.ofEpochMilli(date.toTimestamp()).atZone(ZoneOffset.UTC).toLocalDate()
+                        date.toInstant().atZone(ZoneOffset.UTC).toLocalDate()
                     }
                     localDate.atStartOfDay().atZone(ZoneOffset.UTC)
                 } else {
                     // DTSTART is DATE-TIME
-                    val instant = Instant.ofEpochMilli(date.toTimestamp())
+                    val instant = date.toInstant()
                     if (zoneId != null) {
                         instant.atZone(zoneId)
                     } else {

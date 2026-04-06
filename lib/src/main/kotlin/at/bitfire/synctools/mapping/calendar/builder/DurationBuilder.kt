@@ -16,13 +16,13 @@ import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
 import at.bitfire.ical4android.util.TimeApiExtensions.toRfc5545Duration
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
+import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
 import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import java.time.Duration
-import java.time.Instant
 import java.time.Period
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
@@ -70,7 +70,7 @@ class DurationBuilder: AndroidEntityBuilder {
 
         The calendar provider accepts every DURATION that `com.android.calendarcommon2.Duration` can parse,
         which is weeks, days, hours, minutes and seconds, like for the RFC 5545 duration. */
-        val durationStr = alignedDuration.toRfc5545Duration(Instant.ofEpochMilli(startDate.toTimestamp()))
+        val durationStr = alignedDuration.toRfc5545Duration(startDate.toInstant())
         values.put(Events.DURATION, durationStr)
     }
 
@@ -101,7 +101,7 @@ class DurationBuilder: AndroidEntityBuilder {
             // DTSTART is DATE-TIME
             return if (amount is Period) {
                 // amount is Period, change to Duration instead
-                amount.toDuration(Instant.ofEpochMilli(startDate.toTimestamp()))
+                amount.toDuration(startDate.toInstant())
             } else {
                 // amount is already Duration
                 amount
