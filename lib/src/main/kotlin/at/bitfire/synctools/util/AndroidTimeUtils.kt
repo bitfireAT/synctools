@@ -100,26 +100,28 @@ object AndroidTimeUtils {
      *         - the specified time zone ID for date-times with given time zone
      *         - the currently set default time zone ID for floating date-times
      */
-    fun Temporal.androidTimezoneId(): String {
-        return if (TemporalAdapter.isDateTimePrecision(this)) {
-            if (TemporalAdapter.isUtc(this)) {
-                TZID_UTC
-            } else if (TemporalAdapter.isFloating(this)) {
-                ZoneId.systemDefault().id
-            } else {
-                require(this is ZonedDateTime) { "date-time which is neither floating nor UTC must be a ZonedDateTime" }
-
-                val timezoneId = this.zone.id
-                require(!timezoneId.startsWith("ical4j")) {
-                    "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
-                            "before passing a date to this function."
-                }
-
-                timezoneId
-            }
-        } else {
-            // For all-day events EventsColumns.EVENT_TIMEZONE must be "UTC".
+    fun Temporal.androidTimezoneId(): String = when {
+        !TemporalAdapter.isDateTimePrecision(this) ->   // date
             TZID_UTC
+        // from here on we know that the Temporal has date-time precision
+
+        TemporalAdapter.isUtc(this) ->                  // UTC date-time
+            TZID_UTC
+
+        TemporalAdapter.isFloating(this) ->             // floating date-time
+            ZoneId.systemDefault().id
+
+        else -> {
+            // date-time with timezone
+            require(this is ZonedDateTime) { "date-time which is neither floating nor UTC must be a ZonedDateTime" }
+
+            val timezoneId = this.zone.id
+            require(!timezoneId.startsWith("ical4j")) {
+                "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
+                        "before passing a date to this function."
+            }
+
+            timezoneId
         }
     }
 
