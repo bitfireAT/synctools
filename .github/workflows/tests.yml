@@ -81,7 +81,9 @@ jobs:
             fdroid-apks-
 
       - name: Download F-Droid packages
+        continue-on-error: true
         run: |
+          mkdir -p ${{ env.apk-dir }}
           for pkg in ${{ env.fdroid-packages }}; do
             # Get package info from F-Droid API
             api_url="https://f-droid.org/api/v1/packages/$pkg"
@@ -99,10 +101,8 @@ jobs:
             apk_url="https://f-droid.org/repo/${package_name}_${suggested_version_code}.apk"
             apk_file="${{ env.apk-dir }}/${package_name}_latest.apk"
             etag_file="${apk_file}.etag"
-            
-            # Use curl with ETag comparison and saving
-            echo "Downloading APK from: $apk_url"
-            curl --etag-compare "$etag_file" --etag-save "$etag_file" -Lo "$apk_file" "$apk_url"
+            echo "Downloading $apk_url -> $apk_file"
+            curl --etag-compare "$etag_file" --etag-save "$etag_file" -Lo "$apk_file" "$apk_url" || true
           done
 
       - name: Cache F-Droid APKs
