@@ -8,6 +8,10 @@ package at.bitfire.synctools.util
 
 import at.bitfire.ical4android.util.TimeApiExtensions
 import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.util.AndroidTimeUtils.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.CalendarDateFormat
 import net.fortuna.ical4j.model.DateList
 import net.fortuna.ical4j.model.TemporalAdapter
@@ -17,7 +21,6 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -30,6 +33,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoField
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
+import java.time.temporal.UnsupportedTemporalTypeException
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrDefault
 
@@ -48,29 +52,41 @@ object AndroidTimeUtils {
 
 
     /**
-     * Converts this [Temporal] to the timestamp that should be used when writing an event to the
-     * Android calendar provider or task providers.
+     * Converts this [Temporal] to an [Instant] that should be used when working with temporal values.
+     *
+     * Local dates are treated as UTC (start of day).
+     * Local date-times are treated as in the system default timezone.
+     *
+     * Supports [LocalDate], [LocalDateTime], [OffsetDateTime], [ZonedDateTime] and [Instant].
+     *
+     * @return corresponding [Instant]
+     * @throws UnsupportedTemporalTypeException on unsupported [Temporal] types
      */
-    fun Temporal.toTimestamp(): Long {
-        val epochSeconds = when (this) {
-            is LocalDate -> atStartOfDay().atZone(TimeZones.getDateTimeZone().toZoneId()).toEpochSecond()
-            is LocalDateTime -> atZone(TimeZones.getDefault().toZoneId()).toEpochSecond()
-            is OffsetDateTime -> toEpochSecond()
-            is ZonedDateTime -> toEpochSecond()
-            is Instant -> epochSecond
-            else -> error("Unsupported Temporal type: ${this::class.qualifiedName}")
+    fun Temporal.toInstant(): Instant =
+        when (this) {
+            is LocalDate -> atStartOfDay(ZoneOffset.UTC).toInstant()
+            is LocalDateTime -> atZone(ZoneId.systemDefault()).toInstant()
+            is OffsetDateTime -> toInstant()
+            is ZonedDateTime -> toInstant()
+            is Instant -> this
+            else -> throw UnsupportedTemporalTypeException("Can't convert ${this::class.qualifiedName} to Instant")
         }
 
-        return epochSeconds * 1000L
-    }
+    /**
+     * Same as [toInstant], but returns a UNIX timestamp (in milliseconds) instead of an [Instant].
+     */
+    fun Temporal.toTimestamp(): Long =
+        toInstant().epochSecond * 1000
 
     /**
      * Converts this [Temporal] to a [ZonedDateTime] that is created from the timestamp returned by
      * [toTimestamp] and the time zone returned by [androidTimezoneId].
      */
-    fun Temporal.toZonedDateTime(): ZonedDateTime {
-        return Instant.ofEpochMilli(toTimestamp()).atZone(ZoneId.of(androidTimezoneId()))
-    }
+    fun Temporal.toZonedDateTime(): ZonedDateTime =
+        ZonedDateTime.ofInstant(
+            toInstant(),
+            ZoneId.of(androidTimezoneId())
+        )
 
     /**
      * Returns the timezone ID that should be used when writing an event to the Android calendar
@@ -91,7 +107,7 @@ object AndroidTimeUtils {
             } else if (TemporalAdapter.isFloating(this)) {
                 ZoneId.systemDefault().id
             } else {
-                require(this is ZonedDateTime) { "Non-floating date-time must be a ZonedDateTime" }
+                require(this is ZonedDateTime) { "date-time which is neither floating nor UTC must be a ZonedDateTime" }
 
                 val timezoneId = this.zone.id
                 require(!timezoneId.startsWith("ical4j")) {

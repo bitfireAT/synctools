@@ -42,6 +42,7 @@ import java.time.ZonedDateTime
 import java.time.chrono.JapaneseDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.Temporal
+import java.time.temporal.UnsupportedTemporalTypeException
 import java.time.zone.ZoneRulesException
 import java.util.Optional
 
@@ -292,15 +293,9 @@ class AndroidTimeUtilsTest {
         assertEquals(inputTimestamp, timestamp)
     }
 
-    @Test
+    @Test(expected = UnsupportedTemporalTypeException::class)
     fun `toTimestamp on unsupported type`() {
-        try {
-            JapaneseDate.now().toTimestamp()
-
-            fail("Expected exception")
-        } catch (e: IllegalStateException) {
-            assertEquals("Unsupported Temporal type: java.time.chrono.JapaneseDate", e.message)
-        }
+        JapaneseDate.now().toTimestamp()
     }
 
 
@@ -340,15 +335,9 @@ class AndroidTimeUtilsTest {
         assertEquals("UTC", timezoneId)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun `androidTimezoneId on OffsetDateTime`() {
-        try {
-            OffsetDateTime.now().androidTimezoneId()
-
-            fail("Expected exception")
-        } catch (e: IllegalArgumentException) {
-            assertEquals("Non-floating date-time must be a ZonedDateTime", e.message)
-        }
+        OffsetDateTime.now().androidTimezoneId()
     }
 
     @Test
