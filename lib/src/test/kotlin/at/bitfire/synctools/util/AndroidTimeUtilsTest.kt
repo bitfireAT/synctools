@@ -26,6 +26,7 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
 import java.io.StringReader
@@ -41,7 +42,6 @@ import java.time.ZonedDateTime
 import java.time.chrono.JapaneseDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.Temporal
-import java.time.temporal.UnsupportedTemporalTypeException
 import java.time.zone.ZoneRulesException
 import java.util.Optional
 
@@ -292,46 +292,66 @@ class AndroidTimeUtilsTest {
         assertEquals(inputTimestamp, timestamp)
     }
 
-    @Test(expected = UnsupportedTemporalTypeException::class)
+    @Test
     fun `toTimestamp on unsupported type`() {
-        JapaneseDate.now().toTimestamp()
+        try {
+            JapaneseDate.now().toTimestamp()
+
+            fail("Expected exception")
+        } catch (e: IllegalStateException) {
+            assertEquals("Unsupported Temporal type: java.time.chrono.JapaneseDate", e.message)
+        }
     }
 
 
     @Test
     fun `androidTimezoneId on LocalDate`() {
         val date = LocalDate.now()
+
         val timezoneId = date.androidTimezoneId()
+
         assertEquals("UTC", timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on LocalDateTime`() {
         val date = LocalDateTime.now()
+
         val timezoneId = date.androidTimezoneId()
+
         assertEquals(tzRule.defaultZoneId.id, timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on ZonedDateTime`() {
         val date = LocalDateTime.now().atZone(ZoneId.of("Europe/Dublin"))
+
         val timezoneId = date.androidTimezoneId()
+
         assertEquals("Europe/Dublin", timezoneId)
     }
 
     @Test
     fun `androidTimezoneId on Instant`() {
         val date = Instant.now()
+
         val timezoneId = date.androidTimezoneId()
+
         assertEquals("UTC", timezoneId)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `androidTimezoneId on OffsetDateTime`() {
-        OffsetDateTime.now().androidTimezoneId()
+        try {
+            OffsetDateTime.now().androidTimezoneId()
+
+            fail("Expected exception")
+        } catch (e: IllegalArgumentException) {
+            assertEquals("Non-floating date-time must be a ZonedDateTime", e.message)
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun `androidTimezoneId on ZonedDateTime from ical4j`() {
         val cal = CalendarBuilder().build(StringReader(
             """
@@ -356,7 +376,17 @@ class AndroidTimeUtilsTest {
         val vEvent = cal.getComponent<VEvent>(Component.VEVENT).get()
         val date = vEvent.requireDtStart<Temporal>().date
 
-        date.androidTimezoneId()
+        try {
+            date.androidTimezoneId()
+
+            fail("Expected exception")
+        } catch (e: IllegalArgumentException) {
+            assertEquals(
+                "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
+                        "before passing a date to this function.",
+                e.message
+            )
+        }
     }
 
 }
