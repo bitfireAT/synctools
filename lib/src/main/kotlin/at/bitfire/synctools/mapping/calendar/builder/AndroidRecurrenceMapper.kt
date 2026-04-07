@@ -7,12 +7,12 @@
 package at.bitfire.synctools.mapping.calendar.builder
 
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
+import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
 import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
-import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -63,57 +63,38 @@ object AndroidRecurrenceMapper {
         */
         val utcDateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'", Locale.ROOT)
         val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss", Locale.ROOT)
-        val convertedDates = mutableListOf<ZonedDateTime>()
         val allDay = DateUtils.isDate(startDate)
 
         // use time zone of first entry for the whole set; null for UTC
         val zoneId = (dates.firstOrNull() as? ZonedDateTime)?.zone
+        val targetZone: ZoneId = zoneId ?: ZoneOffset.UTC
 
-        for (date in dates) {
-            if (date is LocalDate) {
-                // RDATE/EXDATE is DATE
-                if (allDay) {
-                    // DTSTART is DATE; DATE values have to be returned as <date>T000000Z for Android
+        val convertedDates = dates.map { date ->
+            when {
+                allDay -> {
+                    // DTSTART is DATE; store as <date>T000000Z for Android
+                    if (date is LocalDate) {
+                        // RDATE/EXDATE is DATE
+                        date.atStartOfDay(ZoneOffset.UTC)
+                    } else {
+                        // RDATE/EXDATE is DATE-TIME, drop time part
+                        date.toLocalDate().atStartOfDay(ZoneOffset.UTC)
+                    }
+                }
+                // from now on, we know that DTSTART is DATE-TIME
 
-                    convertedDates.add(date.atStartOfDay().atZone(ZoneOffset.UTC))
-                } else {
-                    // DTSTART is DATE-TIME; amend DATE-TIME with clock time from DTSTART
+                date is LocalDate -> {
+                    // DTSTART is DATE-TIME, RDATE/EXDATE is DATE; amend with clock time from DTSTART
                     val zonedStartDate = startDate.toZonedDateTime()
-                    val amendedDate = ZonedDateTime.of(
-                        date,
-                        zonedStartDate.toLocalTime(),
-                        zonedStartDate.zone
-                    )
-
-                    val convertedDate = if (zoneId != null) {
-                        amendedDate.withZoneSameInstant(zoneId)
-                    } else {
-                        amendedDate.withZoneSameInstant(ZoneOffset.UTC)
-                    }
-
-                    convertedDates.add(convertedDate)
+                    ZonedDateTime.of(
+                        /* date = */ date,
+                        /* time = */ zonedStartDate.toLocalTime(),
+                        /* zone = */ zonedStartDate.zone
+                    ).withZoneSameInstant(targetZone)
                 }
-
-            } else {
-                // RDATE/EXDATE is DATE-TIME
-                val convertedDate = if (allDay) {
-                    // DTSTART is DATE
-                    val localDate = if (date is LocalDateTime) {
-                        date.toLocalDate()
-                    } else {
-                        Instant.ofEpochMilli(date.toTimestamp()).atZone(ZoneOffset.UTC).toLocalDate()
-                    }
-                    localDate.atStartOfDay().atZone(ZoneOffset.UTC)
-                } else {
-                    // DTSTART is DATE-TIME
-                    val instant = Instant.ofEpochMilli(date.toTimestamp())
-                    if (zoneId != null) {
-                        instant.atZone(zoneId)
-                    } else {
-                        instant.atZone(ZoneOffset.UTC)
-                    }
-                }
-                convertedDates.add(convertedDate)
+                else ->
+                    // Both DATE-TIME
+                    date.toInstant().atZone(targetZone)
             }
         }
 
