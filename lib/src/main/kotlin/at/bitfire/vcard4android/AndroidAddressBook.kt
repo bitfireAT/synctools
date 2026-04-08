@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.vcard4android
@@ -56,6 +54,22 @@ open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
         get() = ContactsContract.SyncState.get(provider, addressBookAccount)
         set(data) = ContactsContract.SyncState.set(provider, addressBookAccount, data)
 
+    /**
+     * Counts the number of contacts in the address book that match the given selection criteria.
+     *
+     * @param where An optional filter declaring which rows to return.
+     * @param whereArgs Optional arguments for [where].
+     * @return The number of contacts matching the selection criteria.
+     */
+    fun countContacts(where: String?, whereArgs: Array<String>?): Int {
+        provider!!.query(rawContactsSyncUri(), null,
+            where, whereArgs, null)?.use { cursor ->
+            return cursor.count
+        }
+        // If the query was invalid, an exception would have been thrown. So this
+        // should never be reached:
+        return 0
+    }
 
     fun queryContacts(where: String?, whereArgs: Array<String>?): List<T1> {
         val contacts = LinkedList<T1>()

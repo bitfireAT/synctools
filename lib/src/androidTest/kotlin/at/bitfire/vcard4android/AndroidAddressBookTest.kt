@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.vcard4android
@@ -14,8 +12,14 @@ import android.provider.ContactsContract
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.vcard4android.impl.TestAddressBook
-import org.junit.*
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.BeforeClass
+import org.junit.ClassRule
+import org.junit.Test
 
 class AndroidAddressBookTest {
 
@@ -45,8 +49,71 @@ class AndroidAddressBookTest {
 
 
     @Test
-	fun testSettings() {
+    fun testCountContacts_empty() {
 		val addressBook = TestAddressBook(testAddressBookAccount, provider)
+        val count = addressBook.countContacts(null, null)
+        assertEquals(0, count)
+    }
+
+    @Test
+    fun testCountContacts_withContacts() {
+		val addressBook = TestAddressBook(testAddressBookAccount, provider)
+        
+        // Create some test contacts
+        val contact1 = AndroidContact(addressBook, Contact().apply { 
+            displayName = "Test Contact 1"
+        }, null, null)
+        contact1.add()
+        
+        val contact2 = AndroidContact(addressBook, Contact().apply { 
+            displayName = "Test Contact 2"
+        }, null, null)
+        contact2.add()
+        
+        try {
+            val count = addressBook.countContacts(null, null)
+            assertEquals(2, count)
+        } finally {
+            contact1.delete()
+            contact2.delete()
+        }
+    }
+
+    @Test
+    fun testCountContacts_withFilter() {
+		val addressBook = TestAddressBook(testAddressBookAccount, provider)
+        
+        // Create test contacts with different UIDs
+        val contact1 = AndroidContact(addressBook, Contact().apply { 
+            displayName = "Filter Test 1"
+            uid = "test-uid-1"
+        }, null, null)
+        contact1.add()
+        
+        val contact2 = AndroidContact(addressBook, Contact().apply { 
+            displayName = "Filter Test 2"
+            uid = "test-uid-2"
+        }, null, null)
+        contact2.add()
+
+        try {
+            // Test counting with filter
+            val filteredCount = addressBook.countContacts("${AndroidContact.COLUMN_UID}=?", arrayOf("test-uid-1"))
+            assertEquals(1, filteredCount)
+
+            // Test counting with non-matching filter
+            val noMatchCount = addressBook.countContacts("${AndroidContact.COLUMN_UID}=?", arrayOf("non-existent"))
+            assertEquals(0, noMatchCount)
+        } finally {
+            contact1.delete()
+            contact2.delete()
+        }
+    }
+
+
+    @Test
+    fun testSettings() {
+        val addressBook = TestAddressBook(testAddressBookAccount, provider)
 
         var values = ContentValues()
         values.put(ContactsContract.Settings.SHOULD_SYNC, false)
