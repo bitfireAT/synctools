@@ -63,7 +63,8 @@ class DmfsTaskList(
     fun countTasks(where: String? = null, whereArgs: Array<String>? = null): Int {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithTaskListId(where, whereArgs)
-            client.query(tasksUri(), null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+            client.query(tasksUri(), arrayOf(TaskContract.Tasks._ID),
+                protectedWhere, protectedWhereArgs, null)?.use { cursor ->
                 return cursor.count
             }
         } catch (e: RemoteException) {

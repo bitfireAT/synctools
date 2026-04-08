@@ -124,7 +124,8 @@ class AndroidCalendar(
     fun countEvents(where: String?, whereArgs: Array<String>?): Int {
         try {
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
-            client.query(eventsUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+            client.query(eventsUri, arrayOf(Events._ID),
+                protectedWhere, protectedWhereArgs, null)?.use { cursor ->
                 return cursor.count
             }
         } catch (e: RemoteException) {

@@ -72,7 +72,7 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             DmfsTask(taskList, task2, "sync-id-2", null, 0).add()
             
             // Test counting with UID filter
-            val filteredCount = taskList.countTasks("${TaskContract.Tasks._SYNC_ID}=?", arrayOf("sync-id-1"))
+            val filteredCount = taskList.countTasks("${TaskContract.Tasks._UID}=?", arrayOf("filter-uid-1"))
             assertEquals(1, filteredCount)
         } finally {
             taskList.delete()

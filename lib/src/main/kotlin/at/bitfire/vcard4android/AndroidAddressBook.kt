@@ -64,7 +64,7 @@ open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
      * @return The number of contacts matching the selection criteria.
      */
     fun countContacts(where: String?, whereArgs: Array<String>?): Int {
-        provider!!.query(rawContactsSyncUri(), null,
+        provider!!.query(rawContactsSyncUri(), arrayOf(RawContacts._ID),
             where, whereArgs, null)?.use { cursor ->
             return cursor.count
         }
