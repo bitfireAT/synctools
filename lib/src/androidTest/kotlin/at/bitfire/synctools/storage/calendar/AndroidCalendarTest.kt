@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.synctools.storage.calendar
@@ -111,6 +109,67 @@ class AndroidCalendarTest {
         // verify that event has been inserted
         val result = calendar.getEvent(id)!!
         assertEntitiesEqual(entity, result, onlyFieldsInExpected = true)
+    }
+
+    @Test
+    fun testCountEvents_empty() {
+        // Test counting when calendar is empty
+        val count = calendar.countEvents(null, null)
+        assertEquals(0, count)
+    }
+
+    @Test
+    fun testCountEvents_withEvents() {
+        // Add multiple events and test counting
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Event 1"
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now + 3600000,
+            Events.DTEND to now + 3600000*2,
+            Events.TITLE to "Event 2"
+        )))
+        
+        val count = calendar.countEvents(null, null)
+        assertEquals(2, count)
+    }
+
+    @Test
+    fun testCountEvents_filterMatch() {
+        // Test counting with WHERE clause
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Filter Test 1"
+        )))
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now + 3600000,
+            Events.DTEND to now + 3600000*2,
+            Events.TITLE to "Filter Test 2"
+        )))
+        
+        val filteredCount = calendar.countEvents("${Events.DTSTART}=?", arrayOf(now.toString()))
+        assertEquals(1, filteredCount)
+    }
+
+    @Test
+    fun testCountEvents_filterNoMatch() {
+        // Test counting with filter that matches nothing
+        calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to now,
+            Events.DTEND to now + 3600000,
+            Events.TITLE to "Test Event"
+        )))
+        
+        val noMatchCount = calendar.countEvents("${Events.DTSTART}=?", arrayOf((now + 86400000).toString()))
+        assertEquals(0, noMatchCount)
     }
 
     @Test

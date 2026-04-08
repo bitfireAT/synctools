@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.synctools.storage.calendar
@@ -111,6 +109,26 @@ class AndroidCalendar(
             batch += CpoBuilder.newInsert(row.uri.asSyncAdapter(account))
                 .withValues(row.values)
                 .withValueBackReference(EventsContract.DATA_ROW_EVENT_ID, eventRowIdx)
+    }
+
+    /**
+     * Counts the number of events in this calendar that match the given selection criteria.
+     *
+     * @param where An optional filter declaring which rows to return.
+     * @param whereArgs Optional arguments for [where].
+     * @return The number of events matching the selection criteria.
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun countEvents(where: String?, whereArgs: Array<String>?): Int {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventsUri, null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                return cursor.count
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't count events", e)
+        }
+        return 0
     }
 
     /**
