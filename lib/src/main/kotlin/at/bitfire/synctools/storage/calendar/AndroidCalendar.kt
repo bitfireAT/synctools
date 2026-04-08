@@ -114,6 +114,28 @@ class AndroidCalendar(
     }
 
     /**
+     * Counts the number of events in this calendar that match the given selection criteria.
+     *
+     * @param where An optional filter declaring which rows to return.
+     * @param whereArgs Optional arguments for [where].
+     * @return The number of events matching the selection criteria.
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun countEvents(where: String?, whereArgs: Array<String>?): Int {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(where, whereArgs)
+            client.query(eventsUri, arrayOf(Events._ID),
+                protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                return cursor.count
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't count events", e)
+        }
+        // If the query was invalid, an exception should have been thrown. So this should never be reached:
+        return 0
+    }
+
+    /**
      * Gets the first event from this calendar that matches the given query.
      *
      * Adds a WHERE clause that restricts the query to [CalendarContract.EventsColumns.CALENDAR_ID] = [id].
