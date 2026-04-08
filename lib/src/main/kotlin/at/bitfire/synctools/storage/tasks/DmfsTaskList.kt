@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.synctools.storage.tasks
@@ -51,6 +49,27 @@ class DmfsTaskList(
 
 
     // CRUD DmfsTask
+
+    /**
+     * Counts the number of tasks in this task list that match the given selection criteria.
+     *
+     * @param where An optional filter declaring which rows to return.
+     * @param whereArgs Optional arguments for [where].
+     * @return The number of tasks matching the selection criteria.
+     * @throws LocalStorageException when the content provider returns an error
+     */
+    fun countTasks(where: String? = null, whereArgs: Array<String>? = null): Int {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithTaskListId(where, whereArgs)
+            client.query(tasksUri(), null, protectedWhere, protectedWhereArgs, null)?.use { cursor ->
+                return cursor.count
+            }
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't count ${providerName.authority} tasks", e)
+        }
+        // If the query was invalid, an exception should have been thrown. So this should never be reached:
+        return 0
+    }
 
     /**
      * Queries tasks from this task list. Adds a WHERE clause that restricts the

@@ -66,8 +66,7 @@ open class AndroidAddressBook<T1: AndroidContact, T2: AndroidGroup>(
             where, whereArgs, null)?.use { cursor ->
             return cursor.count
         }
-        // If the query was invalid, an exception would have been thrown. So this
-        // should never be reached:
+        // If the query was invalid, an exception should have been thrown. So this should never be reached:
         return 0
     }
 

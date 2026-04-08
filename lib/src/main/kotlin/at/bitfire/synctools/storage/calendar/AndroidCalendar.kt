@@ -128,6 +128,7 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't count events", e)
         }
+        // If the query was invalid, an exception should have been thrown. So this should never be reached:
         return 0
     }
 

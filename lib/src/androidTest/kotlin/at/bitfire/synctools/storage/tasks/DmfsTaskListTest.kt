@@ -1,7 +1,5 @@
 /*
- * This file is part of bitfireAT/synctools which is released under GPLv3.
- * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
  */
 
 package at.bitfire.synctools.storage.tasks
@@ -14,9 +12,11 @@ import at.bitfire.ical4android.DmfsStyleProvidersTaskTest
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.TaskProvider
+import junit.framework.Assert.assertTrue
+import junit.framework.TestCase.assertEquals
 import net.fortuna.ical4j.model.property.RelatedTo
 import org.dmfs.tasks.contract.TaskContract
-import org.junit.Assert
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
@@ -34,11 +34,71 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
 
         val dmfsTaskListProvider = DmfsTaskListProvider(testAccount, provider.client, providerName)
         val id = dmfsTaskListProvider.createTaskList(info)
-        Assert.assertNotNull(id)
+        assertNotNull(id)
 
         dmfsTaskListProvider.createTaskList(info)
 
         return dmfsTaskListProvider.getTaskList(id)!!
+    }
+
+    @Test
+    fun testCountTasks_empty() {
+        val taskList = createTaskList()
+        try {
+            val count = taskList.countTasks(null, null)
+            assertEquals(0, count)
+        } finally {
+            taskList.delete()
+        }
+    }
+
+    @Test
+    fun testCountTasks_withFilter() {
+        val taskList = createTaskList()
+        try {
+            // Add tasks with different UIDs
+            val task1 = Task().apply {
+                uid = "filter-uid-1"
+                summary = "Filter Test 1"
+            }
+            val task2 = Task().apply {
+                uid = "filter-uid-2"
+                summary = "Filter Test 2"
+            }
+            
+            DmfsTask(taskList, task1, "sync-id-1", null, 0).add()
+            DmfsTask(taskList, task2, "sync-id-2", null, 0).add()
+            
+            // Test counting with UID filter
+            val filteredCount = taskList.countTasks("${TaskContract.Tasks._SYNC_ID}=?", arrayOf("sync-id-1"))
+            assertEquals(1, filteredCount)
+        } finally {
+            taskList.delete()
+        }
+    }
+
+    @Test
+    fun testCountTasks_withoutFilter() {
+        val taskList = createTaskList()
+        try {
+            // Add multiple tasks
+            val task1 = Task().apply {
+                uid = "task-1"
+                summary = "Test Task 1"
+            }
+            val task2 = Task().apply {
+                uid = "task-2"
+                summary = "Test Task 2"
+            }
+
+            DmfsTask(taskList, task1, "sync-id-1", null, 0).add()
+            DmfsTask(taskList, task2, "sync-id-2", null, 0).add()
+
+            val count = taskList.countTasks(null, null)
+            assertEquals(2, count)
+        } finally {
+            taskList.delete()
+        }
     }
 
     @Test
@@ -76,25 +136,25 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             taskList.provider.client.query(taskList.tasksPropertiesUri(), null,
                     "${TaskContract.Properties.TASK_ID}=?", arrayOf(childId.toString()),
                     null, null)!!.use { cursor ->
-                Assert.assertEquals(1, cursor.count)
+                assertEquals(1, cursor.count)
                 cursor.moveToNext()
 
                 val row = ContentValues()
                 DatabaseUtils.cursorRowToContentValues(cursor, row)
 
-                Assert.assertEquals(
+                assertEquals(
                     TaskContract.Property.Relation.CONTENT_ITEM_TYPE,
                     row.getAsString(TaskContract.Properties.MIMETYPE)
                 )
-                Assert.assertEquals(
+                assertEquals(
                     parentId,
                     row.getAsLong(TaskContract.Property.Relation.RELATED_ID)
                 )
-                Assert.assertEquals(
+                assertEquals(
                     parent.uid,
                     row.getAsString(TaskContract.Property.Relation.RELATED_UID)
                 )
-                Assert.assertEquals(
+                assertEquals(
                     TaskContract.Property.Relation.RELTYPE_PARENT,
                     row.getAsInteger(TaskContract.Property.Relation.RELATED_TYPE)
                 )
@@ -106,8 +166,8 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
             // now parent_id should bet set
             taskList.provider.client.query(childContentUri, arrayOf(TaskContract.Tasks.PARENT_ID),
                     null, null, null)!!.use { cursor ->
-                Assert.assertTrue(cursor.moveToNext())
-                Assert.assertEquals(parentId, cursor.getLong(0))
+                assertTrue(cursor.moveToNext())
+                assertEquals(parentId, cursor.getLong(0))
             }
         } finally {
             taskList.delete()
