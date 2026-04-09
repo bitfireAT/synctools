@@ -42,6 +42,7 @@ import java.time.ZonedDateTime
 import java.time.chrono.JapaneseDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.Temporal
+import java.time.temporal.UnsupportedTemporalTypeException
 import java.time.zone.ZoneRulesException
 import java.util.Optional
 
@@ -298,8 +299,8 @@ class AndroidTimeUtilsTest {
             JapaneseDate.now().toTimestamp()
 
             fail("Expected exception")
-        } catch (e: IllegalStateException) {
-            assertEquals("Unsupported Temporal type: java.time.chrono.JapaneseDate", e.message)
+        } catch (e: UnsupportedTemporalTypeException) {
+            assertEquals("Can't convert java.time.chrono.JapaneseDate to Instant", e.message)
         }
     }
 
@@ -347,7 +348,7 @@ class AndroidTimeUtilsTest {
 
             fail("Expected exception")
         } catch (e: IllegalArgumentException) {
-            assertEquals("Non-floating date-time must be a ZonedDateTime", e.message)
+            assertEquals("date-time which is neither floating nor UTC must be a ZonedDateTime", e.message)
         }
     }
 
