@@ -25,6 +25,7 @@ import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
+import at.bitfire.vcard4android.Utils.trimToNull
 import java.util.LinkedList
 import java.util.logging.Logger
 
@@ -500,16 +501,34 @@ class AndroidCalendar(
         // query event to get first and last instance
         var first: Long? = null
         var last: Long? = null
-        getEventRow(eventId, arrayOf(Events.DTSTART, Events.LAST_DATE))?.let { values ->
+        var rRule: String? = null
+        getEventRow(eventId, arrayOf(Events.DTSTART, Events.RRULE, Events.LAST_DATE))?.let { values ->
             first = values.getAsLong(Events.DTSTART)
+            rRule = values.getAsString(Events.RRULE).trimToNull()
             last = values.getAsLong(Events.LAST_DATE)
         }
-        // if this event doesn't have a last occurrence, it's endless and always has instances
+
+        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously.
+        We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
+        val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
+        if (!isEndless && last == null) {
+            logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
+            repeat(25) {
+                Thread.sleep(100)
+                last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
+                if (last != null)
+                    return@repeat   // Gotcha! LAST_DATE is now available.
+            }
+            if (last == null)
+                logger.warning("Event should have a last date, but it's still not available after 5 seconds. RRULE=$rRule")
+        }
+
+        // If this event doesn't have a last occurrence, it's endless and always has instances.
         if (first == null || last == null)
             return null
 
         /* We can't use Long.MIN_VALUE and Long.MAX_VALUE because Android generates the instances
-         on the fly and it doesn't accept those values. So we use the first/last actual occurrence
+         on the fly, and it doesn't accept those values. So we use the first/last actual occurrence
          of the event (as calculated by Android). */
         val instancesUri = Instances.CONTENT_URI.asSyncAdapter(account)
             .buildUpon()
