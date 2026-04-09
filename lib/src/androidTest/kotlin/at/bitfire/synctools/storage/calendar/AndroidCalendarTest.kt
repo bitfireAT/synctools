@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.storage.calendar
 
+import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentUris
@@ -16,10 +17,10 @@ import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 
 import at.bitfire.synctools.storage.BatchOperation
-import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEntitiesEqual
 import org.junit.After
@@ -33,7 +34,7 @@ import org.junit.Test
 class AndroidCalendarTest {
 
     @get:Rule
-    val initCalendarProviderRule = InitCalendarProviderRule.initialize()
+    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
     private val now = System.currentTimeMillis()
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)

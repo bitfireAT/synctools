@@ -23,10 +23,7 @@ import org.junit.Test
 class CalendarBatchOperationTest {
 
     @get:Rule
-    val permissionRule = GrantPermissionRule.grant(
-        Manifest.permission.READ_CALENDAR,
-        Manifest.permission.WRITE_CALENDAR
-    )
+    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 

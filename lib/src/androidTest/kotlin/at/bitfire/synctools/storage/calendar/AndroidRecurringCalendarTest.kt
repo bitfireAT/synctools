@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.storage.calendar
 
+import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
@@ -15,9 +16,9 @@ import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
 
-import at.bitfire.synctools.test.InitCalendarProviderRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
 import at.bitfire.synctools.test.withId
@@ -38,7 +39,7 @@ import org.junit.Test
 class AndroidRecurringCalendarTest {
 
     @get:Rule
-    val initCalendarProviderRule = InitCalendarProviderRule.initialize()
+    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
     @get:Rule
     val mockkRule = MockKRule(this)

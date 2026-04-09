@@ -29,7 +29,7 @@ import org.junit.Test
 class AndroidCalendarProviderTest {
 
     @get:Rule
-    val permissonRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
     private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
 
