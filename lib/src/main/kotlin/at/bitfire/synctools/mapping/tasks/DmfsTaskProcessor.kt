@@ -7,9 +7,9 @@
 package at.bitfire.synctools.mapping.tasks
 
 import android.content.ContentValues
-import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Date
