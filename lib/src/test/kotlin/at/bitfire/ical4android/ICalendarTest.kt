@@ -6,6 +6,8 @@
 
 package at.bitfire.ical4android
 
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.Property.TRIGGER
 import net.fortuna.ical4j.model.component.VAlarm
@@ -22,6 +24,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.StringReader
 import java.time.Period
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 import kotlin.jvm.optionals.getOrNull
@@ -233,6 +236,78 @@ class ICalendarTest {
         assertEquals(1, min)
 	}
 
+	@Test
+	fun `vAlarmToMin with trigger duration, DtStart is DATE, Duration is java_time_Duration`() {
+		val alarm = VAlarm(Duration("-PT5M").duration)
+		val dtStart = DtStart(dateValue("20260407"))
+		val duration = Duration("PT1H")
+
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm = alarm,
+			refStart = dtStart,
+			refEnd = null,
+			refDuration = duration,
+			allowRelEnd = true
+		)!!
+
+		assertEquals(Related.START, ref)
+		assertEquals(5, min)
+	}
+
+	@Test
+	fun `vAlarmToMin with trigger duration, DtStart is DATE, Duration is java_time_Period`() {
+		val alarm = VAlarm(Duration("-PT5M").duration)
+		val dtStart = DtStart(dateValue("20260407"))
+		val duration = Duration("P1D")
+
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm = alarm,
+			refStart = dtStart,
+			refEnd = null,
+			refDuration = duration,
+			allowRelEnd = true
+		)!!
+
+		assertEquals(Related.START, ref)
+		assertEquals(5, min)
+	}
+
+	@Test
+	fun `vAlarmToMin with trigger duration and Related=END, DtStart and DtEnd are DATE, allowRelEnd=false`() {
+		val alarm = VAlarm(Duration("-PT5M").duration).apply {
+			getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+		}
+		val dtStart = DtStart(dateValue("20260407"))
+		val dtEnd = DtStart(dateValue("20260408"))
+
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm = alarm,
+			refStart = dtStart,
+			refEnd = dtEnd,
+			refDuration = null,
+			allowRelEnd = false
+		)!!
+
+		assertEquals(Related.START, ref)
+		assertEquals(-(24 * 60 - 5), min)
+	}
+
+	@Test
+	fun `vAlarmToMin with DATE-TIME trigger, DtStart is DATE`() {
+		val alarm = VAlarm(dateTimeValue("20260406T120000", ZoneOffset.UTC).toInstant())
+		val dtStart = DtStart(dateValue("20260407"))
+
+		val (ref, min) = ICalendar.vAlarmToMin(
+			alarm = alarm,
+			refStart = dtStart,
+			refEnd = null,
+			refDuration = null,
+			allowRelEnd = true
+		)!!
+
+		assertEquals(Related.START, ref)
+		assertEquals(12 * 60, min)
+	}
 
 	// TODO Note: can we use the following now when we have ical4j 4.x?
 

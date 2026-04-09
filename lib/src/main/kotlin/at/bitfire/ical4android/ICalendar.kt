@@ -11,6 +11,7 @@ import at.bitfire.synctools.BuildConfig
 import at.bitfire.synctools.exception.InvalidICalendarException
 import at.bitfire.synctools.icalendar.ICalendarParser
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
+import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
@@ -28,6 +29,7 @@ import net.fortuna.ical4j.validate.ValidationException
 import java.io.Reader
 import java.io.StringReader
 import java.time.Duration
+import java.time.Instant
 import java.time.Period
 import java.time.temporal.Temporal
 import java.util.LinkedList
@@ -191,8 +193,8 @@ open class ICalendar {
             var related: Related = trigger.getParameter<Related>(Parameter.RELATED).getOrNull() ?: Related.START
 
             // event/task start/end time
-            val start: Temporal? = refStart?.date
-            var end: Temporal? = refEnd?.date
+            val start = refStart?.date?.toInstant()
+            var end = refEnd?.date?.toInstant()
 
             // event/task end time
             if (end == null && start != null)
