@@ -523,25 +523,12 @@ class AndroidCalendar(
         if (syncEvents == null || syncEvents <= 0)
             return null
 
-        // query event to get first and last instance
-        var first: Long? = null
-        var last: Long? = null
-        var rRule: String? = null
-        getEventRow(eventId, arrayOf(Events.DTSTART, Events.RRULE, Events.LAST_DATE))?.let { values ->
-            first = values.getAsLong(Events.DTSTART)
-            rRule = values.getAsString(Events.RRULE).trimToNull()
-            last = values.getAsLong(Events.LAST_DATE)
-        }
+        // Query first and last instance of the event.
+        val (firstTs, lastTs) = getFirstAndLastTimestamp(eventId)
 
-        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously,
-        AndroidCalendarProviderBehaviorTest.testLastDateNotAvailableImmediately.
-        We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
-        val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
-        if (!isEndless && last == null)
-            last = waitForLastDate(eventId, rRule)
-
-        // If this event doesn't have a last occurrence, it's endless and always has instances.
-        if (first == null || last == null)
+        /* If the event doesn't have a last occurrence, it's either endless (and always has
+        instances) or we can't determine the number of instances. */
+        if (firstTs == null || lastTs == null)
             return null
 
         /* When the calendar provider receives an instances query, it
@@ -553,13 +540,13 @@ class AndroidCalendar(
         * So we request only the time window of the actual event to avoid unnecessary instance expansion. */
         val instancesUri = Instances.CONTENT_URI.asSyncAdapter(account)
             .buildUpon()
-            .appendPath(first.toString())   // begin timestamp
-            .appendPath(last.toString())    // end timestamp
+            .appendPath(firstTs.toString())   // begin timestamp
+            .appendPath(lastTs.toString())    // end timestamp
             .build()
 
         // We're interested in instances of the original event, but also of exceptions.
         val eventIdsSql = withExceptionIds(eventId).joinToString(",")
-        logger.info("Querying instances between $first and $last and filtering for event IDs: $eventIdsSql")
+        logger.info("Querying instances between $firstTs and $lastTs and filtering for event IDs: $eventIdsSql")
 
         var numInstances: Int? = null
         try {
@@ -577,28 +564,45 @@ class AndroidCalendar(
     }
 
     /**
-     * Waits for the calendar provider to asynchronously update the LAST_DATE field.
-     * 
-     * The calendar provider doesn't update Events.LAST_DATE immediately, but asynchronously.
-     * This function waits up to 3 seconds for LAST_DATE to become available.
-     * 
-     * @param eventId ID of the event to wait for
-     * @param rRule   RRULE of the event (only for logging purposes)
-     * @return LAST_DATE value once available, or null if timeout occurs
+     * Retrieves the first and last timestamps of an event with the given event ID.
+     *
+     * This method queries the event's start time and last date, handling cases where the last date
+     * might not be immediately available due to asynchronous updates by the Calendar Provider.
+     *
+     * @param eventId The ID of the event for which to retrieve the first and last timestamps.
+     * @return A Pair containing 1. the first timestamp (or null if not available) and 2.
+     * the last timestamp (or null if not available or if the event is endless).
      */
-    private fun waitForLastDate(eventId: Long, rRule: String?): Long? {
-        logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
-        repeat(30) {
-            Thread.sleep(100)
-            val last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
-            if (last != null)
-                return last   // Gotcha! LAST_DATE is now available.
+    private fun getFirstAndLastTimestamp(eventId: Long): Pair<Long?, Long?> {
+        var first: Long? = null
+        var last: Long? = null
+        var rRule: String? = null
+        getEventRow(eventId, arrayOf(Events.DTSTART, Events.RRULE, Events.LAST_DATE))?.let { values ->
+            first = values.getAsLong(Events.DTSTART)
+            rRule = values.getAsString(Events.RRULE).trimToNull()
+            last = values.getAsLong(Events.LAST_DATE)
         }
-        logger.warning("Event should have a LAST_DATE, but it's still not available after 3 seconds. RRULE=$rRule")
-        return null
+
+        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously,
+        AndroidCalendarProviderBehaviorTest.testLastDateNotAvailableImmediately.
+        We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
+        val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
+        if (!isEndless && last == null) {
+            logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
+            for (i in 1..30) {
+                Thread.sleep(100)
+                last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
+                if (last != null)
+                    break   // Gotcha! LAST_DATE is now available.
+            }
+            if (last == null)
+                logger.warning("Event should have a LAST_DATE, but it's still not available after 3 seconds. RRULE=$rRule")
+        }
+
+        return first to last
     }
 
-    fun withExceptionIds(eventId: Long): List<Long> {
+    private fun withExceptionIds(eventId: Long): List<Long> {
         val result = mutableSetOf(eventId)
         iterateEventRows(
             arrayOf(Events._ID),
