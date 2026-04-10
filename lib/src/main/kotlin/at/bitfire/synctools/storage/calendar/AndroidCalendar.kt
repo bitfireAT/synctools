@@ -9,7 +9,6 @@ package at.bitfire.synctools.storage.calendar
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Entity
-import android.database.DatabaseUtils
 import android.os.RemoteException
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Attendees
@@ -19,7 +18,6 @@ import android.provider.CalendarContract.EventsEntity
 import android.provider.CalendarContract.ExtendedProperties
 import android.provider.CalendarContract.Instances
 import android.provider.CalendarContract.Reminders
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.contentValuesOf
 import at.bitfire.ical4android.UnknownProperty
@@ -566,18 +564,11 @@ class AndroidCalendar(
         var numInstances: Int? = null
         try {
             client.query(
-                instancesUri, null,
+                instancesUri, arrayOf(Instances._ID),
                 "${Instances.EVENT_ID} IN ($eventIdsSql)", null,
                 null
             )?.use { cursor ->
                 numInstances = cursor.count
-
-                // TODO debug
-                while (cursor.moveToNext()) {
-                    val v = ContentValues()
-                    DatabaseUtils.cursorRowToContentValues(cursor, v)
-                    Log.i("AC", "Exception: $v")
-                }
             }
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't query number of instances for event $eventId", e)
