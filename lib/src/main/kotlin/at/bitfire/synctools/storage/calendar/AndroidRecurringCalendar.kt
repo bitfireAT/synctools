@@ -69,6 +69,7 @@ class AndroidRecurringCalendar(
 
             batch.commit()
 
+            // main event was created as first row (index 0), return its insert result (= ID)
             val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
             return ContentUris.parseId(uri)
         } catch (e: RemoteException) {

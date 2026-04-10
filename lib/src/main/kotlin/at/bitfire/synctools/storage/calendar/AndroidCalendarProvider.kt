@@ -318,7 +318,8 @@ class AndroidCalendarProvider(
 
         /**
          * Not all calendar provider versions support recurring events up to the year 2074.
-         * Android 12 switched to the new Java Time API, adding support for
+         *
+         * With Android 12, the calendar provider switched to the new Java Time API, adding support for
          *
          * - events up to 2074,
          * - matching recurring event exceptions with millisecond resolution.

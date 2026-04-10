@@ -77,6 +77,8 @@ class AndroidCalendarTest {
         calendar.deleteAllEvents()
     }
 
+    // The calendar provider of Android <= 11 doesn't handle milliseconds well.
+    // It fails to match exceptions with their original event.
     private val testStartTime = Instant.now().truncatedTo(ChronoUnit.SECONDS)
     private val testStartMillis = testStartTime.toEpochMilli()
 
