@@ -31,11 +31,12 @@ import org.junit.Assert.assertNull
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class AndroidCalendarTest {
-
-    private val now = System.currentTimeMillis()
 
     companion object {
 
@@ -48,6 +49,7 @@ class AndroidCalendarTest {
         lateinit var client: ContentProviderClient
         lateinit var provider: AndroidCalendarProvider
         lateinit var calendar: AndroidCalendar
+        lateinit var recurringCalendar: AndroidRecurringCalendar
 
         @BeforeClass
         @JvmStatic
@@ -57,12 +59,13 @@ class AndroidCalendarTest {
             provider = AndroidCalendarProvider(testAccount, client)
 
             calendar = TestCalendar.create(testAccount, client)
+            recurringCalendar = AndroidRecurringCalendar(calendar)
         }
 
         @AfterClass
         @JvmStatic
         fun tearDownClass() {
-            //calendar.delete()
+            calendar.delete()
             client.close()
         }
 
@@ -71,11 +74,11 @@ class AndroidCalendarTest {
     @After
     fun cleanUp() {
         // Clean up events after every test
-        // TODO: calendar.deleteAllEvents()
-        calendar.iterateEventRows(arrayOf(Events._ID), null, null) { values ->
-            calendar.deleteEvent(values.getAsLong(Events._ID))
-        }
+        calendar.deleteAllEvents()
     }
+
+    private val testStartTime = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+    private val testStartMillis = testStartTime.toEpochMilli()
 
 
     // CRUD AndroidEvent
@@ -84,8 +87,8 @@ class AndroidCalendarTest {
     fun testAddEvent_and_GetEvent() {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         )).apply {
             addSubValue(Reminders.CONTENT_URI, contentValuesOf(
@@ -112,8 +115,8 @@ class AndroidCalendarTest {
         // second operation (event row index > 0)
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         )).apply {
             addSubValue(Reminders.CONTENT_URI, contentValuesOf(
@@ -134,19 +137,19 @@ class AndroidCalendarTest {
     @Test
     fun testFindEvent() {
         // no result
-        assertNull(calendar.findEvent("${Events.DTSTART}=?", arrayOf(now.toString())))
+        assertNull(calendar.findEvent("${Events.DTSTART}=?", arrayOf(testStartMillis.toString())))
 
         // insert event
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         ))
         calendar.addEvent(entity)
 
         // not it finds a result
-        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf(now.toString()))
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf(testStartMillis.toString()))
         assertEquals(1, result.size)
         assertEntitiesEqual(entity, result.first(), onlyFieldsInExpected = true)
     }
@@ -155,23 +158,23 @@ class AndroidCalendarTest {
     fun testFindEvents() {
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now + 3600000,
-            Events.DTEND to now + 3600000*2,
+            Events.DTSTART to testStartMillis + 3600000,
+            Events.DTEND to testStartMillis + 3600000*2,
             Events.TITLE to "Some Other Event 1"
         )))
         val id3 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now + 3600000,
-            Events.DTEND to now + 3600000*2,
+            Events.DTSTART to testStartMillis + 3600000,
+            Events.DTEND to testStartMillis + 3600000*2,
             Events.TITLE to "Some Other Event 2"
         )))
-        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((now + 3600000).toString()))
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((testStartMillis + 3600000).toString()))
         assertEquals(2, result.size)
         assertEquals(
             setOf(id2, id3),
@@ -187,11 +190,11 @@ class AndroidCalendarTest {
     fun testFindEventRow() {
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         )))
-        val result = calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(now.toString()))
+        val result = calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(testStartMillis.toString()))
         assertContentValuesEqual(
             contentValuesOf(Events.TITLE to "Some Event"),
             result!!
@@ -200,7 +203,7 @@ class AndroidCalendarTest {
 
     @Test
     fun testFindEventRow_NotExisting() {
-        assertNull(calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(now.toString())))
+        assertNull(calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(testStartMillis.toString())))
     }
 
     // getEvent and getEventEntity are implicitly tested by testAddEvent_and_GetEvent
@@ -209,8 +212,8 @@ class AndroidCalendarTest {
     fun testGetEventRow() {
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event"
         )
         val id = calendar.addEvent(Entity(values))
@@ -225,14 +228,14 @@ class AndroidCalendarTest {
     fun testIterateEventRows() {
         val id1 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 2"
         )))
 
@@ -254,14 +257,14 @@ class AndroidCalendarTest {
     fun testIterateEvents() {
         val id1 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 2"
         )))
 
@@ -299,8 +302,8 @@ class AndroidCalendarTest {
     fun testGetStatusUpdateWorkaround_UpdateStatusFromNullToNull() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Event without status",
             Events.STATUS to null
         )))
@@ -314,8 +317,8 @@ class AndroidCalendarTest {
     fun testGetStatusUpdateWorkaround_UpdateStatusFromNonNullToNull() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Event without status",
             Events.STATUS to Events.STATUS_TENTATIVE
         )))
@@ -329,8 +332,8 @@ class AndroidCalendarTest {
     fun testUpdateEventRow() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
 
@@ -343,8 +346,8 @@ class AndroidCalendarTest {
     fun testUpdateEventRowBatch() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
 
@@ -359,8 +362,8 @@ class AndroidCalendarTest {
     fun testUpdateEvent_NoRebuild() {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event",
             //Events.STATUS to null
         )).apply {
@@ -382,8 +385,8 @@ class AndroidCalendarTest {
     fun testUpdateEvent_Rebuild() {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1",
             Events.STATUS to Events.STATUS_CONFIRMED
         ))
@@ -410,15 +413,15 @@ class AndroidCalendarTest {
     fun testUpdateEventRows() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
 
         calendar.updateEventRows(
             contentValuesOf(Events.TITLE to "New Title"),
             "${Events.DTSTART}=?",
-            arrayOf(now.toString())
+            arrayOf(testStartMillis.toString())
         )
 
         assertEquals("New Title", calendar.getEvent(id)!!.entityValues.getAsString(Events.TITLE))
@@ -428,8 +431,8 @@ class AndroidCalendarTest {
     fun testDeleteEventAndExceptions() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Some Event 1"
         )))
 
@@ -445,8 +448,8 @@ class AndroidCalendarTest {
     fun testNumInstances_SingleInstance() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis + 3600000,
             Events.TITLE to "Event with 1 instance"
         )))
         assertEquals(1, calendar.numInstances(id))
@@ -456,7 +459,7 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
+            Events.DTSTART to testStartMillis,
             Events.DURATION to "PT1H",
             Events.TITLE to "Event with 5 instances",
             Events.RRULE to "FREQ=DAILY;COUNT=5"
@@ -468,7 +471,7 @@ class AndroidCalendarTest {
     fun testNumInstances_Recurring_Endless() {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
+            Events.DTSTART to testStartMillis,
             Events.DURATION to "PT1H",
             Events.TITLE to "Event without end",
             Events.RRULE to "FREQ=DAILY"
@@ -520,107 +523,107 @@ class AndroidCalendarTest {
 
     @Test
     fun testNumInstances_RecurringWithExceptions_MatchingOrigInstanceTime() {
-        val syncId = "recurring-with-exceptions"
-        val id = calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events._SYNC_ID to syncId,
-            Events.DTSTART to 1642640523000,
-            Events.DURATION to "PT1H",
-            Events.TITLE to "Event with 5 instances, two of them are exceptions",
-            Events.RRULE to "FREQ=DAILY;COUNT=5"
-        )))
-        calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.ORIGINAL_SYNC_ID to syncId,
-            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
-            Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-            Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
-            Events.TITLE to "Exception on 3rd day"
-        )))
-        calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.ORIGINAL_SYNC_ID to syncId,
-            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
-            Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-            Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
-            Events.TITLE to "Exception on 5th day",
-            Events.STATUS to Events.STATUS_CANCELED
-        )))
-        assertEquals(5 - /* one cancelled */ 1, calendar.numInstances(id))
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events._SYNC_ID to UUID.randomUUID().toString(),
+                Events.DTSTART to 1642640523000,
+                Events.DURATION to "PT1H",
+                Events.TITLE to "Event with 5 instances, two of them are exceptions",
+                Events.RRULE to "FREQ=DAILY;COUNT=5"
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 3rd day"
+                )),
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
+                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 5th day",
+                    Events.STATUS to Events.STATUS_CANCELED
+                ))
+            )
+        ))
+        assertEquals(5 - /* one canceled */ 1, calendar.numInstances(id))
     }
 
     @Test
     fun testNumInstances_RecurringWithExceptions_NotMatchingOrigInstanceTime() {
-        val syncId = UUID.randomUUID().toString()
-        val id = calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events._SYNC_ID to syncId,
-            Events.DTSTART to 1642640523000,
-            Events.DURATION to "PT1H",
-            Events.TITLE to "Event with 5 instances, two of them are exceptions",
-            Events.RRULE to "FREQ=DAILY;COUNT=5"
-        )))
-        calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.ORIGINAL_SYNC_ID to syncId,
-            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
-            Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-            Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
-            Events.TITLE to "Exception on 3rd day"
-        )))
-        calendar.addEvent(Entity(contentValuesOf(
-            Events.CALENDAR_ID to calendar.id,
-            Events.ORIGINAL_SYNC_ID to syncId,
-            Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000 + 100,  // doesn't match original instance time!
-            Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-            Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
-            Events.TITLE to "Exception on 5th day (wrong instance time)"
-        )))
+        val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
+            main = Entity(contentValuesOf(
+                Events.CALENDAR_ID to calendar.id,
+                Events._SYNC_ID to UUID.randomUUID().toString(),
+                Events.DTSTART to 1642640523000,
+                Events.DURATION to "PT1H",
+                Events.TITLE to "Event with 5 instances, two of them are exceptions",
+                Events.RRULE to "FREQ=DAILY;COUNT=5"
+            )),
+            exceptions = listOf(
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
+                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 3rd day"
+                )),
+                Entity(contentValuesOf(
+                    Events.CALENDAR_ID to calendar.id,
+                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000 + 100,  // doesn't match original instance time!
+                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
+                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                    Events.TITLE to "Exception on 5th day (wrong instance time)"
+                ))
+            )
+        ))
         assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
     }
 
     @Test
     fun testDeleteDirtyEventsWithoutInstances_NoInstances() {
-        // create recurring event with only deleted/cancelled instances
-        val now = System.currentTimeMillis()
-        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        // create recurring event with only deleted/canceled instances
         val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
             main = Entity(contentValuesOf(
-                Events._SYNC_ID to "event-with-only-canceled-instances",
+                Events._SYNC_ID to UUID.randomUUID().toString(),
                 Events.TITLE to "Event with only canceled instances",
                 Events.CALENDAR_ID to calendar.id,
                 Events.ALL_DAY to 0,
-                Events.DTSTART to now,
+                Events.DTSTART to testStartTime.toEpochMilli(),
                 Events.DURATION to "PT1H",
                 Events.RRULE to "FREQ=DAILY;COUNT=3",
                 Events.DIRTY to 1
             )),
             exceptions = listOf(
-                Entity(contentValuesOf(     // first instance: cancelled
+                Entity(contentValuesOf(     // first instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to now,
+                    Events.ORIGINAL_INSTANCE_TIME to testStartTime.toEpochMilli(),
                     Events.ORIGINAL_ALL_DAY to 0,
                     Events.TITLE to "Event with only canceled instances",
-                    Events.DTSTART to now,
-                    Events.DTEND to now + 3600000,
+                    Events.DTSTART to testStartTime.toEpochMilli(),
+                    Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
                     Events.STATUS to Events.STATUS_CANCELED
                 )),
-                Entity(contentValuesOf(     // second instance: cancelled
+                Entity(contentValuesOf(     // second instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to now + 86400000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofHours(24)).toEpochMilli(),
                     Events.ORIGINAL_ALL_DAY to 0,
                     Events.TITLE to "Event with only canceled instances",
-                    Events.DTSTART to now + 86400000,
-                    Events.DTEND to now + 86400000 + 3600000,
+                    Events.DTSTART to (testStartTime + Duration.ofHours(24)).toEpochMilli(),
+                    Events.DTEND to (testStartTime + Duration.ofHours(25)).toEpochMilli(),
                     Events.STATUS to Events.STATUS_CANCELED
                 )),
-                Entity(contentValuesOf(     // third and last instance: cancelled
+                Entity(contentValuesOf(     // third and last instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to now + 2*86400000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofHours(48)).toEpochMilli(),
                     Events.ORIGINAL_ALL_DAY to 0,
                     Events.TITLE to "Event with only canceled instances",
-                    Events.DTSTART to now + 2*86400000,
-                    Events.DTEND to now + 2*86400000 + 3600000,
+                    Events.DTSTART to (testStartTime + Duration.ofHours(48)).toEpochMilli(),
+                    Events.DTEND to (testStartTime + Duration.ofHours(49)).toEpochMilli(),
                     Events.STATUS to Events.STATUS_CANCELED
                 ))
             )
@@ -641,29 +644,26 @@ class AndroidCalendarTest {
 
     @Test
     fun testDeleteDirtyEventsWithoutInstances_OneInstanceRemaining() {
-        // create recurring event with only deleted/cancelled instances
-        val syncId = "event-with-instances"
-        val recurringCalendar = AndroidRecurringCalendar(calendar)
+        // create recurring event with only deleted/canceled instances
         val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
             main = Entity(contentValuesOf(
                 Events.CALENDAR_ID to calendar.id,
-                Events._SYNC_ID to syncId,
+                Events._SYNC_ID to UUID.randomUUID().toString(),
                 Events.DTSTART to 1642640523000,
                 Events.DURATION to "PT1H",
-                Events.TITLE to "Event with 2 instances, one of them cancelled",
+                Events.TITLE to "Event with 2 instances, one of them canceled",
                 Events.RRULE to "FREQ=DAILY;COUNT=2",
                 Events.DIRTY to 1
             )),
             exceptions = listOf(
-                Entity(contentValuesOf(     // first instance: cancelled
+                Entity(contentValuesOf(     // first instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_SYNC_ID to syncId,
                     Events.ORIGINAL_INSTANCE_TIME to 1642640523000,
                     Events.DTSTART to 1642640523000 + 86400000,
                     Events.DTEND to 1642640523000 + 86400000 + 3600000,
                     Events.STATUS to Events.STATUS_CANCELED
                 ))
-                // however second instance is NOT cancelled
+                // however second instance is NOT canceled
             )
         ))
         assertEquals(1, calendar.numInstances(id))

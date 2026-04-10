@@ -28,6 +28,7 @@ import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
 import at.bitfire.vcard4android.Utils.trimToNull
+import org.jetbrains.annotations.TestOnly
 import java.util.LinkedList
 import java.util.logging.Logger
 
@@ -465,6 +466,16 @@ class AndroidCalendar(
         } catch (e: RemoteException) {
             throw LocalStorageException("Couldn't update events", e)
         }
+
+    @TestOnly
+    fun deleteAllEvents() {
+        try {
+            val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(null, null)
+            client.delete(eventsUri, protectedWhere, protectedWhereArgs)
+        } catch (e: RemoteException) {
+            throw LocalStorageException("Couldn't delete event $id", e)
+        }
+    }
 
     /**
      * Deletes an event row.
