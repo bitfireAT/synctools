@@ -15,7 +15,6 @@ import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
@@ -68,6 +67,9 @@ class AndroidCalendarProviderBehaviorTest {
         calendar.deleteAllEvents()
     }
 
+    private val testStartTime = TestCalendar.nowAlignedToSecond()
+    private val testStartMillis = testStartTime.toEpochMilli()
+
 
     /**
      * To make sure that's not a problem to insert an event with DTEND = DTSTART.
@@ -76,8 +78,8 @@ class AndroidCalendarProviderBehaviorTest {
     fun testInsertEventWithDtEndEqualsDtStart() {
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000
-            Events.DTEND to 1759403653000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to testStartMillis,
             Events.TITLE to "Event with DTSTART = DTEND"
         )
         val id = calendar.addEvent(Entity(values))

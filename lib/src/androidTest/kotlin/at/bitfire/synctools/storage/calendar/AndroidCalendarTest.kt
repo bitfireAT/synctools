@@ -19,7 +19,6 @@ import android.util.Log
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.impl.TestCalendar
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEntitiesEqual
@@ -32,8 +31,6 @@ import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
 import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class AndroidCalendarTest {
@@ -77,9 +74,7 @@ class AndroidCalendarTest {
         calendar.deleteAllEvents()
     }
 
-    // The calendar provider of Android <= 11 doesn't handle milliseconds well.
-    // It fails to match exceptions with their original event.
-    private val testStartTime = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+    private val testStartTime = TestCalendar.nowAlignedToSecond()
     private val testStartMillis = testStartTime.toEpochMilli()
 
 
@@ -444,7 +439,7 @@ class AndroidCalendarTest {
     }
 
 
-    // event instances (we always test numDirectInstances + numInstances together)
+    // event instances
 
     @Test
     fun testNumInstances_SingleInstance() {

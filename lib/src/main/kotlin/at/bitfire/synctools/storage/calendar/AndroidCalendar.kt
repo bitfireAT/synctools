@@ -513,13 +513,17 @@ class AndroidCalendar(
      * `CalendarInstancesHelper.SQL_WHERE_GET_EVENTS_ENTRIES`).
      *
      * @return number of event instances (not counting deleted and canceled exceptions); *null* if
-     * the number can't be determined or if the event has no last date
+     * [Calendars.SYNC_EVENTS] is not set, or the number can't be determined, or the event has no last date
      * (recurring event without last instance)
      *
      * @throws LocalStorageException when the content provider returns an error
      */
     fun numInstances(eventId: Long): Int? {
-        // TODO: check calendar SYNC_EVENTS, otherwise instances are not built!
+        /* Check that the calendar has SYNC_EVENTS set. If it is not, the Instances query won't
+        expand instances and may return 0 although there are instances. */
+        val syncEvents = values.getAsInteger(Calendars.SYNC_EVENTS)
+        if (syncEvents == null || syncEvents <= 0)
+            return null
 
         // query event to get first and last instance
         var first: Long? = null
@@ -531,7 +535,8 @@ class AndroidCalendar(
             last = values.getAsLong(Events.LAST_DATE)
         }
 
-        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously.
+        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously,
+        AndroidCalendarProviderBehaviorTest.testLastDateNotAvailableImmediately.
         We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
         val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
         if (!isEndless && last == null)
