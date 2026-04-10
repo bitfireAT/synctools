@@ -11,18 +11,17 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.Entity
 import android.provider.CalendarContract
-import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.test.assertContentValuesEqual
 import org.junit.After
-import org.junit.Before
-import org.junit.Rule
+import org.junit.AfterClass
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Test
 
 /**
@@ -30,27 +29,43 @@ import org.junit.Test
  */
 class AndroidCalendarProviderBehaviorTest {
 
-    @get:Rule
-    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+    companion object {
 
-    private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
+        @JvmField
+        @ClassRule
+        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
-    lateinit var client: ContentProviderClient
-    lateinit var provider: AndroidCalendarProvider
-    lateinit var calendar: AndroidCalendar
+        private val testAccount = Account(AndroidCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-    @Before
-    fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
-        provider = AndroidCalendarProvider(testAccount, client)
+        lateinit var client: ContentProviderClient
+        lateinit var provider: AndroidCalendarProvider
+        lateinit var calendar: AndroidCalendar
+        lateinit var recurringCalendar: AndroidRecurringCalendar
 
-        calendar = TestCalendar.create(testAccount, client)
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            provider = AndroidCalendarProvider(testAccount, client)
+
+            calendar = TestCalendar.create(testAccount, client)
+            recurringCalendar = AndroidRecurringCalendar(calendar)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            calendar.delete()
+            client.close()
+        }
+
     }
 
     @After
-    fun tearDown() {
-        client.close()
+    fun cleanUp() {
+        // Clean up events after every test
+        calendar.deleteAllEvents()
     }
 
 
