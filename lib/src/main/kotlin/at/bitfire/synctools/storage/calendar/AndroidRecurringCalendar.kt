@@ -56,12 +56,11 @@ class AndroidRecurringCalendar(
      */
     fun addEventAndExceptions(eventAndExceptions: EventAndExceptions): Long {
         try {
-            val batch = CalendarBatchOperation(calendar.client)
-
             // validate / clean up input
             val cleaned = cleanUp(eventAndExceptions)
 
             // add main event
+            val batch = CalendarBatchOperation(calendar.client)
             calendar.addEvent(cleaned.main, batch)
 
             // add exceptions
@@ -70,7 +69,6 @@ class AndroidRecurringCalendar(
 
             batch.commit()
 
-            // main event was created as first row (index 0), return its insert result (= ID)
             val uri = batch.getResult(0)?.uri ?: throw LocalStorageException("Content provider returned null on insert")
             return ContentUris.parseId(uri)
         } catch (e: RemoteException) {

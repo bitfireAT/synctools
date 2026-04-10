@@ -13,10 +13,14 @@ import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.storage.calendar.AndroidCalendar
 import at.bitfire.synctools.storage.calendar.AndroidCalendarProvider
 import java.util.UUID
+import java.util.logging.Logger
 
 object TestCalendar {
 
-    fun findOrCreate(account: Account, client: ContentProviderClient, withColors: Boolean = false): AndroidCalendar {
+    private val logger
+        get() = Logger.getLogger(javaClass.name)
+
+    fun create(account: Account, client: ContentProviderClient, withColors: Boolean = false): AndroidCalendar {
         val provider = AndroidCalendarProvider(account, client)
 
         // we use colors for testing
@@ -25,12 +29,15 @@ object TestCalendar {
         else
             provider.removeColorIndices()
 
-        return provider.findFirstCalendar( null, null)
-            ?: provider.createAndGetCalendar(contentValuesOf(
-                Calendars.NAME to UUID.randomUUID().toString(),
-                Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
-                Calendars.CALENDAR_ACCESS_LEVEL to Calendars.CAL_ACCESS_ROOT)
-            )
+        return provider.createAndGetCalendar(contentValuesOf(
+            Calendars.NAME to UUID.randomUUID().toString(),
+            Calendars.CALENDAR_DISPLAY_NAME to "ical4android Test Calendar",
+            Calendars.CALENDAR_ACCESS_LEVEL to Calendars.CAL_ACCESS_ROOT,
+            Calendars.CALENDAR_TIME_ZONE to "Europe/Vienna",
+            Calendars.SYNC_EVENTS to 1      // required for numInstances!
+        )).also { calendar ->
+            logger.fine("Created test calendar: #${calendar.id}")
+        }
     }
 
 }

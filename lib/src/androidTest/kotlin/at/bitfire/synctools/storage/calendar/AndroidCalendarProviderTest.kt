@@ -84,7 +84,7 @@ class AndroidCalendarProviderTest {
         provider.provideCss3ColorIndices()
 
         // insert an event with that color
-        val cal = TestCalendar.findOrCreate(testAccount, client, withColors = true)
+        val cal = TestCalendar.create(testAccount, client, withColors = true)
         try {
             // add event with color
             cal.addEvent(Entity(contentValuesOf(

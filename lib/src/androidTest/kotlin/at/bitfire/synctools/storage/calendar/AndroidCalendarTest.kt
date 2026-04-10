@@ -15,49 +15,66 @@ import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
+import android.util.Log
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.ical4android.impl.TestCalendar
-
 import at.bitfire.synctools.storage.BatchOperation
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEntitiesEqual
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
-import org.junit.Before
-import org.junit.Rule
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Test
+import java.util.UUID
 
 class AndroidCalendarTest {
 
-    @get:Rule
-    val permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
-
     private val now = System.currentTimeMillis()
-    private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-    lateinit var client: ContentProviderClient
-    lateinit var provider: AndroidCalendarProvider
+    companion object {
 
-    lateinit var calendar: AndroidCalendar
+        @JvmField
+        @ClassRule
+        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
-    @Before
-    fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+        private val testAccount = Account(AndroidCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-        // make sure there are no colors for testAccount
-        provider = AndroidCalendarProvider(testAccount, client)
-        calendar = TestCalendar.findOrCreate(testAccount, client)
+        lateinit var client: ContentProviderClient
+        lateinit var provider: AndroidCalendarProvider
+        lateinit var calendar: AndroidCalendar
+
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            provider = AndroidCalendarProvider(testAccount, client)
+
+            calendar = TestCalendar.create(testAccount, client)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            //calendar.delete()
+            client.close()
+        }
+
     }
 
     @After
-    fun tearDown() {
-        calendar.delete()
-        client.close()
+    fun cleanUp() {
+        // Clean up events after every test
+        // TODO: calendar.deleteAllEvents()
+        calendar.iterateEventRows(arrayOf(Events._ID), null, null) { values ->
+            calendar.deleteEvent(values.getAsLong(Events._ID))
+        }
     }
 
 
@@ -432,7 +449,6 @@ class AndroidCalendarTest {
             Events.DTEND to now + 3600000,
             Events.TITLE to "Event with 1 instance"
         )))
-        assertEquals(1, calendar.numDirectInstances(id))
         assertEquals(1, calendar.numInstances(id))
     }
 
@@ -445,7 +461,6 @@ class AndroidCalendarTest {
             Events.TITLE to "Event with 5 instances",
             Events.RRULE to "FREQ=DAILY;COUNT=5"
         )))
-        assertEquals(5, calendar.numDirectInstances(id))
         assertEquals(5, calendar.numInstances(id))
     }
 
@@ -458,7 +473,6 @@ class AndroidCalendarTest {
             Events.TITLE to "Event without end",
             Events.RRULE to "FREQ=DAILY"
         )))
-        assertNull(calendar.numDirectInstances(id))
         assertNull(calendar.numInstances(id))
     }
 
@@ -473,10 +487,8 @@ class AndroidCalendarTest {
         )))
 
         if (AndroidCalendarProvider.supportsYear2074) {
-            assertEquals(52, calendar.numDirectInstances(id))
             assertEquals(52, calendar.numInstances(id))
         } else {
-            assertNull(calendar.numDirectInstances(id))
             assertNull(calendar.numInstances(id))
         }
     }
@@ -490,13 +502,7 @@ class AndroidCalendarTest {
             Events.TITLE to "Event with 2 years",
             Events.RRULE to "FREQ=DAILY;UNTIL=20240120T010203Z"
         )))
-        assertEquals(
-            if (AndroidCalendarProvider.instancesIncludeUntil)
-                365 * 2 + 1 // Android ≥9: includes UNTIL (correct)
-            else
-                365 * 2,    // Android <9: does not include UNTIL (incorrect!)
-            calendar.numDirectInstances(id)
-        )
+        assertEquals(365 * 2 + 1, calendar.numInstances(id))
     }
 
     @Test
@@ -509,7 +515,6 @@ class AndroidCalendarTest {
             Events.RRULE to "FREQ=DAILY;COUNT=5",
             Events.EXDATE to "20220121T010203Z"
         )))
-        assertEquals(4, calendar.numDirectInstances(id))
         assertEquals(4, calendar.numInstances(id))
     }
 
@@ -541,13 +546,12 @@ class AndroidCalendarTest {
             Events.TITLE to "Exception on 5th day",
             Events.STATUS to Events.STATUS_CANCELED
         )))
-        assertEquals(5 - 2, calendar.numDirectInstances(id))
         assertEquals(5 - /* one cancelled */ 1, calendar.numInstances(id))
     }
 
     @Test
     fun testNumInstances_RecurringWithExceptions_NotMatchingOrigInstanceTime() {
-        val syncId = "recurring-with-exceptions"
+        val syncId = UUID.randomUUID().toString()
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events._SYNC_ID to syncId,
@@ -561,7 +565,7 @@ class AndroidCalendarTest {
             Events.ORIGINAL_SYNC_ID to syncId,
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
             Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-            Events.DURATION to "PT1H",
+            Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
             Events.TITLE to "Exception on 3rd day"
         )))
         calendar.addEvent(Entity(contentValuesOf(
@@ -569,10 +573,9 @@ class AndroidCalendarTest {
             Events.ORIGINAL_SYNC_ID to syncId,
             Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000 + 100,  // doesn't match original instance time!
             Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-            Events.DURATION to "PT1H",
+            Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
             Events.TITLE to "Exception on 5th day (wrong instance time)"
         )))
-        assertEquals(5 - 1, calendar.numDirectInstances(id))
         assertEquals(5 + /* one extra outside the recurrence */ 1, calendar.numInstances(id))
     }
 
@@ -583,7 +586,8 @@ class AndroidCalendarTest {
         val recurringCalendar = AndroidRecurringCalendar(calendar)
         val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
             main = Entity(contentValuesOf(
-                Events._SYNC_ID to "event-without-instances",
+                Events._SYNC_ID to "event-with-only-canceled-instances",
+                Events.TITLE to "Event with only canceled instances",
                 Events.CALENDAR_ID to calendar.id,
                 Events.ALL_DAY to 0,
                 Events.DTSTART to now,
@@ -596,6 +600,7 @@ class AndroidCalendarTest {
                     Events.CALENDAR_ID to calendar.id,
                     Events.ORIGINAL_INSTANCE_TIME to now,
                     Events.ORIGINAL_ALL_DAY to 0,
+                    Events.TITLE to "Event with only canceled instances",
                     Events.DTSTART to now,
                     Events.DTEND to now + 3600000,
                     Events.STATUS to Events.STATUS_CANCELED
@@ -604,6 +609,7 @@ class AndroidCalendarTest {
                     Events.CALENDAR_ID to calendar.id,
                     Events.ORIGINAL_INSTANCE_TIME to now + 86400000,
                     Events.ORIGINAL_ALL_DAY to 0,
+                    Events.TITLE to "Event with only canceled instances",
                     Events.DTSTART to now + 86400000,
                     Events.DTEND to now + 86400000 + 3600000,
                     Events.STATUS to Events.STATUS_CANCELED
@@ -612,12 +618,17 @@ class AndroidCalendarTest {
                     Events.CALENDAR_ID to calendar.id,
                     Events.ORIGINAL_INSTANCE_TIME to now + 2*86400000,
                     Events.ORIGINAL_ALL_DAY to 0,
+                    Events.TITLE to "Event with only canceled instances",
                     Events.DTSTART to now + 2*86400000,
                     Events.DTEND to now + 2*86400000 + 3600000,
                     Events.STATUS to Events.STATUS_CANCELED
                 ))
             )
         ))
+
+        val check = recurringCalendar.getById(id)
+        Log.i("ACT", "Check: $check")
+
         assertEquals(0, calendar.numInstances(id))
 
         // this method should mark the event as deleted

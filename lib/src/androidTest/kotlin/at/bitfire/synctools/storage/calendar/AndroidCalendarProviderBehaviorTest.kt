@@ -45,7 +45,7 @@ class AndroidCalendarProviderBehaviorTest {
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
         provider = AndroidCalendarProvider(testAccount, client)
 
-        calendar = TestCalendar.findOrCreate(testAccount, client)
+        calendar = TestCalendar.create(testAccount, client)
     }
 
     @After

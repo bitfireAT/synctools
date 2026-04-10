@@ -56,7 +56,7 @@ class AndroidRecurringCalendarTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
 
-        calendar = TestCalendar.findOrCreate(testAccount, client)
+        calendar = TestCalendar.create(testAccount, client)
         recurringCalendar = spyk(AndroidRecurringCalendar(calendar))
     }
 
