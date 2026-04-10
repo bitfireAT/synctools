@@ -85,7 +85,7 @@ class AndroidCalendarTest {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         )).apply {
             addSubValue(Reminders.CONTENT_URI, contentValuesOf(
@@ -113,7 +113,7 @@ class AndroidCalendarTest {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         )).apply {
             addSubValue(Reminders.CONTENT_URI, contentValuesOf(
@@ -140,7 +140,7 @@ class AndroidCalendarTest {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         ))
         calendar.addEvent(entity)
@@ -156,22 +156,22 @@ class AndroidCalendarTest {
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to testStartMillis + 3600000,
-            Events.DTEND to testStartMillis + 3600000*2,
+            Events.DTSTART to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
+            Events.DTEND to (testStartTime + Duration.ofHours(2)).toEpochMilli(),
             Events.TITLE to "Some Other Event 1"
         )))
         val id3 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to testStartMillis + 3600000,
-            Events.DTEND to testStartMillis + 3600000*2,
+            Events.DTSTART to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
+            Events.DTEND to (testStartTime + Duration.ofHours(2)).toEpochMilli(),
             Events.TITLE to "Some Other Event 2"
         )))
-        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((testStartMillis + 3600000).toString()))
+        val result = calendar.findEvents("${Events.DTSTART}=?", arrayOf((testStartTime + Duration.ofHours(1)).toEpochMilli().toString()))
         assertEquals(2, result.size)
         assertEquals(
             setOf(id2, id3),
@@ -188,7 +188,7 @@ class AndroidCalendarTest {
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         )))
         val result = calendar.findEventRow(arrayOf(Events.TITLE), "${Events.DTSTART}=?", arrayOf(testStartMillis.toString()))
@@ -210,7 +210,7 @@ class AndroidCalendarTest {
         val values = contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event"
         )
         val id = calendar.addEvent(Entity(values))
@@ -226,13 +226,13 @@ class AndroidCalendarTest {
         val id1 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 2"
         )))
 
@@ -255,13 +255,13 @@ class AndroidCalendarTest {
         val id1 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
         val id2 = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 2"
         )))
 
@@ -300,7 +300,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Event without status",
             Events.STATUS to null
         )))
@@ -315,7 +315,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Event without status",
             Events.STATUS to Events.STATUS_TENTATIVE
         )))
@@ -330,7 +330,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
 
@@ -344,7 +344,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
 
@@ -360,7 +360,7 @@ class AndroidCalendarTest {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event",
             //Events.STATUS to null
         )).apply {
@@ -383,7 +383,7 @@ class AndroidCalendarTest {
         val entity = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1",
             Events.STATUS to Events.STATUS_CONFIRMED
         ))
@@ -411,7 +411,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
 
@@ -429,7 +429,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Some Event 1"
         )))
 
@@ -446,7 +446,7 @@ class AndroidCalendarTest {
         val id = calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
             Events.DTSTART to testStartMillis,
-            Events.DTEND to testStartMillis + 3600000,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Event with 1 instance"
         )))
         assertEquals(1, calendar.numInstances(id))
@@ -524,7 +524,7 @@ class AndroidCalendarTest {
             main = Entity(contentValuesOf(
                 Events.CALENDAR_ID to calendar.id,
                 Events._SYNC_ID to UUID.randomUUID().toString(),
-                Events.DTSTART to 1642640523000,
+                Events.DTSTART to testStartMillis,
                 Events.DURATION to "PT1H",
                 Events.TITLE to "Event with 5 instances, two of them are exceptions",
                 Events.RRULE to "FREQ=DAILY;COUNT=5"
@@ -532,16 +532,16 @@ class AndroidCalendarTest {
             exceptions = listOf(
                 Entity(contentValuesOf(
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
-                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofDays(2)).toEpochMilli(),
+                    Events.DTSTART to (testStartTime + Duration.ofDays(2) + Duration.ofHours(1)).toEpochMilli(), // one hour later
+                    Events.DTEND to (testStartTime + Duration.ofDays(2) + Duration.ofHours(2)).toEpochMilli(),
                     Events.TITLE to "Exception on 3rd day"
                 )),
                 Entity(contentValuesOf(
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000,
-                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofDays(4)).toEpochMilli(),
+                    Events.DTSTART to (testStartTime + Duration.ofDays(4) + Duration.ofHours(1)).toEpochMilli(), // one hour later
+                    Events.DTEND to (testStartTime + Duration.ofDays(4) + Duration.ofHours(2)).toEpochMilli(),
                     Events.TITLE to "Exception on 5th day",
                     Events.STATUS to Events.STATUS_CANCELED
                 ))
@@ -556,7 +556,7 @@ class AndroidCalendarTest {
             main = Entity(contentValuesOf(
                 Events.CALENDAR_ID to calendar.id,
                 Events._SYNC_ID to UUID.randomUUID().toString(),
-                Events.DTSTART to 1642640523000,
+                Events.DTSTART to testStartMillis,
                 Events.DURATION to "PT1H",
                 Events.TITLE to "Event with 5 instances, two of them are exceptions",
                 Events.RRULE to "FREQ=DAILY;COUNT=5"
@@ -564,16 +564,16 @@ class AndroidCalendarTest {
             exceptions = listOf(
                 Entity(contentValuesOf(
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 2*86400000,
-                    Events.DTSTART to 1642640523000 + 2*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 2*86400000 + 2*3600000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofDays(2)).toEpochMilli(),
+                    Events.DTSTART to (testStartTime + Duration.ofDays(2) + Duration.ofHours(1)).toEpochMilli(), // one hour later
+                    Events.DTEND to (testStartTime + Duration.ofDays(2) + Duration.ofHours(2)).toEpochMilli(),
                     Events.TITLE to "Exception on 3rd day"
                 )),
                 Entity(contentValuesOf(
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000 + 4*86400000 + 100,  // doesn't match original instance time!
-                    Events.DTSTART to 1642640523000 + 4*86400000 + 3600000, // one hour later
-                    Events.DTEND to 1642640523000 + 4*86400000 + 2*3600000,
+                    Events.ORIGINAL_INSTANCE_TIME to (testStartTime + Duration.ofDays(4)).toEpochMilli() + 100,  // doesn't match original instance time!
+                    Events.DTSTART to (testStartTime + Duration.ofDays(4) + Duration.ofHours(1)).toEpochMilli(), // one hour later
+                    Events.DTEND to (testStartTime + Duration.ofDays(4) + Duration.ofHours(2)).toEpochMilli(),
                     Events.TITLE to "Exception on 5th day (wrong instance time)"
                 ))
             )
@@ -590,7 +590,7 @@ class AndroidCalendarTest {
                 Events.TITLE to "Event with only canceled instances",
                 Events.CALENDAR_ID to calendar.id,
                 Events.ALL_DAY to 0,
-                Events.DTSTART to testStartTime.toEpochMilli(),
+                Events.DTSTART to testStartMillis,
                 Events.DURATION to "PT1H",
                 Events.RRULE to "FREQ=DAILY;COUNT=3",
                 Events.DIRTY to 1
@@ -598,10 +598,10 @@ class AndroidCalendarTest {
             exceptions = listOf(
                 Entity(contentValuesOf(     // first instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to testStartTime.toEpochMilli(),
+                    Events.ORIGINAL_INSTANCE_TIME to testStartMillis,
                     Events.ORIGINAL_ALL_DAY to 0,
                     Events.TITLE to "Event with only canceled instances",
-                    Events.DTSTART to testStartTime.toEpochMilli(),
+                    Events.DTSTART to testStartMillis,
                     Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
                     Events.STATUS to Events.STATUS_CANCELED
                 )),
@@ -646,7 +646,7 @@ class AndroidCalendarTest {
             main = Entity(contentValuesOf(
                 Events.CALENDAR_ID to calendar.id,
                 Events._SYNC_ID to UUID.randomUUID().toString(),
-                Events.DTSTART to 1642640523000,
+                Events.DTSTART to testStartMillis,
                 Events.DURATION to "PT1H",
                 Events.TITLE to "Event with 2 instances, one of them canceled",
                 Events.RRULE to "FREQ=DAILY;COUNT=2",
@@ -655,9 +655,9 @@ class AndroidCalendarTest {
             exceptions = listOf(
                 Entity(contentValuesOf(     // first instance: canceled
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_INSTANCE_TIME to 1642640523000,
-                    Events.DTSTART to 1642640523000 + 86400000,
-                    Events.DTEND to 1642640523000 + 86400000 + 3600000,
+                    Events.ORIGINAL_INSTANCE_TIME to testStartMillis,
+                    Events.DTSTART to (testStartTime + Duration.ofDays(1)).toEpochMilli(),
+                    Events.DTEND to (testStartTime + Duration.ofDays(1) + Duration.ofHours(1)).toEpochMilli(),
                     Events.STATUS to Events.STATUS_CANCELED
                 ))
                 // however second instance is NOT canceled
