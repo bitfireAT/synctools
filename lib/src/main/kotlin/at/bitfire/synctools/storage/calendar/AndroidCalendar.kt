@@ -534,17 +534,8 @@ class AndroidCalendar(
         /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously.
         We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
         val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
-        if (!isEndless && last == null) {
-            logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
-            repeat(25) {
-                Thread.sleep(100)
-                last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
-                if (last != null)
-                    return@repeat   // Gotcha! LAST_DATE is now available.
-            }
-            if (last == null)
-                logger.warning("Event should have a LAST_DATE, but it's still not available after 5 seconds. RRULE=$rRule")
-        }
+        if (!isEndless && last == null)
+            last = waitForLastDate(eventId, rRule)
 
         // If this event doesn't have a last occurrence, it's endless and always has instances.
         if (first == null || last == null)
@@ -587,6 +578,28 @@ class AndroidCalendar(
             throw LocalStorageException("Couldn't query number of instances for event $eventId", e)
         }
         return numInstances
+    }
+
+    /**
+     * Waits for the calendar provider to asynchronously update the LAST_DATE field.
+     * 
+     * The calendar provider doesn't update Events.LAST_DATE immediately, but asynchronously.
+     * This function waits up to 3 seconds for LAST_DATE to become available.
+     * 
+     * @param eventId ID of the event to wait for
+     * @param rRule   RRULE of the event (only for logging purposes)
+     * @return LAST_DATE value once available, or null if timeout occurs
+     */
+    private fun waitForLastDate(eventId: Long, rRule: String?): Long? {
+        logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
+        repeat(30) {
+            Thread.sleep(100)
+            val last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
+            if (last != null)
+                return last   // Gotcha! LAST_DATE is now available.
+        }
+        logger.warning("Event should have a LAST_DATE, but it's still not available after 3 seconds. RRULE=$rRule")
+        return null
     }
 
     fun withExceptionIds(eventId: Long): List<Long> {
