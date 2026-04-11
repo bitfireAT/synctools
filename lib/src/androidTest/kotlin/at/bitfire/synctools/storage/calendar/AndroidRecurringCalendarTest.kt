@@ -46,9 +46,9 @@ class AndroidRecurringCalendarTest {
 
         private val testAccount = Account(AndroidRecurringCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-        lateinit var client: ContentProviderClient
-        lateinit var calendar: AndroidCalendar
-        lateinit var recurringCalendar: AndroidRecurringCalendar
+        private lateinit var client: ContentProviderClient
+        private lateinit var calendar: AndroidCalendar
+        private lateinit var recurringCalendar: AndroidRecurringCalendar
 
         @BeforeClass
         @JvmStatic

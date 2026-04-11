@@ -44,7 +44,7 @@ import java.util.logging.Logger
  */
 class AndroidCalendar(
     internal val provider: AndroidCalendarProvider,
-    private val values: ContentValues
+    internal val values: ContentValues
 ) {
 
     val logger: Logger
@@ -567,9 +567,6 @@ class AndroidCalendar(
 
     /**
      * Retrieves the first and last timestamps of an event with the given event ID.
-     *
-     * This method queries the event's start time and last date, handling cases where the last date
-     * might not be immediately available due to asynchronous updates by the Calendar Provider.
      *
      * @param eventId The ID of the event for which to retrieve the first and last timestamps.
      * @return A Pair containing 1. the first timestamp (or null if not available) and 2.

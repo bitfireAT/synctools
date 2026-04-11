@@ -27,7 +27,7 @@ class CalendarBatchOperationTest {
 
     private val testAccount = Account(javaClass.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-    lateinit var provider: ContentProviderClient
+    private lateinit var provider: ContentProviderClient
 
     @Before
     fun setUp() {
