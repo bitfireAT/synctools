@@ -324,7 +324,7 @@ class AndroidCalendarProvider(
          * - events up to 2074,
          * - matching recurring event exceptions with millisecond resolution.
          */
-        val supportsYear2074 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        val supportsYear2074 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     }
 

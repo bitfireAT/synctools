@@ -34,7 +34,7 @@ class AndroidCalendarProviderBehaviorTest {
         @ClassRule
         val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
-        private val testAccount = Account(AndroidCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+        private val testAccount = Account(AndroidCalendarProviderBehaviorTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
         lateinit var client: ContentProviderClient
         lateinit var provider: AndroidCalendarProvider

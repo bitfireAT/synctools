@@ -475,7 +475,7 @@ class AndroidCalendar(
             val (protectedWhere, protectedWhereArgs) = whereWithCalendarId(null, null)
             client.delete(eventsUri, protectedWhere, protectedWhereArgs)
         } catch (e: RemoteException) {
-            throw LocalStorageException("Couldn't delete event $id", e)
+            throw LocalStorageException("Couldn't delete all events from calendar", e)
         }
     }
 

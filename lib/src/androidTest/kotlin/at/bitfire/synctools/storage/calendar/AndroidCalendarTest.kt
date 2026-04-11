@@ -15,7 +15,6 @@ import android.content.Entity
 import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.Reminders
-import android.util.Log
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -625,9 +624,6 @@ class AndroidCalendarTest {
                 ))
             )
         ))
-
-        val check = recurringCalendar.getById(id)
-        Log.i("ACT", "Check: $check")
 
         assertEquals(0, calendar.numInstances(id))
 
