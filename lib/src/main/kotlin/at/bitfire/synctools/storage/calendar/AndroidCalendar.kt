@@ -25,7 +25,6 @@ import at.bitfire.ical4android.util.MiscUtils.asSyncAdapter
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.storage.toContentValues
-import at.bitfire.vcard4android.Utils.trimToNull
 import org.jetbrains.annotations.TestOnly
 import java.util.LinkedList
 import java.util.logging.Logger
@@ -528,11 +527,9 @@ class AndroidCalendar(
                 return null
         }
 
-        // Query first and last instance of the event.
+        /* Query first and last instance of the event. If the event doesn't have a last occurrence,
+        it's either endless (and always has instances) or we can't determine the number of instances. */
         val (firstTs, lastTs) = getFirstAndLastTimestamp(eventId)
-
-        /* If the event doesn't have a last occurrence, it's either endless (and always has
-        instances) or we can't determine the number of instances. */
         if (firstTs == null || lastTs == null)
             return null
 
@@ -581,29 +578,10 @@ class AndroidCalendar(
     private fun getFirstAndLastTimestamp(eventId: Long): Pair<Long?, Long?> {
         var first: Long? = null
         var last: Long? = null
-        var rRule: String? = null
         getEventRow(eventId, arrayOf(Events.DTSTART, Events.RRULE, Events.LAST_DATE))?.let { values ->
             first = values.getAsLong(Events.DTSTART)
-            rRule = values.getAsString(Events.RRULE).trimToNull()
             last = values.getAsLong(Events.LAST_DATE)
         }
-
-        /* ATTENTION: Calendar Provider doesn't update Events.LAST_DATE immediately, but asynchronously,
-        AndroidCalendarProviderBehaviorTest.testLastDateNotAvailableImmediately.
-        We have to wait until LAST_DATE is available to get a correct result from the Instances table. */
-        val isEndless = rRule != null && !rRule.contains("UNTIL=", ignoreCase = true) && !rRule.contains("COUNT=", ignoreCase = true)
-        if (!isEndless && last == null) {
-            logger.warning("Event #$eventId should have a LAST_DATE, but it's not available yet. Waiting for LAST_DATE. RRULE=$rRule")
-            for (i in 1..30) {
-                Thread.sleep(100)
-                last = getEventRow(eventId, arrayOf(Events.LAST_DATE))?.getAsLong(Events.LAST_DATE)
-                if (last != null)
-                    break   // Gotcha! LAST_DATE is now available.
-            }
-            if (last == null)
-                logger.warning("Event should have a LAST_DATE, but it's still not available after 3 seconds. RRULE=$rRule")
-        }
-
         return first to last
     }
 

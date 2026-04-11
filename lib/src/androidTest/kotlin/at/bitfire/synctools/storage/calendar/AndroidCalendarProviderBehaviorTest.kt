@@ -26,6 +26,18 @@ import org.junit.Test
 
 /**
  * Tests some Android calendar provider behavior that is not well-documented.
+ *
+ * Note: to show verbose calendar provider logs, enable the log TAGs (see respective
+ * calendar provider classes) in adb. The most important ones are:
+ *
+ * ```
+ * adb shell setprop log.tag.CalendarProvider2 VERBOSE
+ * adb shell setprop log.tag.CalendarCache VERBOSE
+ * adb shell setprop log.tag.CalInstances VERBOSE
+ * adb shell setprop log.tag.EventRecur VERBOSE
+ * adb shell setprop log.tag.RecurrenceProcessor VERBOSE
+ * adb shell setprop log.tag.RecurrenceSet VERBOSE
+ * ```
  */
 class AndroidCalendarProviderBehaviorTest {
 
@@ -205,12 +217,6 @@ class AndroidCalendarProviderBehaviorTest {
 
     @Test
     fun testInstancesExpansionMatchesMillisecondExceptions() {
-        // TODO
-    }
-
-
-    @Test
-    fun testLastDateNotAvailableImmediately() {
         // TODO
     }
 

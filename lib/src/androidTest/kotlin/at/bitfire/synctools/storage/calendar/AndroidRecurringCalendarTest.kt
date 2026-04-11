@@ -19,9 +19,9 @@ import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
 import at.bitfire.synctools.test.withId
+import at.bitfire.synctools.verifyCompat
 import io.mockk.junit4.MockKRule
 import io.mockk.spyk
-import io.mockk.verify
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
 import org.junit.AfterClass
@@ -88,7 +88,7 @@ class AndroidRecurringCalendarTest {
         val addedWithId = event.withId(mainEventId)
 
         // verify that cleanUp was called
-        verify(exactly = 1) {
+        verifyCompat (exactly = 1) {
             recurringCalendar.cleanUp(event)
         }
 
@@ -193,7 +193,7 @@ class AndroidRecurringCalendarTest {
         assertEquals(updatedEventId, addedEventId)
 
         // verify that cleanUp was called
-        verify(exactly = 1) {
+        verifyCompat(exactly = 1) {
             recurringCalendar.cleanUp(updatedEventAndExceptions)
         }
 
