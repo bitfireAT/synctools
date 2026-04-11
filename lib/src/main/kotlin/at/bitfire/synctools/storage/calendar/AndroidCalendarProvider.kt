@@ -319,12 +319,14 @@ class AndroidCalendarProvider(
         /**
          * Not all calendar provider versions support recurring events up to the year 2074.
          *
-         * With Android 12, the calendar provider switched to the new Java Time API, adding support for
+         * With Android 12, the calendar provider added support for
          *
          * - events up to 2074,
          * - matching recurring event exceptions with millisecond resolution.
          */
-        val supportsYear2074 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        private val hasTimeApiFixes = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val matchesExceptionsWithMilliseconds get() = hasTimeApiFixes
+        val supportsYear2074 get() = hasTimeApiFixes
 
     }
 

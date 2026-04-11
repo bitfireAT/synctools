@@ -73,7 +73,7 @@ class AndroidCalendarTest {
         calendar.deleteAllEvents()
     }
 
-    private val testStartTime = TestCalendar.nowAlignedToSecond()
+    private val testStartTime = TestCalendar.instantNowAligned()
     private val testStartMillis = testStartTime.toEpochMilli()
 
 

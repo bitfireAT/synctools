@@ -42,15 +42,20 @@ object TestCalendar {
         }
     }
 
-    /** Returns `Instant.now`, but aligned to second resolution because
-     * the calendar provider of Android <= 11 doesn't handle milliseconds well.
+    /** Returns [Instant.now], but aligned to second resolution on Android <= 11
+     * because the calendar provider of Android <= 11 doesn't handle milliseconds well.
+     * (it fails to match exceptions with their original event).
      *
-     * It fails to match exceptions with their original event.
-     *
-     * Use this value for instead of `Instant.now()` or `System.currentTimeMillis()`
+     * Use this value instead of `Instant.now()` or `System.currentTimeMillis()`
      * when testing the calendar provider!
+     *
+     * @return [Instant.now] align to second resolution (= without milliseconds) on Android <= 11,
+     * [Instant.now] on Android 12+
      */
-    fun nowAlignedToSecond(): Instant =
-        Instant.now().truncatedTo(ChronoUnit.SECONDS)
+    fun instantNowAligned(): Instant =
+        if (AndroidCalendarProvider.matchesExceptionsWithMilliseconds)
+            Instant.now()
+        else
+            Instant.now().truncatedTo(ChronoUnit.SECONDS)
 
 }

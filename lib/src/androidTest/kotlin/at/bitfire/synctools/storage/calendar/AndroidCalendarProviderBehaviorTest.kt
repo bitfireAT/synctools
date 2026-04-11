@@ -17,6 +17,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.storage.LocalStorageException
 import at.bitfire.synctools.test.assertContentValuesEqual
+import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.BeforeClass
@@ -67,7 +68,7 @@ class AndroidCalendarProviderBehaviorTest {
         calendar.deleteAllEvents()
     }
 
-    private val testStartTime = TestCalendar.nowAlignedToSecond()
+    private val testStartTime = TestCalendar.instantNowAligned()
     private val testStartMillis = testStartTime.toEpochMilli()
 
 
@@ -163,6 +164,54 @@ class AndroidCalendarProviderBehaviorTest {
 
         val event2 = calendar.getEventRow(id)
         assertContentValuesEqual(values, event2!!, onlyFieldsInExpected = true)
+    }
+
+
+    @Test
+    fun testInstancesExpansionNeedsSyncEvents_syncEventsNotSet() {
+        // Set SYNC_EVENTS to 0 to disable instance expansion
+        calendar.update(contentValuesOf(CalendarContract.Calendars.SYNC_EVENTS to 0))
+        
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to testStartMillis,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances (SYNC_EVENTS=0)",
+            Events.RRULE to "FREQ=DAILY;COUNT=5"
+        )))
+        
+        // When SYNC_EVENTS=0, numInstances should return 0
+        val numInstances = calendar.numInstances(id, checkSyncEvents = false)
+        assertEquals(0, numInstances)
+    }
+
+    @Test
+    fun testInstancesExpansionNeedsSyncEvents_syncEventsSet() {
+        // Ensure SYNC_EVENTS is set to 1 to enable instance expansion
+        calendar.update(contentValuesOf(CalendarContract.Calendars.SYNC_EVENTS to 1))
+        
+        val id = calendar.addEvent(Entity(contentValuesOf(
+            Events.CALENDAR_ID to calendar.id,
+            Events.DTSTART to testStartMillis,
+            Events.DURATION to "PT1H",
+            Events.TITLE to "Event with 5 instances (SYNC_EVENTS=1)",
+            Events.RRULE to "FREQ=DAILY;COUNT=5"
+        )))
+        
+        // When SYNC_EVENTS=1, numInstances should return 5
+        val numInstances = calendar.numInstances(id, checkSyncEvents = false)
+        assertEquals(5, numInstances)
+    }
+
+    @Test
+    fun testInstancesExpansionMatchesMillisecondExceptions() {
+        // TODO
+    }
+
+
+    @Test
+    fun testLastDateNotAvailableImmediately() {
+        // TODO
     }
 
 

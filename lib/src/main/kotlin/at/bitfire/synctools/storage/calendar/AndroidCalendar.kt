@@ -510,18 +510,23 @@ class AndroidCalendar(
      * calendar provider won't expand the instances (see `CalendarInstancesHelper.getEntries` /
      * `CalendarInstancesHelper.SQL_WHERE_GET_EVENTS_ENTRIES`).
      *
+     * @param eventId event ID to query number of instances for
+     * @param checkSyncEvents whether [Calendars.SYNC_EVENTS] shall be checked before querying the instances
+     *
      * @return number of event instances (not counting deleted and canceled exceptions); *null* if
      * [Calendars.SYNC_EVENTS] is not set, or the number can't be determined, or the event has no last date
      * (recurring event without last instance)
      *
      * @throws LocalStorageException when the content provider returns an error
      */
-    fun numInstances(eventId: Long): Int? {
-        /* Check that the calendar has SYNC_EVENTS set. If it is not, the Instances query won't
-        expand instances and may return 0 although there are instances. */
-        val syncEvents = values.getAsInteger(Calendars.SYNC_EVENTS)
-        if (syncEvents == null || syncEvents <= 0)
-            return null
+    fun numInstances(eventId: Long, checkSyncEvents: Boolean = true): Int? {
+        if (checkSyncEvents) {
+            /* Check that the calendar has SYNC_EVENTS set. If it is not, the Instances query won't
+            expand instances and may return 0 although there are instances. */
+            val syncEvents = values.getAsInteger(Calendars.SYNC_EVENTS)
+            if (syncEvents == null || syncEvents <= 0)
+                return null
+        }
 
         // Query first and last instance of the event.
         val (firstTs, lastTs) = getFirstAndLastTimestamp(eventId)
