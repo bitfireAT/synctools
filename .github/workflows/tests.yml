@@ -58,10 +58,10 @@ jobs:
     strategy:
       matrix:
         api-level:
-          - 24  # Android 7 (minSdk level)
+          - 24  # Android 7 (minSdk level; see allowOldApiLevelDevices in gradle.properties)
           - 30  # Android 11
           - 32  # Android 12L
-          - 37  # Android 17
+          - 35  # Android 15
     env:
       apk-dir: lib/apk
       fdroid-packages: "at.techbee.jtx org.dmfs.tasks org.tasks"
