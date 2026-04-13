@@ -43,7 +43,6 @@ class AndroidCalendarTest {
         private val testAccount = Account(AndroidCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
         private lateinit var client: ContentProviderClient
-        private lateinit var provider: AndroidCalendarProvider
         private lateinit var calendar: AndroidCalendar
         private lateinit var recurringCalendar: AndroidRecurringCalendar
 
@@ -52,7 +51,6 @@ class AndroidCalendarTest {
         fun setUpClass() {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
-            provider = AndroidCalendarProvider(testAccount, client)
 
             calendar = TestCalendar.create(testAccount, client)
             recurringCalendar = AndroidRecurringCalendar(calendar)

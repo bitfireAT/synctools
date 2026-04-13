@@ -509,8 +509,9 @@ class AndroidCalendar(
      * calendar provider won't expand the instances (see `CalendarInstancesHelper.getEntries` /
      * `CalendarInstancesHelper.SQL_WHERE_GET_EVENTS_ENTRIES`).
      *
-     * @param eventId event ID to query number of instances for
-     * @param checkSyncEvents whether [Calendars.SYNC_EVENTS] shall be checked before querying the instances
+     * @param eventId Event ID to query number of instances for
+     * @param checkSyncEvents If true, verifies that [Calendars.SYNC_EVENTS] is set in [values]
+     * before querying the instances
      *
      * @return number of event instances (not counting deleted and canceled exceptions); *null* if
      * [Calendars.SYNC_EVENTS] is not set, or the number can't be determined, or the event has no last date
@@ -548,7 +549,7 @@ class AndroidCalendar(
 
         // We're interested in instances of the original event, but also of exceptions.
         val eventIdsSql = withExceptionIds(eventId).joinToString(",")
-        logger.info("Querying instances between $firstTs and $lastTs and filtering for event IDs: $eventIdsSql")
+        logger.fine("Querying instances between $firstTs and $lastTs and filtering for event IDs: $eventIdsSql")
 
         var numInstances: Int? = null
         try {
@@ -632,12 +633,13 @@ class AndroidCalendar(
     fun delete() = provider.deleteCalendar(id)
 
     /**
-     * Calls [AndroidCalendarProvider.updateCalendar] for this calendar.
-     *
-     * **Attention**: Does not update this object with the new values!
+     * Calls [AndroidCalendarProvider.updateCalendar] for this calendar and
+     * updates [values].
      * */
-    fun update(values: ContentValues) =
+    fun update(values: ContentValues) {
         provider.updateCalendar(id, values)
+        values.putAll(values)
+    }
 
     /** Calls [AndroidCalendarProvider.readCalendarSyncState] for this calendar. */
     fun readSyncState() = provider.readCalendarSyncState(id)

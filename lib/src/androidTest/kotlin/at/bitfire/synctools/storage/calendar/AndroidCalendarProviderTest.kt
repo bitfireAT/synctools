@@ -37,7 +37,6 @@ class AndroidCalendarProviderTest {
         private lateinit var client: ContentProviderClient
         private lateinit var provider: AndroidCalendarProvider
         private lateinit var calendar: AndroidCalendar
-        private lateinit var recurringCalendar: AndroidRecurringCalendar
 
         @BeforeClass
         @JvmStatic
@@ -47,7 +46,6 @@ class AndroidCalendarProviderTest {
             provider = AndroidCalendarProvider(testAccount, client)
 
             calendar = TestCalendar.create(testAccount, client)
-            recurringCalendar = AndroidRecurringCalendar(calendar)
         }
 
         @AfterClass
