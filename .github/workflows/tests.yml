@@ -58,7 +58,8 @@ jobs:
     strategy:
       matrix:
         api-level:
-          - 24  # Android 7 (minSdk level; see allowOldApiLevelDevices in gradle.properties)
+          # - 24  # Android 7 (minSdk level; not supported by gradle-managed devices)
+          - 27  # lowest supported version by GMD
           - 30  # Android 11
           - 32  # Android 12L
           - 35  # Android 15
