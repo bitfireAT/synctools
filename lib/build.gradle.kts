@@ -72,8 +72,9 @@ android {
             localDevices {
                 create("virtual") {
                     device = "Pixel 3"
-                    apiLevel = 33
-                    systemImageSource = "aosp-atd"
+                    // Read API level from environment variable, fallback to Android 15 (35)
+                    apiLevel = System.getenv("API_LEVEL")?.toIntOrNull() ?: 35
+                    systemImageSource = if (apiLevel > 30) "aosp-atd" else "aosp"
                 }
             }
         }

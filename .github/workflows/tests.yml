@@ -53,11 +53,19 @@ jobs:
   test_on_emulator:
     needs: compile
     if: ${{ !cancelled() }}     # even if compile didn't run (because not on main branch)
-    name: Instrumented tests
+    name: Instrumented tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level:
+          - 24  # Android 7 (minSdk level)
+          - 30  # Android 11
+          - 32  # Android 12L
+          - 37  # Android 17
     env:
       apk-dir: lib/apk
       fdroid-packages: "at.techbee.jtx org.dmfs.tasks org.tasks"
+      API_LEVEL: ${{ matrix.api-level }}
     steps:
       - uses: gradle/actions/setup-gradle@v6
         with:
@@ -116,12 +124,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-
-      - name: Cache AVD
-        uses: actions/cache@v5
-        with:
-          path: ~/.config/.android/avd
-          key: avd-${{ hashFiles('lib/build.gradle.kts') }}   # gradle-managed devices are defined there
 
       - name: Run device tests
         run: ./gradlew virtualCheck
