@@ -20,7 +20,6 @@ import at.bitfire.synctools.test.assertContentValuesEqual
 import junit.framework.TestCase.assertEquals
 import org.junit.After
 import org.junit.AfterClass
-import org.junit.Assert
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
@@ -228,7 +227,7 @@ class AndroidCalendarProviderBehaviorTest {
     }
 
     @Test
-    fun testInstancesExpansionMatchesMillisecondExceptions_AlignedToSecond() {
+    fun testInstancesExpansionMatchesMillisecondExceptions_alignedToSecond() {
         val testStartTimeAligned = testStartTime.truncatedTo(ChronoUnit.SECONDS)
         val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
             main = Entity(contentValuesOf(
@@ -251,11 +250,11 @@ class AndroidCalendarProviderBehaviorTest {
             )
         ))
         // Works on every API level because it doesn't set milliseconds
-        Assert.assertEquals(5 - /* one canceled */ 1, calendar.numInstances(id))
+        assertEquals(5 - /* one canceled */ 1, calendar.numInstances(id))
     }
 
     @Test
-    fun testInstancesExpansionMatchesMillisecondExceptions_NotAlignedToSecond() {
+    fun testInstancesExpansionMatchesMillisecondExceptions_notAlignedToSecond() {
         val testStartTimeUnaligned = testStartTime.with(ChronoField.MILLI_OF_SECOND, 123)
         val id = recurringCalendar.addEventAndExceptions(EventAndExceptions(
             main = Entity(contentValuesOf(
@@ -283,7 +282,7 @@ class AndroidCalendarProviderBehaviorTest {
                 5 - /* one canceled */ 1
             else
                 5 // ORIGINAL_INSTANCE_TIME doesn't match DTSTART with millisecond resolution
-        Assert.assertEquals(expectedInstances, calendar.numInstances(id))
+        assertEquals(expectedInstances, calendar.numInstances(id))
     }
 
 
