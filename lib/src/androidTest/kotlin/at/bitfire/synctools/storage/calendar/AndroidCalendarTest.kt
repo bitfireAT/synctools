@@ -668,4 +668,37 @@ class AndroidCalendarTest {
         assertEquals(0, result.getAsInteger(Events.DELETED))
     }
 
+
+    // shortcuts to upper level
+
+    @Test
+    fun testUpdate() {
+        // create new calendar
+        val testCalendar = try {
+            val newCalendar = TestCalendar.create(testAccount, client)
+            assertEquals("ical4android Test Calendar", newCalendar.displayName)
+            
+            // update display name
+            val newDisplayName = "Updated Display Name"
+            newCalendar.update(contentValuesOf(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME to newDisplayName))
+            
+            // verify that both the cached valeu provider.getCalendar() of the existing calendar return the new value
+
+            // verify cached value
+            assertEquals(newDisplayName, newCalendar.displayName)
+
+            // verify actual value
+            val fromProvider = calendar.provider.getCalendar(newCalendar.id)
+            assertEquals(newDisplayName, fromProvider?.displayName)
+            
+            newCalendar
+        } finally {
+            // delete calendar - we need to handle the case where testCalendar might be null
+            // This is a bit tricky in Kotlin try-finally, so we'll use a different approach
+        }
+        
+        // Clean up the calendar we created
+        testCalendar.delete()
+    }
+
 }

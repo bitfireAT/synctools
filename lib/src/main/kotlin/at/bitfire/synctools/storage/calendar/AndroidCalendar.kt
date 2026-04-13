@@ -548,14 +548,15 @@ class AndroidCalendar(
             .build()
 
         // We're interested in instances of the original event, but also of exceptions.
-        val eventIdsSql = withExceptionIds(eventId).joinToString(",")
-        logger.fine("Querying instances between $firstTs and $lastTs and filtering for event IDs: $eventIdsSql")
+        val safeEventIdsSql = getExceptionIds(eventId).joinToString(",")
+        logger.fine("Querying instances between $firstTs and $lastTs and filtering for event IDs: $safeEventIdsSql")
 
         var numInstances: Int? = null
         try {
             client.query(
                 instancesUri, arrayOf(Instances._ID),
-                "${Instances.EVENT_ID} IN ($eventIdsSql)", null,
+                // SQL injection not possible because safeEventIdsSql is built from numeric IDs
+                "${Instances.EVENT_ID} IN ($safeEventIdsSql)", null,
                 null
             )?.use { cursor ->
                 numInstances = cursor.count
@@ -583,7 +584,7 @@ class AndroidCalendar(
         return first to last
     }
 
-    private fun withExceptionIds(eventId: Long): List<Long> {
+    private fun getExceptionIds(eventId: Long): List<Long> {
         val result = mutableSetOf(eventId)
         iterateEventRows(
             arrayOf(Events._ID),
@@ -634,11 +635,11 @@ class AndroidCalendar(
 
     /**
      * Calls [AndroidCalendarProvider.updateCalendar] for this calendar and
-     * updates [values].
+     * merges [newValues] into the cached [values].
      * */
-    fun update(values: ContentValues) {
-        provider.updateCalendar(id, values)
-        values.putAll(values)
+    fun update(newValues: ContentValues) {
+        provider.updateCalendar(id, newValues)
+        values.putAll(newValues)
     }
 
     /** Calls [AndroidCalendarProvider.readCalendarSyncState] for this calendar. */
