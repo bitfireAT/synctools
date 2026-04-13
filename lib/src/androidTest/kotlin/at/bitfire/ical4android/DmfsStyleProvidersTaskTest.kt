@@ -6,6 +6,7 @@
 
 package at.bitfire.ical4android
 
+import android.os.Build
 import androidx.test.platform.app.InstrumentationRegistry
 import at.bitfire.synctools.test.GrantPermissionOrSkipRule
 import org.junit.After
@@ -25,7 +26,13 @@ abstract class DmfsStyleProvidersTaskTest(
     companion object {
         @Parameterized.Parameters(name="{0}")
         @JvmStatic
-        fun taskProviders() = listOf(TaskProvider.ProviderName.OpenTasks,TaskProvider.ProviderName.TasksOrg)
+        fun taskProviders() = buildList {
+            add(TaskProvider.ProviderName.OpenTasks)
+
+            // tasks.org requires Android 8
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                add(TaskProvider.ProviderName.TasksOrg)
+        }
     }
 
     @get:Rule
