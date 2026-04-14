@@ -15,6 +15,7 @@ import net.fortuna.ical4j.model.property.RecurrenceId
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
@@ -25,23 +26,25 @@ class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
             return
 
         val values = from.entityValues
-
-        val eventTimezone = DatePropertyTzMapper.systemTzId(values.getAsString(Events.EVENT_TIMEZONE))
-        val zoneId = if (eventTimezone != null) {
-            ZoneId.of(eventTimezone)
-        } else {
-            ZoneId.systemDefault()
-        }
-
         values.getAsLong(Events.ORIGINAL_INSTANCE_TIME)?.let { originalInstanceTime ->
             val originalAllDay = (values.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
             val instant = Instant.ofEpochMilli(originalInstanceTime)
             to += if (originalAllDay) {
-                RecurrenceId(LocalDate.ofInstant(instant, zoneId))
+                RecurrenceId(LocalDate.ofInstant(instant, ZoneOffset.UTC))
             } else {
-                // get DTSTART time zone
+                val zoneId = getMainEventZoneId(main)
                 RecurrenceId(ZonedDateTime.ofInstant(instant, zoneId))
             }
+        }
+    }
+
+    private fun getMainEventZoneId(main: Entity): ZoneId? {
+        val mainTzId = main.entityValues.getAsString(Events.EVENT_TIMEZONE)
+        val mainTimezone = DatePropertyTzMapper.systemTzId(mainTzId)
+        return if (mainTimezone != null) {
+            ZoneId.of(mainTimezone)
+        } else {
+            ZoneId.systemDefault()
         }
     }
 
