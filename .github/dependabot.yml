@@ -12,6 +12,9 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "[CI] "
+    labels:
+      - "ci-cd"
+      - "dependencies"
     groups:
       ci-actions:
         patterns: ["*"]
@@ -21,6 +24,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:             # don't create "java" label (default for gradle ecosystem)
+      - "dependencies"
     groups:
       lib-dependencies:
         patterns: ["*"]
