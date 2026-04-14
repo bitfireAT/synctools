@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.net.URI
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class AttendeesHandlerTest {
@@ -42,7 +43,7 @@ class AttendeesHandlerTest {
         handler.process(entity, entity, result)
         assertEquals(
             URI("mailto:attendee@example.com"),
-            result.getProperty<Attendee>(Property.ATTENDEE).calAddress
+            result.firstAttendee.calAddress
         )
     }
 
@@ -57,7 +58,7 @@ class AttendeesHandlerTest {
         handler.process(entity, entity, result)
         assertEquals(
             URI("https://example.com/principals/attendee"),
-            result.getProperty<Attendee>(Property.ATTENDEE).calAddress
+            result.firstAttendee.calAddress
         )
     }
 
@@ -75,7 +76,7 @@ class AttendeesHandlerTest {
         assertEquals(1, attendees.size)
         val attendee = attendees.first()
         assertEquals(URI("https://example.com/principals/attendee"), attendee.calAddress)
-        assertEquals("attendee@example.com", attendee.getParameter<Email>(Parameter.EMAIL).value)
+        assertEquals("attendee@example.com", attendee.getParameter<Email>(Parameter.EMAIL).get().value)
     }
 
 
@@ -91,8 +92,7 @@ class AttendeesHandlerTest {
                 ))
                 val result = VEvent()
                 handler.process(entity, entity, result)
-                val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-                assertNull(attendee.getParameter(Parameter.CUTYPE))
+                assertNull(result.firstAttendee.cuType)
             }
     }
 
@@ -107,8 +107,7 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertEquals(CuType.GROUP, attendee.getParameter<CuType>(Parameter.CUTYPE))
+            assertEquals(CuType.GROUP, result.firstAttendee.cuType)
         }
     }
 
@@ -123,9 +122,9 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertNull(attendee.getParameter(Parameter.CUTYPE))
-            assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
+            val attendee = result.firstAttendee
+            assertNull(attendee.cuType)
+            assertEquals(Role.CHAIR, attendee.role)
         }
     }
 
@@ -139,9 +138,9 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
-        assertEquals(Role.CHAIR, attendee.getParameter<Role>(Parameter.ROLE))
+        val attendee = result.firstAttendee
+        assertEquals(CuType.RESOURCE, attendee.cuType)
+        assertEquals(Role.CHAIR, attendee.role)
     }
 
     @Test
@@ -156,8 +155,7 @@ class AttendeesHandlerTest {
                 ))
                 val result = VEvent()
                 handler.process(entity, entity, result)
-                val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-                assertEquals(CuType.UNKNOWN, attendee.getParameter<CuType>(Parameter.CUTYPE))
+                assertEquals(CuType.UNKNOWN, result.firstAttendee.cuType)
             }
     }
 
@@ -173,8 +171,7 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertNull(attendee.getParameter<Role>(Parameter.ROLE))
+            assertNull(result.firstAttendee.role)
         }
     }
 
@@ -189,8 +186,7 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertNull(attendee.getParameter<Role>(Parameter.ROLE))
+            assertNull(result.firstAttendee.role)
         }
     }
 
@@ -205,8 +201,7 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertEquals(Role.OPT_PARTICIPANT, attendee.getParameter<Role>(Parameter.ROLE))
+            assertEquals(Role.OPT_PARTICIPANT, result.firstAttendee.role)
         }
     }
 
@@ -221,8 +216,7 @@ class AttendeesHandlerTest {
             ))
             val result = VEvent()
             handler.process(entity, entity, result)
-            val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-            assertEquals(CuType.RESOURCE, attendee.getParameter<CuType>(Parameter.CUTYPE))
+            assertEquals(CuType.RESOURCE, result.firstAttendee.cuType)
         }
     }
 
@@ -236,8 +230,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(CuType.ROOM, attendee.getParameter<CuType>(Parameter.CUTYPE))
+        assertEquals(CuType.ROOM, result.firstAttendee.cuType)
     }
 
 
@@ -249,8 +242,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertNull(attendee.getParameter(Parameter.PARTSTAT))
+        assertNull(result.firstAttendee.partStat)
     }
 
     @Test
@@ -262,8 +254,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(PartStat.NEEDS_ACTION, attendee.getParameter(Parameter.PARTSTAT))
+        assertEquals(PartStat.NEEDS_ACTION, result.firstAttendee.partStat)
     }
 
     @Test
@@ -275,8 +266,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(PartStat.ACCEPTED, attendee.getParameter(Parameter.PARTSTAT))
+        assertEquals(PartStat.ACCEPTED, result.firstAttendee.partStat)
     }
 
     @Test
@@ -288,8 +278,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(PartStat.DECLINED, attendee.getParameter(Parameter.PARTSTAT))
+        assertEquals(PartStat.DECLINED, result.firstAttendee.partStat)
     }
 
     @Test
@@ -301,8 +290,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals(PartStat.TENTATIVE, attendee.getParameter(Parameter.PARTSTAT))
+        assertEquals(PartStat.TENTATIVE, result.firstAttendee.partStat)
     }
 
     @Test
@@ -314,8 +302,7 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertNull(attendee.getParameter(Parameter.PARTSTAT))
+        assertNull(result.firstAttendee.partStat)
     }
 
 
@@ -327,8 +314,19 @@ class AttendeesHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        val attendee = result.getProperty<Attendee>(Property.ATTENDEE)
-        assertTrue(attendee.getParameter<Rsvp>(Parameter.RSVP).rsvp)
+        assertTrue(result.firstAttendee.getParameter<Rsvp>(Parameter.RSVP).get().rsvp)
     }
 
 }
+
+private val VEvent.firstAttendee: Attendee
+    get() = getProperty<Attendee>(Property.ATTENDEE).get()
+
+private val Attendee.cuType: CuType?
+    get() = getParameter<CuType>(Parameter.CUTYPE).getOrNull()
+
+private val Attendee.role: Role?
+    get() = getParameter<Role>(Parameter.ROLE).getOrNull()
+
+private val Attendee.partStat: PartStat?
+    get() = getParameter<PartStat>(Parameter.PARTSTAT).getOrNull()

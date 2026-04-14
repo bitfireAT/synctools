@@ -11,25 +11,22 @@ import android.provider.CalendarContract.Events
 import androidx.annotation.VisibleForTesting
 import at.bitfire.ical4android.util.DateUtils
 import at.bitfire.ical4android.util.TimeApiExtensions.abs
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.icalendar.requireDtStart
-import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.DateTime
+import at.bitfire.synctools.util.AndroidTimeUtils.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.DtEnd
-import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import java.time.Duration
 import java.time.LocalDate
 import java.time.Period
-import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
+import kotlin.jvm.optionals.getOrNull
 
 class EndTimeBuilder: AndroidEntityBuilder {
 
@@ -41,24 +38,24 @@ class EndTimeBuilder: AndroidEntityBuilder {
            - DURATION when the event is recurring.
 
         So we'll skip if this event is a recurring main event (only main events can be recurring). */
-        val rRules = from.getProperties<RRule>(Property.RRULE)
-        val rDates = from.getProperties<RDate>(Property.RDATE)
+        val rRules = from.getProperties<RRule<*>>(Property.RRULE)
+        val rDates = from.getProperties<RDate<*>>(Property.RDATE)
         if (from === main && (rRules.isNotEmpty() || rDates.isNotEmpty())) {
             values.putNull(Events.DTEND)
             return
         }
 
-        val dtStart = from.requireDtStart()
+        val startDate = from.requireDtStart<Temporal>().normalizedDate()
 
         // potentially calculate DTEND from DTSTART + DURATION, and always align with DTSTART value type
-        val calculatedDtEnd = from.getEndDate(/* don't let ical4j calculate DTEND from DURATION */ false)
-            ?.let { alignWithDtStart(it, dtStart = dtStart) }
-            ?: calculateFromDuration(dtStart, from.duration?.duration)
+        val calculatedEndDate = from.getEndDate<Temporal>(/* deriveFromDuration = */ false).getOrNull()?.normalizedDate()
+            ?.let { alignWithDtStart(endDate = it, startDate = startDate) }
+            ?: calculateFromDuration(startDate, from.duration?.duration)
 
         // ignore DTEND when not after DTSTART and use default duration, if necessary
-        val dtEnd = calculatedDtEnd
-            ?.takeIf { it.date.toInstant() > dtStart.date.toInstant() }     // only use DTEND if it's after DTSTART [1]
-            ?: calculateFromDefault(dtStart)
+        val endDate = calculatedEndDate
+            ?.takeIf { it.toTimestamp() > startDate.toTimestamp() }  // only use DTEND if it's after DTSTART [1]
+            ?: calculateFromDefault(startDate)
 
         /**
          * [1] RFC 5545 3.8.2.2 Date-Time End:
@@ -66,40 +63,18 @@ class EndTimeBuilder: AndroidEntityBuilder {
          */
 
         // end time: UNIX timestamp
-        values.put(Events.DTEND, dtEnd.date.time)
+        values.put(Events.DTEND, endDate.toTimestamp())
 
         // end time: timezone ID
-        if (DateUtils.isDateTime(dtEnd)) {
-            /* DTEND is a DATE-TIME. This can be:
-               - date/time with timezone ID ("DTEND;TZID=Europe/Vienna:20251006T155623")
-               - UTC ("DTEND:20251006T155623Z")
-               - floating time ("DTEND:20251006T155623") */
-
-            if (dtEnd.isUtc) {
-                // UTC
-                values.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-
-            } else if (dtEnd.timeZone != null) {
-                // timezone reference – make sure that time zone is known by Android
-                values.put(Events.EVENT_END_TIMEZONE, DateUtils.findAndroidTimezoneID(dtEnd.timeZone.id))
-
-            } else {
-                // floating time, use system default
-                values.put(Events.EVENT_END_TIMEZONE, ZoneId.systemDefault().id)
-            }
-
-        } else {
-            // DTEND is a DATE
-            values.put(Events.EVENT_END_TIMEZONE, AndroidTimeUtils.TZID_UTC)
-        }
+        values.put(Events.EVENT_END_TIMEZONE, endDate.androidTimezoneId())
     }
 
 
     /**
      * Aligns the given DTEND to the VALUE-type (DATE-TIME/DATE) of DTSTART.
      *
-     * @param dtEnd     DTEND to be aligned
-     * @param dtStart   DTSTART to compare with
+     * @param endDate   DTEND date to be aligned
+     * @param startDate DTSTART date to compare with
      *
      * @return
      *
@@ -110,66 +85,71 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * @see at.bitfire.synctools.mapping.calendar.handler.RecurrenceFieldsHandler.alignUntil
      */
     @VisibleForTesting
-    internal fun alignWithDtStart(dtEnd: DtEnd, dtStart: DtStart): DtEnd {
-        if (DateUtils.isDate(dtEnd)) {
+    internal fun alignWithDtStart(endDate: Temporal, startDate: Temporal): Temporal {
+        return if (endDate is LocalDate) {
             // DTEND is DATE
-            if (DateUtils.isDate(dtStart)) {
+            if (DateUtils.isDate(startDate)) {
                 // DTEND is DATE, DTSTART is DATE
-                return dtEnd
+                endDate
             } else {
                 // DTEND is DATE, DTSTART is DATE-TIME → amend with time and timezone
-                val endDate = dtEnd.date.toLocalDate()
-                val startTime = (dtStart.date as DateTime).toZonedDateTime()
-                val endDateWithTime = ZonedDateTime.of(endDate, startTime.toLocalTime(), startTime.zone)
-                return DtEnd(endDateWithTime.toIcal4jDateTime())
+                val startZonedDateTime = startDate.toZonedDateTime()
+
+                ZonedDateTime.of(
+                    endDate,
+                    startZonedDateTime.toLocalTime(),
+                    startZonedDateTime.zone
+                )
             }
         } else {
             // DTEND is DATE-TIME
-            if (DateUtils.isDate(dtStart)) {
+            if (DateUtils.isDate(startDate)) {
                 // DTEND is DATE-TIME, DTSTART is DATE → only take date part
-                val endDate = dtEnd.date.toLocalDate()
-                return DtEnd(endDate.toIcal4jDate())
+                endDate.toZonedDateTime().toLocalDate()
             } else {
                 // DTEND is DATE-TIME, DTSTART is DATE-TIME
-                return dtEnd
+                endDate
             }
         }
     }
 
     /**
-     * Calculates the DTEND from DTSTART + DURATION, if possible.
+     * Calculates the DTEND date from DTSTART date + DURATION, if possible.
      *
-     * @param dtStart   start date/date-time
+     * @param startDate start date/date-time
      * @param duration  (optional) duration
      *
-     * @return end date/date-time (same value type as [dtStart]) or `null` if [duration] was not given
+     * @return end date/date-time (same value type as [startDate]) or `null` if [duration] was not given
      */
     @VisibleForTesting
-    internal fun calculateFromDuration(dtStart: DtStart, duration: TemporalAmount?): DtEnd? {
+    internal fun calculateFromDuration(startDate: Temporal, duration: TemporalAmount?): Temporal? {
         if (duration == null)
             return null
 
         val dur = duration.abs()   // always take positive temporal amount
 
-        return if (DateUtils.isDate(dtStart)) {
+        return if (DateUtils.isDate(startDate)) {
             // DTSTART is DATE
-            if (dur is Period) {
-                // date-based amount of time ("4 days")
-                val result = dtStart.date.toLocalDate() + dur
-                DtEnd(result.toIcal4jDate())
-            } else if (dur is Duration) {
-                // time-based amount of time ("34 minutes")
-                val days = dur.toDays()
-                val result = dtStart.date.toLocalDate() + Period.ofDays(days.toInt())
-                DtEnd(result.toIcal4jDate())
-            } else
-                throw IllegalStateException()   // TemporalAmount neither Period nor Duration
+            when (dur) {
+                is Period -> {
+                    // date-based amount of time ("4 days")
+                    startDate + dur
+                }
 
+                is Duration -> {
+                    // time-based amount of time ("34 minutes")
+                    val days = dur.toDays()
+                    startDate + Period.ofDays(days.toInt())
+                }
+
+                else -> {
+                    throw IllegalArgumentException("duration argument is neither Period nor Duration")
+                }
+            }
         } else {
             // DTSTART is DATE-TIME
             // We can add both date-based (Period) and time-based (Duration) amounts of time to an exact date/time.
-            val result = (dtStart.date as DateTime).toZonedDateTime() + dur
-            DtEnd(result.toIcal4jDateTime())
+            startDate.toZonedDateTime() + dur
         }
     }
 
@@ -183,25 +163,24 @@ class EndTimeBuilder: AndroidEntityBuilder {
      * > component specifies a "DTSTART" property with a DATE-TIME value type but no "DTEND" property, the event
      * > ends on the same calendar date and time of day specified by the "DTSTART" property.
      *
-     * In iCalendar, `DTEND` is non-inclusive at must be at a later time than `DTEND`. However in Android we can use
+     * In iCalendar, `DTEND` is non-inclusive and must be at a later time than `DTEND`. However, in Android we can use
      * the same value for both the `DTSTART` and the `DTEND` field, and so we use this to indicate a missing DTEND in
      * the original iCalendar.
      *
-     * @param dtStart   start time to calculate end time from
+     * @param startDate   start time to calculate end time from
      * @return End time to use for content provider:
      *
-     * - when [dtStart] is a `DATE`: [dtStart] + 1 day
-     * - when [dtStart] is a `DATE-TIME`: [dtStart]
+     * - when [startDate] is a `DATE`: [startDate] + 1 day
+     * - when [startDate] is a `DATE-TIME`: [startDate]
      */
     @VisibleForTesting
-    internal fun calculateFromDefault(dtStart: DtStart): DtEnd =
-        if (DateUtils.isDate(dtStart)) {
+    internal fun calculateFromDefault(startDate: Temporal): Temporal =
+        if (startDate is LocalDate) {
             // DATE → one day duration
-            val endDate: LocalDate = dtStart.date.toLocalDate().plusDays(1)
-            DtEnd(endDate.toIcal4jDate())
+            startDate.plusDays(1)
         } else {
             // DATE-TIME → same as DTSTART to indicate there was no DTEND set
-            DtEnd(dtStart.value, dtStart.timeZone)
+            startDate
         }
 
 }

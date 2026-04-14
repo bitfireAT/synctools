@@ -6,19 +6,16 @@
 
 package at.bitfire.ical4android.util
 
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistry
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.Period
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.Calendar
 import java.util.TimeZone
@@ -32,82 +29,7 @@ object TimeApiExtensions {
     const val SECONDS_PER_DAY = SECONDS_PER_HOUR * 24
     private const val SECONDS_PER_WEEK = SECONDS_PER_DAY * DAYS_PER_WEEK
 
-    private const val MILLIS_PER_SECOND = 1000
-    const val MILLIS_PER_DAY = SECONDS_PER_DAY * MILLIS_PER_SECOND
-
     val tzUTC: TimeZone by lazy { TimeZones.getUtcTimeZone() }
-
-
-    /***** Desugaring compat *****/
-
-    /**
-     * [TimeZone.toZoneId] can't be used with the current desugaring library yet!
-     *
-     * @return [ZoneId] of the time zone; [ZoneOffset.UTC] if the time zone equals to [TimeZones.getUtcTimeZone]
-     */
-    fun TimeZone.toZoneIdCompat(): ZoneId {
-        return if (this == TimeZones.getUtcTimeZone())
-            ZoneOffset.UTC
-        else
-            ZoneId.of(id)
-    }
-
-
-    /***** Dates *****/
-
-    fun Date.toLocalDate(): LocalDate {
-        val utcDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC)
-        return utcDateTime.toLocalDate()
-    }
-
-    fun DateTime.requireTimeZone(): TimeZone =
-        if (isUtc)
-            TimeZones.getUtcTimeZone()
-        else
-            timeZone ?: TimeZone.getDefault()
-
-    fun DateTime.requireZoneId(): ZoneId =
-        if (isUtc)
-            ZoneOffset.UTC
-        else
-            timeZone?.toZoneIdCompat() ?: ZoneId.systemDefault()
-
-    fun DateTime.toLocalDate(): LocalDate =
-        toZonedDateTime().toLocalDate()
-
-    fun DateTime.toLocalTime(): LocalTime =
-        toZonedDateTime().toLocalTime()
-
-    fun DateTime.toZonedDateTime(): ZonedDateTime =
-        ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), requireZoneId())
-
-    fun LocalDate.toIcal4jDate(): Date {
-        val cal = Calendar.getInstance(TimeZones.getDateTimeZone())
-        cal.set(year, monthValue - 1, dayOfMonth, 0, 0, 0)
-        return Date(cal)
-    }
-
-    /**
-     * Converts this zoned date-time (date/time with specific time zone) to an
-     * ical4j [DateTime] object.
-     *
-     * Sets UTC flag ([DateTime.isUtc], means `...ThhmmddZ` format) when this zone-date time object has a
-     * time zone of [ZoneOffset.UTC].
-     *
-     * @param tzRegistry    time zone registry to get the [net.fortuna.ical4j.model.TimeZone] from (if needed)
-     *
-     * @return ical4j [DateTime] of the given zoned date-time
-     */
-    fun ZonedDateTime.toIcal4jDateTime(
-        tzRegistry: TimeZoneRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    ): DateTime {
-        val date = DateTime(toEpochSecond() * MILLIS_PER_SECOND)
-        if (zone == ZoneOffset.UTC)
-            date.isUtc = true
-        else
-            date.timeZone = tzRegistry.getTimeZone(zone.id)
-        return date
-    }
 
 
     /***** Durations *****/
@@ -216,6 +138,23 @@ object TimeApiExtensions {
         } else
             throw NotImplementedError("Only Duration and Period is supported")
         return builder.toString()
+    }
+
+
+    /***** Temporals *****/
+
+    /**
+     * Gets the [LocalDate] part of this [Temporal] instance.
+     */
+    fun Temporal.toLocalDate(): LocalDate {
+        return when (this) {
+            is LocalDate -> this
+            is LocalDateTime -> toLocalDate()
+            is OffsetDateTime -> toLocalDate()
+            is ZonedDateTime -> toLocalDate()
+            is Instant -> LocalDate.ofInstant(this, ZoneOffset.UTC)
+            else -> error("Unsupported Temporal type: ${this::class.qualifiedName}")
+        }
     }
 
 }

@@ -82,9 +82,9 @@ object UnknownProperty {
         json.put(prop.name)
         json.put(prop.value)
 
-        if (!prop.parameters.isEmpty) {
+        if (prop.parameterList.all.isNotEmpty()) {
             val jsonParams = JSONObject()
-            for (param in prop.parameters)
+            for (param in prop.parameterList.all)
                 jsonParams.put(param.name, param.value)
             json.put(jsonParams)
         }

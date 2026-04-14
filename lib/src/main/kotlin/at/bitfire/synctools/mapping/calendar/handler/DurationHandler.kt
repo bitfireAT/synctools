@@ -9,12 +9,9 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.TimeApiExtensions.abs
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDate
-import at.bitfire.ical4android.util.TimeApiExtensions.toIcal4jDateTime
-import at.bitfire.ical4android.util.TimeApiExtensions.toZonedDateTime
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistry
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import java.time.Instant
@@ -28,9 +25,7 @@ import java.time.ZoneOffset
  * - [Events.DTEND] is present / not null (because DTEND then takes precedence over DURATION), and/or
  * - [Events.DURATION] is null / not present.
  */
-class DurationHandler(
-    private val tzRegistry: TimeZoneRegistry
-): AndroidEventFieldHandler {
+class DurationHandler: AndroidEventFieldHandler {
 
     override fun process(from: Entity, main: Entity, to: VEvent) {
         val values = from.entityValues
@@ -57,21 +52,20 @@ class DurationHandler(
             val endDate = (startTimeUTC + duration).toLocalDate()
 
             // DATE
-            to.properties += DtEnd(endDate.toIcal4jDate())
+            to += DtEnd(endDate)
 
         } else {
             // DATE-TIME
             val startDateTime = AndroidTimeField(
                 timestamp = tsStart,
                 timeZone = values.getAsString(Events.EVENT_TIMEZONE),
-                allDay = false,
-                tzRegistry = tzRegistry
-            ).asIcal4jDate() as DateTime
+                allDay = false
+            ).toTemporal()
 
             val start = startDateTime.toZonedDateTime()
             val end = start + duration
 
-            to.properties += DtEnd(end.toIcal4jDateTime(tzRegistry))
+            to += DtEnd(end)
         }
     }
 

@@ -9,6 +9,7 @@ package at.bitfire.ical4android
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import org.junit.Assert
 import org.junit.Assert.assertNotNull
+import org.junit.Ignore
 import org.junit.Test
 import java.time.ZoneId
 import java.time.format.TextStyle

@@ -6,13 +6,13 @@
 
 package at.bitfire.ical4android
 
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class TaskTest {
 
@@ -22,26 +22,26 @@ class TaskTest {
 
         // DTSTART has priority
         assertFalse(Task().apply {
-            dtStart = DtStart(DateTime())
+            dtStart = DtStart(LocalDateTime.now())
         }.isAllDay())
         assertFalse(Task().apply {
-            dtStart = DtStart(DateTime())
-            due = Due(Date())
+            dtStart = DtStart(LocalDateTime.now())
+            due = Due(LocalDate.now())
         }.isAllDay())
         assertTrue(Task().apply {
-            dtStart = DtStart(Date())
+            dtStart = DtStart(LocalDate.now())
         }.isAllDay())
         assertTrue(Task().apply {
-            dtStart = DtStart(Date())
-            due = Due(DateTime())
+            dtStart = DtStart(LocalDate.now())
+            due = Due(LocalDateTime.now())
         }.isAllDay())
 
         // if DTSTART is missing, DUE decides
         assertFalse(Task().apply {
-            due = Due(DateTime())
+            due = Due(LocalDateTime.now())
         }.isAllDay())
         assertTrue(Task().apply {
-            due = Due(Date())
+            due = Due(LocalDate.now())
         }.isAllDay())
     }
 

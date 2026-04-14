@@ -10,9 +10,11 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
+import at.bitfire.synctools.icalendar.dtStart
+import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
@@ -28,6 +30,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class AndroidEventHandlerTest {
@@ -69,11 +74,11 @@ class AndroidEventHandlerTest {
         ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring non-all-day event with exception", main.summary.value)
-        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
-        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
+        assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<Temporal>>(Property.RRULE).getOrNull()?.value)
         val exception = result.exceptions.first()
-        assertEquals(RecurrenceId("20200708T013000", tzShanghai), exception.recurrenceId)
-        assertEquals(DtStart("20200706T203000", tzShanghai), exception.startDate)
+        assertEquals(RecurrenceId(dateTimeValue("20200708T013000", tzShanghai)), exception.recurrenceId)
+        assertEquals(DtStart(dateTimeValue("20200706T203000", tzShanghai)), exception.dtStart<ZonedDateTime>())
         assertEquals("Event moved to one hour later", exception.summary.value)
     }
 
@@ -102,8 +107,8 @@ class AndroidEventHandlerTest {
         ).associatedEvents
         val main = result.main!!
         assertEquals("Factically non-recurring non-all-day event with exception", main.summary.value)
-        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
-        assertTrue(main.getProperties<RRule>(Property.RRULE).isEmpty())
+        assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
+        assertTrue(main.getProperties<RRule<*>>(Property.RRULE).isEmpty())
         assertTrue(result.exceptions.isEmpty())
     }
 
@@ -132,9 +137,12 @@ class AndroidEventHandlerTest {
         ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring all-day event with cancelled exception", main.summary.value)
-        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
-        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
-        assertEquals(DateTime("20200708T013000", tzShanghai), main.getProperty<ExDate>(Property.EXDATE)?.dates?.first())
+        assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<*>>(Property.RRULE).getOrNull()?.value)
+        assertEquals(
+            dateTimeValue("20200708T013000", tzShanghai),
+            main.getProperty<ExDate<*>>(Property.EXDATE)?.getOrNull()?.dates?.first()
+        )
         assertTrue(result.exceptions.isEmpty())
     }
 
@@ -162,9 +170,9 @@ class AndroidEventHandlerTest {
         ).associatedEvents
         val main = result.main!!
         assertEquals("Recurring all-day event with cancelled exception and no RECURRENCE-ID", main.summary.value)
-        assertEquals(DtStart("20200706T193000", tzVienna), main.startDate)
-        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule>(Property.RRULE).value)
-        assertNull(main.getProperty<ExDate>(Property.EXDATE))
+        assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<*>>(Property.RRULE).getOrNull()?.value)
+        assertNull(main.getProperty<ExDate<*>>(Property.EXDATE)?.getOrNull())
         assertTrue(result.exceptions.isEmpty())
     }
 
@@ -179,7 +187,7 @@ class AndroidEventHandlerTest {
                 exceptions = emptyList()
             )
         ).associatedEvents
-        assertNotNull(result.main?.dateStamp?.date)
+        assertNotNull(result.main?.dateTimeStamp?.date)
     }
 
 
@@ -225,7 +233,7 @@ class AndroidEventHandlerTest {
         )
         assertTrue(result.generatedUid)
         assertNotNull(result.uid)
-        assertEquals(result.uid, result.associatedEvents.main?.uid?.value)
+        assertEquals(result.uid, result.associatedEvents.main?.uid?.getOrNull()?.value)
     }
 
     @Test
@@ -241,7 +249,7 @@ class AndroidEventHandlerTest {
         )
         assertFalse(result.generatedUid)
         assertEquals("sample-uid", result.uid)
-        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.getOrNull()?.value)
     }
 
     @Test
@@ -261,7 +269,7 @@ class AndroidEventHandlerTest {
         )
         assertFalse(result.generatedUid)
         assertEquals("sample-uid", result.uid)
-        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.getOrNull()?.value)
     }
 
     @Test
@@ -282,7 +290,7 @@ class AndroidEventHandlerTest {
         )
         assertFalse(result.generatedUid)
         assertEquals("sample-uid", result.uid)
-        assertEquals("sample-uid", result.associatedEvents.main?.uid?.value)
+        assertEquals("sample-uid", result.associatedEvents.main?.uid?.getOrNull()?.value)
     }
 
 }

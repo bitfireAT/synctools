@@ -7,6 +7,7 @@
 package at.bitfire.ical4android
 
 import androidx.test.filters.SmallTest
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.Rsvp
 import net.fortuna.ical4j.model.parameter.XParameter
@@ -38,9 +39,9 @@ class UnknownPropertyTest {
         assertTrue(prop is Attendee)
         assertEquals("ATTENDEE", prop.name)
         assertEquals("PropValue", prop.value)
-        assertEquals(2, prop.parameters.size())
-        assertEquals("value1", prop.parameters.getParameter<Parameter>("x-param1").value)
-        assertEquals("value2", prop.parameters.getParameter<Parameter>("x-param2").value)
+        assertEquals(2, prop.parameterList.all.size)
+        assertEquals("value1", prop.getRequiredParameter<Parameter>("x-param1").value)
+        assertEquals("value2", prop.getRequiredParameter<Parameter>("x-param2").value)
     }
 
     @Test(expected = JSONException::class)
@@ -59,8 +60,8 @@ class UnknownPropertyTest {
             attendee.toString().trim()
         )
 
-        attendee.parameters.add(Rsvp(true))
-        attendee.parameters.add(XParameter("X-My-Param", "SomeValue"))
+        attendee += Rsvp(true)
+        attendee += XParameter("X-My-Param", "SomeValue")
         assertEquals(
             "ATTENDEE;RSVP=TRUE;X-My-Param=SomeValue:mailto:test@test.at",
             attendee.toString().trim()

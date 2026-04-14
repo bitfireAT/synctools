@@ -6,6 +6,7 @@
 
 package at.bitfire.synctools.icalendar.validation
 
+import at.bitfire.synctools.icalendar.requireDtStart
 import com.google.common.io.CharStreams
 import io.mockk.junit4.MockKRule
 import io.mockk.mockkObject
@@ -13,7 +14,9 @@ import io.mockk.spyk
 import io.mockk.verify
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.parameter.TzId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -22,6 +25,7 @@ import java.io.InputStreamReader
 import java.io.Reader
 import java.io.StringReader
 import java.io.Writer
+import java.time.temporal.Temporal
 import java.util.UUID
 
 class ICalPreprocessorTest {
@@ -54,11 +58,17 @@ class ICalPreprocessorTest {
         javaClass.getResourceAsStream("/events/outlook1.ics").use { stream ->
             val reader = InputStreamReader(stream, Charsets.UTF_8)
             val calendar = CalendarBuilder().build(reader)
-            val vEvent = calendar.getComponent(Component.VEVENT) as VEvent
+            val vEvent = calendar.getComponent<VEvent>(Component.VEVENT).get()
 
-            assertEquals("W. Europe Standard Time", vEvent.startDate.timeZone.id)
+            assertEquals(
+                "W. Europe Standard Time",
+                vEvent.requireDtStart<Temporal>().getRequiredParameter<TzId>(Parameter.TZID).value
+            )
             processor.preprocessCalendar(calendar)
-            assertEquals("Europe/Vienna", vEvent.startDate.timeZone.id)
+            assertEquals(
+                "Europe/Vienna",
+                vEvent.requireDtStart<Temporal>().getRequiredParameter<TzId>(Parameter.TZID).value
+            )
         }
     }
 

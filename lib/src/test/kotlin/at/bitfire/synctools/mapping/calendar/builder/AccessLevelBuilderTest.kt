@@ -16,6 +16,7 @@ import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,7 +45,7 @@ class AccessLevelBuilderTest {
     fun `Classification is PUBLIC`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Clazz.PUBLIC)),
+            from = VEvent(propertyListOf(ImmutableClazz.PUBLIC)),
             main = VEvent(),
             to = result
         )
@@ -58,7 +59,7 @@ class AccessLevelBuilderTest {
     fun `Classification is PRIVATE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Clazz.PRIVATE)),
+            from = VEvent(propertyListOf(ImmutableClazz.PRIVATE)),
             main = VEvent(),
             to = result
         )
@@ -72,7 +73,7 @@ class AccessLevelBuilderTest {
     fun `Classification is CONFIDENTIAL`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Clazz.CONFIDENTIAL)),
+            from = VEvent(propertyListOf(ImmutableClazz.CONFIDENTIAL)),
             main = VEvent(),
             to = result
         )

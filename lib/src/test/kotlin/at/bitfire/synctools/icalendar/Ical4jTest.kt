@@ -6,13 +6,12 @@
 
 package at.bitfire.synctools.icalendar
 
+import at.bitfire.dateTimeValue
 import at.bitfire.synctools.icalendar.validation.ICalPreprocessor
 import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.data.CalendarOutputter
-import net.fortuna.ical4j.data.ParserException
 import net.fortuna.ical4j.model.Calendar
 import net.fortuna.ical4j.model.Component
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TemporalAmountAdapter
@@ -22,17 +21,20 @@ import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.component.VTimeZone
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.property.Attendee
-import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ProdId
-import net.fortuna.ical4j.transform.rfc5545.DatePropertyRule
+import net.fortuna.ical4j.transform.compliance.DatePropertyRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.StringReader
 import java.io.StringWriter
+import java.time.Duration
 import java.time.Period
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 class Ical4jTest {
 
@@ -52,9 +54,9 @@ class Ical4jTest {
                         "END:VEVENT\n" +
                         "END:VCALENDAR"
             )
-        ).getComponent<VEvent>(Component.VEVENT)
-        val attendee = event.getProperty<Attendee>(Property.ATTENDEE)
-        assertEquals("attendee1@example.virtual", attendee.getParameter<Email>(Parameter.EMAIL).value)
+        ).getComponent<VEvent>(Component.VEVENT).get()
+        val attendee = event.getRequiredProperty<Attendee>(Property.ATTENDEE)
+        assertEquals("attendee1@example.virtual", attendee.getRequiredParameter<Email>(Parameter.EMAIL).value)
     }
 
     @Test
@@ -87,23 +89,21 @@ class Ical4jTest {
                 "END:VCALENDAR"
         val iCalFromKOrganizer = CalendarBuilder().build(StringReader(vtzFromKOrganizer))
         ICalPreprocessor().preprocessCalendar(iCalFromKOrganizer)
-        val vEvent = iCalFromKOrganizer.getComponent<VEvent>(Component.VEVENT)
-        val dtStart = vEvent.startDate
-        // SHOULD BE UTC -3:
-        // assertEquals(1756396800000, dtStart.date.time)
-        // However is one hour later: 1756400400000
+        val vEvent = iCalFromKOrganizer.getComponent<VEvent>(Component.VEVENT).get()
+        val dtStart = vEvent.requireDtStart<ZonedDateTime>()
+        assertEquals(ZoneOffset.ofHours(-3), ZoneOffset.from(dtStart.date))
     }
 
     @Test
-    fun `PRODID is folded when exactly max line length`() {
-        val calendar = Calendar().apply {
-            properties += ProdId("01234567890123456789012345678901234567890123456789012345678901234567")
-        }
+    fun `PRODID is not folded when exactly max line length`() {
+        // https://github.com/ical4j/ical4j/issues/832
+        val calendar = Calendar()
+            .add<Calendar>(ProdId("01234567890123456789012345678901234567890123456789012345678901234567"))
+
         val writer = StringWriter()
         CalendarOutputter().output(calendar, writer)
         assertEquals("BEGIN:VCALENDAR\r\n" +
                 "PRODID:01234567890123456789012345678901234567890123456789012345678901234567\r\n" +
-                " \r\n" +
                 "END:VCALENDAR\r\n", writer.toString())
     }
 
@@ -127,15 +127,19 @@ class Ical4jTest {
         assertNotEquals("P52W", TemporalAmountAdapter(Period.ofYears(1)).toString())
     }
 
-    @Test(expected = AssertionError::class)
+    @Test
     fun `TZ Darwin`() {
+        // https://github.com/ical4j/ical4j/issues/491
         val darwin = tzReg.getTimeZone("Australia/Darwin")
+        val date = dateTimeValue("20210326T103000", darwin)
+        val timestamp = date.toInstant().toEpochMilli()
 
-        val ts1 = 1616720400000
-        assertEquals(9.5, darwin.getOffset(ts1) / 3600000.0, .01)
+        val offset = darwin.getOffset(timestamp)
 
-        val dt2 = DateTime("20210326T103000", darwin)
-        assertEquals(1616720400000, dt2.time)
+        assertEquals(
+            Duration.ofHours(9) + Duration.ofMinutes(30),
+            Duration.ofMillis(offset.toLong())
+        )
     }
 
     @Test
@@ -163,27 +167,39 @@ class Ical4jTest {
                 "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n" +
                 "END:DAYLIGHT\n" +
                 "END:VTIMEZONE\n" +
+                "BEGIN:VEVENT\n" +
+                "DTSTAMP:20260320T150800Z\n" +
+                "CREATED:20260320T150800Z\n" +
+                "UID:d46ddc27-7a7b-4004-8ba1-04f4de4d2ef3\n" +
+                "LAST-MODIFIED:20260320T150800Z\n" +
+                "SUMMARY:Test VTimezone\n" +
+                "DTSTART;TZID=Europe/Dublin:20210108T151500\n" +
+                "DTEND;TZID=Europe/Dublin:20210108T153000\n" +
+                "END:VEVENT\n" +
                 "END:VCALENDAR"
         val iCalFromGoogle = CalendarBuilder().build(StringReader(vtzFromGoogle))
-        val dublinFromGoogle = iCalFromGoogle.getComponent(Component.VTIMEZONE) as VTimeZone
-        val dt = DateTime("20210108T151500", TimeZone(dublinFromGoogle))
-        assertEquals("20210108T151500", dt.toString())
+        val event = iCalFromGoogle.getComponent<VEvent>(Component.VEVENT).get()
+        val startDate = event.requireDtStart<ZonedDateTime>().date
+        assertEquals(dateTimeValue("20210108T151500"), startDate.toLocalDateTime())
     }
 
     @Test
     fun `TZ Karachi`() {
-        // https://github.com/ical4j/ical4j/issues/491
+        // https://github.com/ical4j/ical4j/issues/475
         val karachi = tzReg.getTimeZone("Asia/Karachi")
+        val date = dateTimeValue("20210106T200000", karachi)
+        val timestamp = date.toInstant().toEpochMilli()
 
-        val ts1 = 1609945200000
-        assertEquals(5, karachi.getOffset(ts1) / 3600000)
+        val offset = karachi.getOffset(timestamp)
 
-        val dt2 = DateTime("20210106T200000", karachi)
-        assertEquals(1609945200000, dt2.time)
+        assertEquals(
+            Duration.ofHours(5),
+            Duration.ofMillis(offset.toLong())
+        )
     }
 
     @Test
-    fun `TZID with parentheses and space + DatePropertyRule`() {
+    fun `TZID with parentheses and space`() {
         /* DTSTART;TZID="...":...  is formally invalid because RFC 5545 only allows tzidparam to be a
         paramtext and not a quoted-string for an unknown reason (see also https://www.rfc-editor.org/errata/eid5505).
         Some generators don't know that and still use DQUOTE. Doing so caused a problem with DAVx5.
@@ -215,25 +231,68 @@ class Ical4jTest {
                     "END:VCALENDAR\n"
             )
         )
-        val event = cal.getComponent<VEvent>(Component.VEVENT)
+        val event = cal.getComponent<VEvent>(Component.VEVENT).get()
         val tzGMT5 = tzRegistry.getTimeZone("(GMT -05:00)")
         assertNotNull(tzGMT5)
-        assertEquals(DtStart("20250124T190000", tzGMT5), event.startDate)
-        assertEquals(DtEnd("20250124T203000", tzGMT5), event.endDate)
-
-        // now apply DatePropertyRule
-        DatePropertyRule().applyTo(event.startDate)
-        DatePropertyRule().applyTo(event.endDate)
-
-        /* "(GMT -05:00)" is neither in msTimezones, nor in IANA timezones, so
-        DatePropertyRule completely removes it, but keeps the offset. */
-        assertEquals(DtStart(DateTime("20250125T000000Z")), event.startDate)
-        assertEquals(DtEnd(DateTime("20250125T013000Z")), event.endDate)
+        val dtStart = event.requireDtStart<ZonedDateTime>()
+        val dtEnd = event.getEndDate<ZonedDateTime>(false).get()
+        assertEquals(dateTimeValue("20250124T190000"), dtStart.date.toLocalDateTime())
+        assertEquals(dateTimeValue("20250124T203000"), dtEnd.date.toLocalDateTime())
+        assertEquals(dateTimeValue("20250125T000000Z"), dtStart.date.toInstant())
+        assertEquals(dateTimeValue("20250125T013000Z"), dtEnd.date.toInstant())
     }
 
-    @Test(expected = ParserException::class)
-    fun `Unparseable event with timezone with RDATE with PERIOD`() {
-        CalendarBuilder().build(
+    @Test
+    fun `DatePropertyRule with TZID value that can not be mapped should adjust time`() {
+        // https://github.com/ical4j/ical4j/issues/868
+        val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+        val calendar = CalendarBuilder(tzRegistry).build(
+            StringReader(
+                """
+                BEGIN:VCALENDAR
+                VERSION:2.0
+                BEGIN:VTIMEZONE
+                TZID:can-not-map
+                BEGIN:STANDARD
+                DTSTART:19700101T020000
+                TZOFFSETFROM:-0400
+                TZOFFSETTO:-0500
+                RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11;WKST=SU
+                END:STANDARD
+                BEGIN:DAYLIGHT
+                DTSTART:19700101T020000
+                TZOFFSETFROM:-0500
+                TZOFFSETTO:-0400
+                RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3;WKST=SU
+                END:DAYLIGHT
+                END:VTIMEZONE
+                BEGIN:VEVENT
+                DTSTART;TZID=can-not-map:20260324T100000
+                DURATION:PT1H
+                SUMMARY:Timezone definition that can't be mapped to an ical4j time zone
+                END:VEVENT
+                END:VCALENDAR
+                """.trimIndent().replace("\n", "\r\n")
+            )
+        )
+        val event = calendar.getComponent<VEvent>(Component.VEVENT).orElseThrow()
+        val dtStart = event.requireDtStart<ZonedDateTime>()
+
+        val result = DatePropertyRule().apply(dtStart)
+
+        //assertEquals(DtStart(dateTimeValue("20260324T140000Z")), result)
+
+        // We expect the date to be converted to UTC (see above). However, currently only the
+        // TZID parameter is removed, essentially converting the value to a floating date-time.
+        // This assertion will fail (and the one commented out above pass) once this is fixed in
+        // ical4j.
+        assertEquals(DtStart(dateTimeValue("20260324T100000")), result)
+    }
+
+    @Test
+    fun `VTIMEZONE containing RDATE with PERIOD should parse without exception`() {
+        // https://github.com/bitfireAT/synctools/issues/103
+        val calendar = CalendarBuilder().build(
             StringReader(
                 "BEGIN:VCALENDAR\n" +
                         "VERSION:2.0\n" +
@@ -256,6 +315,8 @@ class Ical4jTest {
                         "END:VCALENDAR"
             )
         )
+
+        assertTrue(calendar.getComponent<VTimeZone>(Component.VTIMEZONE).isPresent)
     }
 
 }

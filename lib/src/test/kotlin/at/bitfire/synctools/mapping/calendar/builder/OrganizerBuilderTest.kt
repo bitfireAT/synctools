@@ -46,7 +46,7 @@ class OrganizerBuilderTest {
         builder.build(
             from = VEvent(propertyListOf(Organizer("mailto:organizer@example.com"))).apply {
                 // at least one attendee to make event group-scheduled
-                properties += Attendee("mailto:attendee@example.com")
+                add<VEvent>(Attendee("mailto:attendee@example.com"))
             },
             main = VEvent(),
             to = result
@@ -63,7 +63,7 @@ class OrganizerBuilderTest {
         builder.build(
             from = VEvent(propertyListOf(Organizer("local-id:user"))).apply {
                 // at least one attendee to make event group-scheduled
-                properties += Attendee("mailto:attendee@example.com")
+                add<VEvent>(Attendee("mailto:attendee@example.com"))
             },
             main = VEvent(),
             to = result
@@ -79,9 +79,8 @@ class OrganizerBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                Organizer("local-id:user").apply {
-                    parameters.add(Email("organizer@example.com"))
-                },
+                Organizer("local-id:user")
+                    .add(Email("organizer@example.com")),
                 Attendee("mailto:attendee@example.com")
             )),
             main = VEvent(),

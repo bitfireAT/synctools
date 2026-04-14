@@ -6,292 +6,57 @@
 
 package at.bitfire.synctools.util
 
-import at.bitfire.ical4android.util.DateUtils
+import at.bitfire.DefaultTimezoneRule
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
+import at.bitfire.synctools.icalendar.requireDtStart
+import at.bitfire.synctools.util.AndroidTimeUtils.androidTimezoneId
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.data.CalendarBuilder
-import net.fortuna.ical4j.model.Date
+import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
-import net.fortuna.ical4j.model.Period
-import net.fortuna.ical4j.model.PeriodList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import net.fortuna.ical4j.model.component.VTimeZone
+import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
-import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
-import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Rule
 import org.junit.Test
 import java.io.StringReader
+import java.time.DateTimeException
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.chrono.JapaneseDate
+import java.time.format.DateTimeParseException
+import java.time.temporal.Temporal
+import java.time.temporal.UnsupportedTemporalTypeException
+import java.time.zone.ZoneRulesException
+import java.util.Optional
 
 class AndroidTimeUtilsTest {
 
+    @get:Rule
+    val tzRule = DefaultTimezoneRule("Europe/Vienna")
+    
     val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()!!
     val tzBerlin: TimeZone = tzRegistry.getTimeZone("Europe/Berlin")!!
     val tzToronto: TimeZone = tzRegistry.getTimeZone("America/Toronto")!!
 
-    val tzCustom by lazy {
-        val builder = CalendarBuilder(tzRegistry)
-        val cal = builder.build(
-            StringReader(
-                "BEGIN:VCALENDAR\n" +
-                        "BEGIN:VTIMEZONE\n" +
-                        "TZID:CustomTime\n" +
-                        "BEGIN:STANDARD\n" +
-                        "TZOFFSETFROM:+0310\n" +
-                        "TZOFFSETTO:+0310\n" +
-                        "DTSTART:19600101T000000\n" +
-                        "END:STANDARD\n" +
-                        "END:VTIMEZONE\n" +
-                        "END:VCALENDAR"
-            )
-        )
-        TimeZone(cal.getComponent(VTimeZone.VTIMEZONE) as VTimeZone)
-    }
-
-    val tzIdDefault = java.util.TimeZone.getDefault().id!!
-    val tzDefault = tzRegistry.getTimeZone(tzIdDefault)!!
-
-    // androidifyTimeZone
-
-    @Test
-    fun testAndroidifyTimeZone_Null() {
-        // must not throw an exception
-        AndroidTimeUtils.androidifyTimeZone(null, tzRegistry)
-    }
-
-    // androidifyTimeZone
-    // DateProperty
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_Date() {
-        // dates (without time) should be ignored
-        val dtStart = DtStart(Date("20150101"))
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertTrue(DateUtils.isDate(dtStart))
-        assertNull(dtStart.timeZone)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_KnownTimeZone() {
-        // date-time with known time zone should be unchanged
-        val dtStart = DtStart("20150101T230350", tzBerlin)
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(tzBerlin, dtStart.timeZone)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_UnknownTimeZone() {
-        // time zone that is not available on Android systems should be rewritten to system default
-        val dtStart = DtStart("20150101T031000", tzCustom)
-        // 20150101T031000 CustomTime [+0310] = 20150101T000000 UTC = 1420070400 UNIX
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(1420070400000L, dtStart.date.time)
-        assertEquals(tzIdDefault, dtStart.timeZone.id)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_FloatingTime() {
-        // times with floating time should be treated as system default time zone
-        val dtStart = DtStart("20150101T230350")
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(DateTime("20150101T230350", tzDefault).time, dtStart.date.time)
-        assertEquals(tzIdDefault, dtStart.timeZone.id)
-        assertFalse(dtStart.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateProperty_UTC() {
-        // times with UTC should be unchanged
-        val dtStart = DtStart("20150101T230350Z")
-        AndroidTimeUtils.androidifyTimeZone(dtStart, tzRegistry)
-        assertEquals(1420153430000L, dtStart.date.time)
-        assertNull(dtStart.timeZone)
-        assertTrue(dtStart.isUtc)
-    }
-
-    // androidifyTimeZone
-    // DateListProperty - date
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_Date() {
-        // dates (without time) should be ignored
-        val rDate = RDate(DateList("20150101,20150102", Value.DATE))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(1420070400000L, rDate.dates[0].time)
-        assertEquals(1420156800000L, rDate.dates[1].time)
-        assertNull(rDate.timeZone)
-        assertEquals(Value.DATE, rDate.dates.type)
-        assertNull(rDate.dates.timeZone)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    // androidifyTimeZone
-    // DateListProperty - date-time
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_KnownTimeZone() {
-        // times with known time zone should be unchanged
-        val rDate = RDate(DateList("20150101T150000,20150102T150000", Value.DATE_TIME, tzToronto))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(1420142400000L, rDate.dates[0].time)
-        assertEquals(1420228800000L, rDate.dates[1].time)
-        assertEquals(tzToronto, rDate.timeZone)
-        assertEquals(Value.DATE_TIME, rDate.dates.type)
-        assertEquals(tzToronto, rDate.dates.timeZone)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_UnknownTimeZone() {
-        // time zone that is not available on Android systems should be rewritten to system default
-        val rDate = RDate(DateList("20150101T031000,20150102T031000", Value.DATE_TIME, tzCustom))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(DateTime("20150101T031000", tzCustom).time, rDate.dates[0].time)
-        assertEquals(DateTime("20150102T031000", tzCustom).time, rDate.dates[1].time)
-        assertEquals(tzIdDefault, rDate.timeZone.id)
-        assertEquals(Value.DATE_TIME, rDate.dates.type)
-        assertEquals(tzIdDefault, rDate.dates.timeZone.id)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_FloatingTime() {
-        // times with floating time should be treated as system default time zone
-        val rDate = RDate(DateList("20150101T031000,20150102T031000", Value.DATE_TIME))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(DateTime("20150101T031000", tzDefault).time, rDate.dates[0].time)
-        assertEquals(DateTime("20150102T031000", tzDefault).time, rDate.dates[1].time)
-        assertEquals(tzIdDefault, rDate.timeZone.id)
-        assertEquals(Value.DATE_TIME, rDate.dates.type)
-        assertEquals(tzIdDefault, rDate.dates.timeZone.id)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_UTC() {
-        // times with UTC should be unchanged
-        val rDate = RDate(DateList("20150101T031000Z,20150102T031000Z", Value.DATE_TIME))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(DateTime("20150101T031000Z").time, rDate.dates[0].time)
-        assertEquals(DateTime("20150102T031000Z").time, rDate.dates[1].time)
-        assertNull(rDate.timeZone)
-        assertEquals(Value.DATE_TIME, rDate.dates.type)
-        assertNull(rDate.dates.timeZone)
-        assertTrue(rDate.dates.isUtc)
-    }
-
-    // androidifyTimeZone
-    // DateListProperty - period-explicit
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_Period_FloatingTime() {
-        // times with floating time should be treated as system default time zone
-        val rDate = RDate(PeriodList("19970101T180000/19970102T070000,20220103T000000/20220108T000000"))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(
-            setOf(
-                Period(DateTime("19970101T18000000"), DateTime("19970102T07000000")),
-                Period(DateTime("20220103T000000"), DateTime("20220108T000000"))
-            ),
-            rDate.periods
-        )
-        assertNull(rDate.timeZone)
-        assertNull(rDate.periods.timeZone)
-        assertTrue(rDate.periods.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_Period_KnownTimezone() {
-        // periods with known time zone should be unchanged
-        val rDate = RDate(PeriodList("19970101T180000/19970102T070000,19970102T180000/19970108T090000"))
-        rDate.periods.timeZone = tzToronto
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(
-            setOf(Period("19970101T180000/19970102T070000"), Period("19970102T180000/19970108T090000")),
-            mutableSetOf<Period>().also { it.addAll(rDate.periods) }
-        )
-        assertEquals(tzToronto, rDate.periods.timeZone)
-        assertNull(rDate.timeZone)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_Periods_UnknownTimeZone() {
-        // time zone that is not available on Android systems should be rewritten to system default
-        val rDate = RDate(PeriodList("19970101T180000/19970102T070000,19970102T180000/19970108T090000"))
-        rDate.periods.timeZone = tzCustom
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(
-            setOf(Period("19970101T180000/19970102T070000"), Period("19970102T180000/19970108T090000")),
-            mutableSetOf<Period>().also { it.addAll(rDate.periods) }
-        )
-        assertEquals(tzIdDefault, rDate.periods.timeZone.id)
-        assertNull(rDate.timeZone)
-        assertFalse(rDate.dates.isUtc)
-    }
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_Period_UTC() {
-        // times with UTC should be unchanged
-        val rDate = RDate(PeriodList("19970101T180000Z/19970102T070000Z,20220103T0000Z/20220108T0000Z"))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(
-            setOf(
-                Period(DateTime("19970101T180000Z"), DateTime("19970102T070000Z")),
-                Period(DateTime("20220103T0000Z"), DateTime("20220108T0000Z"))
-            ),
-            rDate.periods
-        )
-        assertTrue(rDate.periods.isUtc)
-    }
-
-    // androidifyTimeZone
-    // DateListProperty - period-start
-
-    @Test
-    fun testAndroidifyTimeZone_DateListProperty_PeriodStart_UTC() {
-        // times with UTC should be unchanged
-        val rDate = RDate(PeriodList("19970101T180000Z/PT5H30M,20220103T0000Z/PT2H30M10S"))
-        AndroidTimeUtils.androidifyTimeZone(rDate)
-        assertEquals(
-            setOf(
-                Period(DateTime("19970101T180000Z"), Duration.parse("PT5H30M")),
-                Period(DateTime("20220103T0000Z"), Duration.parse("PT2H30M10S"))
-            ),
-            rDate.periods
-        )
-        assertTrue(rDate.periods.isUtc)
-    }
-
-    // storageTzId
-
-    @Test
-    fun testStorageTzId_Date() =
-        assertEquals(AndroidTimeUtils.TZID_UTC, AndroidTimeUtils.storageTzId(DtStart(Date("20150101"))))
-
-    @Test
-    fun testStorageTzId_FloatingTime() =
-        assertEquals(TimeZone.getDefault().id, AndroidTimeUtils.storageTzId(DtStart(DateTime("20150101T000000"))))
-
-    @Test
-    fun testStorageTzId_UTC() =
-        assertEquals(TimeZones.UTC_ID, AndroidTimeUtils.storageTzId(DtStart(DateTime("20150101T000000Z"))))
-
-    @Test
-    fun testStorageTzId_ZonedTime() {
-        assertEquals(tzToronto.id, AndroidTimeUtils.storageTzId(DtStart("20150101T000000", tzToronto)))
+    val exDateGenerator: ((DateList<*>) -> ExDate<*>) = { dateList ->
+        ExDate(dateList)
     }
 
 
@@ -300,154 +65,110 @@ class AndroidTimeUtilsTest {
     @Test
     fun testAndroidStringToRecurrenceSets_UtcTimes() {
         // list of UTC times
-        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet("20150101T103010Z,20150702T103020Z", tzRegistry, false) { ExDate(it) }
-        assertNull(exDate.timeZone)
-        val exDates = exDate.dates
-        assertEquals(Value.DATE_TIME, exDates.type)
-        assertTrue(exDates.isUtc)
-        assertEquals(2, exDates.size)
-        assertEquals(1420108210000L, exDates[0].time)
-        assertEquals(1435833020000L, exDates[1].time)
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "20150101T103010Z,20150702T103020Z",
+            allDay = false,
+            generator = exDateGenerator,
+        )!!
+
+        assertEquals(Optional.empty<TzId>(), exDate.getParameter<TzId>(Parameter.TZID))
+        assertEquals(2, exDate.dates.size)
+        assertEquals(Instant.parse("2015-01-01T10:30:10Z"), exDate.dates[0])
+        assertEquals(Instant.parse("2015-07-02T10:30:20Z"), exDate.dates[1])
     }
 
     @Test
     fun testAndroidStringToRecurrenceSets_ZonedTimes() {
         // list of time zone times
-        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet("${tzToronto.id};20150103T113030,20150704T113040", tzRegistry,false) {
-            ExDate(
-                it
-            )
-        }
-        assertEquals(tzToronto, exDate.timeZone)
-        assertEquals(tzToronto.id, (exDate.getParameter(Parameter.TZID) as TzId).value)
-        val exDates = exDate.dates
-        assertEquals(Value.DATE_TIME, exDates.type)
-        assertEquals(tzToronto, exDates.timeZone)
-        assertEquals(2, exDates.size)
-        assertEquals(1420302630000L, exDates[0].time)
-        assertEquals(1436023840000L, exDates[1].time)
+        val tzid = tzToronto.id
+
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "$tzid;20150103T113030,20150704T113040",
+            allDay = false,
+            generator = exDateGenerator,
+        )!!
+
+        assertEquals(tzid, exDate.getParameter<TzId>(Parameter.TZID).get().value)
+        assertEquals(2, exDate.dates.size)
+        assertEquals(dateTimeValue("20150103T113030", tzToronto), exDate.dates[0])
+        assertEquals(dateTimeValue("20150704T113040", tzToronto), exDate.dates[1])
     }
 
     @Test
     fun testAndroidStringToRecurrenceSets_Dates() {
         // list of dates
-        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet("20150101T103010Z,20150702T103020Z", tzRegistry, true) { ExDate(it) }
-        val exDates = exDate.dates
-        assertEquals(Value.DATE, exDates.type)
-        assertEquals(2, exDates.size)
-        assertEquals("20150101", exDates[0].toString())
-        assertEquals("20150702", exDates[1].toString())
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "20150101T103010Z,20150702T103020Z",
+            allDay = true,
+            generator = exDateGenerator,
+        )!!
+
+        assertEquals(Optional.empty<TzId>(), exDate.getParameter<TzId>(Parameter.TZID))
+        assertEquals(Value.DATE, exDate.getParameter<Value>(Parameter.VALUE).get())
+        assertEquals(2, exDate.dates.size)
+        assertEquals(dateValue("20150101"), exDate.dates[0])
+        assertEquals(dateValue("20150702"), exDate.dates[1])
+    }
+
+    @Test
+    fun testAndroidStringToRecurrenceSets_ExcludePositive() {
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "${tzToronto.id};20150103T113030,20150105T113030",
+            allDay = false,
+            exclude = dateTimeValue("20150103T113030", tzToronto).toInstant(),
+            generator = exDateGenerator,
+        )!!
+
+        assertEquals(1, exDate.dates.size)
+        assertEquals(dateTimeValue("20150105T113030", tzToronto), exDate.dates[0])
+    }
+
+    @Test(expected = DateTimeParseException::class)
+    fun testAndroidStringToRecurrenceSets_throws_DateTimeParseException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test(expected = DateTimeException::class)
+    fun testAndroidStringToRecurrenceSets_throws_DateTimeException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "+25;20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test(expected = ZoneRulesException::class)
+    fun testAndroidStringToRecurrenceSets_throws_ZoneRulesException() {
+        AndroidTimeUtils.androidStringToRecurrenceSet(
+            "Europe/ABC;20150103T113030",
+            allDay = false,
+            generator = exDateGenerator
+        )
+    }
+
+    @Test
+    fun testAndroidStringToRecurrenceSets_emptyInput() {
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "",
+            allDay = false,
+            generator = { error("Should not be called") },
+        )
+        assertNull(exDate)
     }
 
     @Test
     fun testAndroidStringToRecurrenceSets_Exclude() {
-        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet("${tzToronto.id};20150103T113030", tzRegistry,false, 1420302630000L) {
-            ExDate(
-                it
-            )
-        }
-        assertEquals(0, exDate.dates.size)
-    }
-
-    // recurrenceSetsToAndroidString
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_Date() {
-        // DATEs (without time) have to be converted to <date>THHmmssZ for Android
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE, tzDefault)))
-        val androidTimeString = AndroidTimeUtils.recurrenceSetsToAndroidString(list, Date("20150101"))
-        // We ignore the timezone
-        assertEquals("20150101T000000Z,20150702T000000Z", androidTimeString.substringAfter(';'))
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_Date_AlthoughDtStartIsDateTime() {
-        // DATEs (without time) have to be converted to <date>THHmmssZ for Android
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE, tzDefault)))
-        val androidTimeString = AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150101T043210", tzBerlin))
-        // We ignore the timezone
-        assertEquals("20150101T033210Z,20150702T023210Z", androidTimeString.substringAfter(';'))
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_Date_AlthoughDtStartIsDateTime_MonthWithLessDays() {
-        // DATEs (without time) have to be converted to <date>THHmmssZ for Android
-        val list = ArrayList<DateListProperty>(1)
-        list.add(ExDate(DateList("20240531", Value.DATE, tzDefault)))
-        val androidTimeString = AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20240401T114500", tzBerlin))
-        // We ignore the timezone
-        assertEquals("20240531T094500Z", androidTimeString.substringAfter(';'))
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_Period() {
-        // PERIODs are not supported yet — should be implemented later
-        val list = listOf(
-            RDate(PeriodList("19960403T020000Z/19960403T040000Z,19960404T010000Z/PT3H"))
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            "${tzToronto.id};20150103T113030",
+            allDay = false,
+            exclude = dateTimeValue("20150103T113030", tzToronto).toInstant(),
+            generator = exDateGenerator,
         )
-        assertEquals("", AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("19960403T020000Z")))
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_Time_AlthoughDtStartIsAllDay() {
-        // DATE-TIME (floating time or UTC) recurrences for all-day events have to converted to <date>T000000Z for Android
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T000000,20150702T000000Z", Value.DATE_TIME, tzDefault)))
-        val androidTimeString = AndroidTimeUtils.recurrenceSetsToAndroidString(list, Date("20150101"))
-        // We ignore the timezone
-        assertEquals("20150101T000000Z,20150702T000000Z", androidTimeString.substringAfter(';'))
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_TwoTimesWithSameTimezone() {
-        // two separate entries, both with timezone Toronto
-        val list = ArrayList<DateListProperty>(2)
-        list.add(RDate(DateList("20150103T113030", Value.DATE_TIME, tzToronto)))
-        list.add(RDate(DateList("20150704T113040", Value.DATE_TIME, tzToronto)))
-        assertEquals(
-            "America/Toronto;20150103T113030,20150704T113040",
-            AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150103T113030", tzToronto))
-        )
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_TwoTimesWithDifferentTimezone() {
-        // two separate entries, one with timezone Toronto, one with Berlin
-        // 2015/01/03 11:30:30 Toronto [-5] = 2015/01/03 16:30:30 UTC
-        // DST: 2015/07/04 11:30:40 Berlin  [+2] = 2015/07/04 09:30:40 UTC = 2015/07/04 05:30:40 Toronto [-4]
-        val list = ArrayList<DateListProperty>(2)
-        list.add(RDate(DateList("20150103T113030", Value.DATE_TIME, tzToronto)))
-        list.add(RDate(DateList("20150704T113040", Value.DATE_TIME, tzBerlin)))
-        assertEquals(
-            "America/Toronto;20150103T113030,20150704T053040",
-            AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150103T113030", tzToronto))
-        )
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_TwoTimesWithOneUtc() {
-        // two separate entries, one with timezone Toronto, one with Berlin
-        // 2015/01/03 11:30:30 Toronto [-5] = 2015/01/03 16:30:30 UTC
-        // DST: 2015/07/04 11:30:40 Berlin  [+2] = 2015/07/04 09:30:40 UTC = 2015/07/04 05:30:40 Toronto [-4]
-        val list = ArrayList<DateListProperty>(2)
-        list.add(RDate(DateList("20150103T113030Z", Value.DATE_TIME)))
-        list.add(RDate(DateList("20150704T113040", Value.DATE_TIME, tzBerlin)))
-        assertEquals(
-            "20150103T113030Z,20150704T093040Z",
-            AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150103T113030Z"))
-        )
-    }
-
-    @Test
-    fun testRecurrenceSetsToAndroidString_UtcTime() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T103010Z,20150102T103020Z", Value.DATE_TIME)))
-        assertEquals(
-            "20150101T103010Z,20150102T103020Z",
-            AndroidTimeUtils.recurrenceSetsToAndroidString(list, DateTime("20150101T103010ZZ"))
-        )
+        assertNull(exDate)
     }
 
 
@@ -455,43 +176,55 @@ class AndroidTimeUtilsTest {
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_UtcTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000Z,20150702T060000Z", Value.DATE_TIME)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, ZoneOffset.UTC),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, ZoneOffset.UTC)
+        )))
         assertEquals("20150101T060000Z,20150702T060000Z", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_ZonedTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101T120000,20150702T120000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_MixedTimes() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000Z,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 1, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101T070000,20150702T120000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_TimesAlthougAllDay() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101T060000,20150702T060000", Value.DATE_TIME, tzToronto)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(
+            ZonedDateTime.of(2015, 1, 1, 6, 0, 0, 0, tzToronto.toZoneId()),
+            ZonedDateTime.of(2015, 7, 2, 6, 0, 0, 0, tzToronto.toZoneId())
+        )))
         assertEquals("20150101,20150702", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, null))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_Dates() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(LocalDate.of(2015, 1, 1), LocalDate.of(2015, 7, 2))))
         assertEquals("20150101,20150702", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, null))
     }
 
     @Test
     fun testRecurrenceSetsToOpenTasksString_DatesAlthoughTimeZone() {
-        val list = ArrayList<DateListProperty>(1)
-        list.add(RDate(DateList("20150101,20150702", Value.DATE)))
+        val list = ArrayList<DateListProperty<Temporal>>(1)
+        list.add(RDate(DateList(LocalDate.of(2015, 1, 1), LocalDate.of(2015, 7, 2))))
         assertEquals("20150101T000000,20150702T000000", AndroidTimeUtils.recurrenceSetsToOpenTasksString(list, tzBerlin))
     }
 
@@ -511,6 +244,150 @@ class AndroidTimeUtilsTest {
         assertEquals(Duration.parse("P4DT3H2M1S"), AndroidTimeUtils.parseDuration("P1S2M3H4D"))
         assertEquals(Duration.parse("P11DT3H2M1S"), AndroidTimeUtils.parseDuration("P1S2M3H4D1W"))
         assertEquals(Duration.parse("PT1H0M10S"), AndroidTimeUtils.parseDuration("1H10S"))
+    }
+
+
+    @Test
+    fun `toTimestamp on LocalDate should use start of UTC day`() {
+        val date = LocalDate.of(2026, 3, 12)
+
+        val timestamp = date.toTimestamp()
+
+        assertEquals(1773273600000L, timestamp)
+    }
+
+    @Test
+    fun `toTimestamp on LocalDateTime should use system default time zone`() {
+        val date = LocalDateTime.of(2026, 3, 12, 12, 34, 56)
+
+        val timestamp = date.toTimestamp()
+
+        assertEquals(1773315296000L, timestamp)
+    }
+
+    @Test
+    fun `toTimestamp on OffsetDateTime`() {
+        val date = OffsetDateTime.of(2026, 3, 12, 12, 0, 0, 0, ZoneOffset.ofHours(3))
+
+        val timestamp = date.toTimestamp()
+
+        assertEquals(1773306000000L, timestamp)
+    }
+
+    @Test
+    fun `toTimestamp on ZonedDateTime`() {
+        val date = ZonedDateTime.of(2026, 3, 12, 12, 0, 0, 0, ZoneId.of("Europe/Helsinki"))
+
+        val timestamp = date.toTimestamp()
+
+        assertEquals(1773309600000L, timestamp)
+    }
+
+    @Test
+    fun `toTimestamp on Instant`() {
+        val inputTimestamp = 1773273600000L
+        val date = Instant.ofEpochMilli(inputTimestamp)
+
+        val timestamp = date.toTimestamp()
+
+        assertEquals(inputTimestamp, timestamp)
+    }
+
+    @Test
+    fun `toTimestamp on unsupported type`() {
+        try {
+            JapaneseDate.now().toTimestamp()
+
+            fail("Expected exception")
+        } catch (e: UnsupportedTemporalTypeException) {
+            assertEquals("Can't convert java.time.chrono.JapaneseDate to Instant", e.message)
+        }
+    }
+
+
+    @Test
+    fun `androidTimezoneId on LocalDate`() {
+        val date = LocalDate.now()
+
+        val timezoneId = date.androidTimezoneId()
+
+        assertEquals("UTC", timezoneId)
+    }
+
+    @Test
+    fun `androidTimezoneId on LocalDateTime`() {
+        val date = LocalDateTime.now()
+
+        val timezoneId = date.androidTimezoneId()
+
+        assertEquals(tzRule.defaultZoneId.id, timezoneId)
+    }
+
+    @Test
+    fun `androidTimezoneId on ZonedDateTime`() {
+        val date = LocalDateTime.now().atZone(ZoneId.of("Europe/Dublin"))
+
+        val timezoneId = date.androidTimezoneId()
+
+        assertEquals("Europe/Dublin", timezoneId)
+    }
+
+    @Test
+    fun `androidTimezoneId on Instant`() {
+        val date = Instant.now()
+
+        val timezoneId = date.androidTimezoneId()
+
+        assertEquals("UTC", timezoneId)
+    }
+
+    @Test
+    fun `androidTimezoneId on OffsetDateTime`() {
+        try {
+            OffsetDateTime.now().androidTimezoneId()
+
+            fail("Expected exception")
+        } catch (e: IllegalArgumentException) {
+            assertEquals("date-time which is neither floating nor UTC must be a ZonedDateTime", e.message)
+        }
+    }
+
+    @Test
+    fun `androidTimezoneId on ZonedDateTime from ical4j`() {
+        val cal = CalendarBuilder().build(StringReader(
+            """
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            BEGIN:VTIMEZONE
+            TZID:Etc/ABC
+            BEGIN:STANDARD
+            TZNAME:-03
+            TZOFFSETFROM:-0300
+            TZOFFSETTO:-0300
+            DTSTART:19700101T000000
+            END:STANDARD
+            END:VTIMEZONE
+            BEGIN:VEVENT
+            SUMMARY:Test Timezones
+            DTSTART;TZID=Etc/ABC:20250828T130000
+            END:VEVENT
+            END:VCALENDAR
+            """.trimIndent()
+        ))
+        val vEvent = cal.getComponent<VEvent>(Component.VEVENT).get()
+        val date = vEvent.requireDtStart<Temporal>().date
+
+        try {
+            date.androidTimezoneId()
+
+            fail("Expected exception")
+        } catch (e: IllegalArgumentException) {
+            assertEquals(
+                "ical4j ZoneIds are not supported. Call DatePropertyTzMapper.normalizedDate() " +
+                        "before passing a date to this function.",
+                e.message
+            )
+        }
     }
 
 }

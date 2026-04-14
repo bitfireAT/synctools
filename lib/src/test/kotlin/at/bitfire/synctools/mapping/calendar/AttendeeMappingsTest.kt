@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar
 
 import android.content.ContentValues
 import android.provider.CalendarContract.Attendees
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.parameter.CuType
 import net.fortuna.ical4j.model.parameter.Role
 import net.fortuna.ical4j.model.property.Attendee
@@ -16,6 +17,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class AttendeeMappingsTest {
@@ -23,10 +25,9 @@ class AttendeeMappingsTest {
     companion object {
         const val DEFAULT_ORGANIZER = "organizer@example.com"
 
-        val CuTypeFancy = net.fortuna.ical4j.model.parameter.CuType("X-FANCY")
+        val CuTypeFancy = CuType("X-FANCY")
         val RoleFancy = Role("X-FANCY")
     }
-
 
     @Test
     fun testAndroidToICalendar_TypeRequired_RelationshipAttendee() {
@@ -34,12 +35,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertNull(role)
         }
     }
 
@@ -49,12 +46,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertNull(role)
         }
     }
 
@@ -64,15 +57,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.GROUP, cuType)
+            assertNull(role)
         }
     }
 
@@ -82,15 +68,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertEquals(
-                Role.CHAIR,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertEquals(Role.CHAIR, role)
         }
     }
 
@@ -100,15 +79,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_REQUIRED)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.UNKNOWN, cuType)
+            assertNull(role)
         }
     }
 
@@ -119,15 +91,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertEquals(
-                Role.OPT_PARTICIPANT,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertEquals(Role.OPT_PARTICIPANT, role)
         }
     }
 
@@ -137,15 +102,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertEquals(
-                Role.OPT_PARTICIPANT,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertEquals(Role.OPT_PARTICIPANT, role)
         }
     }
 
@@ -155,14 +113,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertEquals(
-                Role.OPT_PARTICIPANT,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertEquals(CuType.GROUP, cuType)
+            assertEquals(Role.OPT_PARTICIPANT, role)
         }
     }
 
@@ -172,15 +124,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertEquals(
-                Role.CHAIR,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertEquals(Role.CHAIR, role)
         }
     }
 
@@ -190,14 +135,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_OPTIONAL)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertEquals(
-                Role.OPT_PARTICIPANT,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertEquals(CuType.UNKNOWN, cuType)
+            assertEquals(Role.OPT_PARTICIPANT, role)
         }
     }
 
@@ -208,16 +147,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertNull(cuType)
+            assertNull(role)
         }
     }
 
@@ -227,16 +158,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertNull(cuType)
+            assertNull(role)
         }
     }
 
@@ -246,15 +169,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.GROUP,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.GROUP, cuType)
+            assertNull(role)
         }
     }
 
@@ -264,15 +180,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.CUTYPE
-                )
-            )
-            assertEquals(
-                Role.CHAIR,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertNull(cuType)
+            assertEquals(Role.CHAIR, role)
         }
     }
 
@@ -282,15 +191,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_NONE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.UNKNOWN,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.UNKNOWN, cuType)
+            assertNull(role)
         }
     }
 
@@ -301,15 +203,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ATTENDEE)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.RESOURCE, cuType)
+            assertNull(role)
         }
     }
 
@@ -319,15 +214,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_ORGANIZER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.RESOURCE, cuType)
+            assertNull(role)
         }
     }
 
@@ -337,15 +225,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_PERFORMER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.ROOM,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.ROOM, cuType)
+            assertNull(role)
         }
     }
 
@@ -355,14 +236,8 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_SPEAKER)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertEquals(
-                Role.CHAIR,
-                getParameter(net.fortuna.ical4j.model.Parameter.ROLE)
-            )
+            assertEquals(CuType.RESOURCE, cuType)
+            assertEquals(Role.CHAIR, role)
         }
     }
 
@@ -372,18 +247,10 @@ class AttendeeMappingsTest {
             put(Attendees.ATTENDEE_TYPE, Attendees.TYPE_RESOURCE)
             put(Attendees.ATTENDEE_RELATIONSHIP, Attendees.RELATIONSHIP_NONE)
         }) {
-            assertEquals(
-                net.fortuna.ical4j.model.parameter.CuType.RESOURCE,
-                getParameter(net.fortuna.ical4j.model.Parameter.CUTYPE)
-            )
-            assertNull(
-                getParameter(
-                    net.fortuna.ical4j.model.Parameter.ROLE
-                )
-            )
+            assertEquals(CuType.RESOURCE, cuType)
+            assertNull(role)
         }
     }
-
 
 
     @Test
@@ -404,9 +271,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeNone_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(Role.CHAIR)
-        }) {
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -422,9 +288,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeNone_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -440,9 +305,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeNone_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -458,9 +322,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeNone_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_NONE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -476,9 +339,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeNone_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(RoleFancy)
-        }) {
+                .add(RoleFancy)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -495,9 +357,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(net.fortuna.ical4j.model.parameter.CuType.INDIVIDUAL)
-        }) {
+                .add(CuType.INDIVIDUAL)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -513,10 +374,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.INDIVIDUAL)
-            parameters.add(Role.CHAIR)
-        }) {
+                .add<Attendee>(CuType.INDIVIDUAL)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -532,10 +392,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.INDIVIDUAL)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.INDIVIDUAL)
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -551,10 +410,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.INDIVIDUAL)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.INDIVIDUAL)
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -570,10 +428,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.INDIVIDUAL)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.INDIVIDUAL)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_NONE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -589,10 +446,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeIndividual_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.INDIVIDUAL)
-            parameters.add(RoleFancy)
-        }) {
+                .add<Attendee>(CuType.INDIVIDUAL)
+                .add(RoleFancy)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -609,9 +465,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-        }) {
+                .add(CuType.UNKNOWN)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -627,10 +482,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-            parameters.add(Role.CHAIR)
-        }) {
+                .add<Attendee>(CuType.UNKNOWN)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -646,10 +500,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.UNKNOWN)
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -665,10 +518,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.UNKNOWN)
+                .add<Attendee>(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -684,10 +536,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.UNKNOWN)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_NONE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -703,10 +554,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeUnknown_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.UNKNOWN)
-            parameters.add(RoleFancy)
-        }) {
+                .add<Attendee>(CuType.UNKNOWN)
+                .add(RoleFancy)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -723,9 +573,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-        }) {
+                .add(CuType.GROUP)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -741,10 +590,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-            parameters.add(Role.CHAIR)
-        }) {
+                .add<Attendee>(CuType.GROUP)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -760,10 +608,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.GROUP)
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -779,10 +626,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.GROUP)
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_OPTIONAL,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -798,10 +644,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.GROUP)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_NONE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -817,10 +662,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeGroup_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.GROUP)
-            parameters.add(RoleFancy)
-        }) {
+                .add<Attendee>(CuType.GROUP)
+                .add(RoleFancy)
+        ) {
             assertEquals(
                 Attendees.TYPE_REQUIRED,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -837,9 +681,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-        }) {
+                .add(CuType.RESOURCE)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -855,10 +698,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-            parameters.add(Role.CHAIR)
-        }) {
+                .add<Attendee>(CuType.RESOURCE)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -874,10 +716,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.RESOURCE)
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -893,10 +734,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.RESOURCE)
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -912,10 +752,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleNonParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.RESOURCE)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -931,10 +770,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeResource_RoleXValue() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.RESOURCE)
-            parameters.add(RoleFancy)
-        }) {
+                .add<Attendee>(CuType.RESOURCE)
+                .add(RoleFancy)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -951,9 +789,8 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeRoom_RoleNone() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.ROOM)
-        }) {
+                .add(CuType.ROOM)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -969,10 +806,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeRoom_RoleChair() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.ROOM)
-            parameters.add(Role.CHAIR)
-        }) {
+                .add<Attendee>(CuType.ROOM)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -988,10 +824,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeRoom_RoleReqParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.ROOM)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.ROOM)
+                .add(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(
                 Attendees.TYPE_RESOURCE,
                 getAsInteger(Attendees.ATTENDEE_TYPE)
@@ -1007,10 +842,9 @@ class AttendeeMappingsTest {
     fun testICalendarToAndroid_CuTypeRoom_RoleOptParticipant() {
         testICalendarToAndroid(
             Attendee("mailto:attendee@example.com")
-                .apply {
-            parameters.add(CuType.ROOM)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+                .add<Attendee>(CuType.ROOM)
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1018,10 +852,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuType.ROOM)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuType.ROOM)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1029,10 +864,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeRoom_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuType.ROOM)
-            parameters.add(RoleFancy)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuType.ROOM)
+                .add(RoleFancy)
+        ) {
             assertEquals(Attendees.TYPE_RESOURCE, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_PERFORMER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1041,9 +877,10 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleNone() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add(CuTypeFancy)
+        ) {
             assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1051,10 +888,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleChair() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-            parameters.add(Role.CHAIR)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuTypeFancy)
+                .add(Role.CHAIR)
+        ) {
             assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_SPEAKER, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1062,10 +900,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleReqParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-            parameters.add(Role.REQ_PARTICIPANT)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuTypeFancy)
+                .add<Attendee>(Role.REQ_PARTICIPANT)
+        ) {
             assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1073,10 +912,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleOptParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-            parameters.add(Role.OPT_PARTICIPANT)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuTypeFancy)
+                .add(Role.OPT_PARTICIPANT)
+        ) {
             assertEquals(Attendees.TYPE_OPTIONAL, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1084,10 +924,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleNonParticipant() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-            parameters.add(Role.NON_PARTICIPANT)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuTypeFancy)
+                .add(Role.NON_PARTICIPANT)
+        ) {
             assertEquals(Attendees.TYPE_NONE, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1095,10 +936,11 @@ class AttendeeMappingsTest {
 
     @Test
     fun testICalendarToAndroid_CuTypeXValue_RoleXValue() {
-        testICalendarToAndroid(Attendee("mailto:attendee@example.com").apply {
-            parameters.add(CuTypeFancy)
-            parameters.add(RoleFancy)
-        }) {
+        testICalendarToAndroid(
+            Attendee("mailto:attendee@example.com")
+                .add<Attendee>(CuTypeFancy)
+                .add(RoleFancy)
+        ) {
             assertEquals(Attendees.TYPE_REQUIRED, getAsInteger(Attendees.ATTENDEE_TYPE))
             assertEquals(Attendees.RELATIONSHIP_ATTENDEE, getAsInteger(Attendees.ATTENDEE_RELATIONSHIP))
         }
@@ -1129,3 +971,9 @@ class AttendeeMappingsTest {
     }
 
 }
+
+private val Attendee.cuType: CuType?
+    get() = getParameter<CuType>(Parameter.CUTYPE).getOrNull()
+
+private val Attendee.role: Role?
+    get() = getParameter<Role>(Parameter.ROLE).getOrNull()

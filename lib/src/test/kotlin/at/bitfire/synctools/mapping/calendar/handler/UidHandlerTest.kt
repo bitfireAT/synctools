@@ -16,6 +16,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class UidHandlerTest {
@@ -27,7 +28,7 @@ class UidHandlerTest {
         val result = VEvent()
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
-        assertNull(result.uid)
+        assertNull(result.uid.getOrNull())
     }
 
     @Test
@@ -37,7 +38,7 @@ class UidHandlerTest {
         ))
         val result = VEvent()
         handler.process(entity, entity, result)
-        assertEquals("from-event", result.uid.value)
+        assertEquals("from-event", result.uid?.getOrNull()?.value)
     }
 
 }
