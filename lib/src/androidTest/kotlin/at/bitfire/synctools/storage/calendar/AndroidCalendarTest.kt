@@ -140,14 +140,14 @@ class AndroidCalendarTest {
         // Add multiple events and test counting
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Event 1"
         )))
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now + 3600000,
-            Events.DTEND to now + 3600000*2,
+            Events.DTSTART to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
+            Events.DTEND to (testStartTime + Duration.ofHours(2)).toEpochMilli(),
             Events.TITLE to "Event 2"
         )))
         
@@ -160,18 +160,19 @@ class AndroidCalendarTest {
         // Test counting with WHERE clause
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Filter Test 1"
         )))
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now + 3600000,
-            Events.DTEND to now + 3600000*2,
+            Events.DTSTART to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
+            Events.DTEND to (testStartTime + Duration.ofHours(2)).toEpochMilli(),
             Events.TITLE to "Filter Test 2"
         )))
         
-        val filteredCount = calendar.countEvents("${Events.DTSTART}=?", arrayOf(now.toString()))
+        val filteredCount = calendar.countEvents("${Events.DTSTART}=?",
+            arrayOf(testStartMillis.toString()))
         assertEquals(1, filteredCount)
     }
 
@@ -180,12 +181,13 @@ class AndroidCalendarTest {
         // Test counting with filter that matches nothing
         calendar.addEvent(Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
-            Events.DTSTART to now,
-            Events.DTEND to now + 3600000,
+            Events.DTSTART to testStartMillis,
+            Events.DTEND to (testStartTime + Duration.ofHours(1)).toEpochMilli(),
             Events.TITLE to "Test Event"
         )))
         
-        val noMatchCount = calendar.countEvents("${Events.DTSTART}=?", arrayOf((now + 86400000).toString()))
+        val noMatchCount = calendar.countEvents("${Events.DTSTART}=?",
+            arrayOf((testStartTime + Duration.ofHours(24)).toEpochMilli().toString()))
         assertEquals(0, noMatchCount)
     }
 
