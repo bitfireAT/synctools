@@ -14,8 +14,8 @@ import at.bitfire.ical4android.DmfsStyleProvidersTaskTest
 import at.bitfire.ical4android.DmfsTask
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.TaskProvider
-import junit.framework.Assert.assertTrue
 import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import net.fortuna.ical4j.model.property.RelatedTo
 import org.dmfs.tasks.contract.TaskContract
 import org.junit.Assert.assertNotNull
@@ -37,8 +37,6 @@ class DmfsTaskListTest(providerName: TaskProvider.ProviderName):
         val dmfsTaskListProvider = DmfsTaskListProvider(testAccount, provider.client, providerName)
         val id = dmfsTaskListProvider.createTaskList(info)
         assertNotNull(id)
-
-        dmfsTaskListProvider.createTaskList(info)
 
         return dmfsTaskListProvider.getTaskList(id)!!
     }
