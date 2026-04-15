@@ -77,7 +77,7 @@ class AndroidEventHandlerTest {
         assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
         assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<Temporal>>(Property.RRULE).getOrNull()?.value)
         val exception = result.exceptions.first()
-        assertEquals(RecurrenceId(dateTimeValue("20200708T013000", tzShanghai)), exception.recurrenceId)
+        assertEquals(RecurrenceId(dateTimeValue("20200707T193000", tzVienna)), exception.recurrenceId)
         assertEquals(DtStart(dateTimeValue("20200706T203000", tzShanghai)), exception.dtStart<ZonedDateTime>())
         assertEquals("Event moved to one hour later", exception.summary.value)
     }
@@ -140,7 +140,7 @@ class AndroidEventHandlerTest {
         assertEquals(DtStart(dateTimeValue("20200706T193000", tzVienna)), main.dtStart<ZonedDateTime>())
         assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<*>>(Property.RRULE).getOrNull()?.value)
         assertEquals(
-            dateTimeValue("20200708T013000", tzShanghai),
+            dateTimeValue("20200707T193000", tzVienna),
             main.getProperty<ExDate<*>>(Property.EXDATE)?.getOrNull()?.dates?.first()
         )
         assertTrue(result.exceptions.isEmpty())

@@ -27,34 +27,79 @@ import java.time.ZonedDateTime
 class OriginalInstanceTimeHandlerTest {
 
     @get:Rule
-    val tzRule = DefaultTimezoneRule("Europe/Berlin")
+    val tzRule = DefaultTimezoneRule("Pacific/Auckland")
 
     private val tzVienna = ZoneId.of("Europe/Vienna")
+    private val tzHonolulu = ZoneId.of("Pacific/Honolulu")
 
     private val handler = OriginalInstanceTimeHandler()
 
     @Test
     fun `Original event is all-day`() {
         val result = VEvent()
-        val entity = Entity(contentValuesOf(
+        val from = Entity(contentValuesOf(
             Events.ORIGINAL_INSTANCE_TIME to 1594080000000L,
             Events.ORIGINAL_ALL_DAY to 1
         ))
-        handler.process(entity, Entity(ContentValues()), result)
+        val main = Entity(ContentValues())
+
+        handler.process(from, main, result)
+
         assertEquals(RecurrenceId(LocalDate.of(2020, 7, 7)), result.recurrenceId)
     }
 
     @Test
     fun `Original event is not all-day`() {
         val result = VEvent()
-        val entity = Entity(contentValuesOf(
+        val from = Entity(contentValuesOf(
             Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
             Events.ORIGINAL_ALL_DAY to 0,
             Events.EVENT_TIMEZONE to tzVienna.id
         ))
-        handler.process(entity, Entity(ContentValues()), result)
+        val main = Entity(contentValuesOf(
+            Events.EVENT_TIMEZONE to tzVienna.id
+        ))
+
+        handler.process(from, main, result)
+
         val viennaDateTime = ZonedDateTime.of(2025, 9, 22, 16, 13, 48, 0, tzVienna)
         assertEquals(RecurrenceId(viennaDateTime), result.recurrenceId)
+    }
+
+    @Test
+    fun `Original event is using different time zone`() {
+        val result = VEvent()
+        val from = Entity(contentValuesOf(
+            Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
+            Events.ORIGINAL_ALL_DAY to 0,
+            Events.EVENT_TIMEZONE to tzHonolulu.id
+        ))
+        val main = Entity(contentValuesOf(
+            Events.EVENT_TIMEZONE to tzVienna.id
+        ))
+
+        handler.process(from, main, result)
+
+        val viennaDateTime = ZonedDateTime.of(2025, 9, 22, 16, 13, 48, 0, tzVienna)
+        assertEquals(RecurrenceId(viennaDateTime), result.recurrenceId)
+    }
+
+    @Test
+    fun `Original event is missing time zone`() {
+        val result = VEvent()
+        val from = Entity(contentValuesOf(
+            Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
+            Events.ORIGINAL_ALL_DAY to 0,
+            Events.EVENT_TIMEZONE to tzHonolulu.id
+        ))
+        val main = Entity(contentValuesOf(
+            Events.EVENT_TIMEZONE to null
+        ))
+
+        handler.process(from, main, result)
+
+        val defaultTzDateTime = ZonedDateTime.of(2025, 9, 23, 2, 13, 48, 0, tzRule.defaultZoneId)
+        assertEquals(RecurrenceId(defaultTzDateTime), result.recurrenceId)
     }
 
 }
