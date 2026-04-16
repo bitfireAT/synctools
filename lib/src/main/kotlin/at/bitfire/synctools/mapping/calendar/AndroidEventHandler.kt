@@ -47,6 +47,7 @@ import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import java.time.Instant
 import java.time.LocalDate
 import java.util.LinkedList
 import java.util.UUID
@@ -166,6 +167,8 @@ class AndroidEventHandler(
         return if (originalAllDay) {
             // .. as date, without time
             ExDate(DateList(LocalDate.from(date)))
+        } else if (date is Instant) {
+            ExDate(DateList(date))
         } else {
             // .. as ZonedDateTime, with time and TZ param
             ExDate(
