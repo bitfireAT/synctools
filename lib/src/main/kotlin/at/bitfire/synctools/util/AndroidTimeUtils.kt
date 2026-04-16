@@ -170,30 +170,7 @@ object AndroidTimeUtils {
         val dates = datesStr
             .splitToSequence(RECURRENCE_LIST_VALUE_SEPARATOR)
             .map { dateString ->
-                if (zoneId == null) {
-                    if (dateString.contains('T')) {
-                        val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
-                        if (allDay) {
-                            instant.toLocalDate()
-                        } else {
-                            instant
-                        }
-                    } else {
-                        val localDate = TemporalAdapter.parse<LocalDate>(dateString, CalendarDateFormat.DATE_FORMAT).temporal
-                        if (allDay) {
-                            localDate
-                        } else {
-                            localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
-                        }
-                    }
-                } else {
-                    val localDateTime = TemporalAdapter.parse<LocalDateTime>(dateString, CalendarDateFormat.FLOATING_DATE_TIME_FORMAT).temporal
-                    if (allDay) {
-                        localDateTime.toLocalDate()
-                    } else {
-                        localDateTime.atZone(zoneId)
-                    }
-                }
+                parseDateString(dateString, zoneId, allDay)
             }
             .filterNot { date ->
                 // filter excluded date
@@ -221,6 +198,54 @@ object AndroidTimeUtils {
         }
 
         return dateListProperty
+    }
+
+    private fun parseDateString(dateString: String, zoneId: ZoneId?, allDay: Boolean): Temporal {
+        return if (zoneId == null) {
+            if (dateString.contains('T')) {
+                val instant = parseUtcDateTime(dateString)
+                if (allDay) {
+                    instant.toLocalDate()
+                } else {
+                    instant
+                }
+            } else {
+                val localDate = parseDate(dateString)
+                if (allDay) {
+                    localDate
+                } else {
+                    localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+                }
+            }
+        } else {
+            val localDateTime = parseDateTime(dateString)
+            if (allDay) {
+                localDateTime.toLocalDate()
+            } else {
+                localDateTime.atZone(zoneId)
+            }
+        }
+    }
+
+    private fun parseUtcDateTime(dateString: String): Instant {
+        return TemporalAdapter.parse<Instant>(
+            dateString,
+            CalendarDateFormat.UTC_DATE_TIME_FORMAT
+        ).temporal
+    }
+
+    private fun parseDate(dateString: String): LocalDate {
+        return TemporalAdapter.parse<LocalDate>(
+            dateString,
+            CalendarDateFormat.DATE_FORMAT
+        ).temporal
+    }
+
+    private fun parseDateTime(dateString: String): LocalDateTime {
+        return TemporalAdapter.parse<LocalDateTime>(
+            dateString,
+            CalendarDateFormat.FLOATING_DATE_TIME_FORMAT
+        ).temporal
     }
 
     /**
