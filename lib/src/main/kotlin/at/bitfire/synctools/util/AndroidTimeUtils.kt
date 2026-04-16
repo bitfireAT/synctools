@@ -160,7 +160,11 @@ object AndroidTimeUtils {
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
             val tzId = dbStr.take(limiter)
-            zoneId = ZoneId.of(tzId).takeIf { it != ZoneOffset.UTC }
+            zoneId = if (isUtcTzId(tzId)) {
+                ZoneOffset.UTC
+            } else {
+                ZoneId.of(tzId)
+            }
             datesStr = dbStr.substring(limiter + 1)
         } else {
             zoneId = null
@@ -202,28 +206,36 @@ object AndroidTimeUtils {
     }
 
     private fun parseDateString(dateString: String, zoneId: ZoneId?, allDay: Boolean): Temporal {
-        return if (zoneId == null) {
-            if (dateString.contains('T')) {
+        val isUtcFormat = dateString.endsWith('Z')
+        val isDateTimeFormat = dateString.contains('T')
+
+        return when {
+            isUtcFormat -> {
                 val instant = parseUtcDateTime(dateString)
                 if (allDay) {
                     instant.toLocalDate()
                 } else {
                     instant
                 }
-            } else {
+            }
+            isDateTimeFormat -> {
+                val localDateTime = parseDateTime(dateString)
+                val isUtc = zoneId == ZoneOffset.UTC
+
+                when {
+                    allDay -> localDateTime.toLocalDate()
+                    isUtc -> localDateTime.toInstant(ZoneOffset.UTC)
+                    zoneId != null -> localDateTime.atZone(zoneId)
+                    else -> error("Floating DATE-TIME is not supported: $dateString")
+                }
+            }
+            else -> {
                 val localDate = parseDate(dateString)
                 if (allDay) {
                     localDate
                 } else {
                     localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
                 }
-            }
-        } else {
-            val localDateTime = parseDateTime(dateString)
-            if (allDay) {
-                localDateTime.toLocalDate()
-            } else {
-                localDateTime.atZone(zoneId)
             }
         }
     }
