@@ -21,6 +21,7 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -357,4 +358,7 @@ object AndroidTimeUtils {
         return TemporalAmountAdapter.parse(durationStr).duration
     }
 
+    fun isUtcTzId(tzId: String): Boolean {
+        return tzId == TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID
+    }
 }
