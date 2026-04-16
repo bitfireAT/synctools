@@ -370,7 +370,7 @@ object AndroidTimeUtils {
         return TemporalAmountAdapter.parse(durationStr).duration
     }
 
-    fun isUtcTzId(tzId: String): Boolean {
+    fun isUtcTzId(tzId: String?): Boolean {
         return tzId == TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID
     }
 }
