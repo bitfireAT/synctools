@@ -7,6 +7,7 @@
 package at.bitfire.synctools.mapping.calendar.handler
 
 import at.bitfire.synctools.util.AndroidTimeUtils
+import at.bitfire.synctools.util.AndroidTimeUtils.isUtcTzId
 import net.fortuna.ical4j.util.TimeZones
 import java.time.DateTimeException
 import java.time.Instant
@@ -49,7 +50,7 @@ class AndroidTimeField(
         val tzId = timeZone
             ?: ZoneId.systemDefault().id    // safe fallback (should never be used/needed because the calendar provider requires EVENT_TIMEZONE)
 
-        if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID) {
+        if (isUtcTzId(tzId)) {
             return instant
         }
 
