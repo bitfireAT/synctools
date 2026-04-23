@@ -10,12 +10,10 @@ import android.content.ContentValues
 import at.bitfire.ical4android.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.ical4android.util.TimeApiExtensions.toLocalDate
+import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.PropertyList
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.RelType
@@ -42,6 +40,8 @@ import org.dmfs.tasks.contract.TaskContract.Property.Comment
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import java.net.URISyntaxException
+import java.time.Instant
+import java.time.temporal.Temporal
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -56,8 +56,6 @@ class DmfsTaskProcessor(
     private val logger
         get() = Logger.getLogger(javaClass.name)
 
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
-
     fun populateTask(values: ContentValues, to: Task) {
         to.uid = values.getAsString(Tasks._UID)
         to.sequence = values.getAsInteger(Tasks.SYNC_VERSION)
@@ -65,7 +63,7 @@ class DmfsTaskProcessor(
         to.location = values.getAsString(Tasks.LOCATION)
         to.userAgents += taskList.providerName.packageName
 
-        values.getAsString(Tasks.GEO)?.let { geo ->
+        values.getAsString(Tasks.GEO)?.takeIf { it.contains(",") }?.let { geo ->
             val (lng, lat) = geo.split(',')
             try {
                 to.geoPosition = Geo(lat.toBigDecimal(), lng.toBigDecimal())
@@ -88,21 +86,23 @@ class DmfsTaskProcessor(
 
         values.getAsInteger(Tasks.PRIORITY)?.let { to.priority = it }
 
+        // Note: big method – maybe split? Depends on how we want to proceed with refactoring.
+
         to.classification = when (values.getAsInteger(Tasks.CLASSIFICATION)) {
-            Tasks.CLASSIFICATION_PUBLIC ->       Clazz.PUBLIC
-            Tasks.CLASSIFICATION_PRIVATE ->      Clazz.PRIVATE
-            Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz.CONFIDENTIAL
+            Tasks.CLASSIFICATION_PUBLIC ->       Clazz(Clazz.VALUE_PUBLIC)
+            Tasks.CLASSIFICATION_PRIVATE ->      Clazz(Clazz.VALUE_PRIVATE)
+            Tasks.CLASSIFICATION_CONFIDENTIAL -> Clazz(Clazz.VALUE_CONFIDENTIAL)
             else ->                              null
         }
 
-        values.getAsLong(Tasks.COMPLETED)?.let { to.completedAt = Completed(DateTime(it)) }
+        values.getAsLong(Tasks.COMPLETED)?.let { to.completedAt = Completed(Instant.ofEpochMilli(it)) }
         values.getAsInteger(Tasks.PERCENT_COMPLETE)?.let { to.percentComplete = it }
 
         to.status = when (values.getAsInteger(Tasks.STATUS)) {
-            Tasks.STATUS_IN_PROCESS -> Status.VTODO_IN_PROCESS
-            Tasks.STATUS_COMPLETED ->  Status.VTODO_COMPLETED
-            Tasks.STATUS_CANCELLED ->  Status.VTODO_CANCELLED
-            else ->                    Status.VTODO_NEEDS_ACTION
+            Tasks.STATUS_IN_PROCESS -> Status(Status.VALUE_IN_PROCESS)
+            Tasks.STATUS_COMPLETED ->  Status(Status.VALUE_COMPLETED)
+            Tasks.STATUS_CANCELLED ->  Status(Status.VALUE_CANCELLED)
+            else ->                    Status(Status.VALUE_NEEDS_ACTION)
         }
 
         val allDay = (values.getAsInteger(Tasks.IS_ALLDAY) ?: 0) != 0
@@ -117,34 +117,28 @@ class DmfsTaskProcessor(
         values.getAsLong(Tasks.LAST_MODIFIED)?.let { to.lastModified = it }
 
         values.getAsLong(Tasks.DTSTART)?.let { dtStart ->
+            val instant = Instant.ofEpochMilli(dtStart)
             to.dtStart =
                 if (allDay)
-                    DtStart(Date(dtStart))
+                    DtStart(instant.toLocalDate())
                 else {
-                    val dt = DateTime(dtStart)
                     if (tz == null)
-                        DtStart(dt, true)
+                        DtStart(instant)
                     else
-                        DtStart(dt.apply {
-                            timeZone = tz
-                        })
+                        DtStart(instant.atZone(tz.toZoneId()))
                 }
         }
 
         values.getAsLong(Tasks.DUE)?.let { due ->
+            val instant = Instant.ofEpochMilli(due)
             to.due =
                 if (allDay)
-                    Due(Date(due))
+                    Due(instant.toLocalDate())
                 else {
-                    val dt = DateTime(due)
                     if (tz == null)
-                        Due(dt).apply {
-                            isUtc = true
-                        }
+                        Due(instant)
                     else
-                        Due(dt.apply {
-                            timeZone = tz
-                        })
+                        Due(instant.atZone(tz.toZoneId()))
                 }
         }
 
@@ -153,14 +147,14 @@ class DmfsTaskProcessor(
             to.duration = Duration(fixedDuration)
         }
 
-        values.getAsString(Tasks.RDATE)?.let {
-            to.rDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> RDate(dates) }
+        values.getAsString(Tasks.RDATE)?.let { rdateStr ->
+            AndroidTimeUtils.androidStringToRecurrenceSet(rdateStr, allDay) { dates -> RDate(dates) }?.let { to.rDates += it }
         }
-        values.getAsString(Tasks.EXDATE)?.let {
-            to.exDates += AndroidTimeUtils.androidStringToRecurrenceSet(it, tzRegistry, allDay) { dates -> ExDate(dates) }
+        values.getAsString(Tasks.EXDATE)?.let { exdateStr ->
+            AndroidTimeUtils.androidStringToRecurrenceSet(exdateStr, allDay) { dates -> ExDate(dates) }?.let { to.exDates += it }
         }
 
-        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule(it) }
+        values.getAsString(Tasks.RRULE)?.let { to.rRule = RRule<Temporal>(it) }
     }
 
     fun populateProperty(row: ContentValues, to: Task) {
@@ -183,28 +177,24 @@ class DmfsTaskProcessor(
     }
 
     private fun populateAlarm(row: ContentValues, to: Task) {
-        val props = PropertyList<Property>()
-
-        val trigger = Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE)))
-        when (row.getAsInteger(Alarm.REFERENCE)) {
-            Alarm.ALARM_REFERENCE_START_DATE ->
-                trigger.parameters.add(Related.START)
-            Alarm.ALARM_REFERENCE_DUE_DATE ->
-                trigger.parameters.add(Related.END)
-        }
-        props += trigger
-
-        props += when (row.getAsInteger(Alarm.ALARM_TYPE)) {
-            Alarm.ALARM_TYPE_EMAIL ->
-                Action.EMAIL
-            Alarm.ALARM_TYPE_SOUND ->
-                Action.AUDIO
-            else ->
-                // show alarm by default
-                Action.DISPLAY
-        }
-
-        props += Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)
+        val props = propertyListOf(
+            Trigger(java.time.Duration.ofMinutes(-row.getAsLong(Alarm.MINUTES_BEFORE))).let {
+                when (row.getAsInteger(Alarm.REFERENCE)) {
+                    Alarm.ALARM_REFERENCE_START_DATE -> it.add(Related.START)
+                    Alarm.ALARM_REFERENCE_DUE_DATE -> it.add(Related.END)
+                    else -> it
+                }
+            },
+            Action(
+                when (row.getAsInteger(Alarm.ALARM_TYPE)) {
+                    Alarm.ALARM_TYPE_EMAIL -> Action.VALUE_EMAIL
+                    Alarm.ALARM_TYPE_SOUND -> Action.VALUE_AUDIO
+                    // show alarm by default
+                    else -> Action.VALUE_DISPLAY
+                }
+            ),
+            Description(row.getAsString(Alarm.MESSAGE) ?: to.summary)
+        )
 
         to.alarms += VAlarm(props)
     }
@@ -216,19 +206,20 @@ class DmfsTaskProcessor(
             return
         }
 
-        val relatedTo = RelatedTo(uid)
-
-        // add relation type as reltypeparam
-        relatedTo.parameters.add(when (row.getAsInteger(Relation.RELATED_TYPE)) {
-            Relation.RELTYPE_CHILD ->
-                RelType.CHILD
-            Relation.RELTYPE_SIBLING ->
-                RelType.SIBLING
-            else /* Relation.RELTYPE_PARENT, default value */ ->
-                RelType.PARENT
-        })
-
-        to.relatedTo.add(relatedTo)
+        to.relatedTo.add(
+            RelatedTo(uid)
+                // add relation type as reltypeparam
+                .add(
+                    when (row.getAsInteger(Relation.RELATED_TYPE)) {
+                        Relation.RELTYPE_CHILD ->
+                            RelType.CHILD
+                        Relation.RELTYPE_SIBLING ->
+                            RelType.SIBLING
+                        else /* Relation.RELTYPE_PARENT, default value */ ->
+                            RelType.PARENT
+                    }
+                )
+        )
     }
 
 }

@@ -10,10 +10,12 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.ComponentList
-import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
@@ -21,10 +23,13 @@ import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
+import net.fortuna.ical4j.model.property.Trigger
+import net.fortuna.ical4j.model.property.immutable.ImmutableAction
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Duration
 import java.time.Period
 
 @RunWith(RobolectricTestRunner::class)
@@ -41,7 +46,7 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm()
+                this += VAlarm()
             },
             main = VEvent(),
             to = result
@@ -57,8 +62,8 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
-                    properties += Action.AUDIO
+                this += VAlarm(Duration.ofMinutes(-10)).apply {
+                    this += ImmutableAction.AUDIO
                 }
             },
             main = VEvent(),
@@ -75,8 +80,8 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofMinutes(-10)).apply {
-                    properties += Action.DISPLAY
+                this += VAlarm(Duration.ofMinutes(-10)).apply {
+                    this += ImmutableAction.DISPLAY
                 }
             },
             main = VEvent(),
@@ -93,8 +98,8 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
-                    properties += Action.EMAIL
+                this += VAlarm(Duration.ofSeconds(-120)).apply {
+                    this += ImmutableAction.EMAIL
                 }
             },
             main = VEvent(),
@@ -111,8 +116,8 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofSeconds(-120)).apply {
-                    properties += Action("X-CUSTOM")
+                this += VAlarm(Duration.ofSeconds(-120)).apply {
+                    this += Action("X-CUSTOM")
                 }
             },
             main = VEvent(),
@@ -129,7 +134,7 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(Period.ofDays(-1))
+                this += VAlarm(Period.ofDays(-1))
             },
             main = VEvent(),
             to = result
@@ -142,7 +147,7 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofSeconds(-10))
+                this += VAlarm(Duration.ofSeconds(-10))
             },
             main = VEvent(),
             to = result
@@ -155,7 +160,7 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                components += VAlarm(java.time.Duration.ofMinutes(10))
+                this += VAlarm(Duration.ofMinutes(10))
             },
             main = VEvent(),
             to = result
@@ -169,11 +174,11 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(DateTime("20200621T120000", tzVienna)),
-                DtEnd(DateTime("20200621T140000", tzVienna))
+                DtStart(dateTimeValue("20200621T120000", tzVienna)),
+                DtEnd(dateTimeValue("20200621T140000", tzVienna))
             ), ComponentList(listOf(
                 VAlarm(Period.ofDays(-1)).apply {
-                    trigger.parameters.add(Related.END)
+                    triggerProperty.add<Trigger>(Related.END)
                 }
             ))),
             main = VEvent(),
@@ -187,11 +192,11 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(DateTime("20200621T120000", tzVienna)),
-                DtEnd(DateTime("20200621T140000", tzVienna))
+                DtStart(dateTimeValue("20200621T120000", tzVienna)),
+                DtEnd(dateTimeValue("20200621T140000", tzVienna))
             ), ComponentList(listOf(
-                VAlarm(java.time.Duration.ofSeconds(-7240)).apply {
-                    trigger.parameters.add(Related.END)
+                VAlarm(Duration.ofSeconds(-7240)).apply {
+                    triggerProperty.add<Trigger>(Related.END)
                 }
             ))),
             main = VEvent(),
@@ -205,12 +210,11 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(DateTime("20200621T120000", tzVienna)),
-                DtEnd(DateTime("20200621T140000", tzVienna))
+                DtStart(dateTimeValue("20200621T120000", tzVienna)),
+                DtEnd(dateTimeValue("20200621T140000", tzVienna))
             ), ComponentList(listOf(
-                VAlarm(java.time.Duration.ofMinutes(10)).apply {
-                    trigger.parameters.add(Related.END)
-                }
+                VAlarm(Duration.ofMinutes(10)).apply {
+                    triggerProperty.add<Trigger>(Related.END)                }
             ))),
             main = VEvent(),
             to = result
@@ -224,9 +228,9 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(DateTime("20200621T120000", tzVienna))
+                DtStart(dateTimeValue("20200621T120000", tzVienna))
             ), ComponentList(listOf(
-                VAlarm(DateTime("20200621T110000", tzVienna))
+                VAlarm(dateTimeValue("20200621T110000", tzVienna).toInstant())
             ))),
             main = VEvent(),
             to = result
@@ -240,9 +244,9 @@ class RemindersBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                DtStart(DateTime("20200621T120000", tzVienna))
+                DtStart(dateTimeValue("20200621T120000", tzVienna))
             ), ComponentList(listOf(
-                VAlarm(DateTime("20200621T110000", tzShanghai))
+                VAlarm(dateTimeValue("20200621T110000", tzShanghai).toInstant())
             ))),
             main = VEvent(),
             to = result
@@ -263,3 +267,6 @@ class RemindersBuilderTest {
     }
 
 }
+
+private val VAlarm.triggerProperty: Trigger
+    get() = getProperty<Trigger>(Property.TRIGGER).get()

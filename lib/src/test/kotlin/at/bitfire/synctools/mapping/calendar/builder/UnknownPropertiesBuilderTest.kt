@@ -45,10 +45,9 @@ class UnknownPropertiesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent(propertyListOf(
-                XProperty("X-Some-Property", "Some Value").apply {
-                    parameters.add(XParameter("Param1", "Value1"))
-                    parameters.add(XParameter("Param2", "Value2"))
-                }
+                XProperty("X-Some-Property", "Some Value")
+                    .add<XProperty>(XParameter("Param1", "Value1"))
+                    .add(XParameter("Param2", "Value2"))
             )),
             main = VEvent(),
             to = result

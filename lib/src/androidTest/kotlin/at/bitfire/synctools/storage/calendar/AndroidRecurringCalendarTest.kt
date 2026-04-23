@@ -6,63 +6,76 @@
 
 package at.bitfire.synctools.storage.calendar
 
+import android.Manifest
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract
-import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
-import at.bitfire.ical4android.impl.TestCalendar
-
-import at.bitfire.synctools.test.InitCalendarProviderRule
+import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.bitfire.synctools.test.assertEventAndExceptionsEqual
 import at.bitfire.synctools.test.withId
+import at.bitfire.synctools.verifyCompat
 import io.mockk.junit4.MockKRule
 import io.mockk.spyk
-import io.mockk.verify
 import net.fortuna.ical4j.util.TimeZones
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
-import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
+import java.util.UUID
 
 class AndroidRecurringCalendarTest {
 
-    @get:Rule
-    val initCalendarProviderRule = InitCalendarProviderRule.initialize()
+    companion object {
+
+        @JvmField
+        @ClassRule
+        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+
+        private val testAccount = Account(AndroidRecurringCalendarTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
+
+        private lateinit var client: ContentProviderClient
+        private lateinit var calendar: AndroidCalendar
+        private lateinit var recurringCalendar: AndroidRecurringCalendar
+
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+
+            calendar = TestCalendar.create(testAccount, client)
+            recurringCalendar = spyk(AndroidRecurringCalendar(calendar))
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            calendar.delete()
+            client.close()
+        }
+
+    }
 
     @get:Rule
     val mockkRule = MockKRule(this)
 
-    private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
-
-    lateinit var client: ContentProviderClient
-    lateinit var calendar: AndroidCalendar
-
-    lateinit var recurringCalendar: AndroidRecurringCalendar
-
-    @Before
-    fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
-
-        calendar = TestCalendar.findOrCreate(testAccount, client)
-        recurringCalendar = spyk(AndroidRecurringCalendar(calendar))
-    }
-
     @After
-    fun tearDown() {
-        calendar.delete()
-        client.close()
+    fun cleanUp() {
+        // Clean up events after every test
+        calendar.deleteAllEvents()
     }
     
     
@@ -71,11 +84,11 @@ class AndroidRecurringCalendarTest {
     @Test
     fun testAddEventAndExceptions_and_GetById() {
         // add event and exceptions
-        val (mainEventId, event) = insertRecurring(syncId = "testAddEventAndExceptions_and_GetById")
+        val (mainEventId, event) = insertRecurring()
         val addedWithId = event.withId(mainEventId)
 
         // verify that cleanUp was called
-        verify(exactly = 1) {
+        verifyCompat (exactly = 1) {
             recurringCalendar.cleanUp(event)
         }
 
@@ -180,7 +193,7 @@ class AndroidRecurringCalendarTest {
         assertEquals(updatedEventId, addedEventId)
 
         // verify that cleanUp was called
-        verify(exactly = 1) {
+        verifyCompat(exactly = 1) {
             recurringCalendar.cleanUp(updatedEventAndExceptions)
         }
 
@@ -343,7 +356,7 @@ class AndroidRecurringCalendarTest {
             Events.ORIGINAL_INSTANCE_TIME to "SomeValue",
             Events.ORIGINAL_ALL_DAY to "SomeValue"
         )))
-        assertTrue(result.entityValues.isEmpty)
+        assertEquals(0, result.entityValues.size())
     }
 
     @Test
@@ -474,7 +487,7 @@ class AndroidRecurringCalendarTest {
 
     // helpers
 
-    private fun insertRecurring(syncId: String): Pair<Long, EventAndExceptions> {
+    private fun insertRecurring(syncId: String = UUID.randomUUID().toString()): Pair<Long, EventAndExceptions> {
         val now = 1754233504000     // Sun Aug 03 2025 15:05:04 GMT+0000
         val mainEvent = Entity(contentValuesOf(
             Events.CALENDAR_ID to calendar.id,
@@ -490,7 +503,6 @@ class AndroidRecurringCalendarTest {
             exceptions = listOf(
                 Entity(contentValuesOf(
                     Events.CALENDAR_ID to calendar.id,
-                    Events.ORIGINAL_SYNC_ID to syncId,
                     Events.DTSTART to now + 86400000,
                     Events.DTEND to now + 86400000 + 2*3600000,
                     Events.TITLE to "Exception"

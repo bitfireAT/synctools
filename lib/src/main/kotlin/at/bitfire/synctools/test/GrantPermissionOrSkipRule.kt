@@ -7,6 +7,7 @@
 package at.bitfire.synctools.test
 
 import androidx.test.rule.GrantPermissionRule
+import junit.framework.AssertionFailedError
 import org.junit.Assume
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -28,6 +29,12 @@ class GrantPermissionOrSkipRule(permissions: Set<String>): TestRule {
                 val innerStatement = grantRule.apply(base, description)
                 try {
                     innerStatement.evaluate()
+                } catch (e: AssertionFailedError) {
+                    if (e.message == "Failed to grant permissions, see logcat for details") {
+                        Assume.assumeNoException(e)
+                    } else {
+                        throw e
+                    }
                 } catch (e: SecurityException) {
                     Assume.assumeNoException(e)
                 }

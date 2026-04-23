@@ -11,7 +11,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.propertyListOf
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.Transp
+import net.fortuna.ical4j.model.property.immutable.ImmutableTransp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,7 +39,7 @@ class AvailabilityBuilderTest {
     fun `Transparency is OPAQUE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Transp.OPAQUE)),
+            from = VEvent(propertyListOf(ImmutableTransp.OPAQUE)),
             main = VEvent(),
             to = result
         )
@@ -50,7 +50,7 @@ class AvailabilityBuilderTest {
     fun `Transparency is TRANSPARENT`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Transp.TRANSPARENT)),
+            from = VEvent(propertyListOf(ImmutableTransp.TRANSPARENT)),
             main = VEvent(),
             to = result
         )

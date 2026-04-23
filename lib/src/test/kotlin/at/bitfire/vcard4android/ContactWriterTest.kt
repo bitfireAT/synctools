@@ -577,28 +577,12 @@ class ContactWriterTest {
 
 
     @Test
-    fun testWriteJCard() {
-        val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
-        generator.vCard.revision = Revision(
-            ZonedDateTime.of(2021, 7, 30, 1, 2, 3, 0, ZoneOffset.UTC)
-        )
-
-        val stream = ByteArrayOutputStream()
-        generator.writeCard(stream, true)
-        assertEquals(
-            "[\"vcard\",[[\"version\",{},\"text\",\"4.0\"],[\"prodid\",{},\"text\",\"$testProductId (ez-vcard/${Ezvcard.VERSION})\"],[\"fn\",{},\"text\",\"\"],[\"rev\",{},\"timestamp\",\"2021-07-30T01:02:03+00:00\"]]]",
-            stream.toString()
-        )
-    }
-
-
-    @Test
     fun testWriteVCard() {
         val generator = ContactWriter(Contact(), VCardVersion.V4_0, testProductId)
         generator.vCard.revision = Revision(ZonedDateTime.of(2021, 7, 30, 1, 2, 3, 0, ZoneOffset.UTC))
 
         val stream = ByteArrayOutputStream()
-        generator.writeCard(stream, false)
+        generator.writeVCard(stream)
         assertEquals("BEGIN:VCARD\r\n" +
                 "VERSION:4.0\r\n" +
                 "PRODID:$testProductId (ez-vcard/${Ezvcard.VERSION})\r\n" +
@@ -618,7 +602,7 @@ class ContactWriterTest {
             })
         }
         ContactWriter(contact, VCardVersion.V4_0, testProductId)
-            .writeCard(stream, false)
+            .writeVCard(stream)
         assertTrue(stream.toString().contains("ADR;LABEL=\"Li^^ne 1,1 - ^' -\":;;Line1;;;;Line2"))
     }
 

@@ -30,7 +30,7 @@ class UnknownPropertiesHandlerTest {
         val result = VEvent(/* initialise = */ false)
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
-        assertTrue(result.properties.isEmpty())
+        assertTrue(result.propertyList.all.isEmpty())
     }
 
     @Test
@@ -52,10 +52,9 @@ class UnknownPropertiesHandlerTest {
         handler.process(entity, entity, result)
         assertEquals(listOf(
             XProperty("X-PROP1", "value 1"),
-            XProperty("X-PROP2", "value 2").apply {
-                parameters.add(XParameter("ARG1", "arg-value"))
-            },
-        ), result.properties)
+            XProperty("X-PROP2", "value 2")
+                .add(XParameter("ARG1", "arg-value")),
+        ), result.propertyList.all)
     }
 
 }

@@ -48,7 +48,7 @@ class UnknownPropertiesBuilder: AndroidEntityBuilder {
 
     @VisibleForTesting
     internal fun unknownProperties(event: VEvent): List<Property> =
-        event.properties.filterNot {
+        event.propertyList.all.filterNot {
             KNOWN_PROPERTY_NAMES.contains(it.name.uppercase())
         }
 

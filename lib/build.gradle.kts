@@ -36,10 +36,10 @@ android {
 
     sourceSets["main"].apply {
         kotlin {
-            srcDir("${projectDir}/src/main/kotlin")
+            directories += "${projectDir}/src/main/kotlin"
         }
         java {
-            srcDir("${rootDir}/opentasks-contract/src/main/java")
+            directories += "${rootDir}/opentasks-contract/src/main/java"
         }
     }
 
@@ -134,9 +134,26 @@ dependencies {
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
 
+    // install third-party APKs for instrumented tests (if available)
+    val apkDir = file("apk")
+    if (apkDir.exists() && apkDir.isDirectory) {
+        val apkFiles = apkDir.listFiles { file -> file.isFile && file.name.endsWith(".apk") }
+        if (apkFiles != null && apkFiles.isNotEmpty()) {
+            androidTestUtil(files(apkFiles))
+        }
+    }
+
     // unit tests
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.roboelectric)
+}
+
+tasks.withType<Test>().configureEach {
+    options {
+        // Prevent Robolectric from instrumenting ical4j classes to avoid problems with registering
+        // ical4j's ZoneRulesProviderImpl more than once with Java's ZoneRulesProvider.
+        systemProperty("org.robolectric.packagesToNotAcquire", "net.fortuna.ical4j")
+    }
 }

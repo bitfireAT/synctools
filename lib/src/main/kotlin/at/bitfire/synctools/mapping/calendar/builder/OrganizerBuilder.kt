@@ -17,6 +17,7 @@ import net.fortuna.ical4j.model.property.Organizer
 import java.net.URI
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 class OrganizerBuilder(
     private val ownerAccount: String
@@ -50,7 +51,7 @@ class OrganizerBuilder(
         val email = if (uri?.scheme.equals("mailto", true))
             uri?.schemeSpecificPart
         else
-            organizer.getParameter<Email>(Parameter.EMAIL)?.value
+            organizer.getParameter<Email>(Parameter.EMAIL).getOrNull()?.value
 
         if (email != null)
             return email

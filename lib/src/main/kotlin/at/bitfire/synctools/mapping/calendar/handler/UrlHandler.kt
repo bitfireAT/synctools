@@ -8,6 +8,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.calendar.EventsContract
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Url
@@ -27,7 +28,7 @@ class UrlHandler: AndroidEventFieldHandler {
                 null
             }
             if (uri != null)
-                to.properties += Url(uri)
+                to += Url(uri)
         }
     }
 

@@ -317,16 +317,16 @@ class AndroidCalendarProvider(
         const val COLUMN_CALENDAR_SYNC_STATE = Calendars.CAL_SYNC1
 
         /**
-         * When calculating instances of recurring events with an `RRULE:...;UNTIL=xxx`,
-         * old calendar provider versions don't include the instance exactly at UNTIL
-         * as they should.
-         */
-        val instancesIncludeUntil = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-
-        /**
          * Not all calendar provider versions support recurring events up to the year 2074.
-          */
-        val supportsYear2074 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+         *
+         * With Android 12, the calendar provider added support for
+         *
+         * - events up to 2074,
+         * - matching recurring event exceptions with millisecond resolution.
+         */
+        private val hasTimeApiFixes = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val matchesExceptionsWithMilliseconds get() = hasTimeApiFixes
+        val supportsYear2074 get() = hasTimeApiFixes
 
     }
 

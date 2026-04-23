@@ -22,7 +22,6 @@ import at.bitfire.vcard4android.property.XPhoneticMiddleName
 import ezvcard.Ezvcard
 import ezvcard.VCard
 import ezvcard.VCardVersion
-import ezvcard.io.json.JCardWriter
 import ezvcard.io.text.VCardWriter
 import ezvcard.parameter.ImageType
 import ezvcard.parameter.RelatedType
@@ -349,35 +348,24 @@ class ContactWriter(
      * Validates and writes the vCard to an output stream.
      *
      * @param stream    target output stream
-     * @param jCard     *true*: write as jCard; *false*: write as vCard
      */
-    fun writeCard(stream: OutputStream, jCard: Boolean) {
+    fun writeVCard(stream: OutputStream) {
         validate()
 
-        val writer =
-            if (jCard)
-                JCardWriter(stream).apply {
-                    isAddProdId = false     // we handle PRODID ourselves
-                    registerCustomScribes()
+        val writer = VCardWriter(stream, version).apply {
+            isAddProdId = false     // we handle PRODID ourselves
+            registerCustomScribes()
 
-                    // allow properties that are not defined in this vCard version
-                    isVersionStrict = false
-                }
-            else
-                VCardWriter(stream, version).apply {
-                    isAddProdId = false     // we handle PRODID ourselves
-                    registerCustomScribes()
+            /* include trailing semicolons for maximum compatibility
+            Don't include trailing semicolons for groups because Apple then shows "N:Group;;;;" as "Group;;;;". */
+            isIncludeTrailingSemicolons = !contact.group
 
-                    /* include trailing semicolons for maximum compatibility
-                    Don't include trailing semicolons for groups because Apple then shows "N:Group;;;;" as "Group;;;;". */
-                    isIncludeTrailingSemicolons = !contact.group
+            // use caret encoding for parameter values (RFC 6868)
+            isCaretEncodingEnabled = true
 
-                    // use caret encoding for parameter values (RFC 6868)
-                    isCaretEncodingEnabled = true
-
-                    // allow properties that are not defined in this vCard version
-                    isVersionStrict = false
-                }
+            // allow properties that are not defined in this vCard version
+            isVersionStrict = false
+        }
 
         writer.write(vCard)
         writer.flush()

@@ -10,6 +10,7 @@ import net.fortuna.ical4j.data.CalendarBuilder
 import net.fortuna.ical4j.model.Component
 import net.fortuna.ical4j.model.component.VEvent
 import org.junit.Assert.assertEquals
+import org.junit.Ignore
 import org.junit.Test
 import java.io.StringReader
 
@@ -30,7 +31,7 @@ class Ical4jServiceLoaderTest {
                 "END:VEVENT\n" +
                 "END:VCALENDAR\n"
         val result = CalendarBuilder().build(StringReader(iCal))
-        val vEvent = result.getComponent<VEvent>(Component.VEVENT)
+        val vEvent = result.getComponent<VEvent>(Component.VEVENT).get()
         assertEquals("Networld+Interop Conference", vEvent.summary.value)
     }
 

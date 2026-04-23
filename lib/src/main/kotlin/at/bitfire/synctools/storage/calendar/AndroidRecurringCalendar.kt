@@ -56,12 +56,11 @@ class AndroidRecurringCalendar(
      */
     fun addEventAndExceptions(eventAndExceptions: EventAndExceptions): Long {
         try {
-            val batch = CalendarBatchOperation(calendar.client)
-
             // validate / clean up input
             val cleaned = cleanUp(eventAndExceptions)
 
             // add main event
+            val batch = CalendarBatchOperation(calendar.client)
             calendar.addEvent(cleaned.main, batch)
 
             // add exceptions

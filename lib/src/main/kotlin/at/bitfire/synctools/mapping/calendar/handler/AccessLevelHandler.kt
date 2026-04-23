@@ -10,8 +10,10 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Clazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
 import org.json.JSONException
 
 class AccessLevelHandler: AndroidEventFieldHandler {
@@ -22,19 +24,19 @@ class AccessLevelHandler: AndroidEventFieldHandler {
         // take classification from main row
         val classification = when (values.getAsInteger(Events.ACCESS_LEVEL)) {
             Events.ACCESS_PUBLIC ->
-                Clazz.PUBLIC
+                ImmutableClazz.PUBLIC
 
             Events.ACCESS_PRIVATE ->
-                Clazz.PRIVATE
+                ImmutableClazz.PRIVATE
 
             Events.ACCESS_CONFIDENTIAL ->
-                Clazz.CONFIDENTIAL
+                ImmutableClazz.CONFIDENTIAL
 
             else /* Events.ACCESS_DEFAULT */ ->
                 retainedClassification(from)
         }
         if (classification != null)
-            to.properties += classification
+            to += classification
     }
 
     private fun retainedClassification(from: Entity): Clazz? {

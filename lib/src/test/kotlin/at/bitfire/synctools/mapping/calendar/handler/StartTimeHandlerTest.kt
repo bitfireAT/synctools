@@ -11,24 +11,24 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.exception.InvalidLocalResourceException
+import at.bitfire.synctools.icalendar.dtStart
 import at.bitfire.synctools.util.AndroidTimeUtils
 import junit.framework.TestCase.assertEquals
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class StartTimeHandlerTest {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")!!
+    private val tzVienna = ZoneId.of("Europe/Vienna")
 
-    private val handler = StartTimeHandler(tzRegistry)
+    private val handler = StartTimeHandler()
 
     @Test
     fun `All-day event`() {
@@ -39,7 +39,8 @@ class StartTimeHandlerTest {
             Events.EVENT_TIMEZONE to AndroidTimeUtils.TZID_UTC
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtStart(Date("20200621")), result.startDate)
+        val localDate = LocalDate.of(2020, 6, 21)
+        assertEquals(DtStart(localDate), result.dtStart<LocalDate>())
     }
 
     @Test
@@ -50,7 +51,8 @@ class StartTimeHandlerTest {
             Events.EVENT_TIMEZONE to "Europe/Vienna"
         ))
         handler.process(entity, entity, result)
-        assertEquals(DtStart(DateTime("20200621T120000", tzVienna)), result.startDate)
+        val viennaDateTime = ZonedDateTime.of(2020, 6, 21, 12, 0, 0, 0, tzVienna)
+        assertEquals(DtStart(viennaDateTime), result.dtStart<LocalDate>())
     }
 
     @Test(expected = InvalidLocalResourceException::class)
