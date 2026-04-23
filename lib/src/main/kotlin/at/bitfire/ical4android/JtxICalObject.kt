@@ -831,7 +831,12 @@ open class JtxICalObject(
         attendees.forEach { attendee ->
             val attendeeProp = net.fortuna.ical4j.model.property.Attendee().apply {
                 if(attendee.caladdress?.isNotEmpty() == true)
-                    this.calAddress = URI(attendee.caladdress)
+                    this.calAddress = try {
+                        URI(attendee.caladdress)
+                    } catch (_: Exception) {
+                        logger.warning("Ignoring invalid attendee URI: ${attendee.caladdress}")
+                        return@forEach
+                    }
 
                 attendee.cn?.let {
                     this += Cn(it)
@@ -884,7 +889,11 @@ open class JtxICalObject(
         organizer?.let { organizer ->
             val organizerProp = net.fortuna.ical4j.model.property.Organizer().apply {
                 if(organizer.caladdress?.isNotEmpty() == true)
-                    calAddress = URI(organizer.caladdress)
+                    try {
+                        this.calAddress = URI(organizer.caladdress)
+                    } catch (_: Exception) {
+                        logger.warning("Ignoring invalid organizer URI: ${organizer.caladdress}")
+                    }
 
                 organizer.cn?.let {
                     add<Property>(Cn(it))
