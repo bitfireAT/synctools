@@ -1140,9 +1140,9 @@ open class JtxICalObject(
     private fun getVTimeZones(props: PropertyList<Property>): List<VTimeZone> {
 
         val dates = arrayOf(
-            props.getProperty<DtStart>("DtStart")?.takeIf { it.timeZone != null },
-            props.getProperty<Due>("Due")?.takeIf { it.timeZone != null },
-            props.getProperty<Completed>("Completed")?.takeIf { it.timeZone != null },
+            props.getProperty<DtStart>("DtStart").takeIf { it.timeZone != null },
+            props.getProperty<Due>("Due").takeIf { it.timeZone != null },
+            props.getProperty<Completed>("Completed").takeIf { it.timeZone != null },
         )
         val earliest = dates.mapNotNull { it?.date }.min()
 
