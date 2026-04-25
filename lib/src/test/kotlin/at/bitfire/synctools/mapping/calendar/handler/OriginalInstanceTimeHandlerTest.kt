@@ -19,6 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -100,6 +101,23 @@ class OriginalInstanceTimeHandlerTest {
 
         val defaultTzDateTime = ZonedDateTime.of(2025, 9, 23, 2, 13, 48, 0, tzRule.defaultZoneId)
         assertEquals(RecurrenceId(defaultTzDateTime), result.recurrenceId)
+    }
+
+    @Test
+    fun `Original event is using UTC time zone`() {
+        val result = VEvent()
+        val from = Entity(contentValuesOf(
+            Events.ORIGINAL_INSTANCE_TIME to 1758550428000L,
+            Events.ORIGINAL_ALL_DAY to 0,
+            Events.EVENT_TIMEZONE to "UTC"
+        ))
+        val main = Entity(contentValuesOf(
+            Events.EVENT_TIMEZONE to "UTC"
+        ))
+
+        handler.process(from, main, result)
+
+        assertEquals(RecurrenceId(Instant.ofEpochMilli(1758550428000L)), result.recurrenceId)
     }
 
 }

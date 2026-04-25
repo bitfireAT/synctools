@@ -21,6 +21,7 @@ import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.parameter.Value
 import net.fortuna.ical4j.model.property.DateListProperty
 import net.fortuna.ical4j.model.property.RDate
+import net.fortuna.ical4j.util.TimeZones
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -159,7 +160,11 @@ object AndroidTimeUtils {
         val limiter = dbStr.indexOf(RECURRENCE_LIST_TZID_SEPARATOR)
         if (limiter != -1) {    // TZID given
             val tzId = dbStr.take(limiter)
-            zoneId = ZoneId.of(tzId).takeIf { it != ZoneOffset.UTC }
+            zoneId = if (isUtcTzId(tzId)) {
+                ZoneOffset.UTC
+            } else {
+                ZoneId.of(tzId)
+            }
             datesStr = dbStr.substring(limiter + 1)
         } else {
             zoneId = null
@@ -170,30 +175,7 @@ object AndroidTimeUtils {
         val dates = datesStr
             .splitToSequence(RECURRENCE_LIST_VALUE_SEPARATOR)
             .map { dateString ->
-                if (zoneId == null) {
-                    if (dateString.contains('T')) {
-                        val instant = TemporalAdapter.parse<Instant>(dateString, CalendarDateFormat.UTC_DATE_TIME_FORMAT).temporal
-                        if (allDay) {
-                            instant.toLocalDate()
-                        } else {
-                            instant
-                        }
-                    } else {
-                        val localDate = TemporalAdapter.parse<LocalDate>(dateString, CalendarDateFormat.DATE_FORMAT).temporal
-                        if (allDay) {
-                            localDate
-                        } else {
-                            localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
-                        }
-                    }
-                } else {
-                    val localDateTime = TemporalAdapter.parse<LocalDateTime>(dateString, CalendarDateFormat.FLOATING_DATE_TIME_FORMAT).temporal
-                    if (allDay) {
-                        localDateTime.toLocalDate()
-                    } else {
-                        localDateTime.atZone(zoneId)
-                    }
-                }
+                parseDateString(dateString, zoneId, allDay)
             }
             .filterNot { date ->
                 // filter excluded date
@@ -221,6 +203,62 @@ object AndroidTimeUtils {
         }
 
         return dateListProperty
+    }
+
+    private fun parseDateString(dateString: String, zoneId: ZoneId?, allDay: Boolean): Temporal {
+        val isUtcFormat = dateString.endsWith('Z')
+        val isDateTimeFormat = dateString.contains('T')
+
+        return when {
+            isUtcFormat -> {
+                val instant = parseUtcDateTime(dateString)
+                if (allDay) {
+                    instant.toLocalDate()
+                } else {
+                    instant
+                }
+            }
+            isDateTimeFormat -> {
+                val localDateTime = parseDateTime(dateString)
+                val isUtc = zoneId == ZoneOffset.UTC
+
+                when {
+                    allDay -> localDateTime.toLocalDate()
+                    isUtc -> localDateTime.toInstant(ZoneOffset.UTC)
+                    zoneId != null -> localDateTime.atZone(zoneId)
+                    else -> error("Floating DATE-TIME is not supported: $dateString")
+                }
+            }
+            else -> {
+                val localDate = parseDate(dateString)
+                if (allDay) {
+                    localDate
+                } else {
+                    localDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+                }
+            }
+        }
+    }
+
+    private fun parseUtcDateTime(dateString: String): Instant {
+        return TemporalAdapter.parse<Instant>(
+            dateString,
+            CalendarDateFormat.UTC_DATE_TIME_FORMAT
+        ).temporal
+    }
+
+    private fun parseDate(dateString: String): LocalDate {
+        return TemporalAdapter.parse<LocalDate>(
+            dateString,
+            CalendarDateFormat.DATE_FORMAT
+        ).temporal
+    }
+
+    private fun parseDateTime(dateString: String): LocalDateTime {
+        return TemporalAdapter.parse<LocalDateTime>(
+            dateString,
+            CalendarDateFormat.FLOATING_DATE_TIME_FORMAT
+        ).temporal
     }
 
     /**
@@ -332,4 +370,7 @@ object AndroidTimeUtils {
         return TemporalAmountAdapter.parse(durationStr).duration
     }
 
+    fun isUtcTzId(tzId: String?): Boolean {
+        return tzId == TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID
+    }
 }

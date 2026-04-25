@@ -10,6 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
+import at.bitfire.dateTimeValue
 import at.bitfire.synctools.exception.InvalidLocalResourceException
 import at.bitfire.synctools.icalendar.dtStart
 import at.bitfire.synctools.util.AndroidTimeUtils
@@ -19,6 +20,7 @@ import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -52,7 +54,20 @@ class StartTimeHandlerTest {
         ))
         handler.process(entity, entity, result)
         val viennaDateTime = ZonedDateTime.of(2020, 6, 21, 12, 0, 0, 0, tzVienna)
-        assertEquals(DtStart(viennaDateTime), result.dtStart<LocalDate>())
+        assertEquals(DtStart(viennaDateTime), result.dtStart<ZonedDateTime>())
+    }
+
+    @Test
+    fun `Non-all-day event with UTC timezone`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1592733600000L,   // 21/06/2020 10:00 +0000
+            Events.EVENT_TIMEZONE to "UTC"
+        ))
+
+        handler.process(entity, entity, result)
+
+        assertEquals(DtStart(dateTimeValue("20200621T100000Z")), result.dtStart<Instant>())
     }
 
     @Test(expected = InvalidLocalResourceException::class)

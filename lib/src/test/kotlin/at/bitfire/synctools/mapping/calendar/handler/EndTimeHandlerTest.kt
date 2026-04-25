@@ -22,6 +22,7 @@ import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -79,6 +80,22 @@ class EndTimeHandlerTest {
         handler.process(entity, entity, result)
         val viennaDateTime = ZonedDateTime.of(2020, 6, 21, 12, 0, 0, 0, tzVienna)
         assertEquals(DtEnd(viennaDateTime), result.dtEnd<ZonedDateTime>())
+    }
+
+    @Test
+    fun `Non-all-day event with UTC end timezone`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 0,
+            Events.DTSTART to 1592733500000L,   // DTSTART is required for DTEND to be processed
+            Events.EVENT_TIMEZONE to "UTC",
+            Events.DTEND to 1592733600000L,     // 21/06/2020 10:00 +0000
+            Events.EVENT_END_TIMEZONE to "UTC"
+        ))
+
+        handler.process(entity, entity, result)
+
+        assertEquals(DtEnd(dateTimeValue("20200621T100000Z")), result.dtEnd<Instant>())
     }
 
     @Test

@@ -164,6 +164,23 @@ class RecurrenceFieldHandlerTest {
         assertNull(result.getProperty<ExRule<*>>(Property.EXRULE).getOrNull())
     }
 
+    @Test
+    fun `EXDATE with explicit UTC timezone`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.DTSTART to 1759403653000,    // Thu Oct 02 2025 11:14:13 GMT+0000,
+            Events.RRULE to "FREQ=DAILY;COUNT=10",
+            Events.EXDATE to "UTC;20251003T111413"
+        ))
+
+        handler.process(entity, entity, result)
+
+        assertEquals(
+            ExDate<Temporal>("20251003T111413Z"),
+            result.getRequiredProperty<ExDate<*>>(Property.EXDATE)
+        )
+    }
+
 
     @Test
     fun `alignUntil(recurUntil=null)`() {
