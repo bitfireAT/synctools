@@ -873,6 +873,12 @@ class JtxICalObjectTest {
                 if(inProp.name == "DTSTAMP" || exceptions?.contains(inProp.name) == true)
                     return@forEach
                 val outProp = iCalOut.componentList.all[i].propertyList.getFirst<Property>(inProp.name)?.getOrNull()
+
+                if(inProp.name == "PRIORITY" && inProp.value == "0") {
+                    assertNull(outProp)
+                    return@forEach
+                }
+
                 assertEquals(inProp, outProp)
             }
         }

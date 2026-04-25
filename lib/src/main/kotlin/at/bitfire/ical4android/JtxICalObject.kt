@@ -1064,9 +1064,6 @@ duration?.let(props::add)
                 priority?.let {
                     props += Priority(it)
                 }
-            else {
-                props += Priority(ImmutablePriority.UNDEFINED.level)
-            }
 
             due?.let {
                 val instant = Instant.ofEpochMilli(it)
