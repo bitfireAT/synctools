@@ -34,12 +34,9 @@ android {
 
     buildFeatures.buildConfig = true
 
-    sourceSets["main"].apply {
-        kotlin {
-            directories += "${projectDir}/src/main/kotlin"
-        }
-        java {
-            directories += "${rootDir}/opentasks-contract/src/main/java"
+    sourceSets {
+        getByName("main") {
+            java.directories += "${rootDir}/opentasks-contract/src/main/java"
         }
     }
 
