@@ -6,8 +6,10 @@
 
 package at.bitfire.ical4android.util
 
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
+import at.bitfire.ical4android.util.DateUtils.isDate
+import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtEnd
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Assert.assertEquals
@@ -15,60 +17,36 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.ZoneId
-import java.util.TimeZone
+import java.time.temporal.Temporal
 
 class DateUtilsTest {
 
     @Test
-    fun testFindAndroidTimezoneID() {
-        assertEquals("Europe/Vienna", DateUtils.findAndroidTimezoneID("Europe/Vienna"))
-        assertEquals("Europe/Vienna", DateUtils.findAndroidTimezoneID("Vienna"))
-        assertEquals("Europe/Vienna", DateUtils.findAndroidTimezoneID("Something with Europe/Vienna in between"))
-        assertEquals(TimeZone.getDefault().id, DateUtils.findAndroidTimezoneID(null))
-        assertEquals(TimeZone.getDefault().id, DateUtils.findAndroidTimezoneID("nothing-to-be-found"))
-    }
-
-
-    @Test
-    fun testGetZoneId() {
-        assertNull(DateUtils.getZoneId(null))
-        assertNull(DateUtils.getZoneId("not/available"))
-        assertEquals(ZoneId.of("Europe/Vienna"), DateUtils.getZoneId("Europe/Vienna"))
-    }
-
-
-    @Test
-    fun testIsDate() {
-        assertTrue(DateUtils.isDate(DtStart(Date("20200101"))))
-        assertFalse(DateUtils.isDate(DtStart(DateTime("20200101T010203Z"))))
-        assertFalse(DateUtils.isDate(null))
+    fun isDate_DateProperty() {
+        assertTrue(isDate(DtStart(dateValue("20200101"))))
+        assertFalse(isDate(DtStart(dateTimeValue("20200101T010203Z"))))
+        assertFalse(isDate(null as DateProperty<*>?))
     }
 
     @Test
-    fun testIsDateTime() {
-        assertFalse(DateUtils.isDateTime(DtEnd(Date("20200101"))))
-        assertTrue(DateUtils.isDateTime(DtEnd(DateTime("20200101T010203Z"))))
-        assertFalse(DateUtils.isDateTime(null))
-    }
-
-
-    @Test
-    fun testParseVTimeZone() {
-        val vtz = """
-            BEGIN:VCALENDAR
-            VERSION:2.0
-            PRODID:DAVx5
-            BEGIN:VTIMEZONE
-            TZID:Asia/Shanghai
-            END:VTIMEZONE
-            END:VCALENDAR""".trimIndent()
-        assertEquals("Asia/Shanghai", DateUtils.parseVTimeZone(vtz)?.timeZoneId?.value)
+    fun isDateTime_DateProperty() {
+        assertFalse(DateUtils.isDateTime(DtEnd(dateValue("20200101"))))
+        assertTrue(DateUtils.isDateTime(DtEnd(dateTimeValue("20200101T010203Z"))))
+        assertFalse(DateUtils.isDateTime(null as DateProperty<*>?))
     }
 
     @Test
-    fun testParseVTimeZone_Invalid() {
-        assertNull(DateUtils.parseVTimeZone("Invalid"))
+    fun isDate_Temporal() {
+        assertTrue(isDate(dateValue("20200101")))
+        assertFalse(isDate(dateTimeValue("20200101T010203Z")))
+        assertFalse(isDate(null as Temporal?))
+    }
+
+    @Test
+    fun isDateTime_Temporal() {
+        assertFalse(DateUtils.isDateTime(dateValue("20200101")))
+        assertTrue(DateUtils.isDateTime(dateTimeValue("20200101T010203Z")))
+        assertFalse(DateUtils.isDateTime(null as Temporal?))
     }
 
 }

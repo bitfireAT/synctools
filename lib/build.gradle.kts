@@ -34,12 +34,9 @@ android {
 
     buildFeatures.buildConfig = true
 
-    sourceSets["main"].apply {
-        kotlin {
-            directories += "${projectDir}/src/main/kotlin"
-        }
-        java {
-            directories += "${rootDir}/opentasks-contract/src/main/java"
+    sourceSets {
+        getByName("main") {
+            java.directories += "${rootDir}/opentasks-contract/src/main/java"
         }
     }
 
@@ -150,4 +147,12 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.roboelectric)
+}
+
+tasks.withType<Test>().configureEach {
+    options {
+        // Prevent Robolectric from instrumenting ical4j classes to avoid problems with registering
+        // ical4j's ZoneRulesProviderImpl more than once with Java's ZoneRulesProvider.
+        systemProperty("org.robolectric.packagesToNotAcquire", "net.fortuna.ical4j")
+    }
 }

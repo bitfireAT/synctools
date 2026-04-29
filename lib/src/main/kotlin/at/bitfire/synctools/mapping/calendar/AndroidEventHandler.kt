@@ -10,6 +10,9 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.synctools.icalendar.AssociatedEvents
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.icalendar.plusAssign
+import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.mapping.calendar.handler.AccessLevelHandler
 import at.bitfire.synctools.mapping.calendar.handler.AndroidEventFieldHandler
 import at.bitfire.synctools.mapping.calendar.handler.AttendeesHandler
@@ -33,16 +36,18 @@ import at.bitfire.synctools.mapping.calendar.handler.UnknownPropertiesHandler
 import at.bitfire.synctools.mapping.calendar.handler.UrlHandler
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.parameter.Value
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RecurrenceId
+import java.time.LocalDate
 import java.util.LinkedList
 import java.util.UUID
 
@@ -57,18 +62,16 @@ class AndroidEventHandler(
     private val prodIdGenerator: ProdIdGenerator
 ) {
 
-    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
-
     private val fieldHandlers: Array<AndroidEventFieldHandler> = arrayOf(
         // event row fields
         UidHandler(),
-        OriginalInstanceTimeHandler(tzRegistry),
+        OriginalInstanceTimeHandler(),
         TitleHandler(),
         LocationHandler(),
-        StartTimeHandler(tzRegistry),
-        EndTimeHandler(tzRegistry),
-        DurationHandler(tzRegistry),
-        RecurrenceFieldsHandler(tzRegistry),
+        StartTimeHandler(),
+        EndTimeHandler(),
+        DurationHandler(),
+        RecurrenceFieldsHandler(),
         DescriptionHandler(),
         ColorHandler(),
         AccessLevelHandler(),
@@ -121,8 +124,8 @@ class AndroidEventHandler(
         )
 
         // add exceptions of recurring main event
-        val rRules = main.getProperties<RRule>(Property.RRULE)
-        val rDates = main.getProperties<RDate>(Property.RDATE)
+        val rRules = main.getProperties<RRule<*>>(Property.RRULE)
+        val rDates = main.getProperties<RDate<*>>(Property.RDATE)
         val exceptions = LinkedList<VEvent>()
         if (rRules.isNotEmpty() || rDates.isNotEmpty()) {
             for (exception in eventAndExceptions.exceptions) {
@@ -137,7 +140,7 @@ class AndroidEventHandler(
 
                 // generate EXDATE instead of VEVENT with RECURRENCE-ID for cancelled instances
                 if (exception.entityValues.getAsInteger(Events.STATUS) == Events.STATUS_CANCELED)
-                    main.properties += asExDate(exception, recurrenceId)
+                    main += asExDate(exception, recurrenceId)
                 else
                     exceptions += exceptionEvent
             }
@@ -155,21 +158,20 @@ class AndroidEventHandler(
         )
     }
 
-    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId): ExDate {
+    private fun asExDate(entity: Entity, recurrenceId: RecurrenceId<*>): ExDate<*> {
         val originalAllDay = (entity.entityValues.getAsInteger(Events.ORIGINAL_ALL_DAY) ?: 0) != 0
-        val list = DateList(
-            if (originalAllDay) Value.DATE else Value.DATE_TIME,
-            recurrenceId.timeZone
-        )
-        list.add(recurrenceId.date)
-        return ExDate(list).apply {
-            // also set TZ properties of ExDate (not only the list)
-            if (!originalAllDay) {
-                if (recurrenceId.isUtc)
-                    setUtc(true)
-                else
-                    timeZone = recurrenceId.timeZone
-            }
+        val date = recurrenceId.normalizedDate()
+
+        // Return ExDate
+        return if (originalAllDay) {
+            // .. as date, without time
+            ExDate(DateList(LocalDate.from(date)))
+        } else {
+            // .. as ZonedDateTime, with time and TZ param
+            ExDate(
+                ParameterList(listOf(TzId(date.toZonedDateTime().zone.id))),
+                DateList(date.toZonedDateTime())
+            )
         }
     }
 

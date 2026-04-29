@@ -10,6 +10,7 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import androidx.core.content.contentValuesOf
+import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.storage.calendar.EventsContract
 import at.bitfire.synctools.test.assertContentValuesEqual
 import net.fortuna.ical4j.model.TextList
@@ -31,7 +32,7 @@ class CategoriesBuilderTest {
         val result = Entity(ContentValues())
         builder.build(
             from = VEvent().apply {
-                properties += Categories(TextList(arrayOf("Cat 1", "Cat\\2")))
+                this += Categories(TextList("Cat 1", "Cat\\2"))
             },
             main = VEvent(),
             to = result

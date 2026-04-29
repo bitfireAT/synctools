@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.ical4android
+package at.bitfire.synctools.icalendar
 
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
-import org.junit.Assert
 import org.junit.Test
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -20,17 +19,15 @@ class AndroidTimeZonesTest {
         get() = Logger.getLogger(javaClass.name)
 
     @Test
-    fun testLoadSystemTimezones() {
+    fun testAndroidTimeZonesAvailableInIcal4j() {
         val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
         for (id in ZoneId.getAvailableZoneIds()) {
             val name = ZoneId.of(id).getDisplayName(TextStyle.FULL, Locale.US)
-            val info = try {
-                tzRegistry.getTimeZone(id)
-            } catch(_: Exception) {
-                Assert.fail("Invalid system timezone $name ($id)")
-            }
+            val info = tzRegistry.getTimeZone(id)
             if (info == null)
-                logger.warning("ical4j can't load system timezone $name ($id)")
+                logger.warning("Android timezone $id ($name) is not available in the ical4j " +
+                        "timezone database. When a local event is created with $id, it won't have a " +
+                        "VTIMEZONE when uploaded.")
         }
     }
 

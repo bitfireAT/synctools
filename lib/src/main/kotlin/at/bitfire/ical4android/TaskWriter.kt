@@ -6,36 +6,43 @@
 
 package at.bitfire.ical4android
 
-import at.bitfire.ical4android.ICalendar.Companion.minifyVTimeZone
 import at.bitfire.ical4android.ICalendar.Companion.softValidate
 import at.bitfire.ical4android.ICalendar.Companion.withUserAgents
 import at.bitfire.synctools.icalendar.Css3Color
+import at.bitfire.synctools.icalendar.VTimeZoneMinifier
+import at.bitfire.synctools.icalendar.plusAssign
+import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.data.CalendarOutputter
 import net.fortuna.ical4j.model.Calendar
-import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.TextList
-import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VToDo
+import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Categories
 import net.fortuna.ical4j.model.property.Color
 import net.fortuna.ical4j.model.property.Comment
 import net.fortuna.ical4j.model.property.Created
+import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.Description
 import net.fortuna.ical4j.model.property.LastModified
 import net.fortuna.ical4j.model.property.Location
 import net.fortuna.ical4j.model.property.PercentComplete
 import net.fortuna.ical4j.model.property.Priority
 import net.fortuna.ical4j.model.property.ProdId
+import net.fortuna.ical4j.model.property.RelatedTo
 import net.fortuna.ical4j.model.property.Sequence
 import net.fortuna.ical4j.model.property.Summary
 import net.fortuna.ical4j.model.property.Uid
 import net.fortuna.ical4j.model.property.Url
-import net.fortuna.ical4j.model.property.Version
+import net.fortuna.ical4j.model.property.immutable.ImmutableVersion
 import java.io.Writer
 import java.net.URI
 import java.net.URISyntaxException
+import java.time.Instant
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Writes a [Task] data class to a stream that contains an iCalendar
@@ -50,6 +57,7 @@ class TaskWriter(
     private val logger
         get() = Logger.getLogger(TaskWriter::class.java.name)
 
+    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     /**
      * Generates an iCalendar from the provided Task.
@@ -59,83 +67,92 @@ class TaskWriter(
      */
     fun write(task: Task, to: Writer): Unit = with(task) {
         val ical = Calendar()
-        ical.properties += Version.VERSION_2_0
-        ical.properties += prodId.withUserAgents(userAgents)
+        ical += ImmutableVersion.VERSION_2_0
+        ical += prodId.withUserAgents(userAgents)
 
         val vTodo = VToDo(true /* generates DTSTAMP */)
-        ical.components += vTodo
-        val props = vTodo.properties
+        ical += vTodo
 
-        uid?.let { props += Uid(uid) }
+        uid?.let { vTodo += Uid(uid) }
         sequence?.let {
             if (it != 0)
-                props += Sequence(it)
+                vTodo += Sequence(it)
         }
 
-        createdAt?.let { props += Created(DateTime(it)) }
-        lastModified?.let { props += LastModified(DateTime(it)) }
+        createdAt?.let { vTodo += Created(Instant.ofEpochMilli(it)) }
+        lastModified?.let { vTodo += LastModified(Instant.ofEpochMilli(it)) }
 
-        summary?.let { props += Summary(it) }
-        location?.let { props += Location(it) }
-        geoPosition?.let { props += it }
-        description?.let { props += Description(it) }
-        color?.let { props += Color(null, Css3Color.nearestMatch(it).name) }
+        summary?.let { vTodo += Summary(it) }
+        location?.let { vTodo += Location(it) }
+        geoPosition?.let { vTodo += it }
+        description?.let { vTodo += Description(it) }
+        color?.let { vTodo += Color(null, Css3Color.nearestMatch(it).name) }
         url?.let {
             try {
-                props += Url(URI(it))
+                vTodo += Url(URI(it))
             } catch (e: URISyntaxException) {
                 logger.log(Level.WARNING, "Ignoring invalid task URL: $url", e)
             }
         }
-        organizer?.let { props += it }
+        organizer?.let { vTodo += it }
 
-        if (priority != Priority.UNDEFINED.level)
-            props += Priority(priority)
-        classification?.let { props += it }
-        status?.let { props += it }
+        if (priority != Priority.VALUE_UNDEFINED)
+            vTodo += Priority(priority)
+        classification?.let { vTodo += it }
+        status?.let { vTodo += it }
 
-        rRule?.let { props += it }
-        rDates.forEach { props += it }
-        exDates.forEach { props += it }
+        rRule?.let { vTodo += it }
+        rDates.forEach { vTodo += it }
+        exDates.forEach { vTodo += it }
 
         if (categories.isNotEmpty())
-            props += Categories(TextList(categories.toTypedArray()))
-        comment?.let { props += Comment(it) }
-        props.addAll(relatedTo)
-        props.addAll(unknownProperties)
+            vTodo += Categories(TextList(categories))
+        comment?.let { vTodo += Comment(it) }
+        vTodo.addAll<VToDo>(relatedTo as Collection<RelatedTo>)
+        vTodo.addAll<VToDo>(unknownProperties)
 
         // remember used time zones
-        val usedTimeZones = HashSet<TimeZone>()
-        due?.let {
-            props += it
-            it.timeZone?.let(usedTimeZones::add)
+        val usedTimeZones = mutableSetOf<String>()
+        due?.let { due ->
+            vTodo += due
+            due.getTzidOrNull()?.let(usedTimeZones::add)
         }
-        duration?.let(props::add)
-        dtStart?.let {
-            props += it
-            it.timeZone?.let(usedTimeZones::add)
+        duration?.let { vTodo += it }
+        dtStart?.let { dtStart ->
+            vTodo += dtStart
+            dtStart.getTzidOrNull()?.let(usedTimeZones::add)
         }
-        completedAt?.let {
-            props += it
-            it.timeZone?.let(usedTimeZones::add)
+        completedAt?.let { completedAt ->
+            vTodo += completedAt
+            completedAt.getTzidOrNull()?.let(usedTimeZones::add)
         }
-        percentComplete?.let { props += PercentComplete(it) }
+        percentComplete?.let { vTodo += PercentComplete(it) }
 
-        if (alarms.isNotEmpty())
-            vTodo.components.addAll(alarms)
+        for (alarm in alarms) {
+            vTodo.add<VToDo>(alarm)
+        }
 
         // determine earliest referenced date
         val earliest = arrayOf(
             dtStart?.date,
             due?.date,
             completedAt?.date
-        ).filterNotNull().minOrNull()
+        ).filterNotNull().minByOrNull { it.toTimestamp() }
+
+
+        val timeZoneMinifier = VTimeZoneMinifier()
         // add VTIMEZONE components
-        for (tz in usedTimeZones)
-            ical.components += minifyVTimeZone(tz.vTimeZone, earliest)
+        for (tz in usedTimeZones) {
+            val vTimeZone = tzRegistry.getTimeZone(tz).vTimeZone
+            val minifiedVTimeZone = timeZoneMinifier.minify(vTimeZone, earliest)
+            ical += minifiedVTimeZone
+        }
 
         softValidate(ical)
         CalendarOutputter(false).output(ical, to)
     }
 
+    private fun DateProperty<*>.getTzidOrNull(): String? {
+        return getParameter<TzId>(Parameter.TZID).getOrNull()?.value
+    }
 }

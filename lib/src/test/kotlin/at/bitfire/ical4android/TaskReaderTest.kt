@@ -6,22 +6,23 @@
 
 package at.bitfire.ical4android
 
-import net.fortuna.ical4j.model.Date
+import at.bitfire.dateTimeValue
+import at.bitfire.dateValue
 import net.fortuna.ical4j.model.DateList
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.Parameter
+import net.fortuna.ical4j.model.ParameterList
 import net.fortuna.ical4j.model.TimeZone
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Value
-import net.fortuna.ical4j.model.property.Clazz
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.ProdId
 import net.fortuna.ical4j.model.property.RDate
 import net.fortuna.ical4j.model.property.RRule
-import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
+import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,6 +34,9 @@ import java.io.StringReader
 import java.io.StringWriter
 import java.nio.charset.Charset
 import java.time.Duration
+import java.time.temporal.Temporal
+
+import net.fortuna.ical4j.model.property.Duration as ICalDuration
 
 class TaskReaderTest {
 
@@ -62,8 +66,8 @@ class TaskReaderTest {
                 "END:VCALENDAR\r\n")
         assertEquals("DTSTART is DATE, but DUE is DATE-TIME", t.summary)
         // rewrite DTSTART to DATE-TIME, too
-        assertEquals(DtStart(DateTime("20200731T000000", tzVienna)), t.dtStart)
-        assertEquals(Due(DateTime("20200731T234600", tzVienna)), t.due)
+        assertEquals(DtStart(dateTimeValue("20200731T000000", tzVienna)), t.dtStart)
+        assertEquals(Due(dateTimeValue("20200731T234600", tzVienna)), t.due)
     }
 
     @Test
@@ -78,8 +82,8 @@ class TaskReaderTest {
                 "END:VCALENDAR\r\n")
         assertEquals("DTSTART is DATE-TIME, but DUE is DATE", t.summary)
         // rewrite DTSTART to DATE-TIME, too
-        assertEquals(DtStart(DateTime("20200731T235510", tzVienna)), t.dtStart)
-        assertEquals(Due(DateTime("20200801T000000", tzVienna)), t.due)
+        assertEquals(DtStart(dateTimeValue("20200731T235510", tzVienna)), t.dtStart)
+        assertEquals(Due(dateTimeValue("20200801T000000", tzVienna)), t.due)
     }
 
     @Test
@@ -95,7 +99,7 @@ class TaskReaderTest {
         assertEquals("DUE before DTSTART", t.summary)
         // invalid tasks with DUE before DTSTART: DTSTART should be set to null
         assertNull(t.dtStart)
-        assertEquals(Due(DateTime("20200731T123000", tzVienna)), t.due)
+        assertEquals(Due(dateTimeValue("20200731T123000", tzVienna)), t.due)
     }
 
     @Test
@@ -132,9 +136,9 @@ class TaskReaderTest {
         assertEquals(2, t.sequence)
         assertEquals("uid4@example.com", t.uid)
         assertEquals("mailto:unclesam@example.com", t.organizer!!.value)
-        assertEquals(Due("19980415T000000"), t.due)
+        assertEquals(Due(dateTimeValue("19980415T000000")), t.due)
         assertFalse(t.isAllDay())
-        assertEquals(Status.VTODO_NEEDS_ACTION, t.status)
+        assertEquals(ImmutableStatus.VTODO_NEEDS_ACTION, t.status)
         assertEquals("Submit Income Taxes", t.summary)
     }
 
@@ -156,20 +160,20 @@ class TaskReaderTest {
         assertEquals("http://example.com/principals/jsmith", t.organizer!!.value)
         assertEquals("http://example.com/pub/calendars/jsmith/mytime.ics", t.url)
         assertEquals(1, t.priority)
-        assertEquals(Clazz.CONFIDENTIAL, t.classification)
-        assertEquals(Status.VTODO_IN_PROCESS, t.status)
+        assertEquals(ImmutableClazz.CONFIDENTIAL, t.classification)
+        assertEquals(ImmutableStatus.VTODO_IN_PROCESS, t.status)
         assertEquals(25, t.percentComplete)
-        assertEquals(DtStart(Date("20100101")), t.dtStart)
-        assertEquals(Due(Date("20101001")), t.due)
+        assertEquals(DtStart(dateValue("20100101")), t.dtStart)
+        assertEquals(Due(dateValue("20101001")), t.due)
         assertTrue(t.isAllDay())
 
-        assertEquals(RRule("FREQ=YEARLY;INTERVAL=2"), t.rRule)
+        assertEquals(RRule<Temporal>("FREQ=YEARLY;INTERVAL=2"), t.rRule)
         assertEquals(2, t.exDates.size)
-        assertTrue(t.exDates.contains(ExDate(DateList("20120101", Value.DATE))))
-        assertTrue(t.exDates.contains(ExDate(DateList("20140101,20180101", Value.DATE))))
+        assertTrue(t.exDates.contains(ExDate(ParameterList(listOf(Value.DATE)), DateList(dateValue("20120101")))))
+        assertTrue(t.exDates.contains(ExDate(ParameterList(listOf(Value.DATE)), DateList(dateValue("20140101"), dateValue("20180101")))))
         assertEquals(2, t.rDates.size)
-        assertTrue(t.rDates.contains(RDate(DateList("20100310,20100315", Value.DATE))))
-        assertTrue(t.rDates.contains(RDate(DateList("20100810", Value.DATE))))
+        assertTrue(t.rDates.contains(RDate(ParameterList(listOf(Value.DATE)), DateList(dateValue("20100310"), dateValue("20100315")))))
+        assertTrue(t.rDates.contains(RDate(ParameterList(listOf(Value.DATE)), DateList(dateValue("20100810")))))
 
         assertEquals(828106200000L, t.createdAt)
         assertEquals(840288600000L, t.lastModified)
@@ -178,19 +182,19 @@ class TaskReaderTest {
 
         val (sibling) = t.relatedTo
         assertEquals("most-fields2@example.com", sibling.value)
-        assertEquals(RelType.SIBLING, (sibling.getParameter(Parameter.RELTYPE) as RelType))
+        assertEquals(RelType.SIBLING, sibling.getRequiredParameter<RelType>(Parameter.RELTYPE))
 
         val (unknown) = t.unknownProperties
         assertEquals("X-UNKNOWN-PROP", unknown.name)
-        assertEquals("xxx", unknown.getParameter<Parameter>("param1").value)
+        assertEquals("xxx", unknown.getRequiredParameter<Parameter>("param1").value)
         assertEquals("Unknown Value", unknown.value)
 
         // other file
         t = regenerate(parseCalendarFile("most-fields2.ics"))
         assertEquals("most-fields2@example.com", t.uid)
-        assertEquals(DtStart(DateTime("20100101T101010Z")), t.dtStart)
+        assertEquals(DtStart(dateTimeValue("20100101T101010Z")), t.dtStart)
         assertEquals(
-            net.fortuna.ical4j.model.property.Duration(Duration.ofSeconds(4 * 86400 + 3 * 3600 + 2 * 60 + 1) /*Dur(4, 3, 2, 1)*/),
+            ICalDuration(Duration.ofSeconds(4 * 86400 + 3 * 3600 + 2 * 60 + 1)),
             t.duration
         )
         assertTrue(t.unknownProperties.isEmpty())

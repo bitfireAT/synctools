@@ -10,8 +10,12 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
+import net.fortuna.ical4j.model.Property
+import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
+import net.fortuna.ical4j.model.property.Trigger
+import net.fortuna.ical4j.model.property.immutable.ImmutableAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assume.assumeTrue
@@ -19,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Duration
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class RemindersHandlerTest {
@@ -39,7 +44,7 @@ class RemindersHandlerTest {
         val result = VEvent()
         handler.process(entity, entity, result)
         val alarm = result.alarms.first()
-        assertEquals(Action.EMAIL, alarm.action)
+        assertEquals(ImmutableAction.EMAIL, alarm.actionProperty)
         assertNotNull(alarm.summary)
         assertNotNull(alarm.description)
     }
@@ -58,7 +63,7 @@ class RemindersHandlerTest {
         val result = VEvent()
         handler2.process(entity, entity, result)
         val alarm = result.alarms.first()
-        assertEquals(Action.DISPLAY, alarm.action)
+        assertEquals(ImmutableAction.DISPLAY, alarm.actionProperty)
         assertNotNull(alarm.description)
     }
 
@@ -73,7 +78,7 @@ class RemindersHandlerTest {
             val result = VEvent()
             handler.process(entity, entity, result)
             val alarm = result.alarms.first()
-            assertEquals(Action.DISPLAY, alarm.action)
+            assertEquals(ImmutableAction.DISPLAY, alarm.actionProperty)
             assertNotNull(alarm.description)
         }
     }
@@ -89,7 +94,7 @@ class RemindersHandlerTest {
         val result = VEvent()
         handler.process(entity, entity, result)
         val alarm = result.alarms.first()
-        assertEquals(Duration.ofMinutes(-10), alarm.trigger.duration)
+        assertEquals(Duration.ofMinutes(-10), alarm.triggerProperty.duration)
     }
 
     @Test
@@ -102,7 +107,13 @@ class RemindersHandlerTest {
         val result = VEvent()
         handler.process(entity, entity, result)
         val alarm = result.alarms.first()
-        assertEquals(Duration.ofMinutes(10), alarm.trigger.duration)
+        assertEquals(Duration.ofMinutes(10), alarm.triggerProperty.duration)
     }
 
 }
+
+private val VAlarm.actionProperty: Action?
+    get() = getProperty<Action>(Property.ACTION).getOrNull()
+
+private val VAlarm.triggerProperty: Trigger
+    get() = getProperty<Trigger>(Property.TRIGGER).get()

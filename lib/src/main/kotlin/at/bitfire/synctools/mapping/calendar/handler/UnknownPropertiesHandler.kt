@@ -9,6 +9,7 @@ package at.bitfire.synctools.mapping.calendar.handler
 import android.content.Entity
 import android.provider.CalendarContract.ExtendedProperties
 import at.bitfire.ical4android.UnknownProperty
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import org.json.JSONException
@@ -28,7 +29,7 @@ class UnknownPropertiesHandler: AndroidEventFieldHandler {
             try {
                 val prop = UnknownProperty.fromJsonString(json)
                 if (!EXCLUDED.contains(prop.name))
-                    to.properties += prop
+                    to += prop
             } catch (e: JSONException) {
                 logger.log(Level.WARNING, "Couldn't parse unknown properties", e)
             }

@@ -7,8 +7,9 @@
 package at.bitfire.synctools.mapping.calendar.handler
 
 import android.content.Entity
-import android.provider.CalendarContract.Attendees
+import android.provider.CalendarContract
 import android.provider.CalendarContract.Events
+import at.bitfire.synctools.icalendar.plusAssign
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Organizer
 import java.net.URI
@@ -27,13 +28,15 @@ class OrganizerHandler: AndroidEventFieldHandler {
         val mainValues = main.entityValues
 
         // ORGANIZER must only be set for group-scheduled events (= events with attendees)
-        val hasAttendees = from.subValues.any { it.uri == Attendees.CONTENT_URI }
+        val hasAttendees = hasAttendees(from) || hasAttendees(main)
         if (hasAttendees && mainValues.containsKey(Events.ORGANIZER))
             try {
-                to.properties += Organizer(URI("mailto", mainValues.getAsString(Events.ORGANIZER), null))
+                to += Organizer(URI("mailto", mainValues.getAsString(Events.ORGANIZER), null))
             } catch (e: URISyntaxException) {
                 logger.log(Level.WARNING, "Error when creating ORGANIZER mailto URI, ignoring", e)
             }
     }
+
+    private fun hasAttendees(event: Entity) = event.subValues.any { it.uri == CalendarContract.Attendees.CONTENT_URI }
 
 }

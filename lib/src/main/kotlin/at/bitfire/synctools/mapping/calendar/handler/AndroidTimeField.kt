@@ -7,11 +7,15 @@
 package at.bitfire.synctools.mapping.calendar.handler
 
 import at.bitfire.synctools.util.AndroidTimeUtils
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
-import net.fortuna.ical4j.model.TimeZoneRegistry
 import net.fortuna.ical4j.util.TimeZones
+import java.time.DateTimeException
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.temporal.Temporal
+import java.time.zone.ZoneRulesException
 
 /**
  * Converts timestamps from the [android.provider.CalendarContract.Events.DTSTART] or [android.provider.CalendarContract.Events.DTEND]
@@ -25,43 +29,39 @@ class AndroidTimeField(
     private val timestamp: Long,
     private val timeZone: String?,
     private val allDay: Boolean,
-    private val tzRegistry: TimeZoneRegistry
 ) {
 
     /** ID of system default timezone */
     private val defaultTzId by lazy { ZoneId.systemDefault().id }
 
     /**
-     * Converts the given Android date/time into an ical4j date property.
+     * Converts the given Android date/time into java time temporal object.
      *
-     * @return `Date` in case of an all-day event, `DateTime` in case of a non-all-day event
+     * @return `LocalDate` in case of an all-day event, `ZonedDateTime` in case of a non-all-day event
      */
-    fun asIcal4jDate(): Date {
+    fun toTemporal(): Temporal {
+        val instant = Instant.ofEpochMilli(timestamp)
+
         if (allDay)
-            return Date(timestamp)
+            return LocalDate.ofInstant(instant, ZoneId.of(timeZone ?: defaultTzId))
 
         // non-all-day
         val tzId = timeZone
-            ?: defaultTzId    // safe fallback (should never be used because the calendar provider requires EVENT_TIMEZONE)
+            ?: ZoneId.systemDefault().id    // safe fallback (should never be used/needed because the calendar provider requires EVENT_TIMEZONE)
 
-        /* The resolved timezone may be null if there is no ical4j timezone for tzId, which can happen in rare cases
-        (for instance if Android already knows about a new timezone ID or alias that doesn't exist in our
-        ical4j version yet).
-
-        In this case, we use the system default timezone ID as fallback and hope that we have a VTIMEZONE for it.
-        If we also don't have a VTIMEZONE for the default timezone, we fall back to a UTC DATE-TIME without timezone. */
-
-        val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID)
-            null    // indicates UTC
-        else
-            (tzRegistry.getTimeZone(tzId) ?: tzRegistry.getTimeZone(defaultTzId))
-
-        return DateTime(timestamp).also { dateTime ->
-            if (timezone == null)
-                dateTime.isUtc = true
-            else
-                dateTime.timeZone = timezone
+        val timezone = if (tzId == AndroidTimeUtils.TZID_UTC || tzId == TimeZones.UTC_ID || tzId == TimeZones.IBM_UTC_ID) {
+            ZoneOffset.UTC
+        } else {
+            try {
+                ZoneId.of(tzId)
+            } catch (_: DateTimeException) {
+                ZoneId.of(defaultTzId)
+            } catch (_: ZoneRulesException) {
+                ZoneId.of(defaultTzId)
+            }
         }
+
+        return ZonedDateTime.ofInstant(instant, timezone)
     }
 
 }

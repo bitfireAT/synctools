@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.0"
+agp = "9.2.0"
 android-desugar = "2.1.5"
 androidx-annotation = "1.10.0"
 androidx-core = "1.18.0"
@@ -7,11 +7,10 @@ androidx-test-rules = "1.7.0"
 androidx-test-runner = "1.7.0"
 dokka = "2.2.0"
 ezvcard = "0.12.2"
-guava = "33.5.0-android"
-# noinspection NewerVersionAvailable
-ical4j = "3.2.19"   # final version; update to 4.x will require much work
+guava = "33.6.0-android"
+ical4j = "4.2.5"
 junit = "4.13.2"
-kotlin = "2.3.20"
+kotlin = "2.3.21"
 kotlinx-coroutines-test = "1.10.2"
 mockk = "1.14.9"
 roboelectric = "4.16.1"

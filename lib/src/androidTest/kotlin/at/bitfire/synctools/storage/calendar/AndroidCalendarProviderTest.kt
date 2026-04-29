@@ -11,41 +11,56 @@ import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.Entity
 import android.provider.CalendarContract
-import android.provider.CalendarContract.ACCOUNT_TYPE_LOCAL
 import android.provider.CalendarContract.Calendars
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import at.bitfire.ical4android.impl.TestCalendar
-
 import at.bitfire.synctools.icalendar.Css3Color
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Rule
+import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Test
 
 class AndroidCalendarProviderTest {
 
-    @get:Rule
-    val permissonRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+    companion object {
 
-    private val testAccount = Account(javaClass.name, ACCOUNT_TYPE_LOCAL)
+        @JvmField
+        @ClassRule
+        val permissionRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
 
-    lateinit var client: ContentProviderClient
-    lateinit var provider: AndroidCalendarProvider
+        private val testAccount = Account(AndroidCalendarProviderTest::class.java.name, CalendarContract.ACCOUNT_TYPE_LOCAL)
 
-    @Before
-    fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
-        provider = AndroidCalendarProvider(testAccount, client)
+        private lateinit var client: ContentProviderClient
+        private lateinit var provider: AndroidCalendarProvider
+        private lateinit var calendar: AndroidCalendar
+
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            client = context.contentResolver.acquireContentProviderClient(CalendarContract.AUTHORITY)!!
+            provider = AndroidCalendarProvider(testAccount, client)
+
+            calendar = TestCalendar.create(testAccount, client)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            calendar.delete()
+            client.close()
+        }
+
     }
 
     @After
-    fun tearDown() {
-        client.close()
+    fun cleanUp() {
+        // Clean up events after every test
+        calendar.deleteAllEvents()
     }
 
 
@@ -84,7 +99,7 @@ class AndroidCalendarProviderTest {
         provider.provideCss3ColorIndices()
 
         // insert an event with that color
-        val cal = TestCalendar.findOrCreate(testAccount, client, withColors = true)
+        val cal = TestCalendar.create(testAccount, client, withColors = true)
         try {
             // add event with color
             cal.addEvent(Entity(contentValuesOf(

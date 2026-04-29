@@ -11,7 +11,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.propertyListOf
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -40,7 +40,7 @@ class StatusBuilderTest {
     fun `STATUS is CONFIRMED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Status.VEVENT_CONFIRMED)),
+            from = VEvent(propertyListOf(ImmutableStatus.VEVENT_CONFIRMED)),
             main = VEvent(),
             to = result
         )
@@ -51,7 +51,7 @@ class StatusBuilderTest {
     fun `STATUS is CANCELLED`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Status.VEVENT_CANCELLED)),
+            from = VEvent(propertyListOf(ImmutableStatus.VEVENT_CANCELLED)),
             main = VEvent(),
             to = result
         )
@@ -62,7 +62,7 @@ class StatusBuilderTest {
     fun `STATUS is TENTATIVE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Status.VEVENT_TENTATIVE)),
+            from = VEvent(propertyListOf(ImmutableStatus.VEVENT_TENTATIVE)),
             main = VEvent(),
             to = result
         )
@@ -73,7 +73,7 @@ class StatusBuilderTest {
     fun `STATUS is invalid (for VEVENT)`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(Status.VTODO_IN_PROCESS)),
+            from = VEvent(propertyListOf(ImmutableStatus.VTODO_IN_PROCESS)),
             main = VEvent(),
             to = result
         )

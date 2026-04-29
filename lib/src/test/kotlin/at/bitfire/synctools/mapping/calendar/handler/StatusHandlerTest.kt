@@ -11,7 +11,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import net.fortuna.ical4j.model.component.VEvent
-import net.fortuna.ical4j.model.property.Status
+import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -38,7 +38,7 @@ class StatusHandlerTest {
             Events.STATUS to Events.STATUS_CONFIRMED
         ))
         handler.process(entity, entity, result)
-        assertEquals(Status.VEVENT_CONFIRMED, result.status)
+        assertEquals(ImmutableStatus.VEVENT_CONFIRMED, result.status)
     }
 
     @Test
@@ -48,7 +48,7 @@ class StatusHandlerTest {
             Events.STATUS to Events.STATUS_TENTATIVE
         ))
         handler.process(entity, entity, result)
-        assertEquals(Status.VEVENT_TENTATIVE, result.status)
+        assertEquals(ImmutableStatus.VEVENT_TENTATIVE, result.status)
     }
 
     @Test
@@ -58,7 +58,7 @@ class StatusHandlerTest {
             Events.STATUS to Events.STATUS_CANCELED
         ))
         handler.process(entity, entity, result)
-        assertEquals(Status.VEVENT_CANCELLED, result.status)
+        assertEquals(ImmutableStatus.VEVENT_CANCELLED, result.status)
     }
 
 }

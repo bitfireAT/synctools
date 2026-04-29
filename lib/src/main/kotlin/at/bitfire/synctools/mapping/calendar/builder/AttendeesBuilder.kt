@@ -19,6 +19,7 @@ import net.fortuna.ical4j.model.parameter.Cn
 import net.fortuna.ical4j.model.parameter.Email
 import net.fortuna.ical4j.model.parameter.PartStat
 import net.fortuna.ical4j.model.property.Attendee
+import kotlin.jvm.optionals.getOrNull
 
 class AttendeesBuilder(
     private val calendar: AndroidCalendar
@@ -43,19 +44,19 @@ class AttendeesBuilder(
             values.put(Attendees.ATTENDEE_ID_NAMESPACE, member.scheme)
             values.put(Attendees.ATTENDEE_IDENTITY, member.schemeSpecificPart)
 
-            attendee.getParameter<Email>(Parameter.EMAIL)?.let { email ->
+            attendee.getParameter<Email>(Parameter.EMAIL).ifPresent { email ->
                 values.put(Attendees.ATTENDEE_EMAIL, email.value)
             }
         }
 
-        attendee.getParameter<Cn>(Parameter.CN)?.let { cn ->
+        attendee.getParameter<Cn>(Parameter.CN).ifPresent { cn ->
             values.put(Attendees.ATTENDEE_NAME, cn.value)
         }
 
         // type/relation mapping is complex and thus outsourced to AttendeeMappings
         AttendeeMappings.iCalendarToAndroid(attendee, values, organizer)
 
-        val status = when(attendee.getParameter(Parameter.PARTSTAT) as? PartStat) {
+        val status = when(attendee.getParameter<PartStat>(Parameter.PARTSTAT).getOrNull()) {
             PartStat.ACCEPTED     -> Attendees.ATTENDEE_STATUS_ACCEPTED
             PartStat.DECLINED     -> Attendees.ATTENDEE_STATUS_DECLINED
             PartStat.TENTATIVE    -> Attendees.ATTENDEE_STATUS_TENTATIVE
@@ -74,7 +75,7 @@ class AttendeesBuilder(
             return if (uri.scheme.equals("mailto", true))
                 uri.schemeSpecificPart
             else
-                organizer.getParameter<Email>(Parameter.EMAIL)?.value
+                organizer.getParameter<Email>(Parameter.EMAIL).getOrNull()?.value
         }
         return null
     }

@@ -12,13 +12,13 @@ import android.provider.CalendarContract.Events
 import androidx.core.content.contentValuesOf
 import at.bitfire.synctools.icalendar.propertyListOf
 import at.bitfire.synctools.test.assertContentValuesEqual
-import net.fortuna.ical4j.model.Date
-import net.fortuna.ical4j.model.DateTime
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtStart
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RunWith(RobolectricTestRunner::class)
 class AllDayBuilderTest {
@@ -42,7 +42,7 @@ class AllDayBuilderTest {
     fun `DTSTART is DATE`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(DtStart(Date()))),
+            from = VEvent(propertyListOf(DtStart(LocalDate.now()))),
             main = VEvent(),
             to = result
         )
@@ -55,7 +55,7 @@ class AllDayBuilderTest {
     fun `DTSTART is DATE-TIME`() {
         val result = Entity(ContentValues())
         builder.build(
-            from = VEvent(propertyListOf(DtStart(DateTime()))),
+            from = VEvent(propertyListOf(DtStart(LocalDateTime.now()))),
             main = VEvent(),
             to = result
         )

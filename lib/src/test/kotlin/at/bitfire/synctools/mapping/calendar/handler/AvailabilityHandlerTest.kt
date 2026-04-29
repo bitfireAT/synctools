@@ -13,11 +13,13 @@ import androidx.core.content.contentValuesOf
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Transp
+import net.fortuna.ical4j.model.property.immutable.ImmutableTransp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.jvm.optionals.getOrNull
 
 @RunWith(RobolectricTestRunner::class)
 class AvailabilityHandlerTest {
@@ -30,7 +32,7 @@ class AvailabilityHandlerTest {
         val entity = Entity(ContentValues())
         handler.process(entity, entity, result)
         // OPAQUE is default value
-        assertNull(result.getProperty<Transp>(Property.TRANSP))
+        assertNull(result.transp)
     }
 
     @Test
@@ -41,7 +43,7 @@ class AvailabilityHandlerTest {
         ))
         handler.process(entity, entity, result)
         // OPAQUE is default value
-        assertNull(result.getProperty<Transp>(Property.TRANSP))
+        assertNull(result.transp)
     }
 
     @Test
@@ -51,7 +53,7 @@ class AvailabilityHandlerTest {
             Events.AVAILABILITY to Events.AVAILABILITY_FREE
         ))
         handler.process(entity, entity, result)
-        assertEquals(Transp.TRANSPARENT, result.getProperty<Transp>(Property.TRANSP))
+        assertEquals(ImmutableTransp.TRANSPARENT, result.transp)
     }
 
     @Test
@@ -62,7 +64,10 @@ class AvailabilityHandlerTest {
         ))
         handler.process(entity, entity, result)
         // OPAQUE is default value
-        assertNull(result.getProperty<Transp>(Property.TRANSP))
+        assertNull(result.transp)
     }
 
 }
+
+private val VEvent.transp: Transp?
+    get() = getProperty<Transp>(Property.TRANSP).getOrNull()
