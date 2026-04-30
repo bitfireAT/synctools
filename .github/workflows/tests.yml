@@ -58,11 +58,11 @@ jobs:
     strategy:
       matrix:
         api-level:
-          - 24  # Android 7 (minSdk level; not supported by gradle-managed devices)
-          # - 27  # the lowest supported version by GMD
-          - 30  # Android 11
-          - 32  # Android 12L
-          - 35  # Android 15
+          # - 24  # Android 7 (minSdk level; not supported by gradle-managed devices)
+          # - 27  # the lowest supported version by GMD; doesn't work for some reason
+          - 30  # Android 11   # Android 11 is the latest version where calendar provider doesn't match millisecond occurrences of recurring events
+          - 32  # Android 12L  # Android 12 is the first version where calendar provider matches millisecond occurrences of recurring events
+          - 35  # Android 15   # use latest SDK that has an AOSP image here
     env:
       apk-dir: lib/apk
       fdroid-packages: "at.techbee.jtx org.dmfs.tasks org.tasks"
