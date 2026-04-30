@@ -23,7 +23,7 @@ jobs:
       - name: Build KDoc
         run: ./gradlew --build-cache --configuration-cache dokkaGenerate
 
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: lib/build/dokka/html
 
