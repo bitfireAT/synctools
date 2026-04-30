@@ -53,11 +53,20 @@ jobs:
   test_on_emulator:
     needs: compile
     if: ${{ !cancelled() }}     # even if compile didn't run (because not on main branch)
-    name: Instrumented tests
+    name: Instrumented tests (API ${{ matrix.api-level }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level:
+          # - 24  # Android 7 (minSdk level; not supported by gradle-managed devices)
+          # - 27  # the lowest supported version by GMD; doesn't work for some reason
+          - 30  # Android 11   # Android 11 is the latest version where calendar provider doesn't match millisecond occurrences of recurring events
+          - 32  # Android 12L  # Android 12 is the first version where calendar provider matches millisecond occurrences of recurring events
+          - 35  # Android 15   # use latest SDK that has an AOSP image here
     env:
       apk-dir: lib/apk
       fdroid-packages: "at.techbee.jtx org.dmfs.tasks org.tasks"
+      API_LEVEL: ${{ matrix.api-level }}
     steps:
       - uses: gradle/actions/setup-gradle@v6
         with:
@@ -116,12 +125,6 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-
-      - name: Cache AVD
-        uses: actions/cache@v5
-        with:
-          path: ~/.config/.android/avd
-          key: avd-${{ hashFiles('lib/build.gradle.kts') }}   # gradle-managed devices are defined there
 
       - name: Run device tests
         run: ./gradlew virtualCheck
