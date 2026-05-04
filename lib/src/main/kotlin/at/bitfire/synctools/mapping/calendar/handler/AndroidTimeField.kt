@@ -38,7 +38,8 @@ class AndroidTimeField(
     /**
      * Converts the given Android date/time into java time temporal object.
      *
-     * @return `LocalDate` in case of an all-day event, `ZonedDateTime` in case of a non-all-day event
+     * @return `LocalDate` in case of an all-day event, `Instant` in case of a non-all-day event using UTC as time zone,
+     * `ZonedDateTime` otherwise.
      */
     fun toTemporal(): Temporal {
         val instant = Instant.ofEpochMilli(timestamp)
