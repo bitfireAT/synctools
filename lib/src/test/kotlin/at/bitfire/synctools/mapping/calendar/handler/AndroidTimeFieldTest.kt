@@ -15,6 +15,7 @@ import net.fortuna.ical4j.util.TimeZones
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.time.Instant
 import java.time.ZoneOffset
 
 class AndroidTimeFieldTest {
@@ -54,29 +55,29 @@ class AndroidTimeFieldTest {
     }
 
     @Test
-    fun `toTemporal with Android UTC timezone ID returns UTC ZonedDateTime`() {
+    fun `toTemporal with Android UTC timezone ID returns Instant`() {
         val androidTimeField = AndroidTimeField(
-            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timestamp = 1760521619000,
             timeZone = AndroidTimeUtils.TZID_UTC,
             allDay = false,
         )
 
         val result = androidTimeField.toTemporal()
 
-        assertEquals(dateTimeValue("20251015T094659", ZoneOffset.UTC), result)
+        assertEquals(Instant.ofEpochMilli(1760521619000), result)
     }
 
     @Test
-    fun `toTemporal with JVM UTC timezone ID returns UTC ZonedDateTime`() {
+    fun `toTemporal with JVM UTC timezone ID returns Instant`() {
         val androidTimeField = AndroidTimeField(
-            timestamp = 1760521619000,      // Wed Oct 15 2025 09:46:59 GMT+0000
+            timestamp = 1760521619000,
             timeZone = TimeZones.UTC_ID,
             allDay = false,
         )
 
         val result = androidTimeField.toTemporal()
 
-        assertEquals(dateTimeValue("20251015T094659", ZoneOffset.UTC), result)
+        assertEquals(Instant.ofEpochMilli(1760521619000), result)
     }
 
     @Test

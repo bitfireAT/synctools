@@ -11,11 +11,11 @@ import android.provider.CalendarContract.Events
 import at.bitfire.ical4android.util.TimeApiExtensions.abs
 import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.util.AndroidTimeUtils
-import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.DtEnd
 import java.time.Instant
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 
 /**
  * Maps a potentially present [Events.DURATION] to a VEvent [DtEnd] property.
@@ -62,8 +62,13 @@ class DurationHandler: AndroidEventFieldHandler {
                 allDay = false
             ).toTemporal()
 
-            val start = startDateTime.toZonedDateTime()
-            val end = start + duration
+            val end = when (startDateTime) {
+                is Instant -> startDateTime + duration
+                is ZonedDateTime -> startDateTime + duration
+                else -> {
+                    error("Unsupported Temporal type: ${startDateTime::class.qualifiedName}")
+                }
+            }
 
             to += DtEnd(end)
         }

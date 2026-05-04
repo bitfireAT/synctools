@@ -10,6 +10,7 @@ import android.content.Entity
 import android.provider.CalendarContract.Events
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper
 import at.bitfire.synctools.icalendar.plusAssign
+import at.bitfire.synctools.util.AndroidTimeUtils.isUtcTzId
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.RecurrenceId
 import java.time.Instant
@@ -32,17 +33,21 @@ class OriginalInstanceTimeHandler: AndroidEventFieldHandler {
             to += if (originalAllDay) {
                 RecurrenceId(LocalDate.ofInstant(instant, ZoneOffset.UTC))
             } else {
-                val zoneId = getMainEventZoneId(main)
-                RecurrenceId(ZonedDateTime.ofInstant(instant, zoneId))
+                val mainTzId = main.entityValues.getAsString(Events.EVENT_TIMEZONE)
+                if (isUtcTzId(mainTzId)) {
+                    RecurrenceId(instant)
+                } else {
+                    val zoneId = getZoneId(mainTzId)
+                    RecurrenceId(ZonedDateTime.ofInstant(instant, zoneId))
+                }
             }
         }
     }
 
-    private fun getMainEventZoneId(main: Entity): ZoneId? {
-        val mainTzId = main.entityValues.getAsString(Events.EVENT_TIMEZONE)
-        val mainTimezone = DatePropertyTzMapper.systemTzId(mainTzId)
-        return if (mainTimezone != null) {
-            ZoneId.of(mainTimezone)
+    private fun getZoneId(tzId: String?): ZoneId? {
+        val timezone = DatePropertyTzMapper.systemTzId(tzId)
+        return if (timezone != null) {
+            ZoneId.of(timezone)
         } else {
             ZoneId.systemDefault()
         }

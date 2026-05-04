@@ -17,6 +17,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -144,6 +146,25 @@ class DurationHandlerTest {
         handler.process(entity, entity, result)
         val viennaDateTime = ZonedDateTime.of(2025, 10, 27, 0, 0, 0, 0, tzVienna)
         assertEquals(DtEnd(viennaDateTime), result.dtEnd<ZonedDateTime>())
+        assertNull(result.duration)
+    }
+
+    @Test
+    fun `Non-all-day event with UTC time zone`() {
+        val result = VEvent()
+        val entity = Entity(contentValuesOf(
+            Events.ALL_DAY to 0,
+            Events.DTSTART to 1761433200000L,
+            Events.EVENT_TIMEZONE to "UTC",
+            Events.DURATION to "PT1H"
+        ))
+
+        handler.process(entity, entity, result)
+
+        assertEquals(
+            DtEnd(Instant.ofEpochMilli(1761433200000L) + Duration.ofHours(1)),
+            result.dtEnd<Instant>()
+        )
         assertNull(result.duration)
     }
 

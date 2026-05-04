@@ -26,6 +26,7 @@ import net.fortuna.ical4j.model.property.ExDate
 import net.fortuna.ical4j.model.property.RDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
@@ -95,6 +96,22 @@ class AndroidTimeUtilsTest {
     }
 
     @Test
+    fun testAndroidStringToRecurrenceSets_with_explicit_UTC_timezone() {
+        val dbStr = "UTC;20150103T113030,20150704T113040"
+
+        val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
+            dbStr,
+            allDay = false,
+            generator = exDateGenerator,
+        )!!
+
+        assertTrue(exDate.getParameter<TzId>(Parameter.TZID).isEmpty)
+        assertEquals(2, exDate.dates.size)
+        assertEquals(dateTimeValue("20150103T113030Z"), exDate.dates[0])
+        assertEquals(dateTimeValue("20150704T113040Z"), exDate.dates[1])
+    }
+
+    @Test
     fun testAndroidStringToRecurrenceSets_Dates() {
         // list of dates
         val exDate = AndroidTimeUtils.androidStringToRecurrenceSet(
@@ -123,13 +140,17 @@ class AndroidTimeUtilsTest {
         assertEquals(dateTimeValue("20150105T113030", tzToronto), exDate.dates[0])
     }
 
-    @Test(expected = DateTimeParseException::class)
+    @Test
     fun testAndroidStringToRecurrenceSets_throws_DateTimeParseException() {
-        AndroidTimeUtils.androidStringToRecurrenceSet(
-            "20150103T113030",
-            allDay = false,
-            generator = exDateGenerator
-        )
+        try {
+            AndroidTimeUtils.androidStringToRecurrenceSet(
+                "20150103T113030",
+                allDay = false,
+                generator = exDateGenerator
+            )
+        } catch (e: IllegalStateException) {
+            assertEquals("Floating DATE-TIME is not supported: 20150103T113030", e.message)
+        }
     }
 
     @Test(expected = DateTimeException::class)

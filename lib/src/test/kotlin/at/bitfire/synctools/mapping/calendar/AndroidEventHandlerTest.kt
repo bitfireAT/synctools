@@ -15,6 +15,7 @@ import at.bitfire.synctools.icalendar.dtStart
 import at.bitfire.synctools.icalendar.recurrenceId
 import at.bitfire.synctools.storage.calendar.EventAndExceptions
 import at.bitfire.synctools.storage.calendar.EventsContract
+import at.bitfire.synctools.util.AndroidTimeUtils
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.property.DtStart
@@ -30,6 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
 import kotlin.jvm.optionals.getOrNull
@@ -142,6 +144,40 @@ class AndroidEventHandlerTest {
         assertEquals(
             dateTimeValue("20200707T193000", tzVienna),
             main.getProperty<ExDate<*>>(Property.EXDATE)?.getOrNull()?.dates?.first()
+        )
+        assertTrue(result.exceptions.isEmpty())
+    }
+
+    @Test
+    fun `mapToVEvents rewrites cancelled exception using UTC to EXDATE`() {
+        val result = handler.mapToVEvents(
+            eventAndExceptions = EventAndExceptions(
+                main = Entity(contentValuesOf(
+                    Events.TITLE to "Recurring all-day event with cancelled exception",
+                    Events.DTSTART to 1594056600000L,
+                    Events.EVENT_TIMEZONE to "UTC",
+                    Events.ALL_DAY to 0,
+                    Events.RRULE to "FREQ=DAILY;COUNT=10"
+                )),
+                exceptions = listOf(
+                    Entity(contentValuesOf(
+                        Events.ORIGINAL_INSTANCE_TIME to 1594143000000L,
+                        Events.ORIGINAL_ALL_DAY to 0,
+                        Events.DTSTART to 1594143000000L,
+                        Events.ALL_DAY to 0,
+                        Events.EVENT_TIMEZONE to "UTC",
+                        Events.STATUS to Events.STATUS_CANCELED
+                    ))
+                )
+            )
+        ).associatedEvents
+        val main = result.main!!
+        assertEquals("Recurring all-day event with cancelled exception", main.summary.value)
+        assertEquals(DtStart(dateTimeValue("20200706T173000Z")), main.dtStart<Instant>())
+        assertEquals("FREQ=DAILY;COUNT=10", main.getProperty<RRule<*>>(Property.RRULE).getOrNull()?.value)
+        assertEquals(
+            ExDate<Temporal>("20200707T173000Z"),
+            main.getRequiredProperty<ExDate<*>>(Property.EXDATE)
         )
         assertTrue(result.exceptions.isEmpty())
     }
