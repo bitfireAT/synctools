@@ -10,15 +10,13 @@ import android.content.ContentValues
 import android.content.Entity
 import android.provider.CalendarContract.Reminders
 import androidx.core.content.contentValuesOf
-import at.bitfire.ical4android.ICalendar
 import at.bitfire.synctools.icalendar.dtStart
+import at.bitfire.synctools.util.AlarmTriggerCalculator
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.component.VEvent
 import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.DtEnd
 import java.time.temporal.Temporal
-import java.util.Locale
 import kotlin.jvm.optionals.getOrNull
 
 class RemindersBuilder: AndroidEntityBuilder {
@@ -39,7 +37,7 @@ class RemindersBuilder: AndroidEntityBuilder {
             else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
         }
 
-        val minutes = ICalendar.vAlarmToMin(
+        val minutes = AlarmTriggerCalculator.vAlarmToMin(
             alarm = alarm,
             refStart = event.dtStart<Temporal>(),
             refEnd = event.getEndDate<Temporal>().getOrNull(),
