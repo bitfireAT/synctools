@@ -24,7 +24,11 @@ import java.time.Period
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.Temporal
-import kotlin.jvm.optionals.getOrNull
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import java.time.Duration as JavaDuration
 
 class AlarmTriggerCalculatorTest {
 
@@ -32,189 +36,278 @@ class AlarmTriggerCalculatorTest {
     private val currentTime = ZonedDateTime.now()
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_Negative() {
+    fun `negative trigger duration`() {
         // TRIGGER;REL=START:-P1DT1H1M29S
+        val alarm = VAlarm(JavaDuration.parse("-P1DT1H1M29S"))
+        val refStart = DtStart<Temporal>()
+
         val (ref, min) = alarmTriggerToMinutes(
-            VAlarm(Duration("-P1DT1H1M29S").duration),
-            DtStart<Temporal>(), null, null, false
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = false
         )!!
+
         assertEquals(Related.START, ref)
-        assertEquals(60 * 24 + 60 + 1, min)
+        assertEquals((1.days + 1.hours + 1.minutes).toMinutes(), min)
     }
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_OnlySeconds() {
+    fun `trigger duration in seconds`() {
         // TRIGGER;REL=START:-PT3600S
+        val alarm = VAlarm(JavaDuration.parse("-PT3600S"))
+        val refStart = DtStart<Temporal>()
+
         val (ref, min) = alarmTriggerToMinutes(
-            VAlarm(Duration("-PT3600S").duration),
-            DtStart<Temporal>(), null, null, false
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = false
         )!!
+
         assertEquals(Related.START, ref)
-        assertEquals(60, min)
+        assertEquals(3600.seconds.toMinutes(), min)
     }
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_Positive() {
+    fun `positive trigger duration`() {
         // TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
+        val alarm = VAlarm(JavaDuration.parse("P1DT1H1M30S"))
+        val refStart = DtStart<Temporal>()
+
         val (ref, min) = alarmTriggerToMinutes(
-            VAlarm(Duration("P1DT1H1M30S").duration),
-            DtStart<Temporal>(), null, null, false
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = false
         )!!
+
         assertEquals(Related.START, ref)
-        assertEquals(-(60 * 24 + 60 + 1), min)
+        assertEquals(-(1.days + 1.hours + 1.minutes).toMinutes(), min)
     }
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_RelEndAllowed() {
-        // TRIGGER;REL=END:-P1DT1H1M30S (caller accepts Related.END)
-        val alarm = VAlarm(Duration("-P1DT1H1M30S").duration)
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        val (ref, min) = alarmTriggerToMinutes(alarm, DtStart<Temporal>(), null, null, true)!!
+    fun `trigger relative to end with allowRelEnd=true`() {
+        // TRIGGER;REL=END:-P1DT1H1M30S
+        val alarm = VAlarm(JavaDuration.parse("-P1DT1H1M30S")).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart<Temporal>()
+        val allowRelEnd = true
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
+        )!!
+
         assertEquals(Related.END, ref)
         assertEquals(60 * 24 + 60 + 1, min)
     }
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_RelEndNotAllowed() {
-        // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
-        val alarm = VAlarm(Duration("-PT65S").duration)
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
+    fun `trigger relative to end with allowRelEnd=false`() {
+        // TRIGGER;REL=END:-PT30S
+        val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart(currentTime)
+        val refEnd = DtEnd(currentTime.plusSeconds(180))
+        val allowRelEnd = false
+
         val (ref, min) = alarmTriggerToMinutes(
-            alarm,
-            DtStart(currentTime),
-            DtEnd(currentTime.plusSeconds(180)),    // 180 sec later
-            null,
-            false
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = refEnd,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
         )!!
+
         assertEquals(Related.START, ref)
         // duration of event: 180 s (3 min), 65 s before that -> alarm 1:55 min before start
         assertEquals(-1, min)
     }
 
     @Test
-    fun testVAlarmToMin_TriggerDuration_RelEndNotAllowed_NoDtStart() {
-        // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
-        val alarm = VAlarm(Duration("-PT65S").duration)
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        assertNull(alarmTriggerToMinutes(alarm, DtStart<Temporal>(), DtEnd(currentTime), null, false))
-    }
-
-    @Test
-    fun testVAlarmToMin_TriggerDuration_RelEndNotAllowed_NoDuration() {
-        // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
-        val alarm = VAlarm(Duration("-PT65S").duration)
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        assertNull(alarmTriggerToMinutes(alarm, DtStart(currentTime), null, null, false))
-    }
-
-    @Test
-    fun testVAlarmToMin_TriggerDuration_RelEndNotAllowed_AfterEnd() {
-        // task with TRIGGER;REL=END:-P1DT1H1M30S (caller doesn't accept Related.END; alarm *after* end)
-        val alarm = VAlarm(Duration("P1DT1H1M30S").duration)
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        val (ref, min) = alarmTriggerToMinutes(
-            alarm,
-            DtStart(currentTime),
-            Due(currentTime.plusSeconds(90)),    // 90 sec (should be rounded down to 1 min) later
-            null,
-            false
-        )!!
-        assertEquals(Related.START, ref)
-        assertEquals(-(60 * 24 + 60 + 1 + 1) /* duration of event: */ - 1, min)
-    }
-
-    @Test
-    fun testVAlarm_TriggerPeriod() {
-        val (ref, min) = alarmTriggerToMinutes(
-            VAlarm(Period.parse("-P1W1D")),
-            DtStart(currentTime), null, null,
-            false
-        )!!
-        assertEquals(Related.START, ref)
-        assertEquals(8 * 24 * 60, min)
-    }
-
-    @Test
-    fun testVAlarm_TriggerAbsoluteValue() {
-        // TRIGGER;VALUE=DATE-TIME:<xxxx>
-        val alarm = VAlarm(currentTime.minusSeconds(89).toInstant())    // 89 sec (should be cut off to 1 min) before event
-        alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)	// not useful for DATE-TIME values, should be ignored
-        val (ref, min) = alarmTriggerToMinutes(alarm, DtStart(currentTime), null, null, false)!!
-        assertEquals(Related.START, ref)
-        assertEquals(1, min)
-    }
-
-    @Test
-    fun `vAlarmToMin with trigger duration, DtStart is DATE, Duration is java_time_Duration`() {
-        val alarm = VAlarm(Duration("-PT5M").duration)
-        val dtStart = DtStart(dateValue("20260407"))
-        val duration = Duration("PT1H")
-
-        val (ref, min) = alarmTriggerToMinutes(
-            alarm = alarm,
-            refStart = dtStart,
-            refEnd = null,
-            refDuration = duration,
-            allowRelEnd = true
-        )!!
-
-        assertEquals(Related.START, ref)
-        assertEquals(5, min)
-    }
-
-    @Test
-    fun `vAlarmToMin with trigger duration, DtStart is DATE, Duration is java_time_Period`() {
-        val alarm = VAlarm(Duration("-PT5M").duration)
-        val dtStart = DtStart(dateValue("20260407"))
-        val duration = Duration("P1D")
-
-        val (ref, min) = alarmTriggerToMinutes(
-            alarm = alarm,
-            refStart = dtStart,
-            refEnd = null,
-            refDuration = duration,
-            allowRelEnd = true
-        )!!
-
-        assertEquals(Related.START, ref)
-        assertEquals(5, min)
-    }
-
-    @Test
-    fun `vAlarmToMin with trigger duration and Related=END, DtStart and DtEnd are DATE, allowRelEnd=false`() {
-        val alarm = VAlarm(Duration("-PT5M").duration).apply {
+    fun `trigger relative to end without start time and with allowRelEnd=false`() {
+        // TRIGGER;REL=END:-PT30S
+        val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
-        val dtStart = DtStart(dateValue("20260407"))
-        val dtEnd = DtStart(dateValue("20260408"))
+        val refStart = DtStart<Temporal>()
+        val refEnd = DtEnd(currentTime)
+        val allowRelEnd = false
+
+        val result = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = refEnd,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `trigger relative to end without end time or duration and with allowRelEnd=false`() {
+        // TRIGGER;REL=END:-PT30S
+        val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart(currentTime)
+        val allowRelEnd = false
+
+        val result = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `trigger relative to end and after end date with allowRelEnd=false`() {
+        // TRIGGER;REL=END:-P1DT1H1M30S
+        val alarm = VAlarm(JavaDuration.parse("P1DT1H1M30S")).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart(currentTime)
+        // 90 sec (should be rounded down to 1 min) later
+        val refEnd = Due(currentTime.plusSeconds(90))
+        val allowRelEnd = false
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
-            refStart = dtStart,
-            refEnd = dtEnd,
+            refStart = refStart,
+            refEnd = refEnd,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(-(1.days.toMinutes() + 1.hours.toMinutes() + 1 + 1) /* duration of event: */ - 1, min)
+    }
+
+    @Test
+    fun `trigger with Period instance`() {
+        val alarm = VAlarm(Period.parse("-P1W1D"))
+        //FIXME: Use fixed date, otherwise test might fail close to DST changes
+        val refStart = DtStart(currentTime)
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
             refDuration = null,
             allowRelEnd = false
         )!!
 
         assertEquals(Related.START, ref)
-        assertEquals(-(24 * 60 - 5), min)
+        assertEquals(8.days.toMinutes(), min)
     }
 
     @Test
-    fun `vAlarmToMin with DATE-TIME trigger, DtStart is DATE`() {
-        val alarm = VAlarm(dateTimeValue("20260406T120000", ZoneOffset.UTC).toInstant())
-        val dtStart = DtStart(dateValue("20260407"))
+    fun `trigger with DATE-TIME value`() {
+        // TRIGGER;VALUE=DATE-TIME:<xxxx>
+        // 89 sec (should be cut off to 1 min) before event
+        val alarm = VAlarm(currentTime.minusSeconds(89).toInstant()).apply {
+            // not useful for DATE-TIME values, should be ignored
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
-            refStart = dtStart,
+            refStart = DtStart(currentTime),
             refEnd = null,
             refDuration = null,
             allowRelEnd = true
         )!!
 
         assertEquals(Related.START, ref)
-        assertEquals(12 * 60, min)
+        assertEquals(1, min)
+    }
+
+    @Test
+    fun `refStart has DATE value and refDuration is Duration`() {
+        val alarm = VAlarm(JavaDuration.parse("-PT5M"))
+        val refStart = DtStart(dateValue("20260407"))
+        val refDuration = Duration("PT1H")
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = refDuration,
+            allowRelEnd = true
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(5, min)
+    }
+
+    @Test
+    fun `refStart has DATE value and refDuration is Period`() {
+        val alarm = VAlarm(JavaDuration.parse("-PT5M"))
+        val refStart = DtStart(dateValue("20260407"))
+        val refDuration = Duration("P1D")
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = refDuration,
+            allowRelEnd = true
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(5, min)
+    }
+
+    @Test
+    fun `trigger related to end with refStart and refDate having DATE values and allowRelEnd=false`() {
+        val alarm = VAlarm(Duration("-PT5M").duration).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart(dateValue("20260407"))
+        val refEnd = DtStart(dateValue("20260408"))
+        val allowRelEnd = false
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = refEnd,
+            refDuration = null,
+            allowRelEnd = allowRelEnd
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(-(1.days - 5.minutes).toMinutes(), min)
+    }
+
+    @Test
+    fun `trigger with DATE-TIME vale and refStart with DATE value`() {
+        val alarm = VAlarm(dateTimeValue("20260406T120000", ZoneOffset.UTC).toInstant())
+        val refStart = DtStart(dateValue("20260407"))
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            refDuration = null,
+            allowRelEnd = true
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(12.hours.toMinutes(), min)
     }
 
     // TODO Note: can we use the following now when we have ical4j 4.x?
@@ -238,3 +331,5 @@ class AlarmTriggerCalculatorTest {
     }*/
 
 }
+
+private fun kotlin.time.Duration.toMinutes(): Int = inWholeMinutes.toInt()
