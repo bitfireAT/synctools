@@ -38,19 +38,40 @@ import java.util.logging.Logger
  * for anything else.
  *
  * @param taskList  task list where the task is stored
- * @param values    entity with all columns, as returned by the calendar provider; [org.dmfs.tasks.contract.TaskContract.Tasks._ID] must be set to a non-null value
+ * @param values    entity with all columns, as returned by the task provider; [org.dmfs.tasks.contract.TaskContract.Tasks._ID]
+ *                  must be set to a non-null value for existing tasks, and may be absent for new (unsaved) tasks
  */
 class DmfsTask(
     val taskList: DmfsTaskList,
     val values: Entity
 ) {
 
+    /**
+     * Secondary constructor for creating a new (not yet saved) task.
+     *
+     * @param taskList  task list where the task will be stored
+     * @param task      task data
+     * @param syncId    remote file name (e.g. `mytask.ics`)
+     * @param eTag      remote ETag
+     * @param flags     local flags (e.g. [at.bitfire.davdroid.resource.LocalResource.FLAG_REMOTELY_PRESENT])
+     */
+    constructor(taskList: DmfsTaskList, task: Task, syncId: String?, eTag: String?, flags: Int) : this(
+        taskList = taskList,
+        values = Entity(ContentValues().apply {
+            if (syncId != null) put(TaskContract.Tasks._SYNC_ID, syncId)
+            put(COLUMN_ETAG, eTag)
+            put(COLUMN_FLAGS, flags)
+        })
+    ) {
+        this.task = task
+    }
+
     private val logger = Logger.getLogger(javaClass.name)
 
     private val mainValues
         get() = values.entityValues
 
-    var id: Long = mainValues.getAsLong(TaskContract.Tasks._ID)
+    var id: Long? = mainValues.getAsLong(TaskContract.Tasks._ID)
     var syncId: String? = mainValues.getAsString(TaskContract.Tasks._SYNC_ID)
     var eTag: String? = mainValues.getAsString(COLUMN_ETAG)
     var flags: Int = mainValues.getAsInteger(COLUMN_FLAGS) ?: 0
