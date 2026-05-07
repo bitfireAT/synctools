@@ -31,11 +31,8 @@ import java.util.logging.Logger
  * A task in the context of this class is one row in the [org.dmfs.tasks.contract.TaskContract.Tasks] table,
  * plus associated data rows (like alarms and reminders).
  *
- * Exceptions (of recurring tasks) have their own entries in the [org.dmfs.tasks.contract.TaskContract.Tasks] table and thus
- * are separate.
- *
- * The SEQUENCE field is stored in [org.dmfs.tasks.contract.TaskContract.CommonSyncColumns.SYNC_VERSION], so don't use [org.dmfs.tasks.contract.TaskContract.CommonSyncColumns.SYNC_VERSION]
- * for anything else.
+ * The SEQUENCE field is stored in [org.dmfs.tasks.contract.TaskContract.CommonSyncColumns.SYNC_VERSION], so
+ * don't use it for anything else.
  *
  * @param taskList  task list where the task is stored
  * @param values    entity with all columns, as returned by the task provider; [org.dmfs.tasks.contract.TaskContract.Tasks._ID]
