@@ -8,7 +8,7 @@ package at.bitfire.synctools.util
 
 import at.bitfire.dateTimeValue
 import at.bitfire.dateValue
-import at.bitfire.synctools.util.AlarmTriggerCalculator.vAlarmToMin
+import at.bitfire.synctools.util.AlarmTriggerCalculator.alarmTriggerToMinutes
 import net.fortuna.ical4j.model.Property.TRIGGER
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Related
@@ -34,7 +34,7 @@ class AlarmTriggerCalculatorTest {
     @Test
     fun testVAlarmToMin_TriggerDuration_Negative() {
         // TRIGGER;REL=START:-P1DT1H1M29S
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             VAlarm(Duration("-P1DT1H1M29S").duration),
             DtStart<Temporal>(), null, null, false
         )!!
@@ -45,7 +45,7 @@ class AlarmTriggerCalculatorTest {
     @Test
     fun testVAlarmToMin_TriggerDuration_OnlySeconds() {
         // TRIGGER;REL=START:-PT3600S
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             VAlarm(Duration("-PT3600S").duration),
             DtStart<Temporal>(), null, null, false
         )!!
@@ -56,7 +56,7 @@ class AlarmTriggerCalculatorTest {
     @Test
     fun testVAlarmToMin_TriggerDuration_Positive() {
         // TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             VAlarm(Duration("P1DT1H1M30S").duration),
             DtStart<Temporal>(), null, null, false
         )!!
@@ -69,7 +69,7 @@ class AlarmTriggerCalculatorTest {
         // TRIGGER;REL=END:-P1DT1H1M30S (caller accepts Related.END)
         val alarm = VAlarm(Duration("-P1DT1H1M30S").duration)
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        val (ref, min) = vAlarmToMin(alarm, DtStart<Temporal>(), null, null, true)!!
+        val (ref, min) = alarmTriggerToMinutes(alarm, DtStart<Temporal>(), null, null, true)!!
         assertEquals(Related.END, ref)
         assertEquals(60 * 24 + 60 + 1, min)
     }
@@ -79,7 +79,7 @@ class AlarmTriggerCalculatorTest {
         // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
         val alarm = VAlarm(Duration("-PT65S").duration)
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm,
             DtStart(currentTime),
             DtEnd(currentTime.plusSeconds(180)),    // 180 sec later
@@ -96,7 +96,7 @@ class AlarmTriggerCalculatorTest {
         // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
         val alarm = VAlarm(Duration("-PT65S").duration)
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        assertNull(vAlarmToMin(alarm, DtStart<Temporal>(), DtEnd(currentTime), null, false))
+        assertNull(alarmTriggerToMinutes(alarm, DtStart<Temporal>(), DtEnd(currentTime), null, false))
     }
 
     @Test
@@ -104,7 +104,7 @@ class AlarmTriggerCalculatorTest {
         // event with TRIGGER;REL=END:-PT30S (caller doesn't accept Related.END)
         val alarm = VAlarm(Duration("-PT65S").duration)
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        assertNull(vAlarmToMin(alarm, DtStart(currentTime), null, null, false))
+        assertNull(alarmTriggerToMinutes(alarm, DtStart(currentTime), null, null, false))
     }
 
     @Test
@@ -112,7 +112,7 @@ class AlarmTriggerCalculatorTest {
         // task with TRIGGER;REL=END:-P1DT1H1M30S (caller doesn't accept Related.END; alarm *after* end)
         val alarm = VAlarm(Duration("P1DT1H1M30S").duration)
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm,
             DtStart(currentTime),
             Due(currentTime.plusSeconds(90)),    // 90 sec (should be rounded down to 1 min) later
@@ -125,7 +125,7 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun testVAlarm_TriggerPeriod() {
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             VAlarm(Period.parse("-P1W1D")),
             DtStart(currentTime), null, null,
             false
@@ -139,7 +139,7 @@ class AlarmTriggerCalculatorTest {
         // TRIGGER;VALUE=DATE-TIME:<xxxx>
         val alarm = VAlarm(currentTime.minusSeconds(89).toInstant())    // 89 sec (should be cut off to 1 min) before event
         alarm.getProperty<Trigger>(TRIGGER).getOrNull()?.add<Trigger>(Related.END)	// not useful for DATE-TIME values, should be ignored
-        val (ref, min) = vAlarmToMin(alarm, DtStart(currentTime), null, null, false)!!
+        val (ref, min) = alarmTriggerToMinutes(alarm, DtStart(currentTime), null, null, false)!!
         assertEquals(Related.START, ref)
         assertEquals(1, min)
     }
@@ -150,7 +150,7 @@ class AlarmTriggerCalculatorTest {
         val dtStart = DtStart(dateValue("20260407"))
         val duration = Duration("PT1H")
 
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
             refStart = dtStart,
             refEnd = null,
@@ -168,7 +168,7 @@ class AlarmTriggerCalculatorTest {
         val dtStart = DtStart(dateValue("20260407"))
         val duration = Duration("P1D")
 
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
             refStart = dtStart,
             refEnd = null,
@@ -188,7 +188,7 @@ class AlarmTriggerCalculatorTest {
         val dtStart = DtStart(dateValue("20260407"))
         val dtEnd = DtStart(dateValue("20260408"))
 
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
             refStart = dtStart,
             refEnd = dtEnd,
@@ -205,7 +205,7 @@ class AlarmTriggerCalculatorTest {
         val alarm = VAlarm(dateTimeValue("20260406T120000", ZoneOffset.UTC).toInstant())
         val dtStart = DtStart(dateValue("20260407"))
 
-        val (ref, min) = vAlarmToMin(
+        val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
             refStart = dtStart,
             refEnd = null,

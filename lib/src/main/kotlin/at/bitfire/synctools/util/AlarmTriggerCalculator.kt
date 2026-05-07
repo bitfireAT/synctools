@@ -43,7 +43,7 @@ object AlarmTriggerCalculator {
      *
      * May be *null* if there's not enough information to calculate the number of minutes.
      */
-    fun vAlarmToMin(
+    fun alarmTriggerToMinutes(
         alarm: VAlarm,
         refStart: DtStart<*>?,
         refEnd: DateProperty<*>?,

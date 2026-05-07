@@ -37,7 +37,7 @@ class RemindersBuilder: AndroidEntityBuilder {
             else -> Reminders.METHOD_DEFAULT                // won't trigger an alarm on the Android device
         }
 
-        val minutes = AlarmTriggerCalculator.vAlarmToMin(
+        val minutes = AlarmTriggerCalculator.alarmTriggerToMinutes(
             alarm = alarm,
             refStart = event.dtStart<Temporal>(),
             refEnd = event.getEndDate<Temporal>().getOrNull(),

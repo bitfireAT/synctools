@@ -208,7 +208,7 @@ class DmfsTaskBuilder(
 
     private fun insertAlarms(batch: TasksBatchOperation, idxTask: Int?) {
         for (alarm in task.alarms) {
-            val (alarmRef, minutes) = AlarmTriggerCalculator.vAlarmToMin(
+            val (alarmRef, minutes) = AlarmTriggerCalculator.alarmTriggerToMinutes(
                 alarm = alarm,
                 refStart = task.dtStart,
                 refEnd = task.due,
