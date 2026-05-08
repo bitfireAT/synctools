@@ -19,7 +19,6 @@ import java.time.Period
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrNull
-import net.fortuna.ical4j.model.property.Duration as ICalDuration
 
 object AlarmTriggerCalculator {
     private val logger = Logger.getLogger(javaClass.name)
@@ -47,7 +46,6 @@ object AlarmTriggerCalculator {
         alarm: VAlarm,
         refStart: DtStart<*>?,
         refEnd: DateProperty<*>?,
-        refDuration: ICalDuration?,
         allowRelEnd: Boolean
     ): Pair<Related, Int>? {
         val trigger = alarm.getProperty<Trigger>(Property.TRIGGER).getOrNull() ?: return null
@@ -59,15 +57,7 @@ object AlarmTriggerCalculator {
 
         // event/task start/end time
         val start = refStart?.date?.toInstant()
-        var end = refEnd?.date?.toInstant()
-
-        // event/task end time
-        if (end == null && start != null)
-            end = when (val refDur = refDuration?.duration) {
-                is Duration -> start + refDur
-                is Period -> start + Duration.between(start, start + refDur)
-                else -> null
-            }
+        val end = refEnd?.date?.toInstant()
 
         // event/task duration
         val duration: Duration? =

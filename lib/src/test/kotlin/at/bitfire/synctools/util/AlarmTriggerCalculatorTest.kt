@@ -45,7 +45,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = false
         )!!
 
@@ -63,7 +62,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = false
         )!!
 
@@ -81,7 +79,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = false
         )!!
 
@@ -102,7 +99,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )!!
 
@@ -124,7 +120,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = refEnd,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )!!
 
@@ -147,7 +142,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = refEnd,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )
 
@@ -167,7 +161,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )
 
@@ -189,7 +182,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = refEnd,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )!!
 
@@ -207,7 +199,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = false
         )!!
 
@@ -228,7 +219,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = DtStart(currentTime),
             refEnd = null,
-            refDuration = null,
             allowRelEnd = true
         )!!
 
@@ -237,34 +227,14 @@ class AlarmTriggerCalculatorTest {
     }
 
     @Test
-    fun `refStart has DATE value and refDuration is Duration`() {
+    fun `refStart has DATE value`() {
         val alarm = VAlarm(JavaDuration.parse("-PT5M"))
         val refStart = DtStart(dateValue("20260407"))
-        val refDuration = Duration("PT1H")
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = refDuration,
-            allowRelEnd = true
-        )!!
-
-        assertEquals(Related.START, ref)
-        assertEquals(5, min)
-    }
-
-    @Test
-    fun `refStart has DATE value and refDuration is Period`() {
-        val alarm = VAlarm(JavaDuration.parse("-PT5M"))
-        val refStart = DtStart(dateValue("20260407"))
-        val refDuration = Duration("P1D")
-
-        val (ref, min) = alarmTriggerToMinutes(
-            alarm = alarm,
-            refStart = refStart,
-            refEnd = null,
-            refDuration = refDuration,
             allowRelEnd = true
         )!!
 
@@ -285,7 +255,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = refEnd,
-            refDuration = null,
             allowRelEnd = allowRelEnd
         )!!
 
@@ -302,7 +271,6 @@ class AlarmTriggerCalculatorTest {
             alarm = alarm,
             refStart = refStart,
             refEnd = null,
-            refDuration = null,
             allowRelEnd = true
         )!!
 

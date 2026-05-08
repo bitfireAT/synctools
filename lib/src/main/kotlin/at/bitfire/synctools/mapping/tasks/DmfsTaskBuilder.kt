@@ -211,8 +211,7 @@ class DmfsTaskBuilder(
             val (alarmRef, minutes) = AlarmTriggerCalculator.alarmTriggerToMinutes(
                 alarm = alarm,
                 refStart = task.dtStart,
-                refEnd = task.due,
-                refDuration = task.duration,
+                refEnd = task.end,
                 allowRelEnd = true
             ) ?: continue
             val ref = when (alarmRef) {

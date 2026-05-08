@@ -40,8 +40,7 @@ class RemindersBuilder: AndroidEntityBuilder {
         val minutes = AlarmTriggerCalculator.alarmTriggerToMinutes(
             alarm = alarm,
             refStart = event.dtStart<Temporal>(),
-            refEnd = event.getEndDate<Temporal>().getOrNull(),
-            refDuration = event.duration,
+            refEnd = event.getEndDate<Temporal>(true).getOrNull(),
             allowRelEnd = false
         )?.second ?: Reminders.MINUTES_DEFAULT
 
