@@ -18,7 +18,6 @@ import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Trigger
 import java.time.Duration
 import java.time.Instant
-import java.time.Period
 import java.time.temporal.TemporalAmount
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -131,33 +130,11 @@ object AlarmTriggerCalculator {
         refStart: DtStart<*>?,
         refEnd: DateProperty<*>?
     ): Pair<Related, Int>? {
-        val start = refStart?.date?.toInstant()
-        val end = refEnd?.date?.toInstant()
+        val start = refStart?.normalizedDate()?.toZonedDateTime() ?: return null
+        val end = refEnd?.normalizedDate()?.toZonedDateTime() ?: return null
 
-        // event/task duration
-        val duration = if (start != null && end != null) {
-            Duration.between(start, end)
-        } else {
-            null
-        }
-
-        if (duration == null) {
-            logger.warning("Event/task without duration; can't calculate END-related alarm")
-            return null
-        }
-
-        var millisBefore = when (triggerDuration) {
-            is Duration -> -triggerDuration.toMillis()
-            is Period -> {
-                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
-                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
-                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
-            }
-            else -> throw AssertionError("triggerDuration must be Duration or Period")
-        }
-
-        millisBefore -= duration.toMillis()
-        val minutes = (millisBefore / 60000).toInt()
+        val alarmTime = end + triggerDuration
+        val minutes = Duration.between(alarmTime, start).toMinutes().toInt()
 
         return Pair(Related.START, minutes)
     }

@@ -138,7 +138,7 @@ class AlarmTriggerCalculatorTest {
         val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
-        val refStart = DtStart<Temporal>()
+        val refStart = null
         val refEnd = DtEnd(currentTime)
         val allowRelEnd = false
 
@@ -320,6 +320,27 @@ class AlarmTriggerCalculatorTest {
 
         assertEquals(Related.END, ref)
         assertEquals(23.hours.toMinutes(), min)
+    }
+
+    @Test
+    fun `trigger relative to end with Period instance spanning DST change and allowRelEnd=false`() {
+        // Event end: 2020/03/30 01:00 Vienna, alarm: one day before end of the event
+        // DST changes on 2020/03/29 02:00 -> 03:00, so there is one hour less!
+        val alarm = VAlarm(Period.parse("-P1D")).apply {
+            getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
+        }
+        val refStart = DtStart<Temporal>(dateTimeValue("20200330T000000", tzVienna))
+        val refEnd = DtEnd<Temporal>(dateTimeValue("20200330T010000", tzVienna))
+
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = refEnd,
+            allowRelEnd = false
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(22.hours.toMinutes(), min)
     }
 }
 
