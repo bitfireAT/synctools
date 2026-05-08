@@ -94,7 +94,7 @@ object AlarmTriggerCalculator {
                 triggerRelatedStartToMinutes(triggerDuration, refStart)
             }
             Related.END if allowRelatedEnd -> {
-                triggerRelatedEndToMinutes(triggerDuration)
+                triggerRelatedEndToMinutes(triggerDuration, refEnd)
             }
             else -> {
                 triggerRelatedEndToRelatedStartMinutes(triggerDuration, refStart, refEnd)
@@ -114,17 +114,14 @@ object AlarmTriggerCalculator {
         return Pair(Related.START, minutes)
     }
 
-    private fun triggerRelatedEndToMinutes(triggerDuration: TemporalAmount): Pair<Related, Int> {
-        val millisBefore = when (triggerDuration) {
-            is Duration -> -triggerDuration.toMillis()
-            is Period -> {
-                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
-                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
-                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
-            }
-            else -> throw AssertionError("triggerDuration must be Duration or Period")
-        }
-        val minutes = (millisBefore / 60000).toInt()
+    private fun triggerRelatedEndToMinutes(
+        triggerDuration: TemporalAmount,
+        refEnd: DateProperty<*>?
+    ): Pair<Related, Int>? {
+        val end = refEnd?.normalizedDate()?.toZonedDateTime() ?: return null
+
+        val alarmTime = end + triggerDuration
+        val minutes = Duration.between(alarmTime, end).toMinutes().toInt()
 
         return Pair(Related.END, minutes)
     }
