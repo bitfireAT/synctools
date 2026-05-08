@@ -10,6 +10,7 @@ import at.bitfire.dateTimeValue
 import at.bitfire.dateValue
 import at.bitfire.synctools.util.AlarmTriggerCalculator.alarmTriggerToMinutes
 import net.fortuna.ical4j.model.Property.TRIGGER
+import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.parameter.Related
 import net.fortuna.ical4j.model.property.DtEnd
@@ -32,6 +33,9 @@ import java.time.Duration as JavaDuration
 
 class AlarmTriggerCalculatorTest {
 
+    private val tzRegistry = TimeZoneRegistryFactory.getInstance().createRegistry()
+    private val tzVienna = tzRegistry.getTimeZone("Europe/Vienna")
+
     // current time stamp
     private val currentTime = ZonedDateTime.now()
 
@@ -39,7 +43,7 @@ class AlarmTriggerCalculatorTest {
     fun `negative trigger duration`() {
         // TRIGGER;REL=START:-P1DT1H1M29S
         val alarm = VAlarm(JavaDuration.parse("-P1DT1H1M29S"))
-        val refStart = DtStart<Temporal>()
+        val refStart = DtStart<Temporal>(currentTime)
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
@@ -56,7 +60,7 @@ class AlarmTriggerCalculatorTest {
     fun `trigger duration in seconds`() {
         // TRIGGER;REL=START:-PT3600S
         val alarm = VAlarm(JavaDuration.parse("-PT3600S"))
-        val refStart = DtStart<Temporal>()
+        val refStart = DtStart<Temporal>(currentTime)
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
@@ -73,7 +77,7 @@ class AlarmTriggerCalculatorTest {
     fun `positive trigger duration`() {
         // TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
         val alarm = VAlarm(JavaDuration.parse("P1DT1H1M30S"))
-        val refStart = DtStart<Temporal>()
+        val refStart = DtStart<Temporal>(currentTime)
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
@@ -278,26 +282,24 @@ class AlarmTriggerCalculatorTest {
         assertEquals(12.hours.toMinutes(), min)
     }
 
-    // TODO Note: can we use the following now when we have ical4j 4.x?
-
-    /*
-    DOES NOT WORK YET! Will work as soon as Java 8 API is consequently used in ical4j and ical4android.
-
     @Test
-    fun testVAlarm_TriggerPeriod_CrossingDST() {
-        // Event start: 2020/04/01 01:00 Vienna, alarm: one day before start of the event
+    fun `trigger relative to start with Period instance spanning DST change`() {
+        // Event start: 2020/03/30 01:00 Vienna, alarm: one day before start of the event
         // DST changes on 2020/03/29 02:00 -> 03:00, so there is one hour less!
         // The alarm has to be set 23 hours before the event so that it is set one day earlier.
-        val event = Event()
-        event.dtStart = DtStart("20200401T010000", tzVienna)
-        val (ref, min) = ICalendar.vAlarmToMin(
-                VAlarm(Period.parse("-P1W1D")),
-                event, false
-        )!!
-        assertEquals(Related.START, ref)
-        assertEquals(8*24*60, min)
-    }*/
+        val alarm = VAlarm(Period.parse("-P1D"))
+        val refStart = DtStart<Temporal>(dateTimeValue("20200330T010000", tzVienna))
 
+        val (ref, min) = alarmTriggerToMinutes(
+            alarm = alarm,
+            refStart = refStart,
+            refEnd = null,
+            allowRelEnd = false
+        )!!
+
+        assertEquals(Related.START, ref)
+        assertEquals(23.hours.toMinutes(), min)
+    }
 }
 
 private fun kotlin.time.Duration.toMinutes(): Int = inWholeMinutes.toInt()

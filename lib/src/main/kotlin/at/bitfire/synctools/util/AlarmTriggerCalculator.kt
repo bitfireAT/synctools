@@ -6,7 +6,9 @@
 
 package at.bitfire.synctools.util
 
+import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
+import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VAlarm
@@ -89,7 +91,7 @@ object AlarmTriggerCalculator {
     ): Pair<Related, Int>? {
         return when (triggerRelated) {
             Related.START -> {
-                triggerRelatedStartToMinutes(triggerDuration)
+                triggerRelatedStartToMinutes(triggerDuration, refStart)
             }
             Related.END if allowRelatedEnd -> {
                 triggerRelatedEndToMinutes(triggerDuration)
@@ -100,17 +102,14 @@ object AlarmTriggerCalculator {
         }
     }
 
-    private fun triggerRelatedStartToMinutes(triggerDuration: TemporalAmount): Pair<Related, Int> {
-        val millisBefore = when (triggerDuration) {
-            is Duration -> -triggerDuration.toMillis()
-            is Period -> {
-                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
-                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
-                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
-            }
-            else -> throw AssertionError("triggerDuration must be Duration or Period")
-        }
-        val minutes = (millisBefore / 60000).toInt()
+    private fun triggerRelatedStartToMinutes(
+        triggerDuration: TemporalAmount,
+        refStart: DtStart<*>?
+    ): Pair<Related, Int>? {
+        val start = refStart?.normalizedDate()?.toZonedDateTime() ?: return null
+
+        val alarmTime = start + triggerDuration
+        val minutes = Duration.between(alarmTime, start).toMinutes().toInt()
 
         return Pair(Related.START, minutes)
     }
