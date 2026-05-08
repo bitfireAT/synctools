@@ -196,8 +196,7 @@ class AlarmTriggerCalculatorTest {
     @Test
     fun `trigger with Period instance`() {
         val alarm = VAlarm(Period.parse("-P1W1D"))
-        //FIXME: Use fixed date, otherwise test might fail close to DST changes
-        val refStart = DtStart(currentTime)
+        val refStart = DtStart(dateTimeValue("20260508T120000", tzVienna))
 
         val (ref, min) = alarmTriggerToMinutes(
             alarm = alarm,
