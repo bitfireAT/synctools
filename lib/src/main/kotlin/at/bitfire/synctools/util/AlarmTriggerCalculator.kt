@@ -15,7 +15,9 @@ import net.fortuna.ical4j.model.property.DateProperty
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Trigger
 import java.time.Duration
+import java.time.Instant
 import java.time.Period
+import java.time.temporal.TemporalAmount
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.jvm.optionals.getOrNull
@@ -50,62 +52,128 @@ object AlarmTriggerCalculator {
     ): Pair<Related, Int>? {
         val trigger = alarm.getProperty<Trigger>(Property.TRIGGER).getOrNull() ?: return null
 
-        // Note: big method – maybe split?
+        val triggerRelated = trigger.getParameter<Related>(Parameter.RELATED).getOrNull() ?: Related.START
+        val triggerDuration = trigger.duration
+        val triggerTime = trigger.date
 
-        val minutes: Int    // minutes before/after the event
-        var related: Related = trigger.getParameter<Related>(Parameter.RELATED).getOrNull() ?: Related.START
+        return if (triggerDuration != null) {
+            triggerDurationToMinutes(
+                triggerDuration,
+                triggerRelated,
+                refStart,
+                refEnd,
+                allowRelEnd
+            )
+        } else if (triggerTime != null && refStart?.date != null) {
+            triggerTimeToMinutes(
+                triggerTime,
+                refStart
+            )
+        } else {
+            logger.log(Level.WARNING, "VALARM TRIGGER type is not DURATION or DATE-TIME " +
+                    "(requires event DTSTART for Android), ignoring alarm", alarm)
+            null
+        }
+    }
 
-        // event/task start/end time
+    // TRIGGER value is a DURATION. Important:
+    // 1) Negative values in TRIGGER mean positive values in Reminders.MINUTES and vice versa.
+    // 2) Android doesn't know alarm seconds, but only minutes. Cut off seconds from the final result.
+    // 3) DURATION can be a Duration (time-based) or a Period (date-based), which have to be treated differently.
+    private fun triggerDurationToMinutes(
+        triggerDuration: TemporalAmount,
+        triggerRelated: Related,
+        refStart: DtStart<*>?,
+        refEnd: DateProperty<*>?,
+        allowRelatedEnd: Boolean
+    ): Pair<Related, Int>? {
+        return when (triggerRelated) {
+            Related.START -> {
+                triggerRelatedStartToMinutes(triggerDuration)
+            }
+            Related.END if allowRelatedEnd -> {
+                triggerRelatedEndToMinutes(triggerDuration)
+            }
+            else -> {
+                triggerRelatedEndToRelatedStartMinutes(triggerDuration, refStart, refEnd)
+            }
+        }
+    }
+
+    private fun triggerRelatedStartToMinutes(triggerDuration: TemporalAmount): Pair<Related, Int> {
+        val millisBefore = when (triggerDuration) {
+            is Duration -> -triggerDuration.toMillis()
+            is Period -> {
+                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
+                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
+                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
+            }
+            else -> throw AssertionError("triggerDuration must be Duration or Period")
+        }
+        val minutes = (millisBefore / 60000).toInt()
+
+        return Pair(Related.START, minutes)
+    }
+
+    private fun triggerRelatedEndToMinutes(triggerDuration: TemporalAmount): Pair<Related, Int> {
+        val millisBefore = when (triggerDuration) {
+            is Duration -> -triggerDuration.toMillis()
+            is Period -> {
+                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
+                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
+                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
+            }
+            else -> throw AssertionError("triggerDuration must be Duration or Period")
+        }
+        val minutes = (millisBefore / 60000).toInt()
+
+        return Pair(Related.END, minutes)
+    }
+
+    private fun triggerRelatedEndToRelatedStartMinutes(
+        triggerDuration: TemporalAmount,
+        refStart: DtStart<*>?,
+        refEnd: DateProperty<*>?
+    ): Pair<Related, Int>? {
         val start = refStart?.date?.toInstant()
         val end = refEnd?.date?.toInstant()
 
         // event/task duration
-        val duration: Duration? =
-            if (start != null && end != null)
-                Duration.between(start, end)
-            else
-                null
-
-        val triggerDur = trigger.duration
-        val triggerTime = trigger.date
-
-        if (triggerDur != null) {
-            // TRIGGER value is a DURATION. Important:
-            // 1) Negative values in TRIGGER mean positive values in Reminders.MINUTES and vice versa.
-            // 2) Android doesn't know alarm seconds, but only minutes. Cut off seconds from the final result.
-            // 3) DURATION can be a Duration (time-based) or a Period (date-based), which have to be treated differently.
-            var millisBefore =
-                when (triggerDur) {
-                    is Duration -> -triggerDur.toMillis()
-                    is Period -> {
-                        // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
-                        // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
-                        -Duration.ofDays(triggerDur.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
-                    }
-                    else -> throw AssertionError("triggerDur must be Duration or Period")
-                }
-
-            if (related == Related.END && !allowRelEnd) {
-                if (duration == null) {
-                    logger.warning("Event/task without duration; can't calculate END-related alarm")
-                    return null
-                }
-                // move alarm towards end
-                related = Related.START
-                millisBefore -= duration.toMillis()
-            }
-            minutes = (millisBefore / 60000).toInt()
-
-        } else if (triggerTime != null && start != null) {
-            // TRIGGER value is a DATE-TIME, calculate minutes from start time
-            related = Related.START
-            minutes = Duration.between(triggerTime, start).toMinutes().toInt()
-
+        val duration = if (start != null && end != null) {
+            Duration.between(start, end)
         } else {
-            logger.log(Level.WARNING, "VALARM TRIGGER type is not DURATION or DATE-TIME (requires event DTSTART for Android), ignoring alarm", alarm)
+            null
+        }
+
+        if (duration == null) {
+            logger.warning("Event/task without duration; can't calculate END-related alarm")
             return null
         }
 
-        return Pair(related, minutes)
+        var millisBefore = when (triggerDuration) {
+            is Duration -> -triggerDuration.toMillis()
+            is Period -> {
+                // TODO: Take time zones into account (will probably be possible with ical4j 4.x).
+                // For instance, an alarm one day before the DST change should be 23/25 hours before the event.
+                -Duration.ofDays(triggerDuration.days.toLong()).toMillis()     // months and years are not used in DURATION values; weeks are calculated to days
+            }
+            else -> throw AssertionError("triggerDuration must be Duration or Period")
+        }
+
+        millisBefore -= duration.toMillis()
+        val minutes = (millisBefore / 60000).toInt()
+
+        return Pair(Related.START, minutes)
+    }
+
+    // TRIGGER value is a DATE-TIME, calculate minutes from start time
+    private fun triggerTimeToMinutes(
+        triggerTime: Instant,
+        refStart: DtStart<*>
+    ): Pair<Related, Int> {
+        val start = refStart.date.toInstant()
+        val minutes = Duration.between(triggerTime, start).toMinutes().toInt()
+
+        return Pair(Related.START, minutes)
     }
 }
