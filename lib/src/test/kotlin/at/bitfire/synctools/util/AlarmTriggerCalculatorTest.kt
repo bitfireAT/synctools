@@ -41,7 +41,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `negative trigger duration`() {
-        // TRIGGER;REL=START:-P1DT1H1M29S
         val alarm = VAlarm(JavaDuration.parse("-P1DT1H1M29S"))
         val refStart = DtStart<Temporal>(currentTime)
 
@@ -58,7 +57,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger duration in seconds`() {
-        // TRIGGER;REL=START:-PT3600S
         val alarm = VAlarm(JavaDuration.parse("-PT3600S"))
         val refStart = DtStart<Temporal>(currentTime)
 
@@ -75,7 +73,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `positive trigger duration`() {
-        // TRIGGER;REL=START:P1DT1H1M30S (alarm *after* start)
         val alarm = VAlarm(JavaDuration.parse("P1DT1H1M30S"))
         val refStart = DtStart<Temporal>(currentTime)
 
@@ -92,7 +89,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger relative to end with allowRelEnd=true`() {
-        // TRIGGER;REL=END:-P1DT1H1M30S
         val alarm = VAlarm(JavaDuration.parse("-P1DT1H1M30S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
@@ -112,7 +108,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger relative to end with allowRelEnd=false`() {
-        // TRIGGER;REL=END:-PT30S
         val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
@@ -134,7 +129,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger relative to end without start time and with allowRelEnd=false`() {
-        // TRIGGER;REL=END:-PT30S
         val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
@@ -154,7 +148,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger relative to end without end time or duration and with allowRelEnd=false`() {
-        // TRIGGER;REL=END:-PT30S
         val alarm = VAlarm(JavaDuration.parse("-PT65S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
@@ -173,7 +166,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger relative to end and after end date with allowRelEnd=false`() {
-        // TRIGGER;REL=END:-P1DT1H1M30S
         val alarm = VAlarm(JavaDuration.parse("P1DT1H1M30S")).apply {
             getRequiredProperty<Trigger>(TRIGGER).add<Trigger>(Related.END)
         }
@@ -211,7 +203,6 @@ class AlarmTriggerCalculatorTest {
 
     @Test
     fun `trigger with DATE-TIME value`() {
-        // TRIGGER;VALUE=DATE-TIME:<xxxx>
         // 89 sec (should be cut off to 1 min) before event
         val alarm = VAlarm(currentTime.minusSeconds(89).toInstant()).apply {
             // not useful for DATE-TIME values, should be ignored
