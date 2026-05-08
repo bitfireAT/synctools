@@ -8,9 +8,7 @@ package at.bitfire.ical4android
 
 import androidx.annotation.IntRange
 import at.bitfire.ical4android.util.DateUtils
-import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
 import at.bitfire.synctools.util.AndroidTimeUtils.toInstant
-import at.bitfire.synctools.util.AndroidTimeUtils.toZonedDateTime
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.VAlarm
 import net.fortuna.ical4j.model.property.Clazz
@@ -27,11 +25,7 @@ import net.fortuna.ical4j.model.property.RRule
 import net.fortuna.ical4j.model.property.RelatedTo
 import net.fortuna.ical4j.model.property.Status
 import java.time.Instant
-import java.time.ZonedDateTime
 import java.util.LinkedList
-
-import java.time.Duration as JavaDuration
-import java.time.Period as JavaPeriod
 
 /**
  * Data class representing a task
@@ -101,11 +95,7 @@ data class Task(
             val start = dtStart?.date?.toInstant()
             val duration = duration?.duration
             if (start != null && duration != null) {
-                val end = when (duration) {
-                    is JavaDuration -> start + duration
-                    is JavaPeriod -> start + JavaDuration.between(start, start + duration)
-                    else -> throw AssertionError("Expected either Duration or Period")
-                }
+                val end = start + duration
                 return Due(end)
             }
 
