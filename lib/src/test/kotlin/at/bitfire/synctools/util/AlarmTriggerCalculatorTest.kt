@@ -257,7 +257,7 @@ class AlarmTriggerCalculatorTest {
     }
 
     @Test
-    fun `trigger with DATE-TIME vale and refStart with DATE value`() {
+    fun `trigger with DATE-TIME value and refStart with DATE value`() {
         val alarm = VAlarm(dateTimeValue("20260406T120000", ZoneOffset.UTC).toInstant())
         val refStart = DtStart(dateValue("20260407"))
 
