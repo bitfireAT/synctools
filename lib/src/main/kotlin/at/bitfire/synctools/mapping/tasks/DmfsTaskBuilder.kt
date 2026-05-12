@@ -11,9 +11,9 @@ import android.content.Entity
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.mapping.tasks.builder.AllDayBuilder
-import at.bitfire.synctools.mapping.tasks.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ColorBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DescriptionBuilder
+import at.bitfire.synctools.mapping.tasks.builder.DirtyBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DmfsTaskFieldBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DueBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DurationBuilder
@@ -75,7 +75,7 @@ class DmfsTaskBuilder(
         ETagBuilder(eTag),
         SyncFlagsBuilder(flags),
         SequenceBuilder(),
-        DirtyAndDeletedBuilder(),
+        DirtyBuilder(),
         // content fields
         TitleBuilder(),
         DescriptionBuilder(),
