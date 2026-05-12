@@ -17,9 +17,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class DirtyAndDeletedBuilderTest {
+class DirtyBuilderTest {
 
-    private val builder = DirtyAndDeletedBuilder()
+    private val builder = DirtyBuilder()
 
     @Test
     fun `DIRTY is set to 0`() {

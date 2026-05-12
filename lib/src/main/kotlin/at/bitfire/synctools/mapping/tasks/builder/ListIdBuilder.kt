@@ -10,11 +10,12 @@ import android.content.Entity
 import at.bitfire.ical4android.Task
 import org.dmfs.tasks.contract.TaskContract.Tasks
 
-class DirtyAndDeletedBuilder : DmfsTaskFieldBuilder {
+class ListIdBuilder(
+    private val listId: Long
+) : DmfsTaskFieldBuilder {
 
     override fun build(from: Task, to: Entity) {
-        // DIRTY is always unset when we create or update a task row
-        to.entityValues.put(Tasks._DIRTY, 0)
+        to.entityValues.put(Tasks.LIST_ID, listId)
     }
 
 }
