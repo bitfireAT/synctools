@@ -11,11 +11,15 @@ import android.content.Entity
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.mapping.tasks.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DmfsTaskFieldBuilder
+import at.bitfire.synctools.mapping.tasks.builder.ETagBuilder
+import at.bitfire.synctools.mapping.tasks.builder.SequenceBuilder
+import at.bitfire.synctools.mapping.tasks.builder.SyncFlagsBuilder
+import at.bitfire.synctools.mapping.tasks.builder.SyncIdBuilder
 import at.bitfire.synctools.mapping.tasks.builder.TitleBuilder
+import at.bitfire.synctools.mapping.tasks.builder.UidBuilder
 import at.bitfire.synctools.storage.BatchOperation.CpoBuilder
-import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.COLUMN_ETAG
-import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.COLUMN_FLAGS
 import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.UNKNOWN_PROPERTY_DATA
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
@@ -65,6 +69,14 @@ class DmfsTaskBuilder(
 ) {
 
     private val fieldBuilders: Array<DmfsTaskFieldBuilder> = arrayOf(
+        // main task row fields
+        UidBuilder(),
+        SyncIdBuilder(syncId),
+        ETagBuilder(eTag),
+        SyncFlagsBuilder(flags),
+        SequenceBuilder(),
+        DirtyAndDeletedBuilder(),
+        // content, status, time fields (still inline below)
         TitleBuilder()
     )
 
@@ -101,18 +113,12 @@ class DmfsTaskBuilder(
 
         // old builders
 
-        builder .withValue(Tasks._UID, task.uid)
-            .withValue(Tasks._DIRTY, 0)
-            .withValue(Tasks.SYNC_VERSION, task.sequence)
+        builder
             .withValue(Tasks.LOCATION, task.location)
             .withValue(Tasks.GEO, task.geoPosition?.let { "${it.longitude},${it.latitude}" })
             .withValue(Tasks.DESCRIPTION, task.description)
             .withValue(Tasks.TASK_COLOR, task.color)
             .withValue(Tasks.URL, task.url)
-
-            .withValue(Tasks._SYNC_ID, syncId)
-            .withValue(COLUMN_FLAGS, flags)
-            .withValue(COLUMN_ETAG, eTag)
 
             // parent_id will be re-calculated when the relation row is inserted (if there is any)
             .withValue(Tasks.PARENT_ID, null)
