@@ -6,15 +6,6 @@
 
 package at.bitfire.synctools.storage.calendar
 
-import android.content.Entity
+import at.bitfire.synctools.storage.MainItemAndExceptions
 
-/**
- * Represents a set of a local Android event and associated exception events that are stored together. It consists of
- *
- * - a (potentially recurring) main event,
- * - optional exceptions of this main event (exception instances, only useful if main event is recurring).
- */
-data class EventAndExceptions(
-    val main: Entity,
-    val exceptions: List<Entity>
-)
+typealias EventAndExceptions = MainItemAndExceptions
