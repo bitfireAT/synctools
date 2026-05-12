@@ -10,20 +10,24 @@ import android.content.ContentValues
 import android.content.Entity
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
-import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.mapping.tasks.builder.AllDayBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ClassificationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ColorBuilder
 import at.bitfire.synctools.mapping.tasks.builder.CompletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DmfsTaskFieldBuilder
+import at.bitfire.synctools.mapping.tasks.builder.DueBuilder
+import at.bitfire.synctools.mapping.tasks.builder.DurationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ETagBuilder
 import at.bitfire.synctools.mapping.tasks.builder.GeoBuilder
 import at.bitfire.synctools.mapping.tasks.builder.LocationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.OrganizerBuilder
 import at.bitfire.synctools.mapping.tasks.builder.PercentCompleteBuilder
 import at.bitfire.synctools.mapping.tasks.builder.PriorityBuilder
+import at.bitfire.synctools.mapping.tasks.builder.RecurrenceFieldsBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SequenceBuilder
+import at.bitfire.synctools.mapping.tasks.builder.StartTimeBuilder
 import at.bitfire.synctools.mapping.tasks.builder.StatusBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SyncIdBuilder
@@ -35,27 +39,18 @@ import at.bitfire.synctools.storage.tasks.DmfsTask.Companion.UNKNOWN_PROPERTY_DA
 import at.bitfire.synctools.storage.tasks.DmfsTaskList
 import at.bitfire.synctools.storage.tasks.TasksBatchOperation
 import at.bitfire.synctools.util.AlarmTriggerCalculator
-import at.bitfire.synctools.util.AndroidTimeUtils
-import at.bitfire.synctools.util.AndroidTimeUtils.toTimestamp
 import net.fortuna.ical4j.model.Parameter
 import net.fortuna.ical4j.model.Property
-import net.fortuna.ical4j.model.TimeZone
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.parameter.RelType
 import net.fortuna.ical4j.model.parameter.Related
-import net.fortuna.ical4j.model.parameter.TzId
 import net.fortuna.ical4j.model.property.Action
-import net.fortuna.ical4j.model.property.DtStart
-import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.immutable.ImmutableAction
-import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Property.Alarm
 import org.dmfs.tasks.contract.TaskContract.Property.Category
 import org.dmfs.tasks.contract.TaskContract.Property.Comment
 import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
-import java.time.ZoneId
 import java.util.Locale
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -98,13 +93,17 @@ class DmfsTaskBuilder(
         StatusBuilder(),
         CompletedBuilder(),
         PercentCompleteBuilder(),
-        // time fields (still inline below)
+        // time fields and recurrence
+        AllDayBuilder(),
+        StartTimeBuilder(),
+        DueBuilder(),
+        DurationBuilder(),
+        RecurrenceFieldsBuilder(),
+        // property sub-rows (still inline below via insertProperties)
     )
 
     private val logger
         get() = Logger.getLogger(javaClass.name)
-
-    private val tzRegistry by lazy { TimeZoneRegistryFactory.getInstance().createRegistry() }
 
     fun addRows(batch: TasksBatchOperation): Int {
         val builder = CpoBuilder.newInsert(taskList.tasksUri())
@@ -138,61 +137,11 @@ class DmfsTaskBuilder(
             // parent_id will be re-calculated when the relation row is inserted (if there is any)
             .withValue(Tasks.PARENT_ID, null)
 
-        // Time related
-        val allDay = task.isAllDay()
-        if (allDay) {
-            builder .withValue(Tasks.IS_ALLDAY, 1)
-                .withValue(Tasks.TZ, null)
-        } else {
-            task.dtStart = task.dtStart?.normalizedDate()?.let { DtStart(it) }
-            task.due = task.due?.normalizedDate()?.let { Due(it) }
-            builder .withValue(Tasks.IS_ALLDAY, 0)
-                .withValue(Tasks.TZ, getTimeZone().id)
-        }
         builder
             .withValue(Tasks.CREATED, task.createdAt)
             .withValue(Tasks.LAST_MODIFIED, task.lastModified)
 
-            .withValue(Tasks.DTSTART, task.dtStart?.date?.toTimestamp())
-            .withValue(Tasks.DUE, task.due?.date?.toTimestamp())
-            .withValue(Tasks.DURATION, task.duration?.value)
-
-            .withValue(Tasks.RDATE,
-                if (task.rDates.isEmpty())
-                    null
-                else
-                    AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.rDates, if (allDay) null else getTimeZone()))
-            .withValue(Tasks.RRULE, task.rRule?.value)
-
-            .withValue(Tasks.EXDATE,
-                if (task.exDates.isEmpty())
-                    null
-                else
-                    AndroidTimeUtils.recurrenceSetsToOpenTasksString(task.exDates, if (allDay) null else getTimeZone()))
-
         logger.log(Level.FINE, "Built task object", builder.build())
-    }
-
-    fun getTimeZone(): TimeZone {
-        var tzId = task.dtStart?.let { dtStart ->
-            if (dtStart.isUtc)
-                TimeZones.UTC_ID
-            else
-                dtStart.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
-        } ?:
-        task.due?.let { due ->
-            if (due.isUtc)
-                TimeZones.UTC_ID
-            else
-                due.getParameter<TzId>(Parameter.TZID).getOrNull()?.value
-        } ?:
-        ZoneId.systemDefault().id
-
-        // 'Z' is not a valid timezone id, replace it by the UTC definition
-        if (tzId == "Z") tzId = TimeZones.UTC_ID
-
-        val timeZone: TimeZone? = tzRegistry.getTimeZone(tzId)
-        return timeZone ?: throw NullPointerException("Could not find timezone '$tzId' in registry.")
     }
 
     fun insertProperties(batch: TasksBatchOperation, idxTask: Int?) {
