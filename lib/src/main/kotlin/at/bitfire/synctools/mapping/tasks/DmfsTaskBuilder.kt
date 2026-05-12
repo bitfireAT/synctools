@@ -11,7 +11,9 @@ import android.content.Entity
 import at.bitfire.ical4android.Task
 import at.bitfire.ical4android.UnknownProperty
 import at.bitfire.synctools.icalendar.DatePropertyTzMapper.normalizedDate
+import at.bitfire.synctools.mapping.tasks.builder.ClassificationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ColorBuilder
+import at.bitfire.synctools.mapping.tasks.builder.CompletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DirtyAndDeletedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DmfsTaskFieldBuilder
@@ -19,7 +21,10 @@ import at.bitfire.synctools.mapping.tasks.builder.ETagBuilder
 import at.bitfire.synctools.mapping.tasks.builder.GeoBuilder
 import at.bitfire.synctools.mapping.tasks.builder.LocationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.OrganizerBuilder
+import at.bitfire.synctools.mapping.tasks.builder.PercentCompleteBuilder
+import at.bitfire.synctools.mapping.tasks.builder.PriorityBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SequenceBuilder
+import at.bitfire.synctools.mapping.tasks.builder.StatusBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SyncFlagsBuilder
 import at.bitfire.synctools.mapping.tasks.builder.SyncIdBuilder
 import at.bitfire.synctools.mapping.tasks.builder.TitleBuilder
@@ -43,8 +48,6 @@ import net.fortuna.ical4j.model.property.Action
 import net.fortuna.ical4j.model.property.DtStart
 import net.fortuna.ical4j.model.property.Due
 import net.fortuna.ical4j.model.property.immutable.ImmutableAction
-import net.fortuna.ical4j.model.property.immutable.ImmutableClazz
-import net.fortuna.ical4j.model.property.immutable.ImmutableStatus
 import net.fortuna.ical4j.util.TimeZones
 import org.dmfs.tasks.contract.TaskContract.Properties
 import org.dmfs.tasks.contract.TaskContract.Property.Alarm
@@ -89,7 +92,13 @@ class DmfsTaskBuilder(
         ColorBuilder(),
         UrlBuilder(),
         OrganizerBuilder(),
-        // status, time fields (still inline below)
+        // status fields
+        PriorityBuilder(),
+        ClassificationBuilder(),
+        StatusBuilder(),
+        CompletedBuilder(),
+        PercentCompleteBuilder(),
+        // time fields (still inline below)
     )
 
     private val logger
@@ -128,31 +137,6 @@ class DmfsTaskBuilder(
         builder
             // parent_id will be re-calculated when the relation row is inserted (if there is any)
             .withValue(Tasks.PARENT_ID, null)
-
-        // Priority, classification
-        builder
-            .withValue(Tasks.PRIORITY, task.priority)
-            .withValue(Tasks.CLASSIFICATION, when (task.classification?.value?.uppercase()) {
-                ImmutableClazz.VALUE_PUBLIC -> Tasks.CLASSIFICATION_PUBLIC
-                ImmutableClazz.VALUE_CONFIDENTIAL -> Tasks.CLASSIFICATION_CONFIDENTIAL
-                null -> Tasks.CLASSIFICATION_DEFAULT
-                else -> Tasks.CLASSIFICATION_PRIVATE    // all unknown classifications MUST be treated as PRIVATE
-            })
-
-        // COMPLETED must always be a DATE-TIME
-        builder
-            .withValue(Tasks.COMPLETED, task.completedAt?.date?.toEpochMilli())
-            .withValue(Tasks.COMPLETED_IS_ALLDAY, 0)
-            .withValue(Tasks.PERCENT_COMPLETE, task.percentComplete)
-
-        // Status
-        val status = when (task.status?.value) {
-            ImmutableStatus.VALUE_IN_PROCESS -> Tasks.STATUS_IN_PROCESS
-            ImmutableStatus.VALUE_COMPLETED  -> Tasks.STATUS_COMPLETED
-            ImmutableStatus.VALUE_CANCELLED  -> Tasks.STATUS_CANCELLED
-            else                             -> Tasks.STATUS_DEFAULT    // == Tasks.STATUS_NEEDS_ACTION
-        }
-        builder.withValue(Tasks.STATUS, status)
 
         // Time related
         val allDay = task.isAllDay()
