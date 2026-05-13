@@ -49,15 +49,18 @@ class JtxCollection(
 
     /** see [JtxContract.JtxCollection.SUPPORTSVEVENT] */
     val supportsVEvent: Boolean
-        get() = values.getAsBoolean(JtxContract.JtxCollection.SUPPORTSVEVENT) ?: false
+        get() = values.getAsString(JtxContract.JtxCollection.SUPPORTSVEVENT) == "1"
+                || values.getAsString(JtxContract.JtxCollection.SUPPORTSVEVENT) == "true"
 
     /** see [JtxContract.JtxCollection.SUPPORTSVTODO] */
     val supportsVTodo: Boolean
-        get() = values.getAsBoolean(JtxContract.JtxCollection.SUPPORTSVTODO) ?: false
+        get() = values.getAsString(JtxContract.JtxCollection.SUPPORTSVTODO) == "1"
+                || values.getAsString(JtxContract.JtxCollection.SUPPORTSVTODO) == "true"
 
     /** see [JtxContract.JtxCollection.SUPPORTSVJOURNAL] */
     val supportsVJournal: Boolean
-        get() = values.getAsBoolean(JtxContract.JtxCollection.SUPPORTSVJOURNAL) ?: false
+        get() = values.getAsString(JtxContract.JtxCollection.SUPPORTSVJOURNAL) == "1"
+                || values.getAsString(JtxContract.JtxCollection.SUPPORTSVJOURNAL) == "true"
 
     /** see [JtxContract.JtxCollection.SYNC_ID] */
     val syncId: Long?
@@ -65,7 +68,8 @@ class JtxCollection(
 
     /** see [JtxContract.JtxCollection.READONLY] */
     val readonly: Boolean
-        get() = values.getAsBoolean(JtxContract.JtxCollection.READONLY) ?: false
+        get() = values.getAsString(JtxContract.JtxCollection.READONLY) == "1"
+                || values.getAsString(JtxContract.JtxCollection.READONLY) == "true"
 
 
     // CRUD Events
