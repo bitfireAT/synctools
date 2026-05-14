@@ -24,7 +24,7 @@ object AndroidAccountUtils {
      * @throws IllegalArgumentException when user data contains non-String values
      * @throws IllegalStateException if user data can't be set
      */
-    fun createAccount(context: Context, account: Account, userData: Map<String, String>, password: String? = null): Boolean {
+    fun createAccount(context: Context, account: Account, userData: Map<String, String>, password: SensitiveString? = null): Boolean {
         val userDataBundle = Bundle(userData.size).apply {
             for ((key, value) in userData)
                 putString(key, value)
@@ -32,7 +32,7 @@ object AndroidAccountUtils {
 
         // create account
         val manager = AccountManager.get(context)
-        if (!manager.addAccountExplicitly(account, password, userDataBundle))
+        if (!manager.addAccountExplicitly(account, password?.toString(), userDataBundle))
             return false
 
         // Android seems to lose the initial user data sometimes, so make sure that the values are set
