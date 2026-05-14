@@ -1,5 +1,7 @@
 /*
- * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
+ * This file is part of bitfireAT/synctools which is released under GPLv3.
+ * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 package at.bitfire.synctools.util
@@ -7,7 +9,9 @@ package at.bitfire.synctools.util
 import android.accounts.Account
 import android.accounts.AccountManager
 import android.content.Context
-import org.junit.Assert
+import at.bitfire.synctools.util.SensitiveString.Companion.toSensitiveString
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -25,16 +29,17 @@ class AndroidAccountUtilsTest {
             "string" to "abc/\"-"
         )
 
-        val account = Account(javaClass.name, "test")
+        val account = Account("testCreateAccount", javaClass.name)
         val manager = AccountManager.get(context)
         try {
-            Assert.assertTrue(AndroidAccountUtils.createAccount(context, account, userData))
+            assertTrue(AndroidAccountUtils.createAccount(context, account, userData, "secret".toSensitiveString()))
 
             // validate user data
-            Assert.assertEquals("1", manager.getUserData(account, "int"))
-            Assert.assertEquals("abc/\"-", manager.getUserData(account, "string"))
+            assertEquals("1", manager.getUserData(account, "int"))
+            assertEquals("abc/\"-", manager.getUserData(account, "string"))
+            assertEquals("secret", manager.getPassword(account))
         } finally {
-            Assert.assertTrue(manager.removeAccountExplicitly(account))
+            assertTrue(manager.removeAccountExplicitly(account))
         }
     }
 

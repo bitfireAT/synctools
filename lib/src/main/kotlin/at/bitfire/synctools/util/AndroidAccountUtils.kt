@@ -1,5 +1,7 @@
 /*
- * Copyright © All Contributors. See LICENSE and AUTHORS in the root directory for details.
+ * This file is part of bitfireAT/synctools which is released under GPLv3.
+ * Copyright © All Contributors. See the LICENSE and AUTHOR files in the root directory for details.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 package at.bitfire.synctools.util
@@ -20,9 +22,6 @@ object AndroidAccountUtils {
      * @param password password to set
      *
      * @return whether the account has been created
-     *
-     * @throws IllegalArgumentException when user data contains non-String values
-     * @throws IllegalStateException if user data can't be set
      */
     fun createAccount(context: Context, account: Account, userData: Map<String, String>, password: SensitiveString? = null): Boolean {
         val userDataBundle = Bundle(userData.size).apply {
@@ -32,7 +31,7 @@ object AndroidAccountUtils {
 
         // create account
         val manager = AccountManager.get(context)
-        if (!manager.addAccountExplicitly(account, password?.toString(), userDataBundle))
+        if (!manager.addAccountExplicitly(account, password?.asString(), userDataBundle))
             return false
 
         // Android seems to lose the initial user data sometimes, so make sure that the values are set
