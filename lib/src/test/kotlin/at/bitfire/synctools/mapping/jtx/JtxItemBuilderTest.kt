@@ -25,7 +25,9 @@ import java.time.Instant
 @RunWith(RobolectricTestRunner::class)
 class JtxItemBuilderTest {
 
-    private val builder = JtxItemBuilder()
+    private val builder = JtxItemBuilder(
+        collectionId = 1
+    )
 
     @Test
     fun `build() with VToDo`() {
