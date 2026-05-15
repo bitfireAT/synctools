@@ -26,7 +26,11 @@ import java.time.Instant
 class JtxItemBuilderTest {
 
     private val builder = JtxItemBuilder(
-        collectionId = 1
+        collectionId = 1,
+        fileName = null,
+        eTag = null,
+        scheduleTag = null,
+        flags = 0
     )
 
     @Test
