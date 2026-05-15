@@ -10,8 +10,8 @@ package at.bitfire.synctools.util
  * by [Any.toString].
  *
  * This class does not address the issue that clear-text passwords are stored in memory. This problem
- * could only be reduced if we would consequently store and process only encrypted passwords, with the
- * exception of some "providePassword" method that provides the clear-text password for a lambda function as
+ * could only be reduced if we would consequently store and process only encrypted passwords, except
+ * some "providePassword" method that provides the clear-text password for a lambda function as
  * [CharArray] and wipes out the array values after usage.
  *
  * See also:
@@ -20,7 +20,8 @@ package at.bitfire.synctools.util
  * - https://javaee.github.io/security-api/apidocs/javax/security/enterprise/credential/Password.html and
  *   https://javaee.github.io/security-api/apidocs/javax/security/enterprise/credential/UsernamePasswordCredential.html
  */
-class SensitiveString private constructor(
+@JvmInline
+value class SensitiveString private constructor(
     private val data: String
 ) {
 
@@ -37,18 +38,6 @@ class SensitiveString private constructor(
      * _Be careful when using it (for instance, don't print it unintentionally)._
      */
     fun asString() = data
-
-
-    // make comparable by data
-
-    override fun equals(other: Any?) =
-        if (other is SensitiveString)
-            data == other.data
-        else
-            false
-
-    override fun hashCode() = data.hashCode()
-
 
     /**
      * Overrides [toString] so that it doesn't expose the clear-text string (password).
