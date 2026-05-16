@@ -15,6 +15,8 @@ import at.bitfire.synctools.icalendar.plusAssign
 import at.bitfire.synctools.test.assertContentValuesEqual
 import at.techbee.jtx.JtxContract
 import net.fortuna.ical4j.model.DateList
+import net.fortuna.ical4j.model.ParameterList
+import net.fortuna.ical4j.model.Period
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory
 import net.fortuna.ical4j.model.component.VToDo
 import net.fortuna.ical4j.model.property.DtStart
@@ -78,7 +80,7 @@ class RecurrenceFieldsBuilderTest {
     }
 
     @Test
-    fun `recurring task with RDATE`() {
+    fun `recurring task with RDATE with DATE-TIME value`() {
         val task = VToDo().apply {
             this += DtStart(dateTimeValue("20260515T120000Z"))
             this += RRule<Temporal>("FREQ=DAILY;COUNT=5")
@@ -101,7 +103,30 @@ class RecurrenceFieldsBuilderTest {
     }
 
     @Test
-    fun `recurring task with multiple RDATE properties`() {
+    fun `recurring task with RDATE with PERIOD value`() {
+        val task = VToDo().apply {
+            this += DtStart(dateTimeValue("20260515T120000Z"))
+            this += RRule<Temporal>("FREQ=DAILY;COUNT=5")
+            this += RDate(listOf(Period.parse("20260522T120000Z/PT2H")))
+        }
+        val output = Entity(ContentValues())
+
+        builder.build(from = task, main = task, to = output)
+
+        assertContentValuesEqual(
+            expected = contentValuesOf(
+                JtxContract.JtxICalObject.RECURID to null,
+                JtxContract.JtxICalObject.RECURID_TIMEZONE to null,
+                JtxContract.JtxICalObject.RRULE to "FREQ=DAILY;COUNT=5",
+                JtxContract.JtxICalObject.RDATE to null,
+                JtxContract.JtxICalObject.EXDATE to null,
+            ),
+            actual = output.entityValues
+        )
+    }
+
+    @Test
+    fun `recurring task with multiple RDATE (with DATE-TIME value) properties`() {
         val task = VToDo().apply {
             this += DtStart(dateTimeValue("20260515T120000Z"))
             this += RRule<Temporal>("FREQ=DAILY;COUNT=5")
@@ -145,6 +170,29 @@ class RecurrenceFieldsBuilderTest {
                 JtxContract.JtxICalObject.RRULE to "FREQ=DAILY;COUNT=5",
                 JtxContract.JtxICalObject.RDATE to null,
                 JtxContract.JtxICalObject.EXDATE to "1779451200000",
+            ),
+            actual = output.entityValues
+        )
+    }
+
+    @Test
+    fun `recurring task with EXDATE with empty value`() {
+        val task = VToDo().apply {
+            this += DtStart(dateTimeValue("20260515T120000Z"))
+            this += RRule<Temporal>("FREQ=DAILY;COUNT=5")
+            this += ExDate<Temporal>("")
+        }
+        val output = Entity(ContentValues())
+
+        builder.build(from = task, main = task, to = output)
+
+        assertContentValuesEqual(
+            expected = contentValuesOf(
+                JtxContract.JtxICalObject.RECURID to null,
+                JtxContract.JtxICalObject.RECURID_TIMEZONE to null,
+                JtxContract.JtxICalObject.RRULE to "FREQ=DAILY;COUNT=5",
+                JtxContract.JtxICalObject.RDATE to null,
+                JtxContract.JtxICalObject.EXDATE to null,
             ),
             actual = output.entityValues
         )

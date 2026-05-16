@@ -59,6 +59,7 @@ class RecurrenceFieldsBuilder : JtxEntityBuilder {
     }
 
     private fun buildRDate(main: CalendarComponent, to: Entity) {
+        // Note: RDATE properties with a PERIOD value are currently not supported and ignored.
         buildDateList(main, to, Property.RDATE, JtxContract.JtxICalObject.RDATE)
     }
 
@@ -82,8 +83,13 @@ class RecurrenceFieldsBuilder : JtxEntityBuilder {
             .flatMap { it.normalizedDates() }
             .map { it.toTimestamp() }
             .joinToString(separator = ",")
+            .takeIf { it.isNotEmpty() }
 
-        to.entityValues.put(columnName, timestampListString)
+        if (timestampListString == null) {
+            to.entityValues.putNull(columnName)
+        } else {
+            to.entityValues.put(columnName, timestampListString)
+        }
     }
 
     private fun buildExceptionItem(exception: CalendarComponent, to: Entity) {
