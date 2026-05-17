@@ -9,7 +9,11 @@ package at.bitfire.vcard4android.impl
 import android.accounts.Account
 import android.content.ContentProviderClient
 import android.content.ContentValues
-import at.bitfire.vcard4android.*
+import at.bitfire.synctools.storage.contacts.AndroidAddressBook
+import at.bitfire.synctools.storage.contacts.AndroidContact
+import at.bitfire.synctools.storage.contacts.AndroidContactFactory
+import at.bitfire.synctools.storage.contacts.AndroidGroup
+import at.bitfire.synctools.storage.contacts.AndroidGroupFactory
 
 class TestAddressBook(
         account: Account,

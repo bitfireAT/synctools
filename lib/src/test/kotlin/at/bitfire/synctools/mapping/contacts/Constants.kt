@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.synctools.storage
+package at.bitfire.synctools.mapping.contacts
 
-@Deprecated("Moved to at.bitfire.synctools.storage.contacts")
-typealias ContactsBatchOperation = at.bitfire.synctools.storage.contacts.ContactsBatchOperation
+val testProductId = "bitfireAT/synctools test"
