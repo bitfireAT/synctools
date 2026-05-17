@@ -6,8 +6,8 @@
 
 package at.bitfire.synctools.mapping.contacts
 
-import at.bitfire.vcard4android.property.CustomScribes.registerCustomScribes
-import at.bitfire.vcard4android.property.XAbDate
+import at.bitfire.synctools.vcard.property.CustomScribes.registerCustomScribes
+import at.bitfire.synctools.vcard.property.XAbDate
 import com.google.common.base.Ascii
 import com.google.common.base.MoreObjects
 import ezvcard.VCardVersion

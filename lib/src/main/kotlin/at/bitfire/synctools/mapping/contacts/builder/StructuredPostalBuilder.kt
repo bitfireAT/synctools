@@ -10,7 +10,7 @@ import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.storage.BatchOperation
-import at.bitfire.vcard4android.Utils.trimToNull
+import at.bitfire.synctools.util.Utils.trimToNull
 import ezvcard.parameter.AddressType
 import java.util.LinkedList
 

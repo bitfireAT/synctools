@@ -4,6 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android.impl
+package at.bitfire.synctools.storage.contacts
 
 val testProductId = "bitfireAT/synctools test"

@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.mapping.contacts.LabeledProperty
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.vcard.property.CustomType
 import ezvcard.parameter.TelephoneType
 import ezvcard.property.Telephone
 

@@ -9,8 +9,8 @@ package at.bitfire.synctools.mapping.contacts.handler
 import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Relation
 import at.bitfire.synctools.mapping.contacts.Contact
-import at.bitfire.vcard4android.Utils.trimToNull
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.util.Utils.trimToNull
+import at.bitfire.synctools.vcard.property.CustomType
 import ezvcard.parameter.RelatedType
 import ezvcard.property.Related
 

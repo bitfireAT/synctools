@@ -17,9 +17,9 @@ import android.provider.ContactsContract.RawContacts
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.mapping.contacts.Contact
+import at.bitfire.synctools.mapping.contacts.TestUtils
 import at.bitfire.synctools.storage.contacts.AndroidContact
-import at.bitfire.vcard4android.TestUtils
-import at.bitfire.vcard4android.impl.TestAddressBook
+import at.bitfire.synctools.storage.contacts.TestAddressBook
 import org.junit.Assert
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

@@ -6,19 +6,19 @@
 
 package at.bitfire.synctools.mapping.contacts
 
-import at.bitfire.vcard4android.Utils.capitalize
-import at.bitfire.vcard4android.Utils.isEmpty
-import at.bitfire.vcard4android.Utils.trimToNull
-import at.bitfire.vcard4android.property.CustomScribes.registerCustomScribes
-import at.bitfire.vcard4android.property.CustomType
-import at.bitfire.vcard4android.property.XAbDate
-import at.bitfire.vcard4android.property.XAbLabel
-import at.bitfire.vcard4android.property.XAbRelatedNames
-import at.bitfire.vcard4android.property.XAddressBookServerKind
-import at.bitfire.vcard4android.property.XAddressBookServerMember
-import at.bitfire.vcard4android.property.XPhoneticFirstName
-import at.bitfire.vcard4android.property.XPhoneticLastName
-import at.bitfire.vcard4android.property.XPhoneticMiddleName
+import at.bitfire.synctools.util.Utils.capitalize
+import at.bitfire.synctools.util.Utils.isEmpty
+import at.bitfire.synctools.util.Utils.trimToNull
+import at.bitfire.synctools.vcard.property.CustomScribes.registerCustomScribes
+import at.bitfire.synctools.vcard.property.CustomType
+import at.bitfire.synctools.vcard.property.XAbDate
+import at.bitfire.synctools.vcard.property.XAbLabel
+import at.bitfire.synctools.vcard.property.XAbRelatedNames
+import at.bitfire.synctools.vcard.property.XAddressBookServerKind
+import at.bitfire.synctools.vcard.property.XAddressBookServerMember
+import at.bitfire.synctools.vcard.property.XPhoneticFirstName
+import at.bitfire.synctools.vcard.property.XPhoneticLastName
+import at.bitfire.synctools.vcard.property.XPhoneticMiddleName
 import ezvcard.Ezvcard
 import ezvcard.VCard
 import ezvcard.VCardVersion

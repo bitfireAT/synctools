@@ -11,7 +11,7 @@ import android.provider.ContactsContract
 import android.provider.ContactsContract.CommonDataKinds.Email
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.storage.BatchOperation
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.vcard.property.CustomType
 import ezvcard.parameter.EmailType
 import java.util.LinkedList
 import java.util.logging.Level

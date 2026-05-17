@@ -16,7 +16,7 @@ import android.provider.ContactsContract.CommonDataKinds.Photo
 import android.provider.ContactsContract.RawContacts
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.storage.BatchOperation
-import at.bitfire.vcard4android.Utils.asSyncAdapter
+import at.bitfire.synctools.util.Utils.asSyncAdapter
 import java.io.IOException
 import java.util.logging.Level
 import java.util.logging.Logger

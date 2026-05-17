@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android
+package at.bitfire.synctools.mapping.contacts
 
 object TestUtils {
 

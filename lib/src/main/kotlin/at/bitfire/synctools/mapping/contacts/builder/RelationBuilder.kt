@@ -10,9 +10,9 @@ import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.Relation
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.storage.BatchOperation
-import at.bitfire.vcard4android.Utils.capitalize
-import at.bitfire.vcard4android.Utils.trimToNull
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.util.Utils.capitalize
+import at.bitfire.synctools.util.Utils.trimToNull
+import at.bitfire.synctools.vcard.property.CustomType
 import ezvcard.parameter.RelatedType
 import java.util.LinkedList
 

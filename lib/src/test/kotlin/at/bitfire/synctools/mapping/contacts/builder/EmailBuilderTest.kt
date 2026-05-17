@@ -10,7 +10,7 @@ import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.mapping.contacts.LabeledProperty
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.vcard.property.CustomType
 import ezvcard.parameter.EmailType
 import ezvcard.property.Email
 import org.junit.Assert.assertEquals

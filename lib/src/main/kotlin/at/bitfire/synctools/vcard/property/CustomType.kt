@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android.property
+package at.bitfire.synctools.vcard.property
 
 import ezvcard.parameter.EmailType
 import ezvcard.parameter.RelatedType

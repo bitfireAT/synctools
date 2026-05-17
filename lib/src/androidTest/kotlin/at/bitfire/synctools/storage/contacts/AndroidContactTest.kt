@@ -17,9 +17,7 @@ import androidx.test.rule.GrantPermissionRule
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.mapping.contacts.LabeledProperty
 import at.bitfire.synctools.storage.LocalStorageException
-import at.bitfire.vcard4android.impl.TestAddressBook
-import at.bitfire.vcard4android.impl.testProductId
-import at.bitfire.vcard4android.property.XAbDate
+import at.bitfire.synctools.vcard.property.XAbDate
 import ezvcard.VCardVersion
 import ezvcard.property.Address
 import ezvcard.property.Birthday

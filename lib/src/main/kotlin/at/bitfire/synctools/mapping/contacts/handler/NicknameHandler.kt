@@ -10,7 +10,7 @@ import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Nickname
 import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.mapping.contacts.LabeledProperty
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.vcard.property.CustomType
 
 object NicknameHandler: DataRowHandler() {
 

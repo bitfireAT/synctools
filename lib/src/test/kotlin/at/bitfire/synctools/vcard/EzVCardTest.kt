@@ -4,16 +4,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android
+package at.bitfire.synctools.vcard
 
 import ezvcard.Ezvcard
 import ezvcard.VCard
 import ezvcard.VCardVersion
 import ezvcard.property.Address
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
+import org.junit.Assert
 import org.junit.Test
 
 class EzVCardTest {
@@ -25,7 +22,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "KIND:GROUP\r\n" +
                 "END:VCARD").first()
-        assertTrue(vCard.kind.isGroup)
+        Assert.assertTrue(vCard.kind.isGroup)
     }
 
     @Test
@@ -35,7 +32,7 @@ class EzVCardTest {
                 "PHOTO;ENCODING=b;TYPE=JPEG:dGVzdA==\r\n" +
                 "END:VCARD").first()
         // decodes binary data
-        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
+        Assert.assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
     }
 
     @Test
@@ -46,7 +43,7 @@ class EzVCardTest {
                 "END:VCARD").first()
         val photo = vCard.photos.first()
         // decodes binary data
-        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
+        Assert.assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
     }
 
     @Test
@@ -56,7 +53,7 @@ class EzVCardTest {
                 "PHOTO:data:image/png;base64,dGVzdA==\r\n" +
                 "END:VCARD").first()
         // decodes data URI
-        assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
+        Assert.assertArrayEquals("test".toByteArray(), vCard.photos.first().data)
     }
 
     @Test
@@ -65,7 +62,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "REV:20161218T201900Z\r\n" +
                 "END:VCARD").first()
-        assertNotNull(vCard.revision)
+        Assert.assertNotNull(vCard.revision)
     }
 
     @Test
@@ -74,7 +71,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "REV:2016-11-27T15:49:53.762Z\r\n" +
                 "END:VCARD").first()
-        assertNotNull(vCard.revision)
+        Assert.assertNotNull(vCard.revision)
     }
 
     @Test
@@ -83,7 +80,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "REV:20161218T201900\r\n" +
                 "END:VCARD").first()
-        assertNotNull(vCard.revision)
+        Assert.assertNotNull(vCard.revision)
     }
 
     @Test
@@ -92,7 +89,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "REV:20161218T201900-05\r\n" +
                 "END:VCARD").first()
-        assertNotNull(vCard.revision)
+        Assert.assertNotNull(vCard.revision)
     }
 
     @Test
@@ -101,7 +98,7 @@ class EzVCardTest {
                 "VERSION:4.0\r\n" +
                 "REV:20161218T201900-0530\r\n" +
                 "END:VCARD").first()
-        assertNotNull(vCard.revision)
+        Assert.assertNotNull(vCard.revision)
     }
 
     @Test
@@ -112,12 +109,12 @@ class EzVCardTest {
             streetAddress = "Line 1"
             country = "Line 2"
         })
-        val str = Ezvcard .write(vCard)
+        val str = Ezvcard.write(vCard)
                 .version(VCardVersion.V4_0)
                 .caretEncoding(true)
                 .go().lines().filter { it.startsWith("ADR") }.first()
         //assertEquals("ADR;LABEL=\"Li^^ne 1,1^n- ^' -\":;;Line 1;;;;Line 2", str)
-        assertEquals("ADR;LABEL=\"Li^^ne 1,1\\n- ^' -\":;;Line 1;;;;Line 2", str)
+        Assert.assertEquals("ADR;LABEL=\"Li^^ne 1,1\\n- ^' -\":;;Line 1;;;;Line 2", str)
     }
 
 }

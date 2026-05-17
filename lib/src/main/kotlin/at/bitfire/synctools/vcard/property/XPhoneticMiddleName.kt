@@ -4,16 +4,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-package at.bitfire.vcard4android.property
+package at.bitfire.synctools.vcard.property
 
 import ezvcard.io.scribe.StringPropertyScribe
 import ezvcard.property.TextProperty
 
-class XSip(value: String?): TextProperty(value) {
+class XPhoneticMiddleName(value: String?): TextProperty(value) {
 
-    object Scribe : StringPropertyScribe<XSip>(XSip::class.java, "X-SIP") {
+    object Scribe :
+        StringPropertyScribe<XPhoneticMiddleName>(XPhoneticMiddleName::class.java, "X-PHONETIC-MIDDLE-NAME") {
 
-        override fun _parseValue(value: String?) = XSip(value)
+        override fun _parseValue(value: String?) = XPhoneticMiddleName(value)
 
     }
 

@@ -13,8 +13,8 @@ import at.bitfire.synctools.mapping.contacts.Contact
 import at.bitfire.synctools.mapping.contacts.LabeledProperty
 import at.bitfire.synctools.mapping.contacts.handler.EventHandler.fullDateFormat
 import at.bitfire.synctools.mapping.contacts.handler.EventHandler.fullDateTimeFormats
-import at.bitfire.vcard4android.Utils.trimToNull
-import at.bitfire.vcard4android.property.XAbDate
+import at.bitfire.synctools.util.Utils.trimToNull
+import at.bitfire.synctools.vcard.property.XAbDate
 import ezvcard.property.Anniversary
 import ezvcard.property.Birthday
 import ezvcard.util.PartialDate

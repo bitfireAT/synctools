@@ -9,7 +9,7 @@ package at.bitfire.synctools.mapping.contacts.handler
 import android.content.ContentValues
 import android.provider.ContactsContract.CommonDataKinds.Nickname
 import at.bitfire.synctools.mapping.contacts.Contact
-import at.bitfire.vcard4android.property.CustomType
+import at.bitfire.synctools.vcard.property.CustomType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
