@@ -16,6 +16,9 @@ import org.dmfs.tasks.contract.TaskContract.Property.Relation
 import org.dmfs.tasks.contract.TaskContract.Tasks
 import kotlin.jvm.optionals.getOrNull
 
+/**
+ * Note: This Sub-row builder alters the main-row [Tasks.PARENT_ID]
+ */
 class RelationsBuilder(
     private val taskList: DmfsTaskList
 ) : DmfsTaskFieldBuilder {
