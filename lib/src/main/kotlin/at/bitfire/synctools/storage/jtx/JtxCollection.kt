@@ -115,7 +115,7 @@ class JtxCollection(
         val objectRowIdx = batch.nextBackrefIdx()
         batch += CpoBuilder.newInsert(jtxObjectsUri).withValues(entity.entityValues)
 
-        // insert data rows (with reference to event row ID)
+        // insert data rows (with reference to jtx object ID)
         for (subValue in entity.subValues)
             batch += CpoBuilder.newInsert(subValue.uri.asSyncAdapter(account))
                 .withValues(subValue.values)
