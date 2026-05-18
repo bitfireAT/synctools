@@ -63,15 +63,14 @@ class DmfsTaskBuilder(
 ) {
 
     private val fieldBuilders: Array<DmfsTaskFieldBuilder> = arrayOf(
-        // status fields
         TitleBuilder(),
+        // status fields
         PriorityBuilder(),
         ClassificationBuilder(),
         StatusBuilder(),
         CompletedBuilder(),
         PercentCompleteBuilder(),
         // time fields and recurrence
-        TitleBuilder(),
         AllDayBuilder(),
         StartTimeBuilder(),
         DueBuilder(),
