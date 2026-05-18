@@ -24,8 +24,13 @@ class UnknownPropertiesBuilder(
 
     override fun build(from: Task, to: Entity) {
         for (property in from.unknownProperties) {
-            if (property.value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
-                logger.warning("Ignoring unknown property with ${property.value.length} octets (too long)")
+            val value = property.value
+            if (value == null) {
+                logger.warning("Ignoring unknown property with null value")
+                continue
+            }
+            if (value.length > UnknownProperty.MAX_UNKNOWN_PROPERTY_SIZE) {
+                logger.warning("Ignoring unknown property with ${value.length} octets (too long)")
                 continue
             }
 
