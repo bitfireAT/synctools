@@ -16,6 +16,7 @@ import at.bitfire.synctools.mapping.tasks.builder.ClassificationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ColorBuilder
 import at.bitfire.synctools.mapping.tasks.builder.CommentsBuilder
 import at.bitfire.synctools.mapping.tasks.builder.CompletedBuilder
+import at.bitfire.synctools.mapping.tasks.builder.CreatedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DirtyBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DmfsTaskFieldBuilder
@@ -23,6 +24,7 @@ import at.bitfire.synctools.mapping.tasks.builder.DueBuilder
 import at.bitfire.synctools.mapping.tasks.builder.DurationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ETagBuilder
 import at.bitfire.synctools.mapping.tasks.builder.GeoBuilder
+import at.bitfire.synctools.mapping.tasks.builder.LastModifiedBuilder
 import at.bitfire.synctools.mapping.tasks.builder.ListIdBuilder
 import at.bitfire.synctools.mapping.tasks.builder.LocationBuilder
 import at.bitfire.synctools.mapping.tasks.builder.OrganizerBuilder
@@ -73,6 +75,8 @@ class DmfsTaskBuilder(
         SequenceBuilder(),
         ListIdBuilder(taskList.id),
         DirtyBuilder(),
+        CreatedBuilder(),
+        LastModifiedBuilder(),
         // content fields
         TitleBuilder(),
         DescriptionBuilder(),
@@ -142,10 +146,6 @@ class DmfsTaskBuilder(
 
         for (fieldBuilder in fieldBuilders)
             fieldBuilder.build(task, entity)
-
-        // CREATED and LAST_MODIFIED are task metadata fields not yet extracted to individual builders
-        entity.entityValues.put(Tasks.CREATED, task.createdAt)
-        entity.entityValues.put(Tasks.LAST_MODIFIED, task.lastModified)
 
         logger.log(Level.FINE, "Built task", entity.entityValues)
         return entity
