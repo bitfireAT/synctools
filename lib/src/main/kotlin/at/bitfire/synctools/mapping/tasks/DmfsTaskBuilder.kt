@@ -103,7 +103,7 @@ class DmfsTaskBuilder(
     )
 
 
-    fun addRows(batch: TasksBatchOperation): Int {
+    fun addRows(batch: TasksBatchOperation) {
         val entity = buildTask()
 
         val mainBuilder = CpoBuilder.newInsert(taskList.tasksUri())
@@ -117,7 +117,6 @@ class DmfsTaskBuilder(
                 .withValueBackReference(Properties.TASK_ID, idxTask)
 
         logger.log(Level.FINE, "Added task", mainBuilder.build())
-        return idxTask
     }
 
     fun updateRows(batch: TasksBatchOperation) {
