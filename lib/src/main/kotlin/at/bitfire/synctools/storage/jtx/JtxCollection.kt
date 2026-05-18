@@ -119,7 +119,7 @@ class JtxCollection(
         for (subValue in entity.subValues)
             batch += CpoBuilder.newInsert(subValue.uri.asSyncAdapter(account))
                 .withValues(subValue.values)
-                .withValueBackReference(JtxContract.JtxAttendee.ICALOBJECT_ID, objectRowIdx)
+                .withValueBackReference(ICALOBJECT_ID, objectRowIdx)
     }
 
     /**
