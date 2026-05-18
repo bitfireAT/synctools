@@ -131,14 +131,17 @@ class DmfsTaskBuilder(
             // LIST_ID must not be updated (it doesn't change for updates, and setting it would cause issues)
             remove(Tasks.LIST_ID)
         }
-        batch += CpoBuilder.newUpdate(taskList.taskUri(existingId))
+        val mainBuilder = CpoBuilder.newUpdate(taskList.taskUri(existingId))
             .withValues(mainValues)
+        batch += mainBuilder
 
         for (subValue in entity.subValues)
             batch += CpoBuilder.newInsert(subValue.uri)
                 .withValues(ContentValues(subValue.values).apply {
                     put(Properties.TASK_ID, existingId)
                 })
+
+        logger.log(Level.FINE, "Updated task", mainBuilder.build())
     }
 
     private fun buildTask(): Entity {
