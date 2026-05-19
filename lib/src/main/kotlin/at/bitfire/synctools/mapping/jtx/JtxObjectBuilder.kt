@@ -11,6 +11,7 @@ import android.content.Entity
 import at.bitfire.synctools.icalendar.AssociatedComponents
 import at.bitfire.synctools.mapping.jtx.builder.CategoriesBuilder
 import at.bitfire.synctools.mapping.jtx.builder.CollectionIdBuilder
+import at.bitfire.synctools.mapping.jtx.builder.CommentsBuilder
 import at.bitfire.synctools.mapping.jtx.builder.DescriptionBuilder
 import at.bitfire.synctools.mapping.jtx.builder.JtxEntityBuilder
 import at.bitfire.synctools.mapping.jtx.builder.RecurrenceFieldsBuilder
@@ -41,7 +42,8 @@ class JtxObjectBuilder(
         RecurrenceFieldsBuilder(),
         TimeFieldsBuilder(),
         RemindersBuilder(),
-        CategoriesBuilder()
+        CategoriesBuilder(),
+        CommentsBuilder()
     )
 
     fun build(component: AssociatedComponents<CalendarComponent>): JtxObjectAndExceptions {
