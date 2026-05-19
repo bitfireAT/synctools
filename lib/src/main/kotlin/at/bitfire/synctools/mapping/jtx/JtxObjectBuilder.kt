@@ -24,7 +24,7 @@ import net.fortuna.ical4j.model.component.VToDo
 /**
  * Mapper from an [AssociatedComponents] data object to jtx Board content provider data rows.
  */
-class JtxItemBuilder(
+class JtxObjectBuilder(
     collectionId: Long,
     fileName: String?,
     eTag: String?,
@@ -45,7 +45,7 @@ class JtxItemBuilder(
     fun build(component: AssociatedComponents<CalendarComponent>): JtxObjectAndExceptions {
         requireJtxComponents(component)
 
-        val main = component.main ?: error("Main item required")
+        val main = component.main ?: error("Main component required")
         return JtxObjectAndExceptions(
             main = buildComponent(from = main, main = main),
             exceptions = component.exceptions.map { exception ->
