@@ -177,7 +177,7 @@ class JtxCollectionTest {
 
     @Test
     fun testFindJtxObject_found() {
-        val entity = sampleEntity()
+        val entity = sampleEntity("Test Object")
         collection.addJtxObject(entity)
 
         val result = collection.findJtxObject(
