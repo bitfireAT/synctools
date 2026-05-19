@@ -8,7 +8,7 @@ package at.bitfire.synctools.mapping.jtx
 
 import android.content.Entity
 import androidx.core.content.contentValuesOf
-import at.bitfire.synctools.storage.jtx.JtxItemAndExceptions
+import at.bitfire.synctools.storage.jtx.JtxObjectAndExceptions
 import at.techbee.jtx.JtxContract
 import net.fortuna.ical4j.model.component.VJournal
 import net.fortuna.ical4j.model.component.VToDo
@@ -30,7 +30,7 @@ class JtxItemHandlerTest {
 
     @Test
     fun `mapToCalendarComponents maps VTODO component`() {
-        val itemAndExceptions = JtxItemAndExceptions(
+        val itemAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO",
@@ -49,7 +49,7 @@ class JtxItemHandlerTest {
 
     @Test
     fun `mapToCalendarComponents maps VJOURNAL component`() {
-        val itemAndExceptions = JtxItemAndExceptions(
+        val itemAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VJOURNAL",
@@ -68,7 +68,7 @@ class JtxItemHandlerTest {
 
     @Test
     fun `mapToCalendarComponents returns UID`() {
-        val itemAndExceptions = JtxItemAndExceptions(
+        val itemAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO",
@@ -88,7 +88,7 @@ class JtxItemHandlerTest {
 
     @Test
     fun `mapToCalendarComponents creates UID`() {
-        val itemAndExceptions = JtxItemAndExceptions(
+        val itemAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO"

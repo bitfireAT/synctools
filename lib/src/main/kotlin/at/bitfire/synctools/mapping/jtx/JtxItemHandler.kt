@@ -10,7 +10,7 @@ import android.content.Entity
 import at.bitfire.synctools.icalendar.AssociatedComponents
 import at.bitfire.synctools.mapping.jtx.handler.DescriptionHandler
 import at.bitfire.synctools.mapping.jtx.handler.JtxFieldHandler
-import at.bitfire.synctools.storage.jtx.JtxItemAndExceptions
+import at.bitfire.synctools.storage.jtx.JtxObjectAndExceptions
 import at.techbee.jtx.JtxContract
 import net.fortuna.ical4j.model.Property
 import net.fortuna.ical4j.model.component.CalendarComponent
@@ -40,7 +40,7 @@ class JtxItemHandler(
      * VJOURNAL and VTODO must have a valid `UID`. So this method generates an UID, if necessary.
      * If an `UID` was generated, it is noted in the result.
      */
-    fun mapToCalendarComponents(itemAndExceptions: JtxItemAndExceptions): MappingResult {
+    fun mapToCalendarComponents(itemAndExceptions: JtxObjectAndExceptions): MappingResult {
         // make sure that main item has a UID
         var generatedUid = false
         val mainValues = itemAndExceptions.main.entityValues
