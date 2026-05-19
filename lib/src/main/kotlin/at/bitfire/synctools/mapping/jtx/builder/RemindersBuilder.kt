@@ -84,11 +84,11 @@ class RemindersBuilder : JtxEntityBuilder {
         )
     }
 
-    private fun getAlarms(item: CalendarComponent): List<VAlarm> {
-        val componentList = when (item) {
-            is VToDo -> item.componentList
-            is VJournal -> item.componentList
-            else -> error("Unsupported calendar component: ${item::class.simpleName}")
+    private fun getAlarms(component: CalendarComponent): List<VAlarm> {
+        val componentList = when (component) {
+            is VToDo -> component.componentList
+            is VJournal -> component.componentList
+            else -> error("Unsupported calendar component: ${component::class.simpleName}")
         }
 
         return componentList.all.filterIsInstance<VAlarm>()
