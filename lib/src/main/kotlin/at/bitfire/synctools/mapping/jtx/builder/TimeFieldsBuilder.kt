@@ -91,7 +91,7 @@ class TimeFieldsBuilder : JtxEntityBuilder {
             logger.warning("Found DURATION without DTSTART in VTODO; ignoring DURATION")
             to.entityValues.putNull(JtxContract.JtxICalObject.DURATION)
         } else if (durationValue != null && task.due<Temporal>()?.date != null) {
-            logger.warning("Found DURATION and DTEND in VTODO; ignoring DURATION")
+            logger.warning("Found DURATION and DUE in VTODO; ignoring DURATION")
             to.entityValues.putNull(JtxContract.JtxICalObject.DURATION)
         } else if (durationValue != null) {
             to.entityValues.put(JtxContract.JtxICalObject.DURATION, durationValue)
