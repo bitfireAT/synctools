@@ -22,15 +22,15 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class JtxItemHandlerTest {
+class JtxObjectHandlerTest {
 
-    private val handler = JtxItemHandler(
+    private val handler = JtxObjectHandler(
         prodId = ProdId(javaClass.simpleName)
     )
 
     @Test
     fun `mapToCalendarComponents maps VTODO component`() {
-        val itemAndExceptions = JtxObjectAndExceptions(
+        val jtxObjectAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO",
@@ -40,16 +40,14 @@ class JtxItemHandlerTest {
             exceptions = emptyList()
         )
 
-        val result = handler.mapToCalendarComponents(
-            itemAndExceptions = itemAndExceptions
-        )
+        val result = handler.mapToCalendarComponents(jtxObjectAndExceptions)
 
-        assertEquals(VToDo::class.java, result.associatedItems.main?.javaClass)
+        assertEquals(VToDo::class.java, result.associatedComponents.main?.javaClass)
     }
 
     @Test
     fun `mapToCalendarComponents maps VJOURNAL component`() {
-        val itemAndExceptions = JtxObjectAndExceptions(
+        val jtxObjectAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VJOURNAL",
@@ -59,16 +57,14 @@ class JtxItemHandlerTest {
             exceptions = emptyList()
         )
 
-        val result = handler.mapToCalendarComponents(
-            itemAndExceptions = itemAndExceptions
-        )
+        val result = handler.mapToCalendarComponents(jtxObjectAndExceptions)
 
-        assertEquals(VJournal::class.java, result.associatedItems.main?.javaClass)
+        assertEquals(VJournal::class.java, result.associatedComponents.main?.javaClass)
     }
 
     @Test
     fun `mapToCalendarComponents returns UID`() {
-        val itemAndExceptions = JtxObjectAndExceptions(
+        val jtxObjectAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO",
@@ -78,9 +74,7 @@ class JtxItemHandlerTest {
             exceptions = emptyList()
         )
 
-        val result = handler.mapToCalendarComponents(
-            itemAndExceptions = itemAndExceptions
-        )
+        val result = handler.mapToCalendarComponents(jtxObjectAndExceptions)
 
         assertFalse(result.generatedUid)
         assertEquals("uid", result.uid)
@@ -88,7 +82,7 @@ class JtxItemHandlerTest {
 
     @Test
     fun `mapToCalendarComponents creates UID`() {
-        val itemAndExceptions = JtxObjectAndExceptions(
+        val jtxObjectAndExceptions = JtxObjectAndExceptions(
             main = Entity(
                 contentValuesOf(
                     JtxContract.JtxICalObject.COMPONENT to "VTODO"
@@ -98,9 +92,7 @@ class JtxItemHandlerTest {
             exceptions = emptyList()
         )
 
-        val result = handler.mapToCalendarComponents(
-            itemAndExceptions = itemAndExceptions
-        )
+        val result = handler.mapToCalendarComponents(jtxObjectAndExceptions)
 
         assertTrue(result.generatedUid)
         assertNotNull(result.uid)
